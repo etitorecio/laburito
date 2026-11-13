@@ -20,7 +20,22 @@ FROM alpine:3.24 AS ffmpeg-build
 
 RUN echo "os-refresh 2026-11-13" \
  && apk upgrade --no-cache \
- && apk add --no-cache build-base nasm pkgconf zlib-dev freetype-dev x264-dev
+ && apk add --no-cache build-base nasm pkgconf zlib-dev freetype-dev x264-dev meson ninja
+
+# Harfbuzz sin glib: FFmpeg 8/9 exigen libharfbuzz para el filtro drawtext
+# (subtitulos quemados), pero el paquete de Alpine lo enlaza con glib, que el
+# escaner marca con un rango invertido (ALPINE-CVE-2021-27219) sin correccion
+# posible en ninguna rama. Se compila aqui con glib desactivado y a la imagen
+# final solo se copia la libreria resultante.
+WORKDIR /hb
+ADD https://github.com/harfbuzz/harfbuzz/releases/download/15.1.0/harfbuzz-15.1.0.tar.xz /hb/hb.tar.xz
+RUN tar -xf hb.tar.xz \
+ && meson setup build harfbuzz-15.1.0 \
+      --prefix=/usr/local --buildtype=release \
+      -Dglib=disabled -Dgobject=disabled -Dicu=disabled -Dcairo=disabled \
+      -Ddocs=disabled -Dtests=disabled -Dintrospection=disabled \
+      -Dfreetype=enabled \
+ && ninja -C build install
 
 WORKDIR /src
 ADD https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz /src/ffmpeg.tar.xz
@@ -34,6 +49,7 @@ RUN tar -xf ffmpeg.tar.xz --strip-components=1 \
       --enable-gpl \
       --enable-libx264 \
       --enable-libfreetype \
+      --enable-libharfbuzz \
       --enable-zlib \
  && make -j"$(nproc)" \
  && make install
@@ -42,16 +58,18 @@ FROM python:3.13-alpine
 
 RUN echo "os-refresh 2026-11-13" \
  && apk upgrade --no-cache \
- && apk add --no-cache espeak-ng tzdata x264-libs freetype zlib \
+ && apk add --no-cache espeak-ng tzdata x264-libs freetype zlib libstdc++ \
  && (apk add --no-cache font-dejavu || apk add --no-cache ttf-dejavu)
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     AITUBER_DATA_DIR=/app/data \
+    LD_LIBRARY_PATH=/usr/local/lib \
     PORT=8080
 
 COPY --from=ffmpeg-build /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 COPY --from=ffmpeg-build /usr/local/bin/ffprobe /usr/local/bin/ffprobe
+COPY --from=ffmpeg-build /usr/local/lib/libharfbuzz.so* /usr/local/lib/
 
 WORKDIR /app
 COPY requirements.txt /app/requirements.txt
