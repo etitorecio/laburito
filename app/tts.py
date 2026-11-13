@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import wave
 from pathlib import Path
 
 VOICES = {
@@ -112,19 +113,17 @@ def synthesize(text: str, out_path: Path, voice: str = "es", speed: int = 150, p
 
 
 def silence_wav(out_path: Path, seconds: float, sample_rate: int = 24000) -> dict:
-    """WAV de silencio: permite renderizar sin TTS y marcar la advertencia."""
+    """WAV de silencio: permite renderizar sin TTS y marcar la advertencia.
+
+    Se escribe con la librería estándar, sin FFmpeg ni `-f lavfi`.
+    """
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    ffmpeg = shutil.which("ffmpeg") or "ffmpeg"
-    subprocess.run(
-        [
-            ffmpeg, "-y", "-f", "lavfi",
-            "-i", f"anullsrc=r={sample_rate}:cl=mono",
-            "-t", f"{max(0.5, seconds):.2f}",
-            "-c:a", "pcm_s16le", str(out_path),
-        ],
-        check=True,
-        timeout=120,
-        capture_output=True,
-    )
+    total = max(0.5, seconds)
+    frames = int(total * sample_rate)
+    with wave.open(str(out_path), "wb") as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(sample_rate)
+        wav.writeframes(b"\x00\x00" * frames)
     return {"engine": "silencio", "seconds": seconds}

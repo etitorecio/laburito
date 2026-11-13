@@ -9,12 +9,18 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
+import struct
 import subprocess
+import tempfile
 import textwrap
 import time
 import urllib.parse
 import urllib.request
+import zlib
+from functools import lru_cache
 from pathlib import Path
+
+_CARD_ERROR = ""
 
 FONT_CANDIDATES = [
     "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",
@@ -173,18 +179,28 @@ PALETTES = {
 
 
 def make_card(out_png: Path, title: str, subtitle: str, width: int, height: int, kind: str = "documental") -> Path:
-    """Tarjeta visual generada localmente (se etiqueta como tal, no es foto histórica)."""
+    """Tarjeta visual generada localmente (se etiqueta como tal, no es foto histórica).
+
+    La base se dibuja en PNG puro (sin FFmpeg) y el texto se superpone con
+    drawtext sobre esa imagen. Así la tarjeta nunca depende de `-f lavfi` y, si
+    el binario de FFmpeg no puede dibujar texto, queda una tarjeta de color
+    válida en lugar de romper el render.
+    """
+    global _CARD_ERROR
     out_png = Path(out_png)
     out_png.parent.mkdir(parents=True, exist_ok=True)
     font = font_path()
     palette = PALETTES.get(kind, PALETTES["documental"])
     color = palette[abs(hash(title)) % len(palette)]
+    base = out_png.with_name(f"{out_png.stem}_base.png")
+    _png_solid(base, width, height, _rgb(color))
+
     title_size = max(34, int(width * 0.045))
     sub_size = max(20, int(width * 0.022))
     title_lines = wrap(title, max(12, int(width / (title_size * 0.58))), 2)
     sub_lines = wrap(subtitle, max(16, int(width / (sub_size * 0.56))), 2)
 
-    filters = [f"drawbox=x=0:y=0:w=iw:h=ih:color={color}@1:t=fill"]
+    filters: list[str] = []
     if font:
         filters.append(
             f"drawbox=x=0:y=ih*0.30:w=iw:h=6:color=0x7dd3fc@0.9:t=fill"
@@ -203,14 +219,91 @@ def make_card(out_png: Path, title: str, subtitle: str, width: int, height: int,
                 f":x=(w-text_w)/2:y={y}"
             )
             y += int(sub_size * 1.4)
-    cmd = [
-        ffmpeg(), "-y", "-f", "lavfi", "-i", f"color=c=black:s={width}x{height}",
-        "-vf", ",".join(filters), "-frames:v", "1", str(out_png),
-    ]
-    proc = run(cmd, timeout=120)
+
+    try:
+        if filters:
+            cmd = [
+                ffmpeg(), "-y", "-i", str(base),
+                "-vf", ",".join(filters), "-frames:v", "1", str(out_png),
+            ]
+            proc = run(cmd, timeout=120)
+            if not out_png.exists() or out_png.stat().st_size == 0:
+                raise RuntimeError(
+                    "ffmpeg no generó la imagen: "
+                    + (proc.stderr or b"").decode("utf-8", "ignore")[-400:]
+                )
+        else:
+            shutil.copyfile(base, out_png)
+    except Exception as exc:  # respaldo: tarjeta de color válida sin texto
+        _CARD_ERROR = str(exc)[-400:]
+        shutil.copyfile(base, out_png)
+    finally:
+        base.unlink(missing_ok=True)
+
     if not out_png.exists():
-        raise RuntimeError(f"No se pudo generar la tarjeta visual: {proc.stderr.decode('utf-8', 'ignore')[:300]}")
+        raise RuntimeError(f"No se pudo generar la tarjeta visual: {_CARD_ERROR}")
     return out_png
+
+
+def _rgb(color: str) -> tuple[int, int, int]:
+    value = int(color, 16) if color.lower().startswith("0x") else int(color.lstrip("#"), 16)
+    return ((value >> 16) & 0xFF, (value >> 8) & 0xFF, value & 0xFF)
+
+
+def _png_solid(out_png: Path, width: int, height: int, rgb: tuple[int, int, int]) -> Path:
+    """PNG de un color sólido escrito con la librería estándar (sin FFmpeg)."""
+    r, g, b = rgb
+    row = b"\x00" + bytes((r, g, b)) * width
+    raw = row * height
+
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        return (
+            struct.pack(">I", len(data))
+            + tag
+            + data
+            + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+        )
+
+    png = (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(raw, 6))
+        + chunk(b"IEND", b"")
+    )
+    out_png.write_bytes(png)
+    return out_png
+
+
+@lru_cache(maxsize=1)
+def capabilities() -> dict:
+    """Qué puede hacer realmente el FFmpeg instalado (se calcula una vez)."""
+
+    def probe(args: list[str]) -> bool:
+        try:
+            proc = run([ffmpeg(), "-hide_banner", *args], timeout=30)
+        except Exception:
+            return False
+        text = ((proc.stdout or b"") + (proc.stderr or b"")).decode("utf-8", "ignore").lower()
+        return bool(text) and "unknown" not in text and "not recognized" not in text
+
+    info: dict = {
+        "encoder_png": probe(["-h", "encoder=png"]),
+        "filtro_drawtext": probe(["-h", "filter=drawtext"]),
+        "filtro_drawbox": probe(["-h", "filter=drawbox"]),
+        "encoder_libx264": probe(["-h", "encoder=libx264"]),
+        "demuxer_lavfi": probe(["-h", "demuxer=lavfi"]),
+    }
+    with tempfile.TemporaryDirectory() as tmp:
+        card = Path(tmp) / "card.png"
+        try:
+            make_card(card, "prueba de capacidad", "diagnóstico", 320, 180, "short")
+            info["tarjeta_visual"] = card.exists() and card.stat().st_size > 100
+        except Exception as exc:
+            info["tarjeta_visual"] = False
+            info["error_tarjeta"] = str(exc)[-300:]
+    if _CARD_ERROR:
+        info["ultimo_error_tarjeta"] = _CARD_ERROR
+    return info
 
 
 def _esc(text: str) -> str:
