@@ -7,7 +7,7 @@ RUN npm install --no-audit --no-fund
 COPY web/ /web/
 RUN npm run build
 
-FROM python:3.13-alpine
+FROM python:3.13-alpine3.22
 
 RUN echo "os-refresh 2026-11-13" \
  && apk upgrade --no-cache \
