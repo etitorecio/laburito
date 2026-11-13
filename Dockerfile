@@ -26,7 +26,13 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 COPY app/ /app/app/
 COPY --from=web /web/dist /app/web/dist
 
-RUN mkdir -p /app/data/music && chmod -R 777 /app/data
+# El proceso corre sin privilegios y solo es dueño de sus propios directorios.
+RUN addgroup -S aituber \
+ && adduser -S -G aituber -h /app aituber \
+ && mkdir -p /app/data/music /app/data/renders /app/data/exports /app/data/media /app/data/tmp \
+ && chown -R aituber:aituber /app
+
+USER aituber
 
 EXPOSE 8080
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
