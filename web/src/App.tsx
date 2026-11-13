@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, type Diagnostics, type Meta } from '../api';
+import { api, type Diagnostics, type Meta } from './api';
 import { ROUTES, type Route } from './routes';
 import Home from './pages/Home';
 import Research from './pages/Research';
