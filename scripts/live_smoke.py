@@ -36,7 +36,11 @@ def call(method: str, path: str, payload: dict | None = None, raw: bool = False)
         BASE + path,
         data=data,
         method=method,
-        headers={"Content-Type": "application/json", "Accept": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "AITuberLibre-Smoke/1.0 (+https://appjet.local)",
+        },
     )
     try:
         with urllib.request.urlopen(req, timeout=120) as resp:
