@@ -543,7 +543,9 @@ def export_project(project_id: int) -> Path:
     zip_path = db.EXPORT_DIR / f"{safe_title.strip().replace(' ', '_')[:60]}-{time.strftime('%Y%m%d-%H%M')}.zip"
 
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        written: set[str] = set()
         zf.write(final, f"{suffix}/video_final.mp4")
+        written.add(f"{suffix}/video_final.mp4")
         for name, arc in ((f"{suffix}.srt", "subtitulos/subtitulos.srt"), (f"{suffix}.vtt", "subtitulos/subtitulos.vtt")):
             path = workdir / name
             if path.exists():
@@ -587,8 +589,15 @@ def export_project(project_id: int) -> Path:
         # Recursos propios (tarjetas generadas) redistribuibles sin restricción.
         for asset in assets:
             path = Path(asset.get("path") or "")
-            if asset.get("kind") in ("video_escena",) and path.exists() and path.stat().st_size < 40 * 1024 * 1024:
-                zf.write(path, f"escenas/{path.parent.name}.mp4")
+            if asset.get("kind") not in ("video_escena",):
+                continue
+            if not path.exists() or path.stat().st_size >= 40 * 1024 * 1024:
+                continue
+            arc = f"escenas/{path.parent.name}.mp4"
+            if arc in written:
+                continue
+            written.add(arc)
+            zf.write(path, arc)
 
     db.execute(
         "INSERT INTO assets(project_id, kind, path, label, bytes, created_at) VALUES(?,?,?,?,?,?)",

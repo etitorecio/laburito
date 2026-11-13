@@ -112,8 +112,20 @@ def run_case(label: str, kind: str, aspect: str, target: int) -> None:
     check(zip_path.exists() and zip_path.stat().st_size > 50_000, f"{label}: ZIP exportado",
           f"({zip_path.stat().st_size} bytes)")
     names = zipfile.ZipFile(zip_path).namelist()
-    for expected_name in ("video", "subtitulos", "guion", "fuentes", "miniatura", "metadatos"):
-        check(any(n.startswith(expected_name) for n in names), f"{label}: ZIP incluye {expected_name}", f"({names[:6]})")
+    expected_paths = {
+        "vídeo final": lambda n: n.endswith("video_final.mp4"),
+        "subtítulos SRT": lambda n: n.endswith(".srt"),
+        "subtítulos VTT": lambda n: n.endswith(".vtt"),
+        "guion": lambda n: n.startswith("guion/"),
+        "fuentes": lambda n: n.startswith("fuentes/"),
+        "miniatura": lambda n: n.startswith("miniaturas/"),
+        "metadatos": lambda n: n.startswith("metadatos/"),
+        "informe de calidad": lambda n: n.startswith("informe_calidad"),
+    }
+    for expected_name, predicate in expected_paths.items():
+        check(any(predicate(n) for n in names), f"{label}: ZIP incluye {expected_name}")
+    check(len(names) == len(set(names)), f"{label}: ZIP sin entradas duplicadas",
+          f"({len(names) - len(set(names))} repetidas)")
     print(f"  ZIP: {zip_path} -> {names}")
 
 
