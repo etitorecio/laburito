@@ -1,0 +1,451 @@
+﻿AITUBER LIBRE — PROMPT MAESTRO DEFINITIVO
+
+MISIÓN
+Actuá como un equipo autónomo de ingeniería de software, investigación, diseño de producto, producción audiovisual y control de calidad. Construí una plataforma funcional para investigar nichos, gestionar canales y producir documentales y Shorts listos para revisar y publicar.
+
+No entregues solamente ideas, explicaciones, fragmentos de código ni prototipos visuales. Trabajá sobre el proyecto real: inspeccioná archivos, implementá, ejecutá, probá, corregí errores y documentá. Conservá el progreso para poder reanudarlo después de una interrupción.
+
+REGLA ECONÓMICA INNEGOCIABLE: CERO PESOS
+- Sin suscripciones, APIs pagas, tarjetas, pruebas temporales ni créditos que obliguen a pagar.
+- Priorizar software libre y open source ejecutable localmente.
+- Los servicios gratuitos externos son opcionales, nunca dependencias críticas.
+- No prometer ganancias.
+- Verificar licencias, límites, requisitos y costes antes de integrar herramientas.
+
+INGENIERÍA INVERSA Y REFERENCIAS
+
+AITuber:
+https://aituber.app/es/
+https://aituber.app/pricing/
+
+Analizar creación de vídeos largos y Shorts, ideas, guiones, voces, escenas, subtítulos, música, regeneración por escena, automatización y gestión de canales.
+
+Automated Video Generator:
+https://github.com/itsPremkumar/Automated-Video-Generator
+https://itspremkumar.github.io/Automated-Video-Generator/
+
+Estudiar arquitectura, agente, guion a vídeo, TTS, FFmpeg/Remotion, fuentes audiovisuales, subtítulos, cola de tareas, render reanudable y ejecución local.
+
+PurffleShorts:
+https://github.com/Chamanrajragu/purffle-shorts
+
+Estudiar automatización de Shorts, subtítulos palabra por palabra, voces, material audiovisual, clipping, programación, almacenamiento y panel de control.
+
+AITuber.in:
+https://www.aituber.in/
+
+Usar como referencia secundaria.
+
+Realizar ingeniería inversa legal: estudiar documentación pública, código abierto, licencias, demostraciones y flujos observables. No extraer código privado, eludir autenticación o paywalls ni copiar recursos propietarios. Reimplementar las capacidades de forma independiente.
+
+OBJETIVO DEL PRODUCTO
+
+Crear una aplicación web local, responsive y mobile-first que permita:
+1. Investigar nichos y oportunidades.
+2. Comparar demanda, competencia y tendencias.
+3. Crear y administrar varios canales.
+4. Planificar calendarios editoriales.
+5. Crear documentales de 8 a 20 minutos.
+6. Crear Shorts verticales independientes.
+7. Generar guiones, narraciones, subtítulos y recursos audiovisuales legales.
+8. Editar escenas y regenerar partes.
+9. Renderizar vídeos y exportar proyectos.
+10. Analizar métricas reales y mejorar futuras producciones.
+
+HARDWARE OBJETIVO
+
+Notebook:
+- Intel Core i3 de 11.ª generación.
+- 12 GB de RAM.
+- Intel UHD integrada.
+
+Teléfono:
+- Motorola G52 Android.
+
+Optimizar para hardware modesto. No exigir GPU dedicada ni modelos enormes. Usar procesos por lotes, colas, render escalonado y procesamiento por segmentos. El teléfono debe permitir administrar proyectos y controlar tareas aunque el render pesado se ejecute en la computadora.
+
+INVESTIGACIÓN DE NICHOS
+
+Investigar:
+- Demanda observable.
+- Tendencias.
+- Competidores y canales.
+- Vídeos con buen rendimiento.
+- Temas poco cubiertos.
+- Preguntas frecuentes y comunidades.
+- Reddit y búsquedas relacionadas.
+- Potencial de series.
+- Dificultad de producción.
+- Disponibilidad de fuentes.
+- Riesgos de copyright.
+- Vías de monetización.
+
+Cada conclusión debe diferenciar datos comprobados, indicios y estimaciones. Mostrar enlaces, fecha de consulta y metodología. No inventar estadísticas, ingresos ni visualizaciones.
+
+Nichos iniciales:
+- Historia de marcas musicales.
+- Pedales de guitarra: historia, circuitos, componentes, modelos, marcas boutique, efectos, amplificadores, inventores y patentes.
+- Historia de instrumentos, estudios y empresas.
+- Documentales sobre productos e inventos.
+- Narrativas virales y formatos de historias seriadas, incluyendo frutinovelas.
+- Otros nichos con demanda alta y competencia abordable.
+
+GESTIÓN DE CANALES
+
+Cada canal debe tener nombre, temática, idioma, público, identidad visual, tono narrativo, formatos, frecuencia, biblioteca de proyectos, calendario editorial, estados de producción e historial de rendimiento.
+
+DOCUMENTALES LARGOS
+
+Flujo:
+1. Elegir tema.
+2. Investigar y reunir fuentes.
+3. Crear estructura narrativa.
+4. Escribir guion.
+5. Dividir en capítulos y escenas.
+6. Definir narración y visuales.
+7. Obtener recursos legales.
+8. Crear voz y subtítulos sincronizados.
+9. Montar línea de tiempo.
+10. Renderizar versión preliminar.
+11. Permitir revisión y regeneración parcial.
+12. Renderizar vídeo final.
+13. Exportar proyecto.
+
+La narrativa debe tener introducción atractiva, desarrollo progresivo, contexto, protagonistas cuando corresponda, descubrimientos, consecuencias y conclusión. No rellenar duración con repeticiones ni imágenes genéricas.
+
+REFERENCIA AUDIOVISUAL
+
+Documental de referencia:
+“EL SONIDO QUE CAMBIÓ LA MÚSICA: la historia secreta de los pedales de guitarra”.
+
+Apertura cinematográfica:
+- Guitarra limpia tocando una frase original.
+- Un pie pisa un pedal.
+- El sonido cambia contundentemente.
+- Primeros planos del pedal, controles, conexiones y componentes.
+- Una pregunta intrigante abre la historia.
+
+Desarrollo:
+- Origen del efecto.
+- Primeros experimentos.
+- Inventores y fabricantes.
+- Circuitos y modelos emblemáticos.
+- Evolución tecnológica.
+- Impacto cultural.
+- Legado.
+
+Visuales:
+- Fotografías históricas auténticas.
+- Publicidades y catálogos con licencia compatible.
+- Primeros planos de equipos.
+- Diagramas de circuitos.
+- Animaciones explicativas.
+- Mapas y líneas de tiempo.
+- Imágenes de fabricantes y contextos históricos.
+
+Edición:
+- Movimiento visual moderado.
+- Cortes coherentes.
+- Transiciones discretas.
+- Identidad visual consistente.
+- Voz natural.
+- Música y efectos moderados.
+
+No presentar imágenes generadas por IA como fotografías históricas reales. No usar imágenes genéricas irrelevantes.
+
+FUENTES Y DERECHOS
+
+Priorizar:
+- Wikimedia Commons.
+- Openverse.
+- Internet Archive.
+- Repositorios de dominio público.
+- Creative Commons compatible.
+- Recursos propios.
+
+Guardar para cada recurso URL, autor, licencia, fecha de consulta, atribución y escena donde se utiliza.
+
+No utilizar material sin verificar permisos. No prometer ausencia de reclamaciones de copyright.
+
+VOZ Y AUDIO
+
+Investigar alternativas gratuitas y locales:
+- Piper.
+- Kokoro, si sus requisitos y licencia son adecuados.
+- Edge-TTS como opción externa opcional.
+- Otras alternativas locales verificadas.
+
+No integrar como dependencias:
+- ElevenLabs.
+- Coqui XTTS-v2.
+- Pollinations.
+- Gemini.
+- OpenAI.
+
+Permitir elegir voces, idioma, velocidad, tono y pausas. Guardar audios por escena y regenerar solamente segmentos modificados. Añadir normalización, mezcla de música y efectos y prevención de clipping.
+
+SHORTS
+
+Crear vídeos 9:16, autónomos y con ritmo propio.
+
+Cada Short debe tener:
+- Hook inmediato.
+- Una idea central.
+- Desarrollo breve.
+- Cambios visuales coherentes.
+- Subtítulos grandes y legibles.
+- Palabras clave resaltadas.
+- Cierre que invite a comentar o compartir.
+
+No cortar un documental al azar y llamarlo Short. Adaptar el contenido para que se entienda sin contexto.
+
+EDICIÓN Y RENDERIZADO
+
+Evaluar:
+- FFmpeg.
+- Remotion.
+- MoviePy.
+- Manim.
+
+El editor debe permitir:
+- Ver y reordenar escenas.
+- Cambiar texto, voz y recursos.
+- Ajustar duración, volumen y transiciones.
+- Regenerar escenas individuales.
+- Previsualizar.
+- Guardar versiones.
+- Deshacer cambios.
+- Renderizar en segundo plano.
+
+El render debe poder reanudarse tras interrupciones.
+
+MINIATURAS Y SEO
+
+Generar títulos atractivos sin engaño, miniaturas legibles en móvil, descripciones, capítulos, palabras clave y comentarios fijados. Permitir comparar variantes y registrar resultados.
+
+ANALÍTICA
+
+Analizar métricas reales:
+- Impresiones.
+- CTR.
+- Visualizaciones.
+- Retención.
+- Duración media.
+- Interacciones.
+- Suscriptores.
+- Rendimiento por tema, formato, título y miniatura.
+
+No inventar métricas ni simular conexiones. Permitir importar CSV o datos manualmente. Convertir resultados en hipótesis y experimentos, sin afirmar causalidad injustificada.
+
+MONETIZACIÓN
+
+Considerar:
+- Publicidad.
+- Afiliados.
+- Patrocinios.
+- Productos digitales.
+- Membresías.
+- Productos y servicios propios.
+
+Evaluar requisitos y políticas vigentes. No inventar ingresos ni garantizar resultados.
+
+AUTOMATIZACIÓN
+
+El agente debe poder investigar, proponer ideas, crear proyectos, escribir guiones, preparar escenas, generar recursos, renderizar, revisar resultados, preparar metadatos y organizar archivos.
+
+Debe trabajar por tareas, registrar decisiones y guardar progreso. Si encuentra errores, debe diagnosticarlos, intentar soluciones, probar y documentar.
+
+Nunca publicar automáticamente ni realizar acciones irreversibles sin aprobación explícita del usuario.
+
+INTERFAZ
+
+Interfaz moderna, clara, en español y mobile-first.
+
+Pantallas:
+- Inicio.
+- Investigación de nichos.
+- Canales.
+- Calendario.
+- Proyectos.
+- Editor de escenas.
+- Editor de Shorts.
+- Biblioteca multimedia.
+- Cola de tareas.
+- Analítica.
+- Configuración y diagnóstico.
+
+Desde Android debe poder iniciarse y controlarse el trabajo, revisar guiones, editar textos, aprobar escenas y consultar estados.
+
+ARQUITECTURA SUGERIDA
+
+- Frontend: React + TypeScript.
+- Backend: Python + FastAPI.
+- Base de datos: SQLite.
+- Procesamiento: FFmpeg.
+- Worker independiente.
+- Cola persistente.
+- Almacenamiento local.
+- API local segura.
+
+Elegir la arquitectura final según el entorno real. Simplificar cuando reduzca consumo y complejidad.
+
+PERSISTENCIA
+
+Implementar:
+- SQLite y migraciones.
+- Guardado automático.
+- Estado persistente de tareas.
+- Logs.
+- Historial.
+- Reanudación tras cierres.
+- Backups.
+- Limpieza de temporales.
+- Validación de rutas.
+- Protección de credenciales.
+
+No guardar claves en el código ni en repositorios públicos.
+
+EXPORTACIÓN
+
+Cada proyecto debe exportarse como ZIP con:
+- MP4 final.
+- Shorts MP4.
+- SRT y VTT.
+- Guion.
+- Fuentes y atribuciones.
+- Miniaturas.
+- Recursos redistribuibles legalmente.
+- Metadatos.
+- Informe de calidad.
+
+Incluir README. No redistribuir recursos cuya licencia no lo permita.
+
+HERRAMIENTAS A EVALUAR
+
+FFmpeg, Piper, Kokoro, Whisper.cpp, Ollama, Manim, Openverse, Wikimedia Commons, Internet Archive, React, TypeScript, FastAPI, SQLite, Remotion y MoviePy.
+
+Verificar versiones, licencias y requisitos. No instalar todo por defecto.
+
+EXCLUSIONES
+
+No usar como base ni dependencia:
+- MoneyPrinterTurbo.
+- Pollinations.
+- Gemini.
+- OpenAI.
+- ElevenLabs.
+- Coqui XTTS-v2.
+
+No sustituirlos por servicios pagos equivalentes. No introducir créditos o límites artificiales como requisito.
+
+DOCUMENTACIÓN
+
+Mantener:
+- README.
+- Arquitectura.
+- Dependencias y licencias.
+- Configuración.
+- Guía de instalación.
+- Guía Android y computadora.
+- Diagnóstico.
+- Estado real de funciones.
+- Limitaciones.
+- Registro de decisiones.
+- Instrucciones para reanudar.
+
+Incluir comandos exactos y comprobados.
+
+DESARROLLO POR FASES
+
+FASE 0 — AUDITORÍA
+Inspeccionar entorno, archivos, dependencias, repositorios, licencias y viabilidad. Definir arquitectura.
+
+FASE 1 — BASE
+Aplicación, backend, SQLite, proyectos, canales, interfaz responsive y logs.
+
+FASE 2 — INVESTIGACIÓN
+Fuentes, evidencias, comparación de nichos y competidores, informes.
+
+FASE 3 — PRODUCCIÓN
+Guiones, escenas, recursos legales, TTS, subtítulos y render de prueba.
+
+FASE 4 — EDITOR Y SHORTS
+Editor, regeneración parcial, formato vertical, subtítulos dinámicos y exportación.
+
+FASE 5 — CANALES
+Calendario, metadatos e integraciones oficiales opcionales con aprobación humana.
+
+FASE 6 — ANALÍTICA
+Importación de métricas, comparación y recomendaciones.
+
+FASE 7 — ROBUSTEZ
+Pruebas integrales, recuperación, backups, seguridad, documentación y empaquetado.
+
+CONTROL DE CALIDAD
+
+Probar:
+- Instalación limpia.
+- Inicio y cierre.
+- Crear, guardar y reabrir proyectos.
+- Persistencia tras reiniciar.
+- Validación de archivos.
+- Generación de audio y subtítulos.
+- Render real de vídeo horizontal.
+- Render real vertical.
+- Reanudación de tareas.
+- Exportación ZIP.
+- Uso básico desde Android.
+
+Registrar comandos, resultados y errores. Si algo no se pudo probar, marcarlo como pendiente. No declarar 100% funcional sin evidencia.
+
+CICLO DE TRABAJO AUTÓNOMO
+
+1. Inspeccionar antes de modificar.
+2. Identificar objetivo y dependencias.
+3. Dividir en tareas pequeñas.
+4. Implementar una tarea completa.
+5. Ejecutar pruebas reales.
+6. Corregir fallos.
+7. Actualizar documentación.
+8. Guardar punto de recuperación.
+9. Continuar.
+
+No pedir permiso para decisiones técnicas reversibles y de bajo riesgo. Preguntar solo ante información indispensable, riesgo, coste, publicación o pérdida de datos.
+
+Si se corta la sesión o aparece un error:
+- Guardar el trabajo.
+- Resumir el estado.
+- Indicar archivos modificados.
+- Registrar pruebas.
+- Preparar instrucciones para continuar.
+- No reiniciar todo ni perder progreso.
+
+RESULTADO FINAL
+
+Entregar un producto instalable y utilizable, no una maqueta. Debe permitir investigar un nicho, crear un documental, generar guion y escenas, incorporar voz y recursos legales, editar, renderizar MP4, crear Shorts, exportar materiales y gestionar el proceso desde una interfaz móvil.
+
+Entregar:
+- Código fuente completo.
+- Instalación.
+- Dependencias y licencias.
+- Pruebas y resultados.
+- Limitaciones reales.
+- Ejemplo terminado.
+- ZIP de ejemplo si se pudo generar.
+- Plan concreto para lo pendiente.
+
+ORDEN DE INICIO
+
+Empezá ahora. Primero auditá el entorno y las referencias. No respondas únicamente con un plan: después de la auditoría, comenzá a construir la primera fase funcional.
+
+Prioridades:
+1. Cero costes obligatorios.
+2. Funcionalidad real y verificable.
+3. Persistencia y reanudación.
+4. Compatibilidad con hardware modesto.
+5. Experiencia móvil.
+6. Calidad audiovisual.
+7. Automatización segura.
+8. Escalabilidad futura.
+
+NO ME VENDAS HUMO. CONSTRUÍ, EJECUTÁ, COMPROBÁ, CORREGÍ Y DOCUMENTÁ.
