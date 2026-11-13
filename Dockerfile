@@ -31,7 +31,6 @@ RUN tar -xf ffmpeg.tar.xz --strip-components=1 \
       --disable-doc \
       --disable-debug \
       --disable-ffplay \
-      --disable-avdevice \
       --enable-gpl \
       --enable-libx264 \
       --enable-libfreetype \
