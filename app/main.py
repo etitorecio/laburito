@@ -221,6 +221,7 @@ def diagnostics():
         "tts": tts.status(),
         "font": media.font_path(),
         "ffmpeg_version": (media.run(["ffmpeg", "-version"], timeout=20).stdout or b"").decode().split("\n")[0],
+        "render": media.capabilities(),
         "ollama": {
             "url": db.get_setting("ollama_url"),
             "available": script_gen.ollama_available(db.get_setting("ollama_url")),
