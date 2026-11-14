@@ -9,13 +9,19 @@ export default function Settings() {
   const [token, setTokenValue] = useState(getToken());
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
+  const [youtube, setYoutube] = useState<{ available: boolean; missing_env: string[]; note: string } | null>(null);
 
   async function load() {
     try {
-      const [d, m] = await Promise.all([api.get<Diagnostics>('/api/diagnostics'), api.get<Meta>('/api/meta')]);
+      const [d, m, p] = await Promise.all([
+        api.get<Diagnostics>('/api/diagnostics'),
+        api.get<Meta>('/api/meta'),
+        api.get<{ destinations: { id: string; available: boolean; missing_env: string[]; note: string }[] }>('/api/publish/destinations'),
+      ]);
       setDiag(d);
       setMeta(m);
       setValues(m.settings);
+      setYoutube(p.destinations.find((x) => x.id === 'youtube') || null);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -32,6 +38,16 @@ export default function Settings() {
       const res = await api.put<{ settings: Record<string, string> }>('/api/settings', values);
       setValues(res.settings);
       setOk('Configuración guardada.');
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  async function connectYoutube() {
+    setError(''); setOk('');
+    try {
+      const result = await api.get<{ authorization_url: string }>('/api/youtube/connect');
+      window.location.assign(result.authorization_url);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -88,6 +104,20 @@ export default function Settings() {
           <div className="field" style={{ justifyContent: 'flex-end' }}>
             <button className="btn primary" onClick={saveToken}>Guardar token</button>
           </div>
+        </div>
+      </Card>
+
+      <Card title="Conectar YouTube" sub="Vinculá tu canal una sola vez para que el Autopiloto pueda subir videos automáticamente.">
+        <div className="pill-row">
+          <Badge tone={youtube?.available ? 'ok' : 'warn'}>{youtube?.available ? 'YouTube conectado' : 'Falta configurar la conexión'}</Badge>
+          {youtube?.missing_env.map((item) => <Badge key={item} tone="warn">{item}</Badge>)}
+        </div>
+        <p className="muted">Primero, en Google Cloud habilitá YouTube Data API v3 y creá credenciales OAuth de tipo aplicación web. En AppJet → configuración del proyecto → variables de entorno, agregá YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET y APP_TOKEN. Después registrá esta URL como URI de redirección autorizada:</p>
+        <code>{window.location.origin}/api/youtube/callback</code>
+        <p className="muted">Guardá los cambios del servidor, ingresá el APP_TOKEN en la sección Acceso y tocá Conectar. Google te pedirá autorizar la subida; Laburito guarda el token de actualización en su base de datos y no necesita tu contraseña.</p>
+        <div className="row">
+          <button className="btn primary" disabled={!meta?.auth_required || !youtube || youtube.missing_env.includes("YOUTUBE_CLIENT_ID") || youtube.missing_env.includes("YOUTUBE_CLIENT_SECRET")} onClick={() => void connectYoutube()}>Conectar cuenta de YouTube</button>
+          <button className="btn ghost" onClick={() => void load()}>Comprobar conexión</button>
         </div>
       </Card>
 
