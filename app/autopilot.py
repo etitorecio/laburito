@@ -211,6 +211,18 @@ def _create_project(rule: dict) -> int:
         ),
     )
     project = db.query_one("SELECT * FROM projects WHERE id=?", (pid,))
+    db.execute(
+        "INSERT INTO sources(project_id, title, url, author, license, accessed_at, attribution, kind, notes, created_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?)",
+        (
+            pid, research.get("source_title") or topic, research["url"], "Wikipedia contributors",
+            "CC BY-SA (consultar historial de la página)", db.now(),
+            "Wikipedia contributors · CC BY-SA · " + research["url"],
+            "investigacion",
+            "Fuente de orientación automática; verificar los datos con fuentes independientes antes de publicar.",
+            db.now(),
+        ),
+    )
     notes = db.query(
         "SELECT * FROM research_notes WHERE niche=? ORDER BY id DESC LIMIT 12",
         (niche,),
