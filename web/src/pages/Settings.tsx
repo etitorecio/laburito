@@ -94,6 +94,7 @@ export default function Settings() {
       setOk('Conectado con el canal: ' + result.channel_title);
       await load();
     } catch (e) {
+      setYoutubeVerified(false);
       setError((e as Error).message);
     } finally {
       setYoutubeBusy(false);
