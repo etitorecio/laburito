@@ -40,7 +40,7 @@ def _external_references(title: str) -> list[str]:
         })
         pages = data.get("query", {}).get("pages", {})
         urls = []
-        trusted_hints = (".gov", ".edu", ".org", "britannica.com", "nature.com", "science.org", "doi.org", "jstor.org", "unesco.org", "smithsonian", "nationalgeographic", "archive.org")
+        trusted_hints = (".gov", ".edu", "britannica.com", "nature.com", "science.org", "doi.org", "jstor.org", "unesco.org", "smithsonian", "nationalgeographic", "archive.org", "who.int", "un.org", "reuters.com", "apnews.com", "bbc.com")
         for page in pages.values():
             for link in page.get("extlinks", []):
                 url = (link.get("*") or "").strip()
