@@ -72,6 +72,7 @@ def run_job(job: dict) -> None:
     project_id = job.get("project_id")
     try:
         if job["kind"] == "render_project":
+            render_payload = json.loads(job.get("payload_json") or "{}")
             result = render.render_project(
                 int(project_id),
                 should_cancel=lambda: _is_cancelled(job_id),
@@ -90,7 +91,10 @@ def run_job(job: dict) -> None:
                 publish_job = enqueue(
                     int(project_id),
                     "publish_project",
-                    {"destination": auto["destination"]},
+                    {
+                        "destination": auto["destination"],
+                        "privacy": render_payload.get("privacy", "unlisted"),
+                    },
                 )
                 db.log(
                     "info",
