@@ -20,8 +20,11 @@ UA = "Laburito/1.0 (automatic topic research; contact: local project)"
 def _get(params: dict) -> dict:
     url = API + "?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=18) as response:
-        return json.loads(response.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=18) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        raise RuntimeError(f"No se pudo consultar Wikipedia para investigar el tema: {exc}") from exc
 
 
 def _normal(value: str) -> str:
