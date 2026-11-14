@@ -315,7 +315,7 @@ export interface Diagnostics {
   disk_free_mb: number;
   db_size_kb: number;
   checks: Record<string, boolean>;
-  tts: { available: boolean; engine: string; voices: { id: string; label: string; available: boolean }[]; note: string };
+  tts: { available: boolean; engine: string; piper_installed?: boolean; piper_available?: boolean; piper_model?: string | null; voices: { id: string; label: string; available: boolean }[]; note: string };
   font: string | null;
   ffmpeg_version: string;
   ollama: { url: string; available: boolean; optional: boolean };
