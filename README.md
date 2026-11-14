@@ -1,6 +1,6 @@
 # AITuber Libre
 
-Plataforma local para **investigar nichos, gestionar canales y producir documentales y Shorts** listos para revisar y publicar. Todo funciona con software libre, sin APIs de pago y sin claves: la app renderiza vídeo real con FFmpeg y voz con espeak-ng.
+Plataforma local para **investigar nichos, gestionar canales y producir documentales y Shorts** listos para revisar y publicar. Todo funciona con software libre, sin APIs de pago: la app renderiza vídeo real con FFmpeg, usa espeak-ng como respaldo y ofrece Piper neural opcional.
 
 > Estado honesto: el guion local, la voz, los subtítulos, el render, la cola y la exportación funcionan con herramientas gratuitas. El Autopiloto descubre temas no usados mediante búsquedas en Wikipedia, guarda la fuente y los enlaces externos citados, arma escenas desde el texto recuperado y busca imágenes en Wikimedia Commons/Openverse con licencias aptas para uso comercial; si no hay red o material válido, usa tarjetas locales. Esta investigación automática es una base documental, no una verificación periodística independiente: el resultado debe revisarse antes de publicarlo. YouTube Data API v3 admite subida automática con credenciales OAuth configuradas en el servidor; TikTok no está integrado.
 
@@ -9,7 +9,7 @@ Plataforma local para **investigar nichos, gestionar canales y producir document
 - **Investigación**: nichos con demanda, competencia, riesgo de copyright y potencial de serie; notas con nivel de evidencia, fuente y fecha de consulta; búsqueda de imágenes con licencia.
 - **Canales**: identidad, tono, idioma, formatos y cadencia.
 - **Guion**: estructura narrativa de documental (8–20 min) o Short, editable escena por escena, regenerable, con búsqueda visual y transición por escena.
-- **Voz**: espeak-ng local (voz española, velocidad y tono ajustables). Piper es opcional mediante `PIPER_BIN` + `PIPER_MODEL`.
+- **Voz**: espeak-ng local (voz española, velocidad y tono ajustables). Piper se instala desde Ajustes con un modelo español CC0 de 63 MB; espeak-ng mantiene el acento rioplatense como alternativa.
 - **Render**: FFmpeg horizontal 16:9, vertical 9:16 o cuadrado 1:1, con subtítulos quemados, miniaturas y música de fondo opcional.
 - **Cola persistente**: un trabajo a la vez, reanudable tras reinicio y con caché por escena (no repite trabajo).
 - **Entrega**: ZIP con MP4, SRT, VTT, guion en Markdown, fuentes/atribuciones en CSV, miniaturas, metadatos de publicación e informe de calidad.
@@ -56,7 +56,7 @@ La imagen es Alpine, compila el frontend en una etapa Node y ejecuta el servidor
 | `AITUBER_DATA_DIR` | Carpeta de datos (SQLite, medios, renders, exportaciones). Por defecto `./data`. |
 | `PORT` | Puerto HTTP (por defecto `8080`). |
 | `APP_TOKEN` o `AITUBER_TOKEN` | Protección con token (`X-App-Token`). Recomendado para cualquier despliegue público. |
-| `PIPER_BIN`, `PIPER_MODEL` | Voz neuronal local opcional en lugar de espeak-ng. |
+| `PIPER_BIN`, `PIPER_MODEL` | Sobrescritura manual opcional de la instalación Piper; normalmente se instala desde Ajustes. |
 | `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` | Credenciales OAuth de tipo TVs y dispositivos de entrada limitada. El refresh token se guarda en la base local tras conectar la cuenta. |
 | `OLLAMA_URL` | Ollama local opcional para reescribir guiones a partir de las fuentes (nunca un servicio pago). |
 
@@ -103,4 +103,4 @@ La prueba E2E crea un directorio de datos temporal, verifica resolución, duraci
 - YouTube admite publicación automática cuando la cuenta está conectada por OAuth y el servidor tiene credenciales configuradas. TikTok no está integrado.
 - El material visual externo depende de la red y de las licencias de cada repositorio; siempre se registra autor, licencia y fecha de consulta.
 - La música de fondo se toma de las camas libres integradas o de `data/music/` (el usuario puede aportar pistas libres).
-- La voz es sintética y local; para calidad de estudio conviene instalar Piper con un modelo español.
+- La voz es sintética y local; para una voz neural local se puede instalar Piper DaveFX (España, CC0) desde Ajustes; la voz rioplatense espeak sigue disponible.
