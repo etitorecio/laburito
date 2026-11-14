@@ -150,7 +150,7 @@ export default function Settings() {
         {deviceAuth && (
           <div className="stack" style={{ marginTop: 12 }}>
             <p><b>Código de Google (respetá mayúsculas y guion):</b></p>
-            <title size="2xl" tabularNums>{deviceAuth.user_code}</title>
+            <div className="card" style={{ padding: 16, textAlign: "center" }}><strong style={{ fontSize: 28, letterSpacing: 2 }}>{deviceAuth.user_code}</strong></div>
             <p><a href={deviceAuth.verification_url} target="_blank" rel="noreferrer">{deviceAuth.verification_url}</a></p>
             <p className="muted">Tenés aproximadamente {Math.ceil(deviceAuth.expires_in / 60)} minutos. Después de autorizar, volvé acá y comprobá la conexión.</p>
             <button className="btn primary" disabled={youtubeBusy} onClick={() => void checkYoutubeConnection()}>Ya autoricé, comprobar</button>
