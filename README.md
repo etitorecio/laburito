@@ -2,7 +2,7 @@
 
 Plataforma local para **investigar nichos, gestionar canales y producir documentales y Shorts** listos para revisar y publicar. Todo funciona con software libre, sin APIs de pago y sin claves: la app renderiza vídeo real con FFmpeg y voz con espeak-ng.
 
-> Estado honesto: el guion, la voz, los subtítulos, el render, la cola y la exportación son reales y se prueban de punta a punta. La búsqueda de material externo consulta repositorios libres (Wikimedia Commons, Openverse, Internet Archive) cuando hay red; si no hay red o no hay resultados, cada escena usa una tarjeta visual generada localmente y el informe de calidad lo advierte. La publicación automática en YouTube/TikTok **no** está implementada (requiere credenciales OAuth del usuario): la app entrega el paquete listo para subir.
+> Estado honesto: el guion local, la voz, los subtítulos, el render, la cola y la exportación funcionan con herramientas gratuitas. El Autopiloto descubre temas no usados mediante búsquedas en Wikipedia, guarda la fuente y los enlaces externos citados, arma escenas desde el texto recuperado y busca imágenes en Wikimedia Commons/Openverse con licencias aptas para uso comercial; si no hay red o material válido, usa tarjetas locales. Esta investigación automática es una base documental, no una verificación periodística independiente: el resultado debe revisarse antes de publicarlo. YouTube Data API v3 admite subida automática con credenciales OAuth configuradas en el servidor; TikTok no está integrado.
 
 ## Qué hace
 
@@ -14,6 +14,7 @@ Plataforma local para **investigar nichos, gestionar canales y producir document
 - **Cola persistente**: un trabajo a la vez, reanudable tras reinicio y con caché por escena (no repite trabajo).
 - **Entrega**: ZIP con MP4, SRT, VTT, guion en Markdown, fuentes/atribuciones en CSV, miniaturas, metadatos de publicación e informe de calidad.
 - **Analítica**: importación del CSV real de YouTube Studio (no inventa métricas) y resumen con hipótesis.
+- **Autopiloto**: configura nicho, canal, formato, duración, voz, aspecto, subtítulos, transiciones, resolución, FPS, música y frecuencia. Descubre temas nuevos, evita títulos ya producidos, registra fuentes y envía cada proyecto a render y entrega/publicación según la configuración. Requiere que el proceso del servidor permanezca activo para ejecutar la programación.
 - **Calendario**: programación editorial por canal.
 - **Biblioteca**: todo lo producido o descargado, con licencia y autor.
 - **Diagnóstico**: estado real de FFmpeg, fuentes, voz, base de datos, espacio y worker.
