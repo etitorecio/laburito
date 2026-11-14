@@ -71,6 +71,7 @@ def status() -> dict:
         "engine": Path(engine).name if engine else None,
         "available": bool(engine),
         "piper_available": piper_available,
+        "piper_installed": bool(piper),
         "piper_model": model or None,
         "voices": [
             {
@@ -83,7 +84,7 @@ def status() -> dict:
             for k, v in VOICES.items()
         ],
         "note": "espeak-ng es una voz sintética de calidad modesta pero 100% libre y offline. "
-        "Piper (también libre) puede configurarse con PIPER_MODEL para una voz más natural.",
+        "Piper ofrece una voz neural argentina opcional, descargable sin claves ni pagos.",
     }
 
 
