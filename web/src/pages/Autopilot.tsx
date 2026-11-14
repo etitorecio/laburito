@@ -55,7 +55,11 @@ export default function Autopilot() {
     }
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    void load();
+    const interval = window.setInterval(() => { void load(); }, 12000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   async function create() {
     setBusy(true); setError(''); setOk('');
@@ -223,7 +227,7 @@ export default function Autopilot() {
                   <h4>{rule.name || rule.niche}</h4>
                   <div className="meta"><span>{rule.niche}</span><span>·</span><span>{rule.cadence_hours} h</span><span>·</span><Badge tone={rule.enabled ? 'ok' : 'warn'}>{rule.enabled ? 'Activo' : 'Pausado'}</Badge></div>
                   <div className="meta"><span>{rule.channel_name || 'Sin canal'}</span><span>·</span><span>{rule.template}</span><span>·</span><span>{rule.destination === 'youtube' ? 'YouTube' : 'Entrega local'}</span></div>
-                  <small>{rule.last_project_title ? `Último proyecto: ${rule.last_project_title}` : 'Todavía no generó proyectos'}{rule.next_run_at ? ` · Próxima ejecución: ${new Date(rule.next_run_at).toLocaleString()}` : ''}</small>
+                  <small>{rule.last_project_title ? `Último video: ${rule.last_project_title} · ${rule.last_project_status || "creado"}` : "Todavía no generó proyectos"}{rule.last_job_status ? ` · Render: ${rule.last_job_status}` : ""}{rule.last_job_message && rule.last_job_status === "error" ? ` — ${rule.last_job_message}` : ""}{rule.last_run_at ? ` · Ejecutado: ${new Date(rule.last_run_at).toLocaleString()}` : ""}{rule.next_run_at ? ` · Próximo: ${new Date(rule.next_run_at).toLocaleString()}` : ""}</small>
                 </div>
                 <div className="row">
                   <button className="btn small primary" disabled={busy} onClick={() => void run(rule.id)}>Ejecutar ahora</button>
