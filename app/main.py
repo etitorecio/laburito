@@ -7,7 +7,6 @@ import io
 import json
 import os
 import platform
-import secrets
 import shutil
 import time
 from contextlib import asynccontextmanager
@@ -39,7 +38,7 @@ app = FastAPI(title="AITuber Libre", version=APP_VERSION, lifespan=lifespan)
 
 @app.middleware("http")
 async def token_guard(request: Request, call_next):
-    if APP_TOKEN and request.url.path.startswith("/api") and request.url.path not in ("/api/health", "/api/youtube/callback"):
+    if APP_TOKEN and request.url.path.startswith("/api") and request.url.path not in ("/api/health",):
         supplied = request.headers.get("x-app-token") or request.query_params.get("token") or ""
         if not hmac.compare_digest(supplied, APP_TOKEN):
             return JSONResponse({"detail": "Token de acceso requerido"}, status_code=401)
@@ -918,42 +917,55 @@ def publish_destinations():
     return {"destinations": publish.destinations(), "auto_publish_available": True}
 
 
-@app.get("/api/youtube/connect")
-def youtube_connect(request: Request):
+@app.post("/api/youtube/device/start")
+def youtube_device_start():
     if not APP_TOKEN:
-        raise HTTPException(403, "Para proteger tu cuenta, configurá APP_TOKEN en las variables de entorno antes de conectar YouTube.")
-    state = secrets.token_urlsafe(32)
-    forwarded_proto = request.headers.get("x-forwarded-proto", request.url.scheme).split(",")[0].strip()
-    forwarded_host = request.headers.get("x-forwarded-host", request.url.netloc).split(",")[0].strip()
-    redirect_uri = f"{forwarded_proto}://{forwarded_host}/api/youtube/callback"
-    db.set_setting("youtube_oauth_state", state)
-    db.set_setting("youtube_oauth_state_created", str(time.time()))
-    db.set_setting("youtube_oauth_redirect_uri", redirect_uri)
+        raise HTTPException(403, "Configurá APP_TOKEN para proteger la conexión de YouTube.")
     try:
-        authorization_url = publish.youtube_authorization_url(redirect_uri, state)
+        data = publish.youtube_device_start()
     except publish.PublishError as exc:
         raise HTTPException(400, str(exc)) from exc
-    return {"authorization_url": authorization_url, "redirect_uri": redirect_uri}
+    db.set_setting("youtube_device_code", data["device_code"])
+    db.set_setting("youtube_device_expires_at", str(time.time() + int(data.get("expires_in") or 1800)))
+    db.set_setting("youtube_device_interval", str(int(data.get("interval") or 5)))
+    db.set_setting("youtube_device_last_poll", "0")
+    return {
+        "user_code": data["user_code"],
+        "verification_url": data["verification_url"],
+        "expires_in": int(data.get("expires_in") or 1800),
+        "interval": int(data.get("interval") or 5),
+    }
 
 
-@app.get("/api/youtube/callback", response_class=HTMLResponse)
-def youtube_callback(code: str | None = None, state: str | None = None, error: str | None = None):
-    expected = db.get_setting("youtube_oauth_state", "")
-    created = float(db.get_setting("youtube_oauth_state_created", "0") or 0)
-    if not expected or not state or not hmac.compare_digest(expected, state) or time.time() - created > 600:
-        db.set_setting("youtube_oauth_state", "")
-        raise HTTPException(400, "Estado OAuth inválido o vencido. Volvé a iniciar la conexión desde Ajustes.")
-    db.set_setting("youtube_oauth_state", "")
-    db.set_setting("youtube_oauth_state_created", "0")
-    if error:
-        return HTMLResponse("<h2>Conexión cancelada</h2><p>No se modificó la cuenta conectada.</p>", status_code=400)
-    redirect_uri = db.get_setting("youtube_oauth_redirect_uri", "")
+@app.post("/api/youtube/device/poll")
+def youtube_device_poll():
+    if not APP_TOKEN:
+        raise HTTPException(403, "Configurá APP_TOKEN para proteger la conexión de YouTube.")
+    device_code = db.get_setting("youtube_device_code", "")
+    expires_at = float(db.get_setting("youtube_device_expires_at", "0") or 0)
+    if not device_code:
+        raise HTTPException(400, "No hay una autorización de YouTube pendiente. Iniciá la conexión.")
+    if time.time() >= expires_at:
+        db.set_setting("youtube_device_code", "")
+        return {"status": "expired", "message": "El código venció. Iniciá una conexión nueva."}
+    interval = max(5, int(db.get_setting("youtube_device_interval", "5") or 5))
+    last_poll = float(db.get_setting("youtube_device_last_poll", "0") or 0)
+    wait = interval - (time.time() - last_poll)
+    if wait > 0:
+        return {"status": "pending", "wait_seconds": int(wait) + 1, "message": f"Esperá {int(wait) + 1} segundos antes de volver a comprobar."}
+    db.set_setting("youtube_device_last_poll", str(time.time()))
     try:
-        publish.exchange_youtube_code(code or "", redirect_uri)
+        result = publish.youtube_device_poll(device_code)
     except publish.PublishError as exc:
-        db.log("error", "youtube_oauth", f"Falló el intercambio OAuth: {exc}")
-        return HTMLResponse("<h2>No se pudo conectar YouTube</h2><p>Revisá las credenciales OAuth y la URL de redirección.</p>", status_code=400)
-    return HTMLResponse("<h2>YouTube conectado</h2><p>La cuenta quedó vinculada. Ya podés activar la publicación automática en Laburito.</p><p>Podés cerrar esta pestaña y volver a la aplicación.</p>")
+        raise HTTPException(400, str(exc)) from exc
+    if result.get("interval"):
+        db.set_setting("youtube_device_interval", str(int(result["interval"])))
+    if result.get("status") in ("connected", "denied", "expired"):
+        db.set_setting("youtube_device_code", "")
+        db.set_setting("youtube_device_expires_at", "0")
+        db.set_setting("youtube_device_last_poll", "0")
+    return result
+
 
 @app.post("/api/projects/{project_id}/publish", status_code=202)
 def publish_project(project_id: int, payload: publish.PublishIn):
