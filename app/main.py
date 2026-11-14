@@ -160,6 +160,10 @@ class VisualIn(BaseModel):
     title: str = ""
 
 
+class YoutubeRefreshTokenIn(BaseModel):
+    refresh_token: str
+
+
 class SettingsIn(BaseModel):
     values: dict[str, str]
 
@@ -917,54 +921,15 @@ def publish_destinations():
     return {"destinations": publish.destinations(), "auto_publish_available": True}
 
 
-@app.post("/api/youtube/device/start")
-def youtube_device_start():
+@app.post("/api/youtube/token")
+def save_youtube_refresh_token(payload: YoutubeRefreshTokenIn):
     if not APP_TOKEN:
-        raise HTTPException(403, "Configurá APP_TOKEN para proteger la conexión de YouTube.")
-    try:
-        data = publish.youtube_device_start()
-    except publish.PublishError as exc:
-        raise HTTPException(400, str(exc)) from exc
-    db.set_setting("youtube_device_code", data["device_code"])
-    db.set_setting("youtube_device_expires_at", str(time.time() + int(data.get("expires_in") or 1800)))
-    db.set_setting("youtube_device_interval", str(int(data.get("interval") or 5)))
-    db.set_setting("youtube_device_last_poll", "0")
-    return {
-        "user_code": data["user_code"],
-        "verification_url": data["verification_url"],
-        "expires_in": int(data.get("expires_in") or 1800),
-        "interval": int(data.get("interval") or 5),
-    }
-
-
-@app.post("/api/youtube/device/poll")
-def youtube_device_poll():
-    if not APP_TOKEN:
-        raise HTTPException(403, "Configurá APP_TOKEN para proteger la conexión de YouTube.")
-    device_code = db.get_setting("youtube_device_code", "")
-    expires_at = float(db.get_setting("youtube_device_expires_at", "0") or 0)
-    if not device_code:
-        raise HTTPException(400, "No hay una autorización de YouTube pendiente. Iniciá la conexión.")
-    if time.time() >= expires_at:
-        db.set_setting("youtube_device_code", "")
-        return {"status": "expired", "message": "El código venció. Iniciá una conexión nueva."}
-    interval = max(5, int(db.get_setting("youtube_device_interval", "5") or 5))
-    last_poll = float(db.get_setting("youtube_device_last_poll", "0") or 0)
-    wait = interval - (time.time() - last_poll)
-    if wait > 0:
-        return {"status": "pending", "wait_seconds": int(wait) + 1, "message": f"Esperá {int(wait) + 1} segundos antes de volver a comprobar."}
-    db.set_setting("youtube_device_last_poll", str(time.time()))
-    try:
-        result = publish.youtube_device_poll(device_code)
-    except publish.PublishError as exc:
-        raise HTTPException(400, str(exc)) from exc
-    if result.get("interval"):
-        db.set_setting("youtube_device_interval", str(int(result["interval"])))
-    if result.get("status") in ("connected", "denied", "expired"):
-        db.set_setting("youtube_device_code", "")
-        db.set_setting("youtube_device_expires_at", "0")
-        db.set_setting("youtube_device_last_poll", "0")
-    return result
+        raise HTTPException(403, "Configurá APP_TOKEN para proteger las credenciales de YouTube.")
+    token = payload.refresh_token.strip()
+    if len(token) < 20 or len(token) > 4096:
+        raise HTTPException(400, "El refresh token no tiene un formato válido.")
+    db.set_setting("youtube_refresh_token", token)
+    return {"ok": True, "message": "Token de YouTube guardado en el servidor."}
 
 
 @app.post("/api/tts/piper/install", status_code=202)
