@@ -250,7 +250,7 @@ def _create_project(rule: dict) -> int:
                 "VALUES(?,?,?,?,?,?,?,?,?,?)",
                 (
                     pid, "Piper DaveFX — voz neural española",
-                    "https://huggingface.co/rhasspy/piper-voices/tree/cf910fb59f1d79ab3b625a63993a108751c6c25d/tree/cf910fb59f1d79ab3b625a63993a108751c6c25d/es/es_ES/davefx/medium",
+                    "https://huggingface.co/rhasspy/piper-voices/tree/cf910fb59f1d79ab3b625a63993a108751c6c25d/es/es_ES/davefx/medium",
                     "Piper voice contributors", "CC0",
                     db.now(), "Piper DaveFX (es_ES) · CC0 · https://huggingface.co/rhasspy/piper-voices/tree/cf910fb59f1d79ab3b625a63993a108751c6c25d",
                     "voz", "Modelo neural español instalado localmente; ficha de voz CC0.",
