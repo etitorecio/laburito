@@ -111,6 +111,13 @@ export interface Project {
   speed: number;
   pitch: number;
   notes: string;
+  template: string;
+  caption_style: string;
+  transition_default: string;
+  resolution: string;
+  fps: number;
+  music: string;
+  music_volume: number | null;
   quality_json: string | null;
   quality?: Record<string, unknown>;
   created_at: string;
@@ -230,10 +237,39 @@ export interface AnalyticsSummary {
   note?: string;
 }
 
+export interface TemplateOption {
+  id: string;
+  label: string;
+  description?: string;
+  kind: string;
+  aspect: string;
+  script: string;
+  caption_style: string;
+  durations: number[];
+  default_duration: number;
+  available: boolean;
+  requires?: string;
+}
+
+export interface OptionItem {
+  id: string;
+  label: string;
+  note?: string;
+}
+
 export interface Meta {
-  voices: { id: string; label: string; available: boolean }[];
+  voices: { id: string; label: string; available: boolean; gender?: string; language?: string }[];
   aspects: string[];
   kinds: { id: string; label: string; aspect: string }[];
+  templates: TemplateOption[];
+  external_templates: TemplateOption[];
+  resolutions: OptionItem[];
+  fps_options: number[];
+  caption_styles: OptionItem[];
+  transitions: OptionItem[];
+  music_beds: OptionItem[];
+  music_library: string[];
+  script_templates: OptionItem[];
   evidence_levels: string[];
   settings: Record<string, string>;
   auth_required: boolean;

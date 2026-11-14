@@ -14,14 +14,41 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
   const [form, setForm] = useState({
     title: '',
     topic: '',
-    kind: 'documentary',
+    template: 'shorts',
     channel_id: '' as string,
-    duration_target_sec: 600,
+    duration_target_sec: 30,
     voice: 'es',
     speed: 150,
     pitch: 45,
-    aspect: '16:9',
+    aspect: '9:16',
+    caption_style: 'short_pop',
+    transition_default: 'fundido',
+    resolution: '1080p',
+    fps: 25,
+    music: 'auto',
   });
+
+  const templates = meta?.templates ?? [];
+  const activeTemplate = templates.find((t) => t.id === form.template) ?? null;
+
+  function applyTemplate(id: string) {
+    const tpl = templates.find((t) => t.id === id);
+    if (!tpl) {
+      setForm({ ...form, template: id });
+      return;
+    }
+    setForm({
+      ...form,
+      template: tpl.id,
+      aspect: tpl.aspect,
+      caption_style: tpl.caption_style,
+      duration_target_sec: tpl.default_duration,
+    });
+  }
+
+  function templateLabel(id?: string): string {
+    return templates.find((t) => t.id === id)?.label ?? id ?? '';
+  }
 
   async function load() {
     try {
@@ -93,7 +120,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     <div className="stack">
       <Msg error={error} ok={ok} />
 
-      <Card title="Nuevo proyecto" sub="Documental horizontal (8-20 min) o Short vertical, con voz local.">
+      <Card title="Nuevo proyecto" sub="Elegí plantilla, formato, resolución, voz, subtítulos, transición y música. Todo se renderiza local con FFmpeg.">
         <div className="row">
           <Field label="Título">
             <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="El último tranvía" />
@@ -103,21 +130,10 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
           </Field>
         </div>
         <div className="row">
-          <Field label="Formato">
-            <select
-              value={form.kind}
-              onChange={(e) => {
-                const kind = e.target.value;
-                setForm({
-                  ...form,
-                  kind,
-                  aspect: kind === 'short' ? '9:16' : '16:9',
-                  duration_target_sec: kind === 'short' ? 45 : 600,
-                });
-              }}
-            >
-              {(meta?.kinds ?? [{ id: 'documentary', label: 'Documental', aspect: '16:9' }]).map((k) => (
-                <option key={k.id} value={k.id}>{k.label}</option>
+          <Field label="Plantilla" hint={activeTemplate?.description}>
+            <select value={form.template} onChange={(e) => applyTemplate(e.target.value)}>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>{t.label}</option>
               ))}
             </select>
           </Field>
@@ -127,12 +143,26 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
               {channels.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </Field>
-          <Field label="Duración objetivo (s)">
-            <input type="number" min={15} max={1800} value={form.duration_target_sec} onChange={(e) => setForm({ ...form, duration_target_sec: Number(e.target.value) })} />
+          <Field label="Duración objetivo">
+            <select value={form.duration_target_sec} onChange={(e) => setForm({ ...form, duration_target_sec: Number(e.target.value) })}>
+              {(activeTemplate?.durations ?? [15, 30, 45, 60]).map((d) => (
+                <option key={d} value={d}>{d < 60 ? `${d} s` : `${Math.round(d / 60)} min`}</option>
+              ))}
+              {!(activeTemplate?.durations ?? []).includes(form.duration_target_sec) ? (
+                <option value={form.duration_target_sec}>{form.duration_target_sec} s</option>
+              ) : null}
+            </select>
           </Field>
-          <Field label="Relación de aspecto">
+          <Field label="Aspecto">
             <select value={form.aspect} onChange={(e) => setForm({ ...form, aspect: e.target.value })}>
               {(meta?.aspects ?? ['16:9', '9:16']).map((a) => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </Field>
+          <Field label="Resolución">
+            <select value={form.resolution} onChange={(e) => setForm({ ...form, resolution: e.target.value })}>
+              {(meta?.resolutions ?? [{ id: '1080p', label: '1080p' }]).map((r) => (
+                <option key={r.id} value={r.id}>{r.label}</option>
+              ))}
             </select>
           </Field>
         </div>
@@ -149,6 +179,45 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
             <input type="number" min={0} max={99} value={form.pitch} onChange={(e) => setForm({ ...form, pitch: Number(e.target.value) })} />
           </Field>
         </div>
+        <div className="row">
+          <Field label="Estilo de subtítulos">
+            <select value={form.caption_style} onChange={(e) => setForm({ ...form, caption_style: e.target.value })}>
+              {(meta?.caption_styles ?? [{ id: 'documental', label: 'Documental' }]).map((c) => (
+                <option key={c.id} value={c.id}>{c.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Transición por defecto">
+            <select value={form.transition_default} onChange={(e) => setForm({ ...form, transition_default: e.target.value })}>
+              {(meta?.transitions ?? [{ id: 'fundido', label: 'Fundido' }]).map((t) => (
+                <option key={t.id} value={t.id}>{t.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Cuadros por segundo">
+            <select value={form.fps} onChange={(e) => setForm({ ...form, fps: Number(e.target.value) })}>
+              {(meta?.fps_options ?? [25]).map((f) => <option key={f} value={f}>{f} fps</option>)}
+            </select>
+          </Field>
+          <Field label="Música de fondo" hint="Las camas se generan localmente con FFmpeg, sin descargas.">
+            <select value={form.music} onChange={(e) => setForm({ ...form, music: e.target.value })}>
+              <option value="auto">Automática (biblioteca o cama)</option>
+              <option value="ninguna">Sin música</option>
+              {(meta?.music_beds ?? []).map((m) => (
+                <option key={m.id} value={`bed:${m.id}`}>Cama: {m.label}</option>
+              ))}
+              {(meta?.music_library ?? []).map((f) => (
+                <option key={f} value={f}>Biblioteca: {f}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        {meta && meta.external_templates.length > 0 && (
+          <p className="muted" style={{ marginTop: 0 }}>
+            Plantillas que dependen de un proveedor externo de IA de vídeo (no incluidas):{' '}
+            {meta.external_templates.map((t) => t.label).join(' · ')}.
+          </p>
+        )}
         <button className="btn primary" onClick={create} disabled={busy}>{busy ? 'Creando…' : 'Crear proyecto'}</button>
       </Card>
 
@@ -163,6 +232,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
                   <h4>{p.title}</h4>
                   <div className="meta">
                     <Badge tone={statusTone(p.status)}>{p.status}</Badge>
+                    <span>{templateLabel(p.template) || p.aspect}</span>
                     <span>{p.aspect}</span>
                     <span>{p.scenes_count ?? 0} escenas</span>
                     <span>{p.channel_name || 'sin canal'}</span>
