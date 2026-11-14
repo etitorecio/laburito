@@ -220,7 +220,7 @@ def _create_project(rule: dict) -> int:
         "VALUES(?,?,?,?,?,?,?,?,?,?)",
         (
             pid, research.get("source_title") or topic, research["url"], "Wikipedia contributors",
-            "CC BY-SA (consultar historial de la página)", db.now(),
+            "CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/", db.now(),
             "Wikipedia contributors · CC BY-SA · " + research["url"],
             "investigacion",
             "Fuente de orientación automática; verificar los datos con fuentes independientes antes de publicar.",
