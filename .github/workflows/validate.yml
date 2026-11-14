@@ -21,6 +21,12 @@ jobs:
         run: python -m compileall -q app tests
       - name: Run offline backend tests
         run: python -m unittest discover -s tests -v
+      - name: Install FFmpeg and local speech runtime
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg espeak-ng fonts-dejavu-core
+      - name: Run complete local render pipeline
+        env:
+          AITUBER_DISABLE_EXTERNAL_MEDIA: "1"
+        run: python scripts/e2e_local.py
 
   frontend:
     runs-on: ubuntu-latest
