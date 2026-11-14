@@ -229,32 +229,26 @@ def render_scene(
     scene_dir: Path,
     should_cancel=None,
 ) -> dict:
-    """Renderiza (o reutiliza) el vídeo de una escena. Devuelve metadatos y cues."""
+    """Renderiza una escena o reutiliza su MP4 cacheado por contenido efectivo."""
     _check_cancel(should_cancel)
     width, height = _size(project)
     style = _style(project)
     fps = int(project.get("fps") or 25)
     transition = scene.get("transition") or project.get("transition_default") or "corte"
     narration = (scene.get("narration") or "").strip()
-    key = _h(
-        f"{narration}|{scene.get('visual_path')}|{scene.get('visual_query')}|{width}x{height}"
-        f"|{project.get('kind')}|{style.get('id', '')}|{transition}|{fps}"
-        f"|{int(style.get('outline') or 0)}|{style.get('fontcolor')}|{int(bool(style.get('box')))}|{int(bool(style.get('uppercase')))}"
-    )
-    seg_dir = scene_dir / key
-    seg_dir.mkdir(parents=True, exist_ok=True)
-    scene_mp4 = seg_dir / "scene.mp4"
-    manifest = seg_dir / "manifest.json"
 
+    # Resolver primero audio y visual: el primer render puede crear/asignar una
+    # imagen y cambiar scene.visual_path. El hash debe usar el recurso efectivo
+    # para que la segunda ejecución encuentre exactamente la misma caché.
     wav, duration, audio_info = ensure_audio(project, scene)
     visual, visual_kind, visual_info = ensure_visual(project, scene)
-    cues = media.caption_chunks(
-        narration,
-        duration,
-        style["max_words"],
-        style["max_chars"],
-        style["max_lines"],
-    )
+    scene["visual_path"] = str(visual)
+    visual_path = Path(visual)
+    try:
+        visual_stat = visual_path.stat()
+        visual_signature = f"{visual_path}:{visual_stat.st_size}:{visual_stat.st_mtime_ns}"
+    except OSError:
+        visual_signature = str(visual_path)
 
     font = media.font_path()
     if not font:
@@ -263,6 +257,24 @@ def render_scene(
             "Los subtítulos necesitan una fuente del sistema."
         )
 
+    style_signature = json.dumps(style, ensure_ascii=False, sort_keys=True, default=str)
+    key = _h(
+        f"{narration}|{visual_signature}|{duration:.3f}|{width}x{height}"
+        f"|{project.get('kind')}|{style_signature}|{transition}|{fps}|{font}"
+        f"|{scene.get('visual_query') or ''}"
+    )
+    seg_dir = scene_dir / key
+    seg_dir.mkdir(parents=True, exist_ok=True)
+    scene_mp4 = seg_dir / "scene.mp4"
+    manifest = seg_dir / "manifest.json"
+
+    cues = media.caption_chunks(
+        narration,
+        duration,
+        style["max_words"],
+        style["max_chars"],
+        style["max_lines"],
+    )
     caption_dir = seg_dir / "captions"
     caption_dir.mkdir(parents=True, exist_ok=True)
     for i, cue in enumerate(cues):
