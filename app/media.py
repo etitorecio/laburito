@@ -416,7 +416,7 @@ def search_wikimedia(query: str, limit: int = 12) -> list[dict]:
                 "thumb": info.get("thumburl") or info.get("url") or "",
                 "author": author or "desconocido",
                 "license": license_name,
-                "license_url": "",
+                "license_url": (meta.get("LicenseUrl") or {}).get("value", ""),
             }
         )
     return out
