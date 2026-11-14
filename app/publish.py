@@ -299,20 +299,19 @@ def _deliver_local(project, meta: dict, report) -> dict:
 
 
 def _youtube_token() -> str:
-    missing = [key for key in YOUTUBE_ENV if not os.environ.get(key)]
+    credentials = youtube_credentials()
+    missing = [
+        key for key, value in (("YOUTUBE_CLIENT_ID", credentials["client_id"]), ("YOUTUBE_CLIENT_SECRET", credentials["client_secret"]), ("refresh token", credentials["refresh_token"]))
+        if not value
+    ]
     if missing:
-        raise PublishError(
-            "Falta configurar YouTube: " + ", ".join(missing) +
-            ". Agregá esas variables en Settings → Environment variables y volvé a publicar."
-        )
-    body = urllib.parse.urlencode(
-        {
-            "client_id": os.environ["YOUTUBE_CLIENT_ID"],
-            "client_secret": os.environ["YOUTUBE_CLIENT_SECRET"],
-            "refresh_token": os.environ["YOUTUBE_REFRESH_TOKEN"],
-            "grant_type": "refresh_token",
-        }
-    ).encode()
+        raise PublishError("Falta configurar YouTube: " + ", ".join(missing) + ". Conectá la cuenta desde Ajustes y configurá las credenciales de OAuth.")
+    body = urllib.parse.urlencode({
+        "client_id": credentials["client_id"],
+        "client_secret": credentials["client_secret"],
+        "refresh_token": credentials["refresh_token"],
+        "grant_type": "refresh_token",
+    }).encode()
     request = urllib.request.Request(
         YOUTUBE_TOKEN_URL,
         data=body,
@@ -329,7 +328,7 @@ def _youtube_token() -> str:
         raise PublishError(f"No se pudo contactar a YouTube: {exc.reason}") from exc
     token = data.get("access_token")
     if not token:
-        raise PublishError("YouTube no devolvió un token de acceso; revisá el refresh token.")
+        raise PublishError("YouTube no devolvió un token de acceso; revisá la conexión OAuth.")
     return token
 
 
