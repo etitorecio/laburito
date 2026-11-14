@@ -7,6 +7,7 @@ type Options = {
   cadences: number[];
   channels: Channel[];
   templates: TemplateOption[];
+  destinations: { id: string; label: string; available: boolean; missing_env: string[]; note: string }[];
 };
 
 const INITIAL = {
@@ -197,6 +198,14 @@ export default function Autopilot() {
           </Field>
         </div>
         <label className="check-row"><input type="checkbox" checked={form.auto_publish} onChange={(e) => setForm({ ...form, auto_publish: e.target.checked })} /> Procesar y entregar automáticamente al terminar (YouTube requiere conexión OAuth)</label>
+        {form.destination === 'youtube' && (
+          <p className="muted">
+            {data?.destinations.find((d) => d.id === 'youtube')?.note || 'YouTube necesita credenciales OAuth configuradas en el servidor.'}
+            {(data?.destinations.find((d) => d.id === 'youtube')?.missing_env.length ?? 0) > 0
+              ? ` Faltan: ${data?.destinations.find((d) => d.id === 'youtube')?.missing_env.join(', ')}.`
+              : ''}
+          </p>
+        )}
         <label className="check-row"><input type="checkbox" checked={form.enabled} onChange={(e) => setForm({ ...form, enabled: e.target.checked })} /> Activar al crear</label>
         <div className="row" style={{ marginTop: 14 }}>
           <button className="btn primary" disabled={busy || !form.niche.trim()} onClick={create}>{busy ? 'Procesando…' : 'Crear Autopiloto'}</button>
