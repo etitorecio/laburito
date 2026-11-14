@@ -6,6 +6,7 @@ nuevos, falla explícitamente para evitar publicar un tema repetido.
 """
 from __future__ import annotations
 
+import difflib
 import json
 import re
 import urllib.parse
@@ -53,11 +54,28 @@ def _external_references(title: str) -> list[str]:
     except Exception:
         return []
 
+def _is_duplicate(candidate: str, previous_topics: list[str]) -> bool:
+    candidate_norm = _normal(candidate)
+    candidate_tokens = set(candidate_norm.split())
+    for previous in previous_topics:
+        previous_norm = _normal(previous)
+        if not previous_norm:
+            continue
+        if candidate_norm == previous_norm:
+            return True
+        if difflib.SequenceMatcher(None, candidate_norm, previous_norm).ratio() >= 0.84:
+            return True
+        previous_tokens = set(previous_norm.split())
+        smaller = min(len(candidate_tokens), len(previous_tokens))
+        if smaller and len(candidate_tokens & previous_tokens) / smaller >= 0.82:
+            return True
+    return False
+
+
 def choose_topic(niche: str, previous_topics: list[str]) -> dict:
     niche = (niche or "").strip()
     if not niche:
         raise ValueError("Configurá un nicho antes de iniciar el Autopiloto.")
-    used = {_normal(x) for x in previous_topics if x}
     niche_key = _normal(niche)
     search_terms = [niche, niche + " historia", niche + " casos", niche + " descubrimientos"]
     candidates = []
@@ -70,7 +88,7 @@ def choose_topic(niche: str, previous_topics: list[str]) -> dict:
         for item in data.get("query", {}).get("search", []):
             title = (item.get("title") or "").strip()
             key = _normal(title)
-            if not title or key in seen or key == niche_key or key in used:
+            if not title or key in seen or key == niche_key or _is_duplicate(title, previous_topics):
                 continue
             seen.add(key)
             candidates.append(title)
