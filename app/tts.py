@@ -85,7 +85,7 @@ def status() -> dict:
             for k, v in VOICES.items()
         ],
         "note": "espeak-ng es una voz sintética de calidad modesta pero 100% libre y offline. "
-        "Piper ofrece una voz neural argentina opcional, descargable sin claves ni pagos.",
+        "Piper ofrece una voz neural española opcional, descargable sin claves ni pagos.",
     }
 
 
