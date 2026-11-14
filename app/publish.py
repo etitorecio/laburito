@@ -190,7 +190,7 @@ def youtube_device_poll(device_code: str) -> dict:
         raise PublishError(f"Google rechazó la autorización del dispositivo ({exc.code}): {error or 'error desconocido'}") from exc
     except urllib.error.URLError as exc:
         raise PublishError(f"No se pudo consultar la autorización de Google: {exc.reason}") from exc
-    refresh_token = data.get("refresh_token")
+    refresh_token = data.get("refresh_token") or credentials["refresh_token"]
     if not refresh_token:
         raise PublishError("Google autorizó la solicitud pero no devolvió un refresh token.")
     db.set_setting("youtube_refresh_token", refresh_token)
