@@ -134,7 +134,7 @@ def run_job(job: dict) -> None:
             )
             db.execute(
                 "UPDATE jobs SET status='completado', progress=100, message=?, result_json=?, finished_at=?, updated_at=? WHERE id=?",
-                ("Voz neural argentina instalada", json.dumps({"model": model_path}), db.now(), db.now(), job_id),
+                ("Voz neural española instalada", json.dumps({"model": model_path}), db.now(), db.now(), job_id),
             )
         elif job["kind"] == "cleanup":
             removed = render.cleanup_temporaries(int(project_id))
