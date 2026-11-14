@@ -130,36 +130,17 @@ def youtube_credentials() -> dict:
     }
 
 
-def youtube_authorization_url(redirect_uri: str, state: str) -> str:
+def youtube_device_start() -> dict:
     credentials = youtube_credentials()
-    if not credentials["client_id"] or not credentials["client_secret"]:
-        raise PublishError("Configurá YOUTUBE_CLIENT_ID y YOUTUBE_CLIENT_SECRET en las variables de entorno del servidor.")
-    params = urllib.parse.urlencode({
-        "client_id": credentials["client_id"],
-        "redirect_uri": redirect_uri,
-        "response_type": "code",
-        "scope": "https://www.googleapis.com/auth/youtube.upload",
-        "access_type": "offline",
-        "include_granted_scopes": "true",
-        "prompt": "consent",
-        "state": state,
-    })
-    return YOUTUBE_AUTH_URL + "?" + params
-
-
-def exchange_youtube_code(code: str, redirect_uri: str) -> None:
-    credentials = youtube_credentials()
-    if not credentials["client_id"] or not credentials["client_secret"]:
-        raise PublishError("Faltan YOUTUBE_CLIENT_ID o YOUTUBE_CLIENT_SECRET.")
+    if not credentials["client_id"]:
+        raise PublishError("Configurá YOUTUBE_CLIENT_ID en las variables de entorno del servidor.")
     body = urllib.parse.urlencode({
         "client_id": credentials["client_id"],
-        "client_secret": credentials["client_secret"],
-        "code": code,
-        "grant_type": "authorization_code",
-        "redirect_uri": redirect_uri,
+        "scope": "https://www.googleapis.com/auth/youtube",
     }).encode()
     request = urllib.request.Request(
-        YOUTUBE_TOKEN_URL, data=body,
+        "https://oauth2.googleapis.com/device/code",
+        data=body,
         headers={"Content-Type": "application/x-www-form-urlencoded"},
         method="POST",
     )
@@ -168,13 +149,55 @@ def exchange_youtube_code(code: str, redirect_uri: str) -> None:
             data = json.loads(response.read().decode("utf-8", "replace"))
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", "replace")[:300]
-        raise PublishError(f"Google rechazó la conexión de YouTube ({exc.code}): {detail}") from exc
+        raise PublishError(f"Google no pudo iniciar la autorización de dispositivo ({exc.code}): {detail}") from exc
     except urllib.error.URLError as exc:
-        raise PublishError(f"No se pudo completar la conexión con Google: {exc.reason}") from exc
-    refresh_token = data.get("refresh_token") or credentials["refresh_token"]
+        raise PublishError(f"No se pudo iniciar la autorización con Google: {exc.reason}") from exc
+    required = ("device_code", "user_code", "verification_url")
+    if any(not data.get(key) for key in required):
+        raise PublishError("Google devolvió una respuesta incompleta para la autorización.")
+    return data
+
+
+def youtube_device_poll(device_code: str) -> dict:
+    credentials = youtube_credentials()
+    body_values = {
+        "client_id": credentials["client_id"],
+        "client_secret": credentials["client_secret"],
+        "device_code": device_code,
+        "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+    }
+    request = urllib.request.Request(
+        YOUTUBE_TOKEN_URL,
+        data=urllib.parse.urlencode(body_values).encode(),
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=45) as response:
+            data = json.loads(response.read().decode("utf-8", "replace"))
+    except urllib.error.HTTPError as exc:
+        try:
+            error_data = json.loads(exc.read().decode("utf-8", "replace"))
+        except Exception:
+            error_data = {}
+        error = error_data.get("error") or ""
+        if error == "authorization_pending":
+            return {"status": "pending", "message": "Todavía falta autorizar la cuenta en Google."}
+        if error == "slow_down":
+            return {"status": "pending", "message": "Google pidió esperar un poco más antes de comprobar de nuevo.", "interval": 10}
+        if error == "access_denied":
+            return {"status": "denied", "message": "Se rechazó el acceso a YouTube."}
+        if error == "expired_token":
+            return {"status": "expired", "message": "El código venció. Iniciá una conexión nueva."}
+        raise PublishError(f"Google rechazó la autorización del dispositivo ({exc.code}): {error or 'error desconocido'}") from exc
+    except urllib.error.URLError as exc:
+        raise PublishError(f"No se pudo consultar la autorización de Google: {exc.reason}") from exc
+    refresh_token = data.get("refresh_token")
     if not refresh_token:
-        raise PublishError("Google no entregó un refresh token. Revocá el acceso anterior de la app y volvé a conectar con consentimiento.")
+        raise PublishError("Google autorizó la solicitud pero no devolvió un refresh token.")
     db.set_setting("youtube_refresh_token", refresh_token)
+    return {"status": "connected", "message": "Cuenta de YouTube conectada correctamente."}
+
 
 def destinations() -> list[dict]:
     credentials = youtube_credentials()
@@ -200,7 +223,7 @@ def destinations() -> list[dict]:
             "missing_env": missing,
             "note": (
                 "Subida real a la Data API v3. Necesita YOUTUBE_CLIENT_ID, "
-                "YOUTUBE_CLIENT_SECRET y una cuenta conectada desde Ajustes (permiso youtube.upload)."
+                "YOUTUBE_CLIENT_SECRET y una cuenta conectada desde Ajustes (permiso youtube)."
             ),
         },
     ]
