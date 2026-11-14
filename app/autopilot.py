@@ -93,6 +93,8 @@ def _clean(data: dict) -> dict:
         clean["name"] = str(data["name"]).strip()[:120]
     if "niche" in data and data["niche"] is not None:
         clean["niche"] = str(data["niche"]).strip()[:200]
+        if not clean["niche"]:
+            raise ValueError("El nicho no puede quedar vacío.")
     if "channel_id" in data:
         clean["channel_id"] = data["channel_id"]
     if "template" in data and data["template"] is not None:
