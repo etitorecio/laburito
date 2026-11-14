@@ -285,6 +285,7 @@ export interface AutopilotRule {
   last_project_status?: string | null;
   last_job_status?: string | null;
   last_job_message?: string | null;
+  last_error?: string | null;
 }
 
 export interface Meta {
