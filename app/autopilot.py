@@ -51,6 +51,9 @@ FIELDS = [
 
 def ensure_schema() -> None:
     db.execute(SCHEMA)
+    columns = {row["name"] for row in db.query("PRAGMA table_info(autopilot_rules)")}
+    if "last_error" not in columns:
+        db.execute("ALTER TABLE autopilot_rules ADD COLUMN last_error TEXT")
 
 
 def _ts(offset_hours: float = 0.0) -> str:
@@ -268,7 +271,14 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
     rule = get_rule(rule_id)
     if not rule:
         raise ValueError("Regla inexistente")
-    pid = _create_project(rule)
+    try:
+        pid = _create_project(rule)
+    except Exception as exc:
+        db.execute(
+            "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE id=?",
+            (str(exc)[:500], db.now(), rule_id),
+        )
+        raise
     if rule.get("auto_publish"):
         try:
             publish.set_auto_publish(pid, True, rule.get("destination") or "entrega")
@@ -277,8 +287,8 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
     job_id = worker.enqueue(pid, "render_project", {"privacy": rule.get("privacy") or "unlisted"})
     next_run = _ts(float(rule.get("cadence_hours") or 24))
     db.execute(
-        "UPDATE autopilot_rules SET last_run_at=?, last_project_id=?, next_run_at=?, updated_at=? WHERE id=?",
-        (db.now(), pid, next_run, db.now(), rule_id),
+        "UPDATE autopilot_rules SET last_run_at=?, last_project_id=?, next_run_at=?, last_error=?, updated_at=? WHERE id=?",
+        (db.now(), pid, next_run, "", db.now(), rule_id),
     )
     return {"rule_id": rule_id, "project_id": pid, "job_id": job_id, "next_run_at": next_run, "forced": force}
 
@@ -299,8 +309,8 @@ def tick() -> int:
         except Exception as exc:  # una regla rota no debe frenar al worker
             rule = get_rule(int(row["id"])) or {}
             db.execute(
-                "UPDATE autopilot_rules SET next_run_at=?, updated_at=? WHERE id=?",
-                (_ts(float(rule.get("cadence_hours") or 24)), db.now(), row["id"]),
+                "UPDATE autopilot_rules SET next_run_at=?, last_error=?, updated_at=? WHERE id=?",
+                (_ts(float(rule.get("cadence_hours") or 24)), str(exc)[:500], db.now(), row["id"]),
             )
             db.log("error", "autopilot", f"Regla {row['id']} falló: {exc}")
     return fired
