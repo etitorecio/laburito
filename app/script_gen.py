@@ -548,7 +548,7 @@ def generate_script(
             }
         )
 
-    unused = [n for n in notes if (n.get("claim") or "").strip() not in claims[:claim_index]]
+    unused = [n for n in notes if n is not source_note and (n.get("claim") or "").strip() not in claims[:claim_index]]
     return {
         "title": project.get("title") or f"Documental: {topic}",
         "kind": kind,
@@ -559,7 +559,7 @@ def generate_script(
         ]
         + ([f"{len(unused)} nota(s) de investigación sin usar; revisalas y sumalas como escenas."] if unused else []),
         "sources_considered": len(sources),
-        "notes_used": claim_index,
+        "notes_used": 1 if source_note and len(evidence_sentences) >= len(beats) else claim_index,
     }
 
 
