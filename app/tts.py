@@ -21,7 +21,7 @@ from . import db
 VOICES = {
     "es": {"engine_voice": "es", "label": "Español (neutro)", "gender": "neutro", "language": "es"},
     "es-ar": {"engine_voice": "es-la", "label": "Español rioplatense (espeak)", "gender": "neutro", "language": "es"},
-    "es-es-piper": {"engine_voice": "es-la", "label": "Español neural (Piper DaveFX · España)", "gender": "femenino", "language": "es"},
+    "es-es-piper": {"engine_voice": "es-la", "label": "Español neural (Piper DaveFX · España)", "gender": "masculino", "language": "es"},
     "es-mx": {"engine_voice": "es-419", "label": "Español latinoamericano", "gender": "neutro", "language": "es"},
     "es-masculino": {"engine_voice": "es", "label": "Español grave (masculino)", "gender": "masculino", "language": "es"},
     "es-agudo": {"engine_voice": "es", "label": "Español agudo (femenino)", "gender": "femenino", "language": "es"},
