@@ -57,7 +57,7 @@ La imagen es Alpine, compila el frontend en una etapa Node y ejecuta el servidor
 | `PORT` | Puerto HTTP (por defecto `8080`). |
 | `APP_TOKEN` o `AITUBER_TOKEN` | Protección con token (`X-App-Token`). Recomendado para cualquier despliegue público. |
 | `PIPER_BIN`, `PIPER_MODEL` | Sobrescritura manual opcional de la instalación Piper; normalmente se instala desde Ajustes. |
-| `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` | Credenciales OAuth de tipo TVs y dispositivos de entrada limitada. El refresh token se guarda en la base local tras conectar la cuenta. |
+| `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` | Credenciales OAuth de tipo aplicación web. El refresh token se guarda en la base local tras conectar la cuenta. |
 | `OLLAMA_URL` | Ollama local opcional para reescribir guiones a partir de las fuentes (nunca un servicio pago). |
 
 En **Ajustes** se configuran idioma, voz, volumen de música, estilo de subtítulos, copias de seguridad y la conexión OAuth de YouTube.
