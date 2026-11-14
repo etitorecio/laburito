@@ -86,7 +86,7 @@ def ensure_schema() -> None:
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS publicaciones(
-            id INTEGER PRIMARY KEY AUTOINCREASE,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             project_id INTEGER NOT NULL,
             calendar_id INTEGER,
             destination TEXT NOT NULL DEFAULT 'entrega',
