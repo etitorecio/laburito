@@ -115,7 +115,8 @@ def ensure_visual(project: dict, scene: dict) -> tuple[Path, str, dict]:
     key = _h(f"{scene.get('title')}|{scene.get('visual_query')}|{width}x{height}")
     folder = _visual_dir(int(project["id"]))
     query = (scene.get("visual_query") or project.get("topic") or "").strip()
-    for provider in ("wikimedia", "openverse"):
+    providers = () if os.environ.get("AITUBER_DISABLE_EXTERNAL_MEDIA", "").lower() in ("1", "true", "yes") else ("wikimedia", "openverse")
+    for provider in providers:
         try:
             search = media.search_wikimedia if provider == "wikimedia" else media.search_openverse
             for item in search(query, limit=6):
