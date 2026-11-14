@@ -1,12 +1,52 @@
 import json
+import os
 import unittest
+import urllib.parse
 
-from app import script_gen, topic_engine
+from app import publish, script_gen, topic_engine
 
 
 class AutopilotResearchTests(unittest.TestCase):
     def test_topic_normalization_helps_avoid_repeats(self):
         self.assertEqual(topic_engine._normal("Historia: del Rock!"), "historia del rock")
+
+    def test_youtube_oauth_requests_offline_upload_access(self):
+        with unittest.mock.patch.dict(os.environ, {
+            "YOUTUBE_CLIENT_ID": "client-id",
+            "YOUTUBE_CLIENT_SECRET": "client-secret",
+            "YOUTUBE_REFRESH_TOKEN": "existing-refresh",
+        }):
+            url = publish.youtube_authorization_url(
+                "https://example.test/api/youtube/callback",
+                "state-value",
+            )
+        params = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+        self.assertEqual(params["access_type"], ["offline"])
+        self.assertEqual(params["state"], ["state-value"])
+        self.assertEqual(params["scope"], ["https://www.googleapis.com/auth/youtube.upload"])
+
+    def test_youtube_oauth_exchange_saves_refresh_token(self):
+        class FakeResponse:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return b'{"access_token":"access","refresh_token":"new-refresh"}'
+
+        with unittest.mock.patch.dict(os.environ, {
+            "YOUTUBE_CLIENT_ID": "client-id",
+            "YOUTUBE_CLIENT_SECRET": "client-secret",
+            "YOUTUBE_REFRESH_TOKEN": "",
+        }):
+            with unittest.mock.patch("app.publish.urllib.request.urlopen", return_value=FakeResponse()):
+                with unittest.mock.patch("app.publish.db.set_setting") as save:
+                    publish.exchange_youtube_code("auth-code", "https://example.test/api/youtube/callback")
+        save.assert_called_once_with("youtube_refresh_token", "new-refresh")
 
     def test_ollama_rewrite_keeps_scene_structure(self):
         from unittest.mock import patch
