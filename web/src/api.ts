@@ -282,6 +282,9 @@ export interface AutopilotRule {
   last_run_at: string | null;
   last_project_id: number | null;
   last_project_title?: string | null;
+  last_project_status?: string | null;
+  last_job_status?: string | null;
+  last_job_message?: string | null;
 }
 
 export interface Meta {
