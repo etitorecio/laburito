@@ -54,7 +54,7 @@ def choose_topic(niche: str, previous_topics: list[str]) -> dict:
         return {
             "title": title,
             "topic": title,
-            "summary": extract[:3500],
+            "summary": extract[:420],
             "url": page.get("fullurl") or "https://es.wikipedia.org/wiki/" + urllib.parse.quote(title.replace(" ", "_")),
             "source_title": title + " — Wikipedia",
         }
