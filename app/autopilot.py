@@ -302,18 +302,20 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
             (str(exc)[:500], db.now(), rule_id),
         )
         raise
+    publish_warning = ""
     if rule.get("auto_publish"):
         try:
             publish.set_auto_publish(pid, True, rule.get("destination") or "entrega")
         except publish.PublishError as exc:
+            publish_warning = str(exc)[:500]
             db.log("warn", "autopilot", f"No se pudo activar la auto-subida: {exc}")
     job_id = worker.enqueue(pid, "render_project", {"privacy": rule.get("privacy") or "unlisted"})
     next_run = _ts(float(rule.get("cadence_hours") or 24))
     db.execute(
         "UPDATE autopilot_rules SET last_run_at=?, last_project_id=?, next_run_at=?, last_error=?, updated_at=? WHERE id=?",
-        (db.now(), pid, next_run, "", db.now(), rule_id),
+        (db.now(), pid, next_run, publish_warning, db.now(), rule_id),
     )
-    return {"rule_id": rule_id, "project_id": pid, "job_id": job_id, "next_run_at": next_run, "forced": force}
+    return {"rule_id": rule_id, "project_id": pid, "job_id": job_id, "next_run_at": next_run, "forced": force, "publish_warning": publish_warning or None}
 
 
 def tick() -> int:
