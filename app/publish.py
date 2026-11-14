@@ -130,8 +130,8 @@ def youtube_credentials() -> dict:
 
 def youtube_device_start() -> dict:
     credentials = youtube_credentials()
-    if not credentials["client_id"]:
-        raise PublishError("Configurá YOUTUBE_CLIENT_ID en las variables de entorno del servidor.")
+    if not credentials["client_id"] or not credentials["client_secret"]:
+        raise PublishError("Configurá YOUTUBE_CLIENT_ID y YOUTUBE_CLIENT_SECRET en las variables de entorno del servidor.")
     body = urllib.parse.urlencode({
         "client_id": credentials["client_id"],
         "scope": "https://www.googleapis.com/auth/youtube",
