@@ -32,6 +32,7 @@ from . import db
 
 YOUTUBE_ENV = ("YOUTUBE_CLIENT_ID", "YOUTUBE_CLIENT_SECRET", "YOUTUBE_REFRESH_TOKEN")
 YOUTUBE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+YOUTUBE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 YOUTUBE_UPLOAD_URL = "https://www.googleapis.com/upload/youtube/v3/videos"
 PUBLICADOS_DIRNAME = "publicados"
 
@@ -121,8 +122,69 @@ def subtitles(project) -> list[Path]:
     return sorted([p for p in folder.iterdir() if p.suffix.lower() in (".srt", ".vtt")])
 
 
+def youtube_credentials() -> dict:
+    return {
+        "client_id": os.environ.get("YOUTUBE_CLIENT_ID", "").strip(),
+        "client_secret": os.environ.get("YOUTUBE_CLIENT_SECRET", "").strip(),
+        "refresh_token": (os.environ.get("YOUTUBE_REFRESH_TOKEN") or db.get_setting("youtube_refresh_token", "")).strip(),
+    }
+
+
+def youtube_authorization_url(redirect_uri: str, state: str) -> str:
+    credentials = youtube_credentials()
+    if not credentials["client_id"] or not credentials["client_secret"]:
+        raise PublishError("Configurá YOUTUBE_CLIENT_ID y YOUTUBE_CLIENT_SECRET en las variables de entorno del servidor.")
+    params = urllib.parse.urlencode({
+        "client_id": credentials["client_id"],
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "https://www.googleapis.com/auth/youtube.upload",
+        "access_type": "offline",
+        "include_granted_scopes": "true",
+        "prompt": "consent",
+        "state": state,
+    })
+    return YOUTUBE_AUTH_URL + "?" + params
+
+
+def exchange_youtube_code(code: str, redirect_uri: str) -> None:
+    credentials = youtube_credentials()
+    if not credentials["client_id"] or not credentials["client_secret"]:
+        raise PublishError("Faltan YOUTUBE_CLIENT_ID o YOUTUBE_CLIENT_SECRET.")
+    body = urllib.parse.urlencode({
+        "client_id": credentials["client_id"],
+        "client_secret": credentials["client_secret"],
+        "code": code,
+        "grant_type": "authorization_code",
+        "redirect_uri": redirect_uri,
+    }).encode()
+    request = urllib.request.Request(
+        YOUTUBE_TOKEN_URL, data=body,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=45) as response:
+            data = json.loads(response.read().decode("utf-8", "replace"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", "replace")[:300]
+        raise PublishError(f"Google rechazó la conexión de YouTube ({exc.code}): {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise PublishError(f"No se pudo completar la conexión con Google: {exc.reason}") from exc
+    refresh_token = data.get("refresh_token") or credentials["refresh_token"]
+    if not refresh_token:
+        raise PublishError("Google no entregó un refresh token. Revocá el acceso anterior de la app y volvé a conectar con consentimiento.")
+    db.set_setting("youtube_refresh_token", refresh_token)
+
 def destinations() -> list[dict]:
-    missing = [key for key in YOUTUBE_ENV if not os.environ.get(key)]
+    credentials = youtube_credentials()
+    missing = []
+    if not credentials["client_id"]:
+        missing.append("YOUTUBE_CLIENT_ID")
+    if not credentials["client_secret"]:
+        missing.append("YOUTUBE_CLIENT_SECRET")
+    if not credentials["refresh_token"]:
+        missing.append("Conectar cuenta YouTube (refresh token)")
     return [
         {
             "id": "entrega",
