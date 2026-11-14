@@ -119,7 +119,10 @@ def _clean(data: dict) -> dict:
             raise ValueError("FPS no soportado")
         clean["fps"] = int(data["fps"])
     if "music" in data and data["music"] is not None:
-        clean["music"] = str(data["music"])[:200]
+        music = str(data["music"])
+        if music != "auto" and music not in options.MUSIC_IDS:
+            raise ValueError("Pista musical no reconocida")
+        clean["music"] = music
     if "music_volume" in data and data["music_volume"] is not None:
         clean["music_volume"] = max(0.0, min(1.0, float(data["music_volume"])))
     if "cadence_hours" in data and data["cadence_hours"] is not None:
@@ -206,7 +209,7 @@ def _create_project(rule: dict) -> int:
             tpl["id"], rule.get("caption_style") or tpl.get("caption_style"),
             rule.get("transition_default") or "fundido", rule.get("resolution") or "1080p",
             int(rule.get("fps") or 25), rule.get("music") or "auto",
-            float(rule.get("music_volume") or 0.12), db.now(), db.now(),
+            float(rule.get("music_volume") if rule.get("music_volume") is not None else 0.12), db.now(), db.now(),
         ),
     )
     project = db.query_one("SELECT * FROM projects WHERE id=?", (pid,))
