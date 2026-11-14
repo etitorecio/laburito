@@ -1007,6 +1007,8 @@ def run_autopilot(rule_id: int):
         return autopilot.run_rule(rule_id, force=True)
     except ValueError as exc:
         raise HTTPException(404, str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(503, str(exc)) from exc
 
 
 @app.get("/api/settings")
