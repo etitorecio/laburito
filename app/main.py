@@ -34,7 +34,6 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="AITuber Libre", version=APP_VERSION, lifespan=lifespan)
-app.include_router(publish.router)
 
 
 @app.middleware("http")
@@ -814,6 +813,56 @@ async def analytics_import(file: UploadFile = File(...), channel_id: int | None 
 # --------------------------------------------------------------------------- #
 # Configuración
 # --------------------------------------------------------------------------- #
+
+# --------------------------------------------------------------------------- #
+# Publicación y auto-subida
+# --------------------------------------------------------------------------- #
+
+@app.get("/api/publish/destinations")
+def publish_destinations():
+    publish.ensure_schema()
+    return {"destinations": publish.destinations(), "auto_publish_available": True}
+
+
+@app.post("/api/projects/{project_id}/publish", status_code=202)
+def publish_project(project_id: int, payload: publish.PublishIn):
+    publish.ensure_schema()
+    project = db.query_one("SELECT * FROM projects WHERE id=?", (project_id,))
+    if not project:
+        raise HTTPException(404, f"El proyecto {project_id} no existe.")
+    if payload.destination not in ("entrega", "youtube"):
+        raise HTTPException(400, "Destino inválido: usá 'entrega' o 'youtube'.")
+    if not publish.video_path(project).exists():
+        raise HTTPException(400, "Todavía no hay un MP4 renderizado: ejecutá el render antes de publicar.")
+    job_id = worker.enqueue(
+        project_id,
+        "publish_project",
+        {"destination": payload.destination, "calendar_id": payload.calendar_id, "privacy": payload.privacy},
+    )
+    return {"ok": True, "job_id": job_id, "destination": payload.destination}
+
+
+@app.get("/api/publications")
+def publish_publications(project_id: int | None = None, limit: int = 50):
+    publish.ensure_schema()
+    return {"publications": publish.list_publications(project_id, limit)}
+
+
+@app.get("/api/projects/{project_id}/auto-publish")
+def get_auto_publish(project_id: int):
+    try:
+        return publish.auto_publish_settings(project_id)
+    except publish.PublishError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+@app.post("/api/projects/{project_id}/auto-publish")
+def set_auto_publish_endpoint(project_id: int, payload: publish.AutoPublishIn):
+    try:
+        return publish.set_auto_publish(project_id, payload.enabled, payload.destination)
+    except publish.PublishError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
 
 @app.get("/api/settings")
 def get_settings():
