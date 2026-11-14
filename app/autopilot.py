@@ -122,7 +122,7 @@ def _clean(data: dict) -> dict:
         music = str(data["music"])
         if music != "auto" and music not in options.MUSIC_IDS:
             raise ValueError("Pista musical no reconocida")
-        clean["music"] = music
+        clean["music"] = "bed:" + music if music in options.MUSIC_IDS else music
     if "music_volume" in data and data["music_volume"] is not None:
         clean["music_volume"] = max(0.0, min(1.0, float(data["music_volume"])))
     if "cadence_hours" in data and data["cadence_hours"] is not None:
