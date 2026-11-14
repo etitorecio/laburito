@@ -6,6 +6,7 @@ se informa con claridad y el render avanza con una advertencia de calidad.
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import shutil
 import urllib.request
@@ -169,16 +170,39 @@ def silence_wav(out_path: Path, seconds: float, sample_rate: int = 24000) -> dic
 
 
 
-def _md5_file(path: Path) -> str:
-    digest = hashlib.md5()
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
     with Path(path).open("rb") as source:
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
 
 
+def _valid_piper_file(path: Path, expected_size: int | None, expected_sha256: str | None) -> bool:
+    if not path.exists():
+        return False
+    if expected_size is not None and path.stat().st_size != expected_size:
+        return False
+    if expected_sha256 and _sha256_file(path) != expected_sha256:
+        return False
+    try:
+        if path.suffix == ".json":
+            config = json.loads(path.read_text(encoding="utf-8"))
+            return (
+                config.get("language", {}).get("code") == "es_ES"
+                and config.get("inference", {}).get("noise_scale") == 0.5
+                and config.get("piper_version") == "1.5.0"
+            )
+        if path.name == "MODEL_CARD":
+            card = path.read_text(encoding="utf-8")
+            return "License: CC0" in card and "rdh base model" in card
+    except Exception:
+        return False
+    return True
+
+
 def install_piper_voice(on_progress=None) -> str:
-    """Descarga y verifica la voz española DaveFX de Piper desde el catálogo oficial."""
+    """Descarga y verifica la voz española DaveFX con cadena de entrenamiento CC0."""
     if not piper_path():
         raise RuntimeError("El motor Piper no está instalado en este servidor. Revisá requirements.txt y reiniciá la app.")
     free_bytes = shutil.disk_usage(str(db.DATA_DIR)).free
@@ -186,36 +210,38 @@ def install_piper_voice(on_progress=None) -> str:
         raise RuntimeError("No hay 90 MB libres para instalar la voz neural.")
     folder = db.DATA_DIR / "voices" / "es_ES-davefx-medium"
     folder.mkdir(parents=True, exist_ok=True)
+    revision = "cf910fb59f1d79ab3b625a63993a108751c6c25d"
     files = [
         (
-            "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_ES/davefx/medium/es_ES-davefx-medium.onnx",
+            f"https://huggingface.co/rhasspy/piper-voices/resolve/{revision}/es/es_ES/davefx/medium/es_ES-davefx-medium.onnx",
             folder / "es_ES-davefx-medium.onnx",
-            "dc515cd4ecc5f6f72fe14a941188fc9c",
-            63201294,
+            63221984,
+            "d2c9224e122321aac3c33343957fff4d0f465226cb74c66b0f520ca3f8c0dd07",
+            63221984,
         ),
         (
-            "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_ES/davefx/medium/es_ES-davefx-medium.onnx.json",
+            f"https://huggingface.co/rhasspy/piper-voices/resolve/{revision}/es/es_ES/davefx/medium/es_ES-davefx-medium.onnx.json",
             folder / "es_ES-davefx-medium.onnx.json",
-            "dd157b5eaf6930bf949cf416d9a9307a",
-            4817,
+            None,
+            None,
+            5600,
         ),
         (
-            "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_ES/davefx/medium/MODEL_CARD",
+            f"https://huggingface.co/rhasspy/piper-voices/resolve/{revision}/es/es_ES/davefx/medium/MODEL_CARD",
             folder / "MODEL_CARD",
-            "5569c0fb20448308466216428b52f392",
-            275,
+            418,
+            None,
+            418,
         ),
     ]
-    total_bytes = sum(item[3] for item in files)
+    total_bytes = sum(item[4] for item in files)
     downloaded_total = 0
-    for url, destination, expected_md5, expected_size in files:
-        if destination.exists() and destination.stat().st_size == expected_size:
-            digest = _md5_file(destination)
-            if digest == expected_md5:
-                downloaded_total += expected_size
-                continue
+    for url, destination, expected_size, expected_sha256, progress_size in files:
+        if _valid_piper_file(destination, expected_size, expected_sha256):
+            downloaded_total += progress_size
+            continue
         temporary = destination.with_suffix(destination.suffix + ".part")
-        digest = hashlib.md5()
+        digest = hashlib.sha256()
         size = 0
         request = urllib.request.Request(url, headers={"User-Agent": "Laburito/1.0"})
         try:
@@ -233,13 +259,19 @@ def install_piper_voice(on_progress=None) -> str:
         except Exception as exc:
             temporary.unlink(missing_ok=True)
             raise RuntimeError(f"No se pudo descargar el modelo Piper: {exc}") from exc
-        if size != expected_size or digest.hexdigest() != expected_md5:
+        if expected_size is not None and size != expected_size:
             temporary.unlink(missing_ok=True)
-            raise RuntimeError(f"El archivo {destination.name} no pasó la verificación de integridad.")
+            raise RuntimeError(f"El archivo {destination.name} tiene un tamaño inesperado.")
+        if expected_sha256 and digest.hexdigest() != expected_sha256:
+            temporary.unlink(missing_ok=True)
+            raise RuntimeError(f"El archivo {destination.name} no pasó la verificación SHA-256.")
         temporary.replace(destination)
-        downloaded_total += size
+        if not _valid_piper_file(destination, expected_size, expected_sha256):
+            destination.unlink(missing_ok=True)
+            raise RuntimeError(f"El archivo {destination.name} no pasó la validación de contenido/licencia.")
+        downloaded_total += progress_size
     model_path = str(files[0][1])
     db.set_setting("piper_model_path", model_path)
     if on_progress:
-        on_progress(100, "Voz neural española instalada y verificada")
+        on_progress(100, "Voz neural española CC0 instalada y verificada")
     return model_path
