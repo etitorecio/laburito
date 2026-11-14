@@ -55,18 +55,29 @@ La imagen es Alpine, compila el frontend en una etapa Node y ejecuta el servidor
 | --- | --- |
 | `AITUBER_DATA_DIR` | Carpeta de datos (SQLite, medios, renders, exportaciones). Por defecto `./data`. |
 | `PORT` | Puerto HTTP (por defecto `8080`). |
-| `AITUBER_TOKEN` | Protección opcional con token (`X-App-Token`). Si se define, la interfaz lo pide. |
+| `APP_TOKEN` o `AITUBER_TOKEN` | Protección con token (`X-App-Token`). Recomendado para cualquier despliegue público. |
 | `PIPER_BIN`, `PIPER_MODEL` | Voz neuronal local opcional en lugar de espeak-ng. |
-| `OLLAMA_URL` | Ollama local opcional para expandir narración (nunca un servicio pago). |
+| `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` | Credenciales OAuth de una aplicación web de Google Cloud. El refresh token se guarda en la base local tras conectar la cuenta. |
+| `OLLAMA_URL` | Ollama local opcional para reescribir guiones a partir de las fuentes (nunca un servicio pago). |
 
-En **Ajustes** se configuran idioma, voz, volumen de música, estilo de subtítulos y copias de seguridad.
+En **Ajustes** se configuran idioma, voz, volumen de música, estilo de subtítulos, copias de seguridad y la conexión OAuth de YouTube.
+
+### Conectar YouTube
+
+1. En Google Cloud, creá un proyecto y habilitá **YouTube Data API v3**.
+2. Creá un cliente OAuth de tipo **aplicación web**.
+3. Copiá la URI de redirección que muestra **Ajustes → Conectar YouTube** y agregala en Google Cloud.
+4. En las variables de entorno de AppJet configurá `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` y `APP_TOKEN` (o `AITUBER_TOKEN`).
+5. Pegá el token de la app en **Ajustes**, tocá **Conectar cuenta de YouTube** y autorizá el acceso.
+
+Google entrega un refresh token que Laburito conserva en su base de datos. Si el consentimiento OAuth permanece en modo **Testing**, Google hace vencer esos refresh tokens a los 7 días; para automatización continua hay que pasar el proyecto a producción y completar la verificación que corresponda.
 
 ## Arquitectura
 
 ```
 app/
   db.py         SQLite (WAL) con esquema, migraciones, ajustes, logs y copias
-  script_gen.py guionista local determinista (documental / short) + Ollama opcional
+  script_gen.py guionista basado en fuentes + reescritura Ollama local opcional
   tts.py        espeak-ng / Piper y silencio informado
   media.py      tarjetas visuales, SRT/VTT, miniaturas, búsqueda en repositorios libres
   render.py     FFmpeg por escena con caché, concat, subtítulos, export ZIP
@@ -89,7 +100,7 @@ La prueba E2E crea un directorio de datos temporal, verifica resolución, duraci
 
 ## Limitaciones conocidas
 
-- La publicación en plataformas no es automática: se entrega el paquete listo para subir.
+- YouTube admite publicación automática cuando la cuenta está conectada por OAuth y el servidor tiene credenciales configuradas. TikTok no está integrado.
 - El material visual externo depende de la red y de las licencias de cada repositorio; siempre se registra autor, licencia y fecha de consulta.
-- La música de fondo se toma de `data/music/` (el usuario aporta pistas libres).
+- La música de fondo se toma de las camas libres integradas o de `data/music/` (el usuario puede aportar pistas libres).
 - La voz es sintética y local; para calidad de estudio conviene instalar Piper con un modelo español.
