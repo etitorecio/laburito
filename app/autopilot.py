@@ -263,6 +263,15 @@ def _create_project(rule: dict) -> int:
     )
     project_sources = db.query("SELECT * FROM sources WHERE project_id=? ORDER BY id", (pid,))
     script = script_gen.generate_script(project, notes, project_sources)
+    ollama_url = db.get_setting("ollama_url", "")
+    if ollama_url and script_gen.ollama_available(ollama_url):
+        try:
+            script = script_gen.rewrite_with_ollama(
+                ollama_url, "llama3.2", project, script, notes
+            )
+            db.log("info", "autopilot", "Guion reescrito con Ollama local", {"project_id": pid})
+        except Exception as exc:
+            db.log("warn", "autopilot", f"Ollama no pudo reescribir el guion; se conserva el borrador basado en fuentes: {exc}")
     ollama_url = (db.get_setting("ollama_url", "") or "").strip()
     if ollama_url and script_gen.ollama_available(ollama_url):
         try:
