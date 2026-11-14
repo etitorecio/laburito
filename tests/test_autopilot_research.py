@@ -31,8 +31,9 @@ class AutopilotResearchTests(unittest.TestCase):
             "YOUTUBE_CLIENT_SECRET": "client-secret",
             "YOUTUBE_REFRESH_TOKEN": "existing-refresh",
         }):
-            with patch("app.publish.urllib.request.urlopen", return_value=FakeResponse()) as request:
-                result = publish.youtube_device_start()
+            with patch("app.publish.db.get_setting", return_value=""):
+                with patch("app.publish.urllib.request.urlopen", return_value=FakeResponse()) as request:
+                    result = publish.youtube_device_start()
         body = urllib.parse.parse_qs(request.call_args.args[0].data.decode())
         self.assertEqual(body["scope"], ["https://www.googleapis.com/auth/youtube"])
         self.assertEqual(result["user_code"], "ABCD-EFGH")
