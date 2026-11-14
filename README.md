@@ -65,7 +65,7 @@ En **Ajustes** se configuran idioma, voz, volumen de música, estilo de subtítu
 ### Conectar YouTube
 
 1. En Google Cloud, creá un proyecto y habilitá **YouTube Data API v3**.
-2. Creá credenciales OAuth de tipo **Aplicación web** y agregá `https://developers.google.com/oauthplayground` como URI de redirección autorizada.
+2. Configurá la pantalla de consentimiento; si está en Testing, agregá tu cuenta como usuario de prueba. Creá credenciales OAuth de tipo **Aplicación web** y agregá `https://developers.google.com/oauthplayground` como URI de redirección autorizada.
 3. En las variables de entorno de AppJet configurá `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` y `APP_TOKEN` (o `AITUBER_TOKEN`).
 4. Abrí el [OAuth 2.0 Playground oficial](https://developers.google.com/oauthplayground). En el engranaje activá **Use your own OAuth credentials**, pegá tu Client ID y Client Secret, seleccioná acceso **Offline** y forzá la pantalla de consentimiento.
 5. En Step 1 solicitá `https://www.googleapis.com/auth/youtube.upload` y `https://www.googleapis.com/auth/youtube.readonly`. Autorizá y canjeá el código por tokens.
