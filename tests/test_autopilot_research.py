@@ -5,13 +5,24 @@ import unittest
 from unittest.mock import patch
 import urllib.parse
 
-from app import publish, script_gen, topic_engine, tts
+from app import autopilot, publish, script_gen, topic_engine, tts
 
 
 class AutopilotResearchTests(unittest.TestCase):
     def test_piper_cli_is_installed_by_backend_requirements(self):
         self.assertTrue(tts.piper_path())
         self.assertEqual(tts.VOICES["es-es-piper"]["language"], "es")
+    def test_reactivating_autopilot_schedules_immediate_run(self):
+        current = {"id": 7, "enabled": False, "niche": "ciencia", "cadence_hours": 24}
+        updated = {**current, "enabled": True}
+        with patch.object(autopilot, "ensure_schema"):
+            with patch.object(autopilot, "get_rule", side_effect=[current, updated]):
+                with patch.object(autopilot, "_ts", return_value="now"):
+                    with patch.object(autopilot.db, "execute") as execute:
+                        autopilot.update_rule(7, {"enabled": True})
+        self.assertIn("next_run_at", execute.call_args.args[0])
+        self.assertIn("now", execute.call_args.args[1])
+
     def test_topic_picker_skips_near_duplicate_titles(self):
         self.assertTrue(topic_engine._is_duplicate("Historia de la radio", ["La historia de la radio"]))
         self.assertFalse(topic_engine._is_duplicate("Historia de la televisión", ["Historia de la radio"]))
