@@ -1758,3 +1758,20 @@ th {
   color: #6f7186;
   font-size: 0.77rem;
 }
+
+
+/* ---------- Controles del Autopiloto ---------- */
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 10px;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.check-row input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  accent-color: var(--accent);
+}
