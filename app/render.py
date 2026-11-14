@@ -18,41 +18,23 @@ import time
 import zipfile
 from pathlib import Path
 
-from . import db, media, tts
+from . import db, media, options, tts
 
-ASPECTS = {"16:9": (1920, 1080), "9:16": (1080, 1920), "1:1": (1080, 1080)}
-
-STYLES = {
-    "documentary": {
-        "max_words": 9,
-        "max_chars": 96,
-        "max_lines": 3,
-        "font_ratio": 0.024,
-        "y_from_bottom": 0.13,
-        "box_alpha": "0.55",
-    },
-    "short": {
-        "max_words": 4,
-        "max_chars": 34,
-        "max_lines": 2,
-        "font_ratio": 0.062,
-        "y_from_bottom": 0.30,
-        "box_alpha": "0.45",
-    },
-}
+ASPECTS = options.ASPECTS
 
 
 class Cancelled(Exception):
     """El usuario canceló la tarea."""
 
 
-def _style(kind: str) -> dict:
-    return STYLES.get(kind, STYLES["documentary"])
+def _style(project: dict) -> dict:
+    """Estilo de subtítulos del proyecto (13 opciones, ver app/options.py)."""
+    return options.caption_style(project)
 
 
 def _size(project: dict) -> tuple[int, int]:
-    aspect = project.get("aspect") or ("16:9" if project.get("kind") == "documentary" else "9:16")
-    return ASPECTS.get(aspect, ASPECTS["16:9"])
+    aspect = project.get("aspect") or options.template(project.get("template"))["aspect"]
+    return options.dimensions(aspect, project.get("resolution") or "1080p")
 
 
 def _h(text: str) -> str:
@@ -148,18 +130,57 @@ def ensure_visual(project: dict, scene: dict) -> tuple[Path, str, dict]:
 
 
 def _drawtext_chain(cues: list[dict], font: str, width: int, height: int, style: dict) -> str:
-    fontsize = max(22, int(width * style["font_ratio"]))
+    fontsize = max(20, int(width * style["font_ratio"]))
     y = int(height * (1 - style["y_from_bottom"]))
+    line_spacing = max(6, fontsize // 6)
     parts = []
     for cue in cues:
-        parts.append(
+        draw = (
             f"drawtext=fontfile={font}:textfile={cue['file']}:fontsize={fontsize}"
-            f":fontcolor=white:line_spacing={max(6, fontsize // 6)}"
-            f":box=1:boxcolor=black@{style['box_alpha']}:boxborderw={max(10, fontsize // 3)}"
+            f":fontcolor={style.get('fontcolor', 'white')}:line_spacing={line_spacing}"
             f":x=(w-text_w)/2:y={y}-th"
-            f":enable='between(t,{cue['start']:.2f},{cue['end']:.2f})'"
         )
+        if int(style.get("outline") or 0) > 0:
+            draw += f":borderw={int(style['outline'])}:bordercolor=black"
+        if style.get("box"):
+            draw += (
+                f":box=1:boxcolor={style.get('boxcolor', 'black')}@{style.get('box_alpha', '0.55')}"
+                f":boxborderw={max(10, fontsize // 3)}"
+            )
+        draw += f":enable='between(t,{cue['start']:.2f},{cue['end']:.2f})'"
+        parts.append(draw)
     return ",".join(parts)
+
+
+def _motion_filters(transition: str, width: int, height: int, duration: float, fps: int) -> list[str]:
+    """Transición/movimiento real de la escena (8 opciones)."""
+    kind = (transition or "corte").strip()
+    if kind == "fundido" and duration > 1.5:
+        return ["fade=t=in:st=0:d=0.45", f"fade=t=out:st={max(0.0, duration - 0.45):.2f}:d=0.45"]
+    if kind == "fundido_blanco" and duration > 1.0:
+        return [
+            "fade=t=in:st=0:d=0.30:color=white",
+            f"fade=t=out:st={max(0.0, duration - 0.30):.2f}:d=0.30:color=white",
+        ]
+    if kind in ("zoom_in", "zoom_out", "kenburns"):
+        if kind == "zoom_in":
+            zoom = "min(1.0+0.0012*on,1.12)"
+            xexpr = "iw/2-(iw/zoom/2)"
+        elif kind == "zoom_out":
+            zoom = "max(1.12-0.0012*on,1.0)"
+            xexpr = "iw/2-(iw/zoom/2)"
+        else:
+            zoom = "min(1.0+0.0009*on,1.10)"
+            xexpr = "iw/2-(iw/zoom/2)+((iw-iw/zoom)/2)*on/240"
+        return [f"zoompan=z='{zoom}':x='{xexpr}':y='ih/2-(ih/zoom/2)':d=1:s={width}x{height}:fps={fps}"]
+    if kind in ("paneo_izq", "paneo_der"):
+        span = f"{max(0.5, duration):.2f}"
+        pos = "t" if kind == "paneo_der" else f"({span}-t)"
+        return [
+            f"scale={int(width * 1.15)}:{int(height * 1.15)}:force_original_aspect_ratio=increase",
+            f"crop={width}:{height}:x='(iw-ow)*{pos}/{span}':y='(ih-oh)/2'",
+        ]
+    return []
 
 
 def render_scene(
