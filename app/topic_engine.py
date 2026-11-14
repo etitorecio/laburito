@@ -44,7 +44,7 @@ def choose_topic(niche: str, previous_topics: list[str]) -> dict:
             continue
         summary = _get({
             "action": "query", "prop": "extracts|info", "explaintext": 1,
-            "inprop": "url", "exchars": 14000, "titles": title, "format": "json",
+            "inprop": "url", "titles": title, "format": "json",
         })
         pages = summary.get("query", {}).get("pages", {})
         page = next(iter(pages.values()), {})
