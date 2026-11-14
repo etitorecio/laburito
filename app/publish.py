@@ -160,7 +160,9 @@ def build_metadata(project, scenes) -> dict:
         channel = db.query_one("SELECT language FROM channels WHERE id=?", (_g(project, "channel_id"),))
         language = _g(channel or {}, "language")
     language = language or "es"
-    keywords = [k.strip() for k in re.split(r"[,;]", _g(project, "keywords") or "") if k.strip()]
+    manual_keywords = [k.strip() for k in re.split(r"[,;]", _g(project, "keywords") or "") if k.strip()]
+    topic_keywords = re.findall(r"[0-9A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{3,}", _g(project, "topic"))
+    keywords = list(dict.fromkeys(manual_keywords + topic_keywords))[:15]
 
     credits: list[str] = []
     for scene in scenes:
