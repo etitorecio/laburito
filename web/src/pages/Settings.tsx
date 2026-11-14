@@ -59,12 +59,14 @@ export default function Settings() {
   async function saveYoutubeToken() {
     setError(''); setOk(''); setYoutubeBusy(true);
     try {
-      const result = await api.post<{ ok: boolean; message: string }>('/api/youtube/token', {
+      await api.post<{ ok: boolean; message: string }>('/api/youtube/token', {
         refresh_token: youtubeRefreshToken.trim(),
       });
+      const channel = await api.get<{ channel_title: string }>('/api/youtube/status');
+      setYoutube({ available: true, missing_env: [], note: 'Canal verificado' });
+      setYoutubeVerified(true);
       setYoutubeRefreshToken('');
-      setOk(result.message);
-      await load();
+      setOk('Conectado con el canal: ' + channel.channel_title);
     } catch (e) {
       setError((e as Error).message);
     } finally {
