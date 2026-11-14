@@ -115,6 +115,7 @@ export default function Settings() {
         <p className="muted">Primero, en Google Cloud habilitá YouTube Data API v3 y creá credenciales OAuth de tipo aplicación web. En AppJet → configuración del proyecto → variables de entorno, agregá YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET y APP_TOKEN. Después registrá esta URL como URI de redirección autorizada:</p>
         <code>{window.location.origin}/api/youtube/callback</code>
         <p className="muted">Guardá los cambios del servidor, ingresá el APP_TOKEN en la sección Acceso y tocá Conectar. Google te pedirá autorizar la subida; Laburito guarda el token de actualización en su base de datos y no necesita tu contraseña.</p>
+        <p className="muted">Importante: si la pantalla de consentimiento de Google queda en modo Testing, los refresh tokens para estos permisos vencen a los 7 días. Para automatización continua necesitás pasar el proyecto OAuth a producción y completar la verificación que Google exija; esto depende de las políticas de Google, no de Laburito.</p>
         <div className="row">
           <button className="btn primary" disabled={!meta?.auth_required || !youtube || youtube.missing_env.includes("YOUTUBE_CLIENT_ID") || youtube.missing_env.includes("YOUTUBE_CLIENT_SECRET")} onClick={() => void connectYoutube()}>Conectar cuenta de YouTube</button>
           <button className="btn ghost" onClick={() => void load()}>Comprobar conexión</button>
