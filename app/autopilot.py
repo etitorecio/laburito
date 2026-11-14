@@ -165,10 +165,17 @@ def create_rule(data: dict) -> dict:
 
 def update_rule(rule_id: int, data: dict) -> dict | None:
     ensure_schema()
-    if not db.query_one("SELECT id FROM autopilot_rules WHERE id=?", (rule_id,)):
+    current = get_rule(rule_id)
+    if not current:
         return None
     clean = _clean(data)
     if clean:
+        if clean.get("enabled") == 1 and not current.get("enabled"):
+            clean["next_run_at"] = _ts(0)
+        elif "niche" in clean and clean["niche"] != current.get("niche"):
+            clean["next_run_at"] = _ts(0)
+        elif "cadence_hours" in clean and clean["cadence_hours"] != current.get("cadence_hours"):
+            clean["next_run_at"] = _ts(float(clean["cadence_hours"]))
         sets = ", ".join(f"{k}=?" for k in clean)
         db.execute(
             f"UPDATE autopilot_rules SET {sets}, updated_at=? WHERE id=?",
