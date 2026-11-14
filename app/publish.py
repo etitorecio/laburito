@@ -30,9 +30,7 @@ from pydantic import BaseModel
 
 from . import db
 
-YOUTUBE_ENV = ("YOUTUBE_CLIENT_ID", "YOUTUBE_CLIENT_SECRET", "YOUTUBE_REFRESH_TOKEN")
 YOUTUBE_TOKEN_URL = "https://oauth2.googleapis.com/token"
-YOUTUBE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 YOUTUBE_UPLOAD_URL = "https://www.googleapis.com/upload/youtube/v3/videos"
 PUBLICADOS_DIRNAME = "publicados"
 
