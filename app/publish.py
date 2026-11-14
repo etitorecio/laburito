@@ -522,6 +522,8 @@ def set_auto_publish(project_id: int, enabled: bool, destination: str = "entrega
         raise PublishError("Destino inválido: usá 'entrega' o 'youtube'.")
     if not db.query_one("SELECT id FROM projects WHERE id=?", (project_id,)):
         raise PublishError(f"El proyecto {project_id} no existe.")
+    if enabled and destination == "youtube":
+        youtube_account_status()
     db.execute(
         "UPDATE projects SET auto_publish=?, publish_destination=?, updated_at=? WHERE id=?",
         (1 if enabled else 0, destination, db.now(), project_id),
