@@ -60,10 +60,12 @@ def _ts(offset_hours: float = 0.0) -> str:
 def list_rules() -> list[dict]:
     ensure_schema()
     rows = db.query(
-        "SELECT r.*, c.name AS channel_name, p.title AS last_project_title "
+        "SELECT r.*, c.name AS channel_name, p.title AS last_project_title, p.status AS last_project_status, "
+        "j.status AS last_job_status, j.message AS last_job_message "
         "FROM autopilot_rules r "
         "LEFT JOIN channels c ON c.id=r.channel_id "
         "LEFT JOIN projects p ON p.id=r.last_project_id "
+        "LEFT JOIN jobs j ON j.id=(SELECT MAX(j2.id) FROM jobs j2 WHERE j2.project_id=p.id) "
         "ORDER BY r.id"
     )
     for row in rows:
