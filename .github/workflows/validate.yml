@@ -1,0 +1,38 @@
+name: Validate Laburito
+
+on:
+  push:
+    branches: [appjet]
+  pull_request:
+    branches: [appjet]
+  workflow_dispatch:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check Python syntax
+        run: python -m compileall -q app
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: TypeScript check
+        run: npm run typecheck
+      - name: Production build
+        run: npm run build
