@@ -152,7 +152,7 @@ def destinations() -> list[dict]:
             "missing_env": missing,
             "note": (
                 "Subida real a la Data API v3. Necesita YOUTUBE_CLIENT_ID, "
-                "YOUTUBE_CLIENT_SECRET y una cuenta conectada desde Ajustes (permiso youtube)."
+                "YOUTUBE_CLIENT_SECRET y una cuenta conectada desde Ajustes (permisos youtube.upload y youtube.readonly)."
             ),
         },
     ]
