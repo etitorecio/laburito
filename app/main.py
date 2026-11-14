@@ -245,7 +245,7 @@ def meta():
     return {
         # Cada voz hereda la disponibilidad real del motor para que la interfaz
         # pueda contar y ofrecer solo voces utilizables.
-        "voices": [{**v, "available": tts_status["available"]} for v in tts_status["voices"]],
+        "voices": [{**v, "available": tts_status["available"] and (v["id"] != "es-ar-piper" or tts_status["piper_available"])} for v in tts_status["voices"]],
         "aspects": list(render.ASPECTS.keys()),
         "resolutions": options.RESOLUTION_INFO,
         "fps_options": options.FPS_OPTIONS,
