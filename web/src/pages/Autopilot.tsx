@@ -100,7 +100,7 @@ export default function Autopilot() {
   return (
     <div className="stack">
       <Msg error={error} ok={ok} />
-      <Card title="Autopiloto" sub="Configurá una vez el canal y la frecuencia. El servidor genera proyectos y los manda a la cola automáticamente.">
+      <Card title="Autopiloto" sub="Configurá el nicho y la frecuencia. Laburito busca temas documentados, evita repetir títulos ya usados y crea proyectos automáticamente.">
         <div className="grid two">
           <Field label="Nombre de la automatización">
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Mi canal de historias" />
@@ -150,7 +150,7 @@ export default function Autopilot() {
           <button className="btn primary" disabled={busy || !form.niche.trim()} onClick={create}>{busy ? 'Procesando…' : 'Crear Autopiloto'}</button>
           <button className="btn ghost" disabled={busy} onClick={() => void load()}>Actualizar</button>
         </div>
-        <p className="muted" style={{ marginTop: 12 }}>Importante: esta versión automatiza la creación y render de proyectos con las funciones actuales. Todavía no descubre temas nuevos ni realiza investigación web autónoma; no se presenta como una réplica completa de IATuber hasta implementar y probar esas etapas.</p>
+        <p className="muted" style={{ marginTop: 12 }}>El descubrimiento usa Wikipedia en español sin claves ni pagos. La primera fuente es orientativa, no una verificación periodística completa: revisá las fuentes antes de habilitar publicación pública automática.</p>
       </Card>
 
       <Card title="Tus automatizaciones" sub="Podés ejecutarlas ahora, pausarlas o eliminarlas.">
