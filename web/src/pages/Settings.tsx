@@ -112,13 +112,36 @@ export default function Settings() {
           </Field>
         </div>
         <div className="row">
-          <Field label="Estilo de subtítulos">
+          <Field label="Estilo de subtítulos por defecto">
             <select value={values.caption_style || 'documental'} onChange={(e) => setValues({ ...values, caption_style: e.target.value })}>
-              <option value="documental">Documental (bloques cortos)</option>
-              <option value="short">Short (frases grandes)</option>
-              <option value="minimo">Mínimo (solo lo esencial)</option>
+              {(meta?.caption_styles ?? [{ id: 'documental', label: 'Documental' }]).map((c) => (
+                <option key={c.id} value={c.id}>{c.label}</option>
+              ))}
             </select>
           </Field>
+          <Field label="Plantilla por defecto">
+            <select value={values.default_template || 'shorts'} onChange={(e) => setValues({ ...values, default_template: e.target.value })}>
+              {(meta?.templates ?? [{ id: 'shorts', label: 'Shorts' }]).map((t) => (
+                <option key={t.id} value={t.id}>{t.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Resolución por defecto">
+            <select value={values.default_resolution || '1080p'} onChange={(e) => setValues({ ...values, default_resolution: e.target.value })}>
+              {(meta?.resolutions ?? [{ id: '1080p', label: '1080p' }]).map((r) => (
+                <option key={r.id} value={r.id}>{r.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Transición por defecto">
+            <select value={values.default_transition || 'fundido'} onChange={(e) => setValues({ ...values, default_transition: e.target.value })}>
+              {(meta?.transitions ?? [{ id: 'fundido', label: 'Fundido' }]).map((t) => (
+                <option key={t.id} value={t.id}>{t.label}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        <div className="row">
           <Field label="Ollama local (opcional)" hint="URL de un Ollama propio, p. ej. http://127.0.0.1:11434. Nunca se usa un servicio pago.">
             <input value={values.ollama_url || ''} onChange={(e) => setValues({ ...values, ollama_url: e.target.value })} placeholder="http://127.0.0.1:11434" />
           </Field>
@@ -135,10 +158,19 @@ export default function Settings() {
         </div>
       </Card>
 
-      <Card title="Música de fondo" sub="Colocá archivos libres en la carpeta data/music/ del servidor; se mezclan automáticamente con volumen bajo.">
+      <Card title="Música de fondo" sub="Elegí una cama generada localmente, usá tus archivos de data/music/ o desactivá la música en cada proyecto.">
         <p className="muted" style={{ marginTop: 0 }}>
-          La app no descarga música: usá pistas con licencia compatible (por ejemplo Creative Commons) y guardá la atribución en las fuentes del proyecto.
+          La app no descarga música: las camas se sintetizan con FFmpeg en el servidor y las pistas propias deben tener licencia
+          compatible (por ejemplo Creative Commons), con la atribución guardada en las fuentes del proyecto.
         </p>
+        <div className="pill-row">
+          {(meta?.music_beds ?? []).map((m) => <Badge key={m.id} tone="info">Cama: {m.label}</Badge>)}
+          {(meta?.music_library ?? []).length === 0 ? (
+            <Badge tone="warn">data/music/ vacía</Badge>
+          ) : (
+            (meta?.music_library ?? []).map((f) => <Badge key={f} tone="ok">{f}</Badge>)
+          )}
+        </div>
       </Card>
     </div>
   );

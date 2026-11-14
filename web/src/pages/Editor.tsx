@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api, fmtDuration, mediaUrl, type MediaResult, type Project, type Scene } from '../api';
+import { api, fmtDuration, mediaUrl, type MediaResult, type Meta, type Project, type Scene } from '../api';
 import { Badge, Card, Empty, Field, Msg, Progress, statusTone } from '../ui';
 import type { Route } from '../routes';
 
@@ -124,12 +124,16 @@ export default function Editor({ projectId, go }: Props) {
   }
 
   const [voices, setVoices] = useState<{ id: string; label: string; available?: boolean }[]>([]);
+  const [meta, setMeta] = useState<Meta | null>(null);
 
-  // Voces realmente utilizables en este servidor (espeak-ng/Piper) para elegir narración.
+  // Voces y catálogos realmente utilizables en este servidor (espeak-ng/Piper, FFmpeg).
   useEffect(() => {
     api
-      .get<{ voices: { id: string; label: string; available?: boolean }[] }>('/api/meta')
-      .then((m) => setVoices((m.voices || []).filter((v) => v.available !== false)))
+      .get<Meta>('/api/meta')
+      .then((m) => {
+        setMeta(m);
+        setVoices((m.voices || []).filter((v) => v.available !== false));
+      })
       .catch(() => setVoices([]));
   }, []);
 
@@ -310,6 +314,80 @@ export default function Editor({ projectId, go }: Props) {
                 </option>
               ))}
             </select>
+          </Field>
+        </div>
+        <div className="row">
+          <Field label="Plantilla">
+            <select
+              value={project.template}
+              onChange={(e) => {
+                const tpl = (meta?.templates ?? []).find((t) => t.id === e.target.value);
+                patchProject(
+                  tpl
+                    ? { template: tpl.id, aspect: tpl.aspect, caption_style: tpl.caption_style }
+                    : { template: e.target.value },
+                );
+              }}
+            >
+              {(meta?.templates ?? [{ id: project.template, label: project.template }]).map((t) => (
+                <option key={t.id} value={t.id}>{t.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Subtítulos">
+            <select value={project.caption_style} onChange={(e) => patchProject({ caption_style: e.target.value })}>
+              {(meta?.caption_styles ?? [{ id: project.caption_style, label: project.caption_style }]).map((c) => (
+                <option key={c.id} value={c.id}>{c.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Transición">
+            <select value={project.transition_default} onChange={(e) => patchProject({ transition_default: e.target.value })}>
+              {(meta?.transitions ?? [{ id: project.transition_default, label: project.transition_default }]).map((t) => (
+                <option key={t.id} value={t.id}>{t.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Resolución">
+            <select value={project.resolution} onChange={(e) => patchProject({ resolution: e.target.value })}>
+              {(meta?.resolutions ?? [{ id: project.resolution, label: project.resolution }]).map((r) => (
+                <option key={r.id} value={r.id}>{r.label}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        <div className="row">
+          <Field label="FPS">
+            <select value={project.fps} onChange={(e) => patchProject({ fps: Number(e.target.value) })}>
+              {(meta?.fps_options ?? [project.fps]).map((f) => <option key={f} value={f}>{f} fps</option>)}
+            </select>
+          </Field>
+          <Field label="Música">
+            <select value={project.music} onChange={(e) => patchProject({ music: e.target.value })}>
+              <option value="auto">Automática</option>
+              <option value="ninguna">Sin música</option>
+              {(meta?.music_beds ?? []).map((m) => (
+                <option key={m.id} value={`bed:${m.id}`}>Cama: {m.label}</option>
+              ))}
+              {(meta?.music_library ?? []).map((f) => (
+                <option key={f} value={f}>Biblioteca: {f}</option>
+              ))}
+              {!['auto', 'ninguna'].includes(project.music) &&
+              !(meta?.music_beds ?? []).some((m) => `bed:${m.id}` === project.music) &&
+              !(meta?.music_library ?? []).includes(project.music) ? (
+                <option value={project.music}>{project.music}</option>
+              ) : null}
+            </select>
+          </Field>
+          <Field label="Volumen de música" hint="0 = silencio, 1 = tapa la voz.">
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              max="1"
+              defaultValue={project.music_volume ?? 0.12}
+              onBlur={(e) => patchProject({ music_volume: Number(e.target.value) })}
+            />
           </Field>
         </div>
         <div className="row">
