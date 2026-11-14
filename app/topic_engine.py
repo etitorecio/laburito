@@ -32,23 +32,32 @@ def choose_topic(niche: str, previous_topics: list[str]) -> dict:
     niche = (niche or "").strip()
     if not niche:
         raise ValueError("Configurá un nicho antes de iniciar el Autopiloto.")
-    data = _get({
-        "action": "query", "list": "search", "srsearch": niche,
-        "srnamespace": 0, "srlimit": 20, "format": "json",
-    })
     used = {_normal(x) for x in previous_topics if x}
-    candidates = data.get("query", {}).get("search", [])
-    for item in candidates:
-        title = item.get("title", "").strip()
-        if not title or _normal(title) in used:
-            continue
+    niche_key = _normal(niche)
+    search_terms = [niche, niche + " historia", niche + " casos", niche + " descubrimientos"]
+    candidates = []
+    seen = set()
+    for term in search_terms:
+        data = _get({
+            "action": "query", "list": "search", "srsearch": term,
+            "srnamespace": 0, "srlimit": 50, "format": "json",
+        })
+        for item in data.get("query", {}).get("search", []):
+            title = (item.get("title") or "").strip()
+            key = _normal(title)
+            if not title or key in seen or key == niche_key or key in used:
+                continue
+            seen.add(key)
+            candidates.append(title)
+
+    for title in candidates:
         summary = _get({
             "action": "query", "prop": "extracts|info", "explaintext": 1,
             "inprop": "url", "titles": title, "format": "json",
         })
         pages = summary.get("query", {}).get("pages", {})
         page = next(iter(pages.values()), {})
-        extract = re.sub(r"\s+", " ", page.get("extract", "")).strip()
+        extract = re.sub(r"\\s+", " ", page.get("extract", "")).strip()
         if len(extract) < 650:
             continue
         return {
