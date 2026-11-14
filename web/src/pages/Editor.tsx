@@ -8,6 +8,25 @@ interface Props {
   go: (route: Route, id?: number) => void;
 }
 
+interface PublishDestination {
+  id: string;
+  label: string;
+  available: boolean;
+  missing_env: string[];
+  note: string;
+}
+
+interface Publication {
+  id: number;
+  project_id: number;
+  destination: string;
+  status: string;
+  url: string;
+  external_id: string;
+  message: string;
+  created_at: string;
+}
+
 export default function Editor({ projectId, go }: Props) {
   const [project, setProject] = useState<Project | null>(null);
   const [error, setError] = useState('');
@@ -15,6 +34,10 @@ export default function Editor({ projectId, go }: Props) {
   const [busy, setBusy] = useState('');
   const [searchFor, setSearchFor] = useState<number | null>(null);
   const [results, setResults] = useState<MediaResult[]>([]);
+  const [destinations, setDestinations] = useState<PublishDestination[]>([]);
+  const [publications, setPublications] = useState<Publication[]>([]);
+  const [publishDest, setPublishDest] = useState('entrega');
+  const [autoPublish, setAutoPublish] = useState(false);
   const timer = useRef<number | null>(null);
 
   const load = useCallback(async () => {
@@ -25,9 +48,26 @@ export default function Editor({ projectId, go }: Props) {
     }
   }, [projectId]);
 
+  const loadPublish = useCallback(async () => {
+    try {
+      const [dest, pubs, auto] = await Promise.all([
+        api.get<{ destinations: PublishDestination[] }>('/api/publish/destinations'),
+        api.get<{ publications: Publication[] }>(`/api/publications?project_id=${projectId}`),
+        api.get<{ enabled: boolean; destination: string }>(`/api/projects/${projectId}/auto-publish`),
+      ]);
+      setDestinations(dest.destinations);
+      setPublications(pubs.publications);
+      setAutoPublish(auto.enabled);
+      setPublishDest(auto.destination || 'entrega');
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }, [projectId]);
+
   useEffect(() => {
     void load();
-  }, [load]);
+    void loadPublish();
+  }, [load, loadPublish]);
 
   // Mientras hay un render en curso, refrescamos el proyecto.
   useEffect(() => {
@@ -38,6 +78,35 @@ export default function Editor({ projectId, go }: Props) {
       if (timer.current) window.clearInterval(timer.current);
     };
   }, [project, load]);
+
+  async function publishNow() {
+    setBusy('publish');
+    setError('');
+    setOk('');
+    try {
+      await api.post(`/api/projects/${projectId}/publish`, { destination: publishDest });
+      setOk(`Publicación encolada en ${publishDest}.`);
+      await Promise.all([load(), loadPublish()]);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy('');
+    }
+  }
+
+  async function toggleAutoPublish(enabled: boolean) {
+    setError('');
+    try {
+      const res = await api.post<{ enabled: boolean; destination: string }>(`/api/projects/${projectId}/auto-publish`, {
+        enabled,
+        destination: publishDest,
+      });
+      setAutoPublish(res.enabled);
+      setOk(res.enabled ? `Auto-subida activada (${res.destination}).` : 'Auto-subida desactivada.');
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
 
   async function generateScript(replace = true) {
     setBusy('script');
@@ -186,6 +255,7 @@ export default function Editor({ projectId, go }: Props) {
             <button className="btn small ghost" onClick={() => go('proyectos')}>Volver</button>
             <button className="btn small" onClick={() => generateScript(false)} disabled={busy === 'script'}>+ Escenas</button>
             <button className="btn small primary" onClick={render} disabled={busy === 'render'}>Renderizar</button>
+            <button className="btn small" onClick={publishNow} disabled={busy === 'publish'}>Publicar</button>
           </>
         }
       >
@@ -246,6 +316,60 @@ export default function Editor({ projectId, go }: Props) {
               </div>
             ))}
           </div>
+        )}
+      </Card>
+
+      <Card
+        title="Publicación y auto-subida"
+        sub="El render terminado se entrega en la carpeta de publicados o se sube a YouTube sin intervención."
+        actions={
+          <>
+            <select value={publishDest} onChange={(e) => setPublishDest(e.target.value)} style={{ maxWidth: 260 }}>
+              {destinations.map((d) => (
+                <option key={d.id} value={d.id} disabled={!d.available}>
+                  {d.label}
+                  {d.available ? '' : ` — falta ${d.missing_env.join(', ')}`}
+                </option>
+              ))}
+            </select>
+            <button className="btn small primary" onClick={publishNow} disabled={busy === 'publish'}>
+              {busy === 'publish' ? 'Publicando…' : 'Publicar ahora'}
+            </button>
+          </>
+        }
+      >
+        <label className="row center gap-8" style={{ marginBottom: 10 }}>
+          <input type="checkbox" checked={autoPublish} onChange={(e) => toggleAutoPublish(e.target.checked)} />
+          <span>Publicar automáticamente al terminar cada render</span>
+        </label>
+        {destinations.map((d) => (
+          <div key={d.id} className="meta" style={{ marginBottom: 6 }}>
+            <Badge tone={d.available ? 'ok' : 'warn'}>{d.id}</Badge>
+            <span>{d.note}</span>
+          </div>
+        ))}
+        {publications.length > 0 ? (
+          <div className="list mt-12">
+            {publications.map((p) => (
+              <div className="list-item" key={p.id}>
+                <div className="grow">
+                  <div className="meta">
+                    <Badge tone={p.status === 'publicado' ? 'ok' : 'warn'}>{p.destination}</Badge>
+                    <span>{p.status}</span>
+                    {p.url ? (
+                      <a href={p.url} target="_blank" rel="noreferrer">
+                        {p.url}
+                      </a>
+                    ) : null}
+                    <span>{p.created_at}</span>
+                  </div>
+                  <div>{p.message}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Empty>Todavía no hay publicaciones de este proyecto.</Empty>
         )}
       </Card>
 

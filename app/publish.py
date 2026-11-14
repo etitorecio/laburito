@@ -151,7 +151,7 @@ def build_metadata(project, scenes) -> dict:
         title = title[:92].rstrip() + "…"
     hook = ""
     for scene in scenes:
-        text = (_g(scene, "text") or "").strip()
+        text = (_g(scene, "narration") or _g(scene, "text") or "").strip()
         if text:
             hook = text
             break
