@@ -169,6 +169,14 @@ def silence_wav(out_path: Path, seconds: float, sample_rate: int = 24000) -> dic
 
 
 
+def _md5_file(path: Path) -> str:
+    digest = hashlib.md5()
+    with Path(path).open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def install_piper_voice(on_progress=None) -> str:
     """Descarga y verifica la voz argentina Daniela de Piper desde el catálogo oficial."""
     if not piper_path():
@@ -196,7 +204,7 @@ def install_piper_voice(on_progress=None) -> str:
     downloaded_total = 0
     for url, destination, expected_md5, expected_size in files:
         if destination.exists() and destination.stat().st_size == expected_size:
-            digest = hashlib.md5(destination.read_bytes()).hexdigest()
+            digest = _md5_file(destination)
             if digest == expected_md5:
                 downloaded_total += expected_size
                 continue
