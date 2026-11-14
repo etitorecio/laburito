@@ -507,8 +507,8 @@ def generate_script(
     source_note = next((n for n in notes if n.get("source_url") and len((n.get("claim") or "")) >= 500), None)
     evidence_sentences: list[str] = []
     if source_note:
-        raw = re.sub(r"\\[[0-9]+\\]", "", source_note.get("claim") or "")
-        evidence_sentences = [re.sub(r"\\s+", " ", s).strip() for s in re.split(r"(?<=[.!?])\\s+", raw) if len(s.strip()) >= 45]
+        raw = re.sub(r"\[[0-9]+\]", "", source_note.get("claim") or "")
+        evidence_sentences = [re.sub(r"\s+", " ", s).strip() for s in re.split(r"(?<=[.!?])\s+", raw) if len(s.strip()) >= 45]
 
     claims = _claims(notes)
     rnd = random.Random(_hash(f"{project.get('id')}-{topic}-{kind}"))
