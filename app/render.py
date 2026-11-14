@@ -345,7 +345,7 @@ def _music_track(project: dict | None = None) -> Path | None:
                 return files[0]
     if choice in ("", "auto"):
         try:
-            return media.ensure_music_bed("pad_suave")
+            return media.ensure_music_bed("padsuave")
         except Exception:
             return None
     return None
