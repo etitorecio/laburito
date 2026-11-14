@@ -40,12 +40,19 @@ def _external_references(title: str) -> list[str]:
         })
         pages = data.get("query", {}).get("pages", {})
         urls = []
-        trusted_hints = (".gov", ".edu", "britannica.com", "nature.com", "science.org", "doi.org", "jstor.org", "unesco.org", "smithsonian", "nationalgeographic", "archive.org", "who.int", "un.org", "reuters.com", "apnews.com", "bbc.com")
+        trusted_domains = (
+            "britannica.com", "nature.com", "science.org", "doi.org", "jstor.org",
+            "unesco.org", "smithsonian.org", "nationalgeographic.com", "archive.org",
+            "who.int", "un.org", "reuters.com", "apnews.com", "bbc.com",
+        )
         for page in pages.values():
             for link in page.get("extlinks", []):
                 url = (link.get("*") or "").strip()
-                host = urllib.parse.urlparse(url).netloc.lower()
-                if url.startswith(("https://", "http://")) and any(h in host for h in trusted_hints):
+                host = (urllib.parse.urlparse(url).hostname or "").lower()
+                trusted_host = host.endswith(".gov") or host.endswith(".edu") or any(
+                    host == domain or host.endswith("." + domain) for domain in trusted_domains
+                )
+                if url.startswith(("https://", "http://")) and trusted_host:
                     if url not in urls:
                         urls.append(url)
                 if len(urls) >= 8:
