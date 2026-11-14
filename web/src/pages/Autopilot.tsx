@@ -108,6 +108,7 @@ export default function Autopilot() {
   }
 
   const templates = data?.templates ?? meta?.templates ?? [];
+  const youtubeReady = data?.destinations?.some((d) => d.id === "youtube" && d.available) ?? false;
 
   return (
     <div className="stack">
@@ -202,6 +203,7 @@ export default function Autopilot() {
           </Field>
         </div>
         <label className="check-row"><input type="checkbox" checked={form.auto_publish} onChange={(e) => setForm({ ...form, auto_publish: e.target.checked })} /> Procesar y entregar automáticamente al terminar (YouTube requiere conexión OAuth)</label>
+        {form.auto_publish && form.destination === "youtube" && !youtubeReady && <p className="muted">Todavía no hay una cuenta de YouTube conectada. Configurala desde <a href="#/ajustes">Ajustes → Conectar YouTube</a>; mientras tanto, los videos se renderizan pero no se publican.</p>}
         {form.destination === 'youtube' && (
           <p className="muted">
             {data?.destinations.find((d) => d.id === 'youtube')?.note || 'YouTube necesita credenciales OAuth configuradas en el servidor.'}
