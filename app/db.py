@@ -24,7 +24,7 @@ TMP_DIR = DATA_DIR / "tmp"
 
 _WRITE_LOCK = threading.RLock()
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 _MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -184,7 +184,16 @@ _MIGRATIONS: dict[int, list[str]] = {
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL DEFAULT ''
         )""",
-    ]
+    ],
+    2: [
+        "ALTER TABLE projects ADD COLUMN template TEXT NOT NULL DEFAULT 'shorts'",
+        "ALTER TABLE projects ADD COLUMN caption_style TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE projects ADD COLUMN transition_default TEXT NOT NULL DEFAULT 'fundido'",
+        "ALTER TABLE projects ADD COLUMN resolution TEXT NOT NULL DEFAULT '1080p'",
+        "ALTER TABLE projects ADD COLUMN fps INTEGER NOT NULL DEFAULT 25",
+        "ALTER TABLE projects ADD COLUMN music TEXT NOT NULL DEFAULT 'auto'",
+        "ALTER TABLE projects ADD COLUMN music_volume REAL NOT NULL DEFAULT 0.12",
+    ],
 }
 
 DEFAULT_SETTINGS = {
@@ -192,6 +201,9 @@ DEFAULT_SETTINGS = {
     "default_voice": "es",
     "music_volume": "0.12",
     "caption_style": "documental",
+    "default_template": "shorts",
+    "default_resolution": "1080p",
+    "default_transition": "fundido",
     "ollama_url": "",
     "auto_backup": "1",
 }
