@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import db, media, render, script_gen, tts, worker
+from . import db, media, publish, render, script_gen, tts, worker
 
 APP_VERSION = "1.0.0"
 APP_TOKEN = os.environ.get("APP_TOKEN", "").strip()
@@ -34,6 +34,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="AITuber Libre", version=APP_VERSION, lifespan=lifespan)
+app.include_router(publish.router)
 
 
 @app.middleware("http")

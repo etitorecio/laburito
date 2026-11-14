@@ -10,7 +10,7 @@ import threading
 import time
 import traceback
 
-from . import db, render
+from . import db, publish, render
 
 _stop = threading.Event()
 _thread: threading.Thread | None = None
@@ -81,6 +81,42 @@ def run_job(job: dict) -> None:
                 "UPDATE jobs SET status='completado', progress=100, message=?, result_json=?, finished_at=?, updated_at=? WHERE id=?",
                 ("Render terminado", json.dumps(result, ensure_ascii=False), db.now(), db.now(), job_id),
             )
+            # Auto-subida: si el proyecto la tiene activada, se publica al terminar.
+            try:
+                auto = publish.auto_publish_settings(int(project_id))
+            except publish.PublishError:
+                auto = {"enabled": False, "destination": "entrega"}
+            if auto["enabled"]:
+                publish_job = enqueue(
+                    int(project_id),
+                    "publish_project",
+                    {"destination": auto["destination"]},
+                )
+                db.log(
+                    "info",
+                    "worker",
+                    f"Auto-subida encolada para el proyecto {project_id}",
+                    {"destination": auto["destination"], "job": publish_job},
+                )
+        elif job["kind"] == "publish_project":
+            payload = json.loads(job.get("payload_json") or "{}")
+            published = publish.publish(
+                int(project_id),
+                destination=payload.get("destination", "entrega"),
+                calendar_id=payload.get("calendar_id"),
+                privacy=payload.get("privacy", "unlisted"),
+                on_progress=lambda pct, msg: _set_progress(job_id, pct, msg),
+            )
+            db.execute(
+                "UPDATE jobs SET status='completado', progress=100, message=?, result_json=?, finished_at=?, updated_at=? WHERE id=?",
+                (
+                    f"Publicado en {published['destination']}",
+                    json.dumps({"url": published["url"], "external_id": published["external_id"]}, ensure_ascii=False),
+                    db.now(),
+                    db.now(),
+                    job_id,
+                ),
+            )
         elif job["kind"] == "export_project":
             path = render.export_project(int(project_id))
             db.execute(
@@ -133,6 +169,7 @@ def start() -> None:
     if _thread and _thread.is_alive():
         return
     db.init_db()
+    publish.ensure_schema()
     recovered = recover_stale_jobs()
     if recovered:
         db.log("info", "worker", f"{recovered} tarea(s) reanudadas tras reinicio")
