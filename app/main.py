@@ -947,7 +947,8 @@ def youtube_callback(code: str | None = None, state: str | None = None, error: s
     try:
         publish.exchange_youtube_code(code or "", redirect_uri)
     except publish.PublishError as exc:
-        return HTMLResponse("<h2>No se pudo conectar YouTube</h2><p>" + str(exc) + "</p><p>Revisá las credenciales OAuth.</p>", status_code=400)
+        db.log("error", "youtube_oauth", f"Falló el intercambio OAuth: {exc}")
+        return HTMLResponse("<h2>No se pudo conectar YouTube</h2><p>Revisá las credenciales OAuth y la URL de redirección.</p>", status_code=400)
     return HTMLResponse("<h2>YouTube conectado</h2><p>La cuenta quedó vinculada. Ya podés activar la publicación automática en Laburito.</p><p>Podés cerrar esta pestaña y volver a la aplicación.</p>")
 
 @app.post("/api/projects/{project_id}/publish", status_code=202)
