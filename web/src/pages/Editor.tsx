@@ -123,6 +123,16 @@ export default function Editor({ projectId, go }: Props) {
     }
   }
 
+  const [voices, setVoices] = useState<{ id: string; label: string; available?: boolean }[]>([]);
+
+  // Voces realmente utilizables en este servidor (espeak-ng/Piper) para elegir narración.
+  useEffect(() => {
+    api
+      .get<{ voices: { id: string; label: string; available?: boolean }[] }>('/api/meta')
+      .then((m) => setVoices((m.voices || []).filter((v) => v.available !== false)))
+      .catch(() => setVoices([]));
+  }, []);
+
   async function patchProject(patch: Record<string, unknown>) {
     try {
       setProject(await api.patch<Project>(`/api/projects/${projectId}`, patch));
@@ -289,6 +299,16 @@ export default function Editor({ projectId, go }: Props) {
               <option value="16:9">16:9 horizontal</option>
               <option value="9:16">9:16 vertical</option>
               <option value="1:1">1:1 cuadrado</option>
+            </select>
+          </Field>
+          <Field label="Voz">
+            <select defaultValue={project.voice} onChange={(e) => patchProject({ voice: e.target.value })}>
+              {voices.length === 0 ? <option value={project.voice}>{project.voice}</option> : null}
+              {voices.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.label}
+                </option>
+              ))}
             </select>
           </Field>
         </div>
