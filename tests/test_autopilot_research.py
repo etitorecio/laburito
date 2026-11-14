@@ -43,6 +43,14 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(result["channel_title"], "Canal de prueba")
         self.assertEqual(request.call_args.args[0].get_header("Authorization"), "Bearer access-token")
 
+    def test_youtube_autopublish_requires_live_channel_verification(self):
+        with patch.object(publish, "ensure_schema"):
+            with patch.object(publish.db, "query_one", return_value={"id": 1}):
+                with patch.object(publish.db, "execute"):
+                    with patch.object(publish, "youtube_account_status") as verify:
+                        publish.set_auto_publish(1, True, "youtube")
+        verify.assert_called_once_with()
+
     def test_ollama_rewrite_keeps_scene_structure(self):
         from unittest.mock import patch
 
