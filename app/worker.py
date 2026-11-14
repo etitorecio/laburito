@@ -10,7 +10,7 @@ import threading
 import time
 import traceback
 
-from . import db, publish, render
+from . import autopilot, db, publish, render
 
 _stop = threading.Event()
 _thread: threading.Thread | None = None
@@ -152,12 +152,17 @@ def run_job(job: dict) -> None:
 
 
 def _loop() -> None:
+    last_tick = 0.0
     while not _stop.is_set():
         try:
             job = _claim_next()
             if job:
                 run_job(job)
                 continue
+            # Piloto automático: revisa reglas vencidas como máximo una vez por minuto.
+            if time.time() - last_tick > 60:
+                last_tick = time.time()
+                autopilot.tick()
         except Exception as exc:  # nunca matar el hilo
             db.log("error", "worker", f"Bucle del worker: {exc}")
         _wake.wait(timeout=2.0)
@@ -170,6 +175,7 @@ def start() -> None:
         return
     db.init_db()
     publish.ensure_schema()
+    autopilot.ensure_schema()
     recovered = recover_stale_jobs()
     if recovered:
         db.log("info", "worker", f"{recovered} tarea(s) reanudadas tras reinicio")

@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import db, media, options, publish, render, script_gen, tts, worker
+from . import autopilot, db, media, options, publish, render, script_gen, tts, worker
 
 APP_VERSION = "1.0.0"
 APP_TOKEN = os.environ.get("APP_TOKEN", "").strip()
@@ -162,6 +162,48 @@ class VisualIn(BaseModel):
 
 class SettingsIn(BaseModel):
     values: dict[str, str]
+
+
+class AutopilotIn(BaseModel):
+    name: str = ""
+    niche: str = ""
+    channel_id: int | None = None
+    template: str = "shorts"
+    duration_target_sec: int | None = None
+    voice: str = "es"
+    aspect: str | None = None
+    caption_style: str | None = None
+    transition_default: str | None = None
+    resolution: str | None = None
+    fps: int | None = None
+    music: str | None = None
+    music_volume: float | None = None
+    cadence_hours: int = 24
+    enabled: bool = True
+    destination: str = "entrega"
+    privacy: str = "unlisted"
+    auto_publish: bool = False
+
+
+class AutopilotPatch(BaseModel):
+    name: str | None = None
+    niche: str | None = None
+    channel_id: int | None = None
+    template: str | None = None
+    duration_target_sec: int | None = None
+    voice: str | None = None
+    aspect: str | None = None
+    caption_style: str | None = None
+    transition_default: str | None = None
+    resolution: str | None = None
+    fps: int | None = None
+    music: str | None = None
+    music_volume: float | None = None
+    cadence_hours: int | None = None
+    enabled: bool | None = None
+    destination: str | None = None
+    privacy: str | None = None
+    auto_publish: bool | None = None
 
 
 # --------------------------------------------------------------------------- #
@@ -913,6 +955,58 @@ def set_auto_publish_endpoint(project_id: int, payload: publish.AutoPublishIn):
         return publish.set_auto_publish(project_id, payload.enabled, payload.destination)
     except publish.PublishError as exc:
         raise HTTPException(400, str(exc)) from exc
+
+
+@app.get("/api/autopilot")
+def list_autopilot():
+    publish.ensure_schema()
+    return {
+        "rules": autopilot.list_rules(),
+        "cadences": autopilot.CADENCE_OPTIONS,
+        "destinations": publish.destinations(),
+        "niches": db.query("SELECT id, name FROM niches ORDER BY name COLLATE NOCASE"),
+        "channels": db.query("SELECT id, name FROM channels ORDER BY name COLLATE NOCASE"),
+        "templates": options.TEMPLATES,
+        "resolutions": options.RESOLUTION_INFO,
+        "caption_styles": [
+            {"id": key, "label": options.CAPTION_LABELS.get(key, key)} for key in options.CAPTION_STYLES
+        ],
+        "transitions": options.TRANSITIONS,
+        "fps_options": options.FPS_OPTIONS,
+    }
+
+
+@app.post("/api/autopilot", status_code=201)
+def create_autopilot(payload: AutopilotIn):
+    try:
+        return autopilot.create_rule(payload.model_dump(exclude_none=True))
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@app.patch("/api/autopilot/{rule_id}")
+def patch_autopilot(rule_id: int, payload: AutopilotPatch):
+    try:
+        rule = autopilot.update_rule(rule_id, payload.model_dump(exclude_none=True))
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    if not rule:
+        raise HTTPException(404, "Regla inexistente")
+    return rule
+
+
+@app.delete("/api/autopilot/{rule_id}")
+def delete_autopilot(rule_id: int):
+    autopilot.delete_rule(rule_id)
+    return {"ok": True}
+
+
+@app.post("/api/autopilot/{rule_id}/run", status_code=202)
+def run_autopilot(rule_id: int):
+    try:
+        return autopilot.run_rule(rule_id, force=True)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
 
 
 @app.get("/api/settings")
