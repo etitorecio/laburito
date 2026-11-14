@@ -65,12 +65,13 @@ En **Ajustes** se configuran idioma, voz, volumen de música, estilo de subtítu
 ### Conectar YouTube
 
 1. En Google Cloud, creá un proyecto y habilitá **YouTube Data API v3**.
-2. Creá credenciales OAuth de tipo **TVs y dispositivos de entrada limitada**.
+2. Creá credenciales OAuth de tipo **Aplicación web** y agregá `https://developers.google.com/oauthplayground` como URI de redirección autorizada.
 3. En las variables de entorno de AppJet configurá `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` y `APP_TOKEN` (o `AITUBER_TOKEN`).
-4. Pegá el token de la app en **Ajustes** y tocá **Iniciar conexión**.
-5. Abrí la dirección de Google que muestra Laburito, ingresá el código de usuario y autorizá la cuenta. No hace falta URL de redirección ni dominio propio.
+4. Abrí el [OAuth 2.0 Playground oficial](https://developers.google.com/oauthplayground). En el engranaje activá **Use your own OAuth credentials**, pegá tu Client ID y Client Secret, seleccioná acceso **Offline** y forzá la pantalla de consentimiento.
+5. En Step 1 solicitá `https://www.googleapis.com/auth/youtube.upload` y `https://www.googleapis.com/auth/youtube.readonly`. Autorizá y canjeá el código por tokens.
+6. Copiá el **Refresh token** y pegalo en **Ajustes → Conectar YouTube**. Laburito lo guarda en el servidor; después podés verificar el nombre del canal.
 
-El flujo de dispositivo usa el permiso `https://www.googleapis.com/auth/youtube`, necesario para este tipo de cliente. Google entrega un refresh token que Laburito conserva en su base de datos. Si el consentimiento OAuth queda en modo **Testing**, Google hace vencer esos refresh tokens a los 7 días; para automatización continua hay que revisar el estado de publicación y la verificación que corresponda.
+Usá tus propias credenciales en OAuth Playground: su cliente de prueba revoca refresh tokens a las 24 horas. Si la pantalla de consentimiento de Google permanece en modo **Testing**, los tokens de aplicaciones externas pueden vencer a los 7 días. Para automatización continua hay que revisar el estado de publicación y la verificación que Google exija.
 
 ## Arquitectura
 
