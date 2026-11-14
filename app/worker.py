@@ -127,6 +127,15 @@ def run_job(job: dict) -> None:
                 "UPDATE jobs SET status='completado', progress=100, message=?, result_json=?, finished_at=?, updated_at=? WHERE id=?",
                 ("Exportación lista", json.dumps({"zip": str(path)}), db.now(), db.now(), job_id),
             )
+        elif job["kind"] == "install_piper_voice":
+            from . import tts
+            model_path = tts.install_piper_voice(
+                on_progress=lambda pct, msg: _set_progress(job_id, pct, msg)
+            )
+            db.execute(
+                "UPDATE jobs SET status='completado', progress=100, message=?, result_json=?, finished_at=?, updated_at=? WHERE id=?",
+                ("Voz neural argentina instalada", json.dumps({"model": model_path}), db.now(), db.now(), job_id),
+            )
         elif job["kind"] == "cleanup":
             removed = render.cleanup_temporaries(int(project_id))
             db.execute(
