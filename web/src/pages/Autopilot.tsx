@@ -186,40 +186,6 @@ export default function Autopilot() {
           <Field label="Volumen de música (0 a 1)">
             <input type="number" min="0" max="1" step="0.01" value={form.music_volume} onChange={(e) => setForm({ ...form, music_volume: Number(e.target.value) })} />
           </Field>
-          <Field label="Relación de aspecto">
-            <select value={form.aspect} onChange={(e) => setForm({ ...form, aspect: e.target.value })}>
-              {(meta?.aspects ?? ['9:16', '16:9', '1:1']).map((aspect) => <option key={aspect} value={aspect}>{aspect}</option>)}
-            </select>
-          </Field>
-          <Field label="Estilo de subtítulos">
-            <select value={form.caption_style} onChange={(e) => setForm({ ...form, caption_style: e.target.value })}>
-              {(meta?.caption_styles ?? []).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-            </select>
-          </Field>
-          <Field label="Transición entre escenas">
-            <select value={form.transition_default} onChange={(e) => setForm({ ...form, transition_default: e.target.value })}>
-              {(meta?.transitions ?? []).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-            </select>
-          </Field>
-          <Field label="Resolución">
-            <select value={form.resolution} onChange={(e) => setForm({ ...form, resolution: e.target.value })}>
-              {(meta?.resolutions ?? []).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-            </select>
-          </Field>
-          <Field label="Fotogramas por segundo">
-            <select value={form.fps} onChange={(e) => setForm({ ...form, fps: Number(e.target.value) })}>
-              {(meta?.fps_options ?? [25, 30]).map((fps) => <option key={fps} value={fps}>{fps} FPS</option>)}
-            </select>
-          </Field>
-          <Field label="Música de fondo">
-            <select value={form.music} onChange={(e) => setForm({ ...form, music: e.target.value })}>
-              {(meta?.music_beds ?? []).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-            </select>
-          </Field>
-          <Field label="Volumen de música">
-            <input type="range" min="0" max="0.4" step="0.01" value={form.music_volume} onChange={(e) => setForm({ ...form, music_volume: Number(e.target.value) })} />
-            <span className="muted">{Math.round(form.music_volume * 100)}%</span>
-          </Field>
           <Field label="Frecuencia">
             <select value={form.cadence_hours} onChange={(e) => setForm({ ...form, cadence_hours: Number(e.target.value) })}>
               {[6, 12, 24, 48, 72, 168].map((h) => <option key={h} value={h}>{h < 24 ? `Cada ${h} horas` : h === 24 ? 'Diariamente' : h === 168 ? 'Semanalmente' : `Cada ${h / 24} días`}</option>)}
