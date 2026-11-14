@@ -102,29 +102,55 @@ def ensure_audio(project: dict, scene: dict) -> tuple[Path, float, dict]:
 
 
 def ensure_visual(project: dict, scene: dict) -> tuple[Path, str, dict]:
-    """Imagen de la escena: recurso legal propio o tarjeta generada localmente."""
+    """Busca primero una imagen con licencia y usa una tarjeta como respaldo."""
     width, height = _size(project)
     existing = (scene.get("visual_path") or "").strip()
     if existing and Path(existing).exists():
-        return Path(existing), "recurso", {
+        return Path(existing), scene.get("visual_kind") or "recurso", {
             "license": scene.get("visual_license") or "sin verificar",
             "author": scene.get("visual_author") or "desconocido",
             "url": scene.get("visual_url") or "",
         }
+
     key = _h(f"{scene.get('title')}|{scene.get('visual_query')}|{width}x{height}")
-    card = _visual_dir(int(project["id"])) / f"{key}.png"
+    folder = _visual_dir(int(project["id"]))
+    query = (scene.get("visual_query") or project.get("topic") or "").strip()
+    for provider in ("wikimedia", "openverse"):
+        try:
+            search = media.search_wikimedia if provider == "wikimedia" else media.search_openverse
+            for item in search(query, limit=6):
+                image_url = (item.get("url") or "").strip()
+                if not image_url:
+                    continue
+                try:
+                    downloaded = media.download_asset(image_url, folder)
+                    if not downloaded.get("content_type", "").startswith("image/"):
+                        continue
+                    return Path(downloaded["path"]), provider, {
+                        "license": item.get("license") or "consultar licencia",
+                        "author": item.get("author") or "desconocido",
+                        "url": item.get("page") or image_url,
+                        "title": item.get("title") or "",
+                        "provider": item.get("provider") or provider,
+                    }
+                except Exception:
+                    continue
+        except Exception:
+            continue
+
+    card = folder / f"{key}.png"
     if not card.exists():
         media.make_card(
             card,
-            scene.get("title") or project.get("title") or "AITuber Libre",
-            scene.get("visual_query") or project.get("topic") or "",
+            scene.get("title") or project.get("title") or "Laburito",
+            query or project.get("topic") or "",
             width,
             height,
             kind="short" if project.get("kind") == "short" else "documental",
         )
     return card, "tarjeta_generada", {
         "license": "generada localmente (no es material histórico)",
-        "author": "AITuber Libre",
+        "author": "Laburito",
         "url": "",
     }
 
@@ -276,6 +302,7 @@ def render_scene(
         "audio_info": audio_info,
         "visual_kind": visual_kind,
         "visual_info": visual_info,
+        "visual_path": str(visual),
         "reused": reused,
     }
 
@@ -347,8 +374,13 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
         if result["audio_info"].get("warning"):
             warnings.append(f"Escena «{scene.get('title')}» sin voz: {result['audio_info']['warning']}")
         db.execute(
-            "UPDATE scenes SET audio_path=?, audio_sec=?, status=? , updated_at=? WHERE id=?",
-            (str(result["wav"]), round(result["duration"], 2), "renderizada", db.now(), scene["id"]),
+            "UPDATE scenes SET audio_path=?, audio_sec=?, visual_path=?, visual_kind=?, visual_license=?, visual_author=?, visual_url=?, status=?, updated_at=? WHERE id=?",
+            (
+                str(result["wav"]), round(result["duration"], 2), result["visual_path"],
+                result["visual_kind"], result["visual_info"].get("license", ""),
+                result["visual_info"].get("author", ""), result["visual_info"].get("url", ""),
+                "renderizada", db.now(), scene["id"],
+            ),
         )
         db.execute(
             "INSERT INTO assets(project_id, scene_id, kind, path, label, license, author, url, bytes, created_at) "
