@@ -513,7 +513,7 @@ def generate_script(
     if evidence_sentences:
         evidence_sentences = evidence_sentences[:max(len(beats), int(target / 10))]
 
-    claims = _claims(notes)
+    claims = _claims([n for n in notes if n is not source_note])
     rnd = random.Random(_hash(f"{project.get('id')}-{topic}-{kind}"))
     rnd.shuffle(claims)
 
