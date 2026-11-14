@@ -1025,7 +1025,7 @@ def create_autopilot(payload: AutopilotIn):
 @app.patch("/api/autopilot/{rule_id}")
 def patch_autopilot(rule_id: int, payload: AutopilotPatch):
     try:
-        rule = autopilot.update_rule(rule_id, payload.model_dump(exclude_none=True))
+        rule = autopilot.update_rule(rule_id, payload.model_dump(exclude_unset=True))
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     if not rule:
