@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import db, media, publish, render, script_gen, tts, worker
+from . import db, media, options, publish, render, script_gen, tts, worker
 
 APP_VERSION = "1.0.0"
 APP_TOKEN = os.environ.get("APP_TOKEN", "").strip()
@@ -65,12 +65,19 @@ class ProjectIn(BaseModel):
     topic: str = ""
     kind: str = "documentary"
     channel_id: int | None = None
-    duration_target_sec: int = 600
+    duration_target_sec: int | None = None
     voice: str = "es"
     speed: int = 150
     pitch: int = 45
-    aspect: str = "16:9"
+    aspect: str = ""
     notes: str = ""
+    template: str = options.DEFAULT_TEMPLATE
+    caption_style: str = ""
+    transition_default: str = ""
+    resolution: str = ""
+    fps: int | None = None
+    music: str = "auto"
+    music_volume: float | None = None
 
 
 class ProjectPatch(BaseModel):
@@ -84,6 +91,13 @@ class ProjectPatch(BaseModel):
     aspect: str | None = None
     notes: str | None = None
     status: str | None = None
+    template: str | None = None
+    caption_style: str | None = None
+    transition_default: str | None = None
+    resolution: str | None = None
+    fps: int | None = None
+    music: str | None = None
+    music_volume: float | None = None
 
 
 class ScenePatch(BaseModel):
@@ -191,6 +205,19 @@ def meta():
         # pueda contar y ofrecer solo voces utilizables.
         "voices": [{**v, "available": tts_status["available"]} for v in tts_status["voices"]],
         "aspects": list(render.ASPECTS.keys()),
+        "resolutions": options.RESOLUTION_INFO,
+        "fps_options": options.FPS_OPTIONS,
+        "templates": options.TEMPLATES,
+        "external_templates": options.EXTERNAL_TEMPLATES,
+        "caption_styles": [
+            {"id": key, "label": options.CAPTION_LABELS.get(key, key)} for key in options.CAPTION_STYLES
+        ],
+        "transitions": options.TRANSITIONS,
+        "music_beds": [{"id": m["id"], "label": m["label"]} for m in options.MUSIC_BEDS],
+        "music_library": (
+            sorted(p.name for p in db.MUSIC_DIR.iterdir() if p.is_file()) if db.MUSIC_DIR.exists() else []
+        ),
+        "script_templates": options.SCRIPT_TEMPLATES,
         "kinds": [
             {"id": "documentary", "label": "Documental (8-20 min)", "aspect": "16:9"},
             {"id": "short", "label": "Short vertical", "aspect": "9:16"},
@@ -313,14 +340,23 @@ def list_projects():
 
 @app.post("/api/projects", status_code=201)
 def create_project(payload: ProjectIn):
-    aspect = payload.aspect or ("9:16" if payload.kind == "short" else "16:9")
-    if aspect not in render.ASPECTS:
-        raise HTTPException(400, "Formato no soportado (usá 16:9, 9:16 o 1:1)")
+    data = payload.model_dump()
+    if data.get("aspect") and data["aspect"] not in render.ASPECTS:
+        raise HTTPException(400, "Formato no soportado (16:9, 9:16, 1:1 o 4:5)")
+    resolved = options.resolve_defaults(data)
+    tpl = options.template(resolved["template"])
+    duration = int(data.get("duration_target_sec") or tpl["default_duration"])
     pid = db.execute(
-        "INSERT INTO projects(channel_id, title, topic, kind, aspect, status, duration_target_sec, voice, speed, pitch, notes, created_at, updated_at) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
-        (payload.channel_id, payload.title, payload.topic or payload.title, payload.kind, aspect, "borrador",
-         payload.duration_target_sec, payload.voice, payload.speed, payload.pitch, payload.notes, db.now(), db.now()),
+        "INSERT INTO projects(channel_id, title, topic, kind, aspect, status, duration_target_sec, voice, speed, pitch, notes, "
+        "template, caption_style, transition_default, resolution, fps, music, music_volume, created_at, updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (
+            data.get("channel_id"), payload.title, payload.topic or payload.title, resolved["kind"],
+            resolved["aspect"], "borrador", duration, payload.voice, payload.speed, payload.pitch,
+            payload.notes, resolved["template"], resolved["caption_style"], resolved["transition_default"],
+            resolved["resolution"], resolved["fps"], resolved["music"], data.get("music_volume"),
+            db.now(), db.now(),
+        ),
     )
     db.log("info", "projects", f"Proyecto creado: {payload.title}", {"id": pid})
     return _project_full(pid)
@@ -338,6 +374,18 @@ def patch_project(project_id: int, payload: ProjectPatch):
     data = payload.model_dump(exclude_none=True)
     if "aspect" in data and data["aspect"] not in render.ASPECTS:
         raise HTTPException(400, "Formato no soportado")
+    if "template" in data and data["template"] not in options.TEMPLATE_IDS:
+        raise HTTPException(400, "Plantilla desconocida")
+    if "caption_style" in data and data["caption_style"] not in options.CAPTION_STYLES:
+        raise HTTPException(400, "Estilo de subtítulos desconocido")
+    if "transition_default" in data and data["transition_default"] not in options.TRANSITION_IDS:
+        raise HTTPException(400, "Transición desconocida")
+    if "resolution" in data and data["resolution"] not in options.RESOLUTIONS:
+        raise HTTPException(400, "Resolución no soportada")
+    if "fps" in data and data["fps"] not in options.FPS_OPTIONS:
+        raise HTTPException(400, "FPS no soportado")
+    if "music_volume" in data:
+        data["music_volume"] = max(0.0, min(1.0, float(data["music_volume"])))
     if data:
         sets = ", ".join(f"{k}=?" for k in data)
         db.execute(f"UPDATE projects SET {sets}, updated_at=? WHERE id=?", (*data.values(), db.now(), project_id))
