@@ -167,7 +167,11 @@ def build_metadata(project, scenes) -> dict:
 
     sources = db.query("SELECT * FROM sources WHERE project_id=? ORDER BY id", (_g(project, "id"),))
     source_lines = [
-        f"- {_g(s, 'title') or _g(s, 'url')} {('· ' + _g(s, 'url')) if _g(s, 'title') and _g(s, 'url') else ''}".strip()
+        (
+            f"- {_g(s, 'title') or _g(s, 'url')} "
+            f"· {_g(s, 'author')} · {_g(s, 'license')} "
+            f"· {_g(s, 'url')}"
+        ).strip(" ·")
         for s in sources
     ]
 
