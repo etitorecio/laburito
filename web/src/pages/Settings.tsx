@@ -10,7 +10,7 @@ export default function Settings() {
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
   const [youtube, setYoutube] = useState<{ available: boolean; missing_env: string[]; note: string } | null>(null);
-  const [deviceAuth, setDeviceAuth] = useState<{ user_code: string; verification_url: string; expires_in: number; interval: number } | null>(null);
+  const [youtubeRefreshToken, setYoutubeRefreshToken] = useState("");
   const [youtubeBusy, setYoutubeBusy] = useState(false);
   const [piperBusy, setPiperBusy] = useState(false);
 
@@ -46,12 +46,15 @@ export default function Settings() {
     }
   }
 
-  async function startYoutubeConnection() {
+  async function saveYoutubeToken() {
     setError(''); setOk(''); setYoutubeBusy(true);
     try {
-      const result = await api.post<{ user_code: string; verification_url: string; expires_in: number; interval: number }>('/api/youtube/device/start');
-      setDeviceAuth(result);
-      setOk('Código generado. Abrí Google, ingresalo y después volvé para comprobar la autorización.');
+      const result = await api.post<{ ok: boolean; message: string }>('/api/youtube/token', {
+        refresh_token: youtubeRefreshToken.trim(),
+      });
+      setYoutubeRefreshToken('');
+      setOk(result.message);
+      await load();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -77,27 +80,6 @@ export default function Settings() {
       const result = await api.get<{ channel_title: string }>('/api/youtube/status');
       setOk('Conectado con el canal: ' + result.channel_title);
       await load();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setYoutubeBusy(false);
-    }
-  }
-
-  async function checkYoutubeConnection() {
-    setError(''); setOk(''); setYoutubeBusy(true);
-    try {
-      const result = await api.post<{ status: string; message: string; wait_seconds?: number }>('/api/youtube/device/poll');
-      if (result.status === 'connected') {
-        setDeviceAuth(null);
-        setOk(result.message);
-        await load();
-      } else if (result.status === 'denied' || result.status === 'expired') {
-        setDeviceAuth(null);
-        setError(result.message);
-      } else {
-        setOk(result.message);
-      }
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -165,23 +147,17 @@ export default function Settings() {
           <Badge tone={youtube?.available ? 'ok' : 'warn'}>{youtube?.available ? 'YouTube conectado' : 'Falta configurar la conexión'}</Badge>
           {youtube?.missing_env.map((item) => <Badge key={item} tone="warn">{item}</Badge>)}
         </div>
-        <p className="muted">En Google Cloud habilitá YouTube Data API v3 y creá credenciales OAuth del tipo <b>TVs y dispositivos de entrada limitada</b>. Si el consentimiento está en Testing, agregá tu cuenta de Google como usuario de prueba. En AppJet → configuración del proyecto → variables de entorno, agregá YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET y APP_TOKEN. Después ingresá el APP_TOKEN en la sección Acceso.</p>
-        <p className="muted">Tocá Iniciar conexión. Google mostrará un código y una dirección: abrí esa dirección, ingresá el código exactamente como aparece y autorizá Laburito. Este flujo no necesita dominio propio ni URL de redirección.</p>
-        <p className="muted">Google solicita el permiso de administración de YouTube para poder subir videos. No recibe tu contraseña; el token de actualización queda guardado del lado del servidor.</p>
-        <p className="muted">Importante: si el consentimiento OAuth queda en modo Testing, los refresh tokens pueden vencer a los 7 días. Para automatización continua, revisá el estado de publicación y la verificación que Google exija.</p>
+        <p className="muted">En Google Cloud habilitá YouTube Data API v3 y creá credenciales OAuth de tipo <b>Aplicación web</b>. Agregá esta URI autorizada: <code>https://developers.google.com/oauthplayground</code>. En AppJet → variables de entorno, configurá YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET y APP_TOKEN. Guardá los cambios y pegá el APP_TOKEN en la sección Acceso.</p>
+        <p className="muted">Abrí el <a href="https://developers.google.com/oauthplayground" target="_blank" rel="noreferrer">OAuth 2.0 Playground oficial de Google</a>. En el engranaje, activá «Use your own OAuth credentials», pegá tu Client ID y Client Secret, elegí Access type «Offline» y Force prompt «Consent Screen».</p>
+        <p className="muted">En Step 1 ingresá estos permisos: <code>https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly</code>. Tocá «Authorize APIs» y después «Exchange authorization code for tokens». Copiá el Refresh token que aparece y pegalo acá. Usá tus propias credenciales: el Playground revoca los tokens de prueba a las 24 horas si no las configurás.</p>
+        <p className="muted">El refresh token es una contraseña de acceso: pegalo solo acá, nunca en el chat. Laburito lo guarda en el servidor y no vuelve a mostrarlo. Si el consentimiento de Google sigue en Testing, los tokens pueden vencer a los 7 días.</p>
+        <Field label="Refresh token de YouTube">
+          <input type="password" value={youtubeRefreshToken} onChange={(e) => setYoutubeRefreshToken(e.target.value)} placeholder="Pegá aquí el refresh token de Google" autoComplete="off" />
+        </Field>
         <div className="row">
-          <button className="btn primary" disabled={youtubeBusy || !meta?.auth_required || !youtube || youtube.missing_env.includes("YOUTUBE_CLIENT_ID") || youtube.missing_env.includes("YOUTUBE_CLIENT_SECRET")} onClick={() => void startYoutubeConnection()}>{youtubeBusy ? 'Procesando…' : 'Iniciar conexión'}</button>
+          <button className="btn primary" disabled={youtubeBusy || !meta?.auth_required || youtubeRefreshToken.trim().length < 20} onClick={() => void saveYoutubeToken()}>{youtubeBusy ? 'Guardando…' : 'Guardar conexión de YouTube'}</button>
           <button className="btn ghost" disabled={youtubeBusy || !youtube?.available} onClick={() => void testYoutubeConnection()}>Comprobar conexión real</button>
         </div>
-        {deviceAuth && (
-          <div className="stack" style={{ marginTop: 12 }}>
-            <p><b>Código de Google (respetá mayúsculas y guion):</b></p>
-            <div className="card" style={{ padding: 16, textAlign: "center" }}><strong style={{ fontSize: 28, letterSpacing: 2 }}>{deviceAuth.user_code}</strong></div>
-            <p><a href={deviceAuth.verification_url} target="_blank" rel="noreferrer">{deviceAuth.verification_url}</a></p>
-            <p className="muted">Tenés aproximadamente {Math.ceil(deviceAuth.expires_in / 60)} minutos. Después de autorizar, volvé acá y comprobá la conexión.</p>
-            <button className="btn primary" disabled={youtubeBusy} onClick={() => void checkYoutubeConnection()}>Ya autoricé, comprobar</button>
-          </div>
-        )}
       </Card>
 
       <Card title="Voz neural española" sub="Mejorá la narración sin pagar APIs ni servicios de voz.">
