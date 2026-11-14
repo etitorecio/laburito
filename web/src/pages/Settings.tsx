@@ -56,6 +56,7 @@ export default function Settings() {
   function saveToken() {
     setToken(token.trim());
     setOk(token.trim() ? 'Token guardado en este navegador.' : 'Token eliminado.');
+    void load();
   }
 
   return (
