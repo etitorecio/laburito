@@ -7,6 +7,7 @@ import io
 import json
 import os
 import platform
+import secrets
 import shutil
 import time
 from contextlib import asynccontextmanager
@@ -20,7 +21,7 @@ from pydantic import BaseModel
 from . import autopilot, db, media, options, publish, render, script_gen, tts, worker
 
 APP_VERSION = "1.0.0"
-APP_TOKEN = os.environ.get("APP_TOKEN", "").strip()
+APP_TOKEN = (os.environ.get("APP_TOKEN") or os.environ.get("AITUBER_TOKEN") or "").strip()
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
 
 
@@ -38,7 +39,7 @@ app = FastAPI(title="AITuber Libre", version=APP_VERSION, lifespan=lifespan)
 
 @app.middleware("http")
 async def token_guard(request: Request, call_next):
-    if APP_TOKEN and request.url.path.startswith("/api") and request.url.path not in ("/api/health",):
+    if APP_TOKEN and request.url.path.startswith("/api") and request.url.path not in ("/api/health", "/api/youtube/callback"):
         supplied = request.headers.get("x-app-token") or request.query_params.get("token") or ""
         if not hmac.compare_digest(supplied, APP_TOKEN):
             return JSONResponse({"detail": "Token de acceso requerido"}, status_code=401)
@@ -916,6 +917,38 @@ def publish_destinations():
     publish.ensure_schema()
     return {"destinations": publish.destinations(), "auto_publish_available": True}
 
+
+@app.get("/api/youtube/connect")
+def youtube_connect(request: Request):
+    if not APP_TOKEN:
+        raise HTTPException(403, "Para proteger tu cuenta, configurá APP_TOKEN en las variables de entorno antes de conectar YouTube.")
+    state = secrets.token_urlsafe(32)
+    forwarded_proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    forwarded_host = request.headers.get("x-forwarded-host", request.url.netloc)
+    redirect_uri = f"{forwarded_proto}://{forwarded_host}/api/youtube/callback"
+    db.set_setting("youtube_oauth_state", state)
+    db.set_setting("youtube_oauth_redirect_uri", redirect_uri)
+    try:
+        authorization_url = publish.youtube_authorization_url(redirect_uri, state)
+    except publish.PublishError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return {"authorization_url": authorization_url, "redirect_uri": redirect_uri}
+
+
+@app.get("/api/youtube/callback", response_class=HTMLResponse)
+def youtube_callback(code: str | None = None, state: str | None = None, error: str | None = None):
+    expected = db.get_setting("youtube_oauth_state", "")
+    if not expected or not state or not hmac.compare_digest(expected, state):
+        raise HTTPException(400, "Estado OAuth inválido o vencido. Volvé a iniciar la conexión desde Ajustes.")
+    db.set_setting("youtube_oauth_state", "")
+    if error:
+        return HTMLResponse("<h2>Conexión cancelada</h2><p>No se modificó la cuenta conectada.</p>", status_code=400)
+    redirect_uri = db.get_setting("youtube_oauth_redirect_uri", "")
+    try:
+        publish.exchange_youtube_code(code or "", redirect_uri)
+    except publish.PublishError as exc:
+        return HTMLResponse("<h2>No se pudo conectar YouTube</h2><p>" + str(exc) + "</p><p>Revisá las credenciales OAuth.</p>", status_code=400)
+    return HTMLResponse("<h2>YouTube conectado</h2><p>La cuenta quedó vinculada. Ya podés activar la publicación automática en Laburito.</p><p>Podés cerrar esta pestaña y volver a la aplicación.</p>")
 
 @app.post("/api/projects/{project_id}/publish", status_code=202)
 def publish_project(project_id: int, payload: publish.PublishIn):
