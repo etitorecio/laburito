@@ -145,7 +145,7 @@ export default function Autopilot() {
           <Field label="Duración objetivo (segundos)">
             <input type="number" min="5" max="3600" value={form.duration_target_sec} onChange={(e) => setForm({ ...form, duration_target_sec: Number(e.target.value) })} />
           </Field>
-          <Field label="Voz">
+          <Field label="Voz (narración en español)">
             <select value={form.voice} onChange={(e) => setForm({ ...form, voice: e.target.value })}>
               {(meta?.voices ?? []).map((v) => <option key={v.id} value={v.id} disabled={!v.available}>{v.label}{v.available ? '' : ' (no disponible)'}</option>)}
             </select>
