@@ -927,6 +927,7 @@ def youtube_connect(request: Request):
     forwarded_host = request.headers.get("x-forwarded-host", request.url.netloc).split(",")[0].strip()
     redirect_uri = f"{forwarded_proto}://{forwarded_host}/api/youtube/callback"
     db.set_setting("youtube_oauth_state", state)
+    db.set_setting("youtube_oauth_state_created", str(time.time()))
     db.set_setting("youtube_oauth_redirect_uri", redirect_uri)
     try:
         authorization_url = publish.youtube_authorization_url(redirect_uri, state)
@@ -938,9 +939,12 @@ def youtube_connect(request: Request):
 @app.get("/api/youtube/callback", response_class=HTMLResponse)
 def youtube_callback(code: str | None = None, state: str | None = None, error: str | None = None):
     expected = db.get_setting("youtube_oauth_state", "")
-    if not expected or not state or not hmac.compare_digest(expected, state):
+    created = float(db.get_setting("youtube_oauth_state_created", "0") or 0)
+    if not expected or not state or not hmac.compare_digest(expected, state) or time.time() - created > 600:
+        db.set_setting("youtube_oauth_state", "")
         raise HTTPException(400, "Estado OAuth inválido o vencido. Volvé a iniciar la conexión desde Ajustes.")
     db.set_setting("youtube_oauth_state", "")
+    db.set_setting("youtube_oauth_state_created", "0")
     if error:
         return HTMLResponse("<h2>Conexión cancelada</h2><p>No se modificó la cuenta conectada.</p>", status_code=400)
     redirect_uri = db.get_setting("youtube_oauth_redirect_uri", "")
