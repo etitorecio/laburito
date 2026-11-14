@@ -99,6 +99,38 @@ export default function Autopilot() {
     finally { setBusy(false); }
   }
 
+  function edit(rule: AutopilotRule) {
+    setForm({
+      name: rule.name,
+      niche: rule.niche,
+      channel_id: rule.channel_id ? String(rule.channel_id) : '',
+      template: rule.template,
+      duration_target_sec: rule.duration_target_sec ?? 60,
+      voice: rule.voice,
+      aspect: rule.aspect,
+      caption_style: rule.caption_style,
+      transition_default: rule.transition_default,
+      resolution: rule.resolution,
+      fps: rule.fps,
+      music: rule.music,
+      music_volume: rule.music_volume,
+      cadence_hours: rule.cadence_hours,
+      destination: rule.destination,
+      privacy: rule.privacy,
+      auto_publish: rule.auto_publish,
+      enabled: rule.enabled,
+    });
+    setEditingId(rule.id);
+    setError('');
+    setOk('Editando «' + (rule.name || rule.niche) + '».');
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setForm(INITIAL);
+    setOk('');
+  }
+
   async function toggle(rule: AutopilotRule) {
     setBusy(true); setError('');
     try {
