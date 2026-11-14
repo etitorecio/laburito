@@ -242,6 +242,21 @@ def _create_project(rule: dict) -> int:
                 db.now(),
             ),
         )
+    if rule.get("voice") == "es-ar-piper":
+        from . import tts
+        if tts.status().get("piper_available"):
+            db.execute(
+                "INSERT INTO sources(project_id, title, url, author, license, accessed_at, attribution, kind, notes, created_at) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?)",
+                (
+                    pid, "Piper Daniela — voz neural argentina",
+                    "https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0/es/es_AR/daniela/high",
+                    "Piper voice contributors / OpenSLR 61", "CC BY-SA 4.0 (dataset de voz)",
+                    db.now(), "Piper Daniela (es_AR) · CC BY-SA 4.0 · https://huggingface.co/rhasspy/piper-voices",
+                    "voz", "Modelo neural argentino instalado localmente; licencia y atribución según su ficha de voz.",
+                    db.now(),
+                ),
+            )
     notes = db.query(
         "SELECT * FROM research_notes WHERE niche=? ORDER BY id DESC LIMIT 12",
         (niche,),
