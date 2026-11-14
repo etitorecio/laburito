@@ -967,6 +967,22 @@ def youtube_device_poll():
     return result
 
 
+@app.post("/api/tts/piper/install", status_code=202)
+def install_piper_voice():
+    if not APP_TOKEN:
+        raise HTTPException(403, "Configurá APP_TOKEN para proteger las acciones de administración.")
+    status = tts.status()
+    if status["piper_available"]:
+        return {"installed": True, "message": "La voz neural ya está instalada."}
+    if not status.get("piper_installed"):
+        raise HTTPException(503, "Piper todavía no está instalado. Esperá a que el servidor despliegue requirements.txt.")
+    existing = db.query_one(
+        "SELECT id FROM jobs WHERE kind='install_piper_voice' AND status IN ('en_cola','ejecutando') ORDER BY id DESC LIMIT 1"
+    )
+    job_id = int(existing["id"]) if existing else worker.enqueue(None, "install_piper_voice", {})
+    return {"installed": False, "job_id": job_id, "message": "Descarga de la voz neural agregada a la cola."}
+
+
 @app.get("/api/youtube/status")
 def youtube_status():
     try:
