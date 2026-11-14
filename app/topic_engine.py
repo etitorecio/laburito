@@ -29,23 +29,26 @@ def _normal(value: str) -> str:
 
 
 def _external_references(title: str) -> list[str]:
-    data = _get({
-        "action": "query", "prop": "extlinks", "ellimit": 50,
-        "titles": title, "format": "json",
-    })
-    pages = data.get("query", {}).get("pages", {})
-    urls = []
-    trusted_hints = (".gov", ".edu", ".org", "britannica.com", "nature.com", "science.org", "doi.org", "jstor.org", "unesco.org", "smithsonian", "nationalgeographic", "archive.org")
-    for page in pages.values():
-        for link in page.get("extlinks", []):
-            url = (link.get("*") or "").strip()
-            host = urllib.parse.urlparse(url).netloc.lower()
-            if url.startswith(("https://", "http://")) and any(h in host for h in trusted_hints):
-                if url not in urls:
-                    urls.append(url)
-            if len(urls) >= 8:
-                return urls
-    return urls
+    try:
+        data = _get({
+            "action": "query", "prop": "extlinks", "ellimit": 50,
+            "titles": title, "format": "json",
+        })
+        pages = data.get("query", {}).get("pages", {})
+        urls = []
+        trusted_hints = (".gov", ".edu", ".org", "britannica.com", "nature.com", "science.org", "doi.org", "jstor.org", "unesco.org", "smithsonian", "nationalgeographic", "archive.org")
+        for page in pages.values():
+            for link in page.get("extlinks", []):
+                url = (link.get("*") or "").strip()
+                host = urllib.parse.urlparse(url).netloc.lower()
+                if url.startswith(("https://", "http://")) and any(h in host for h in trusted_hints):
+                    if url not in urls:
+                        urls.append(url)
+                if len(urls) >= 8:
+                    return urls
+        return urls
+    except Exception:
+        return []
 
 def choose_topic(niche: str, previous_topics: list[str]) -> dict:
     niche = (niche or "").strip()
