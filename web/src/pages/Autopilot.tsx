@@ -17,6 +17,13 @@ const INITIAL = {
   duration_target_sec: 60,
   voice: 'es',
   cadence_hours: 24,
+  aspect: '9:16',
+  caption_style: 'short_pop',
+  transition_default: 'fundido',
+  resolution: '1080p',
+  fps: 25,
+  music: 'auto',
+  music_volume: 0.12,
   destination: 'entrega',
   privacy: 'unlisted',
   auto_publish: false,
@@ -115,7 +122,18 @@ export default function Autopilot() {
             </select>
           </Field>
           <Field label="Formato">
-            <select value={form.template} onChange={(e) => setForm({ ...form, template: e.target.value })}>
+            <select value={form.template} onChange={(e) => {
+              const selected = templates.find((t) => t.id === e.target.value);
+              setForm({
+                ...form,
+                template: e.target.value,
+                ...(selected ? {
+                  aspect: selected.aspect,
+                  caption_style: selected.caption_style,
+                  duration_target_sec: selected.default_duration,
+                } : {}),
+              });
+            }}>
               {templates.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
             </select>
           </Field>
@@ -126,6 +144,40 @@ export default function Autopilot() {
             <select value={form.voice} onChange={(e) => setForm({ ...form, voice: e.target.value })}>
               {(meta?.voices ?? []).map((v) => <option key={v.id} value={v.id} disabled={!v.available}>{v.label}{v.available ? '' : ' (no disponible)'}</option>)}
             </select>
+          </Field>
+          <Field label="Formato de pantalla">
+            <select value={form.aspect} onChange={(e) => setForm({ ...form, aspect: e.target.value })}>
+              {(meta?.aspects ?? ['9:16', '16:9', '1:1']).map((a) => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </Field>
+          <Field label="Estilo de subtítulos">
+            <select value={form.caption_style} onChange={(e) => setForm({ ...form, caption_style: e.target.value })}>
+              {(meta?.caption_styles ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Transiciones">
+            <select value={form.transition_default} onChange={(e) => setForm({ ...form, transition_default: e.target.value })}>
+              {(meta?.transitions ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Resolución">
+            <select value={form.resolution} onChange={(e) => setForm({ ...form, resolution: e.target.value })}>
+              {(meta?.resolutions ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Fotogramas por segundo">
+            <select value={form.fps} onChange={(e) => setForm({ ...form, fps: Number(e.target.value) })}>
+              {(meta?.fps_options ?? [25, 30]).map((x) => <option key={x} value={x}>{x} FPS</option>)}
+            </select>
+          </Field>
+          <Field label="Música">
+            <select value={form.music} onChange={(e) => setForm({ ...form, music: e.target.value })}>
+              <option value="auto">Automática</option>
+              {(meta?.music_beds ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Volumen de música (0 a 1)">
+            <input type="number" min="0" max="1" step="0.01" value={form.music_volume} onChange={(e) => setForm({ ...form, music_volume: Number(e.target.value) })} />
           </Field>
           <Field label="Frecuencia">
             <select value={form.cadence_hours} onChange={(e) => setForm({ ...form, cadence_hours: Number(e.target.value) })}>
@@ -144,7 +196,7 @@ export default function Autopilot() {
             </select>
           </Field>
         </div>
-        <label className="check-row"><input type="checkbox" checked={form.auto_publish} onChange={(e) => setForm({ ...form, auto_publish: e.target.checked })} /> Publicar automáticamente al terminar (solo con YouTube configurado)</label>
+        <label className="check-row"><input type="checkbox" checked={form.auto_publish} onChange={(e) => setForm({ ...form, auto_publish: e.target.checked })} /> Procesar y entregar automáticamente al terminar (YouTube requiere conexión OAuth)</label>
         <label className="check-row"><input type="checkbox" checked={form.enabled} onChange={(e) => setForm({ ...form, enabled: e.target.checked })} /> Activar al crear</label>
         <div className="row" style={{ marginTop: 14 }}>
           <button className="btn primary" disabled={busy || !form.niche.trim()} onClick={create}>{busy ? 'Procesando…' : 'Crear Autopiloto'}</button>
