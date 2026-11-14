@@ -199,6 +199,12 @@ def install_piper_voice(on_progress=None) -> str:
             "dd157b5eaf6930bf949cf416d9a9307a",
             4817,
         ),
+        (
+            "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_ES/davefx/medium/MODEL_CARD",
+            folder / "MODEL_CARD",
+            "5569c0fb20448308466216428b52f392",
+            275,
+        ),
     ]
     total_bytes = sum(item[3] for item in files)
     downloaded_total = 0
@@ -223,7 +229,7 @@ def install_piper_voice(on_progress=None) -> str:
                     size += len(chunk)
                     pct = 5 + int(85 * (downloaded_total + size) / total_bytes)
                     if on_progress:
-                        on_progress(pct, f"Descargando voz neural argentina: {size // (1024 * 1024)} MB")
+                        on_progress(pct, f"Descargando voz neural española: {size // (1024 * 1024)} MB")
         except Exception as exc:
             temporary.unlink(missing_ok=True)
             raise RuntimeError(f"No se pudo descargar el modelo Piper: {exc}") from exc
