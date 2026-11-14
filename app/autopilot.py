@@ -175,24 +175,35 @@ def delete_rule(rule_id: int) -> None:
 
 
 def _create_project(rule: dict) -> int:
-    """Crea el proyecto con guion ya escrito, listo para renderizar."""
-    from . import script_gen
+    """Descubre un tema no usado, registra una fuente y crea el proyecto."""
+    from . import script_gen, topic_engine
 
     tpl = options.template(rule.get("template"))
     niche = (rule.get("niche") or "").strip()
-    title = niche or rule.get("name") or "Proyecto automático"
+    if not niche:
+        raise ValueError("La regla necesita un nicho.")
+
+    # El historial evita que el Autopiloto repita temas ya producidos.
+    previous = db.query(
+        "SELECT topic FROM projects WHERE channel_id IS ? ORDER BY id DESC LIMIT 250",
+        (rule.get("channel_id"),),
+    )
+    previous_topics = [row.get("topic", "") for row in previous]
+    research = topic_engine.research_topic(niche, previous_topics)
+    topic = research["topic"]
     stamp = time.strftime("%d/%m %H:%M", time.gmtime())
-    title = f"{title} · {stamp}"
+    title = f"{topic} · {stamp}"
     duration = int(rule.get("duration_target_sec") or tpl.get("default_duration") or 30)
     pid = db.execute(
         "INSERT INTO projects(channel_id, title, topic, kind, aspect, status, duration_target_sec, voice, speed, pitch, notes, "
         "template, caption_style, transition_default, resolution, fps, music, music_volume, created_at, updated_at) "
         "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (
-            rule.get("channel_id"), title, niche or title, tpl.get("kind", "short"),
+            rule.get("channel_id"), title, topic, tpl.get("kind", "short"),
             rule.get("aspect") or tpl.get("aspect"), "borrador", duration,
             rule.get("voice") or "es", 150, 45,
-            f"Generado por el piloto automático «{rule.get('name') or 'sin nombre'}».",
+            f"Autopiloto: {rule.get('name') or niche}. Fuente inicial: {research['url']}. "
+            "La fuente es introductoria y debe contrastarse antes de publicar.",
             tpl["id"], rule.get("caption_style") or tpl.get("caption_style"),
             rule.get("transition_default") or "fundido", rule.get("resolution") or "1080p",
             int(rule.get("fps") or 25), rule.get("music") or "auto",
@@ -200,10 +211,9 @@ def _create_project(rule: dict) -> int:
         ),
     )
     project = db.query_one("SELECT * FROM projects WHERE id=?", (pid,))
-    notes = (
-        db.query("SELECT * FROM research_notes WHERE niche=? ORDER BY id DESC LIMIT 12", (niche,))
-        if niche
-        else db.query("SELECT * FROM research_notes ORDER BY id DESC LIMIT 12")
+    notes = db.query(
+        "SELECT * FROM research_notes WHERE niche=? ORDER BY id DESC LIMIT 12",
+        (niche,),
     )
     script = script_gen.generate_script(project, notes, [])
     for scene in script["scenes"]:
@@ -215,7 +225,11 @@ def _create_project(rule: dict) -> int:
                 scene["transition"], "borrador", db.now(), db.now(),
             ),
         )
-    db.log("info", "autopilot", f"Proyecto automático creado: {title}", {"id": pid, "scenes": len(script["scenes"])})
+    db.log(
+        "info", "autopilot",
+        f"Proyecto automático creado con tema descubierto: {title}",
+        {"id": pid, "topic": topic, "source": research["url"], "scenes": len(script["scenes"])},
+    )
     return pid
 
 
