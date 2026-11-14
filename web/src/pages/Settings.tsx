@@ -57,7 +57,7 @@ export default function Settings() {
   }
 
   async function saveYoutubeToken() {
-    setError(''); setOk(''); setYoutubeBusy(true);
+    setError(''); setOk(''); setYoutubeVerified(false); setYoutubeBusy(true);
     try {
       await api.post<{ ok: boolean; message: string }>('/api/youtube/token', {
         refresh_token: youtubeRefreshToken.trim(),
