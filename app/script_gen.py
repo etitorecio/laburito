@@ -201,12 +201,266 @@ SHORT_BLUEPRINT = [
 ]
 
 
+
+LISTICLE_BLUEPRINT = [
+    {
+        "key": "hook",
+        "title": "Hook + promesa de la lista",
+        "weight": 0.14,
+        "purpose": "Prometer un valor concreto y enumerable en los primeros segundos.",
+        "narration": (
+            "Hay {topic} que casi nadie mira dos veces y que cambian todo cuando los entendés. "
+            "Te dejo los puntos clave, del más obvio al que menos se comenta."
+        ),
+        "visual": "{topic} collage primer plano vertical",
+    },
+    {
+        "key": "punto_1",
+        "title": "Punto 1",
+        "weight": 0.17,
+        "purpose": "Primer punto: claro, comprobable y con un ejemplo.",
+        "narration": (
+            "Punto uno: lo básico de {topic} no es lo que se dice en los titulares. "
+            "El detalle que importa es más chico y más concreto de lo que parece."
+        ),
+        "visual": "{topic} detalle uno",
+    },
+    {
+        "key": "punto_2",
+        "title": "Punto 2",
+        "weight": 0.17,
+        "purpose": "Segundo punto: agrega una capa nueva, no repite.",
+        "narration": (
+            "Punto dos: acá aparece la parte que cambia la ecuación. "
+            "Cuando se mira de cerca, {topic} deja de ser una anécdota y se vuelve un patrón."
+        ),
+        "visual": "{topic} comparación lado a lado",
+    },
+    {
+        "key": "desarrollo",
+        "title": "Punto 3 (el menos conocido)",
+        "weight": 0.20,
+        "purpose": "Tercer punto: el dato que justifica el vídeo.",
+        "narration": (
+            "Punto tres, el que casi nadie menciona: {topic} también tiene un costo que no se ve. "
+            "Y ese costo explica por qué el resto de la lista funciona así."
+        ),
+        "visual": "{topic} gráfico datos",
+    },
+    {
+        "key": "punto_4",
+        "title": "Punto 4 / mención rápida",
+        "weight": 0.15,
+        "purpose": "Cerrar la enumeración con ritmo rápido.",
+        "narration": (
+            "Y para cerrar la lista: si tuvieras que quedarte con una sola idea de {topic}, "
+            "quedate con esta. El resto se aprende mirando de nuevo."
+        ),
+        "visual": "{topic} resumen mosaico",
+    },
+    {
+        "key": "cta",
+        "title": "Cierre y llamada",
+        "weight": 0.17,
+        "purpose": "Cerrar sin prometer de más e invitar a seguir.",
+        "narration": (
+            "Guardá este vídeo si te sirvió y decime cuál de los puntos te sorprendió más. "
+            "En el próximo seguimos con {topic} desde otro ángulo."
+        ),
+        "visual": "{topic} cierre pantalla final",
+    },
+]
+
+POV_BLUEPRINT = [
+    {
+        "key": "hook",
+        "title": "Hook en segunda persona",
+        "weight": 0.15,
+        "purpose": "Meter al espectador en la escena de inmediato.",
+        "narration": (
+            "Imaginate que estás ahí, a un paso de entender {topic}, y nadie te avisó lo que venía. "
+            "Todo empieza con un detalle mínimo."
+        ),
+        "visual": "{topic} escena inmersiva primer plano",
+    },
+    {
+        "key": "contexto",
+        "title": "El contexto que no se ve",
+        "weight": 0.20,
+        "purpose": "Dar el marco mínimo para que la escena tenga peso.",
+        "narration": (
+            "Lo que nadie te cuenta es el contexto: {topic} no pasó de golpe. "
+            "Fue una suma de decisiones chicas que, juntas, ya no tenían vuelta atrás."
+        ),
+        "visual": "{topic} contexto ambiente",
+    },
+    {
+        "key": "desarrollo",
+        "title": "El giro",
+        "weight": 0.28,
+        "purpose": "El cambio de información que reencuadra todo lo anterior.",
+        "narration": (
+            "Y acá viene el giro: lo que parecía un problema de {topic} era, en realidad, el síntoma. "
+            "Cuando lo ves así, la historia cambia de protagonista."
+        ),
+        "visual": "{topic} giro dramático",
+    },
+    {
+        "key": "consecuencias",
+        "title": "La consecuencia",
+        "weight": 0.20,
+        "purpose": "Mostrar qué se pierde o se gana con ese giro.",
+        "narration": (
+            "La consecuencia es simple y difícil de aceptar: con {topic} no se puede volver atrás. "
+            "Solo se puede elegir qué hacer con lo que queda."
+        ),
+        "visual": "{topic} consecuencia después",
+    },
+    {
+        "key": "cierre",
+        "title": "Cierre reflexivo",
+        "weight": 0.17,
+        "purpose": "Cerrar con una pregunta abierta y honesta.",
+        "narration": (
+            "Si estuvieras en esa situación, ¿qué habrías hecho distinto? "
+            "Contame abajo: las mejores respuestas las leo todas."
+        ),
+        "visual": "{topic} cierre silencio",
+    },
+]
+
+EXPLAINER_BLUEPRINT = [
+    {
+        "key": "apertura",
+        "title": "La pregunta",
+        "weight": 0.10,
+        "purpose": "Formular la pregunta que el vídeo responde.",
+        "narration": (
+            "¿Cómo funciona {topic}, exactamente? No la versión de manual: la que se entiende "
+            "cuando alguien te lo explica sin apuro."
+        ),
+        "visual": "{topic} pregunta pizarra",
+    },
+    {
+        "key": "contexto",
+        "title": "De dónde viene",
+        "weight": 0.18,
+        "purpose": "Origen y marco mínimo necesario.",
+        "narration": (
+            "Primero, de dónde viene {topic}. Sin este punto de partida, el resto parece magia "
+            "y no lo es: es una cadena de pasos que se puede seguir."
+        ),
+        "visual": "{topic} línea de tiempo origen",
+    },
+    {
+        "key": "desarrollo",
+        "title": "Paso 1: el mecanismo",
+        "weight": 0.24,
+        "purpose": "Explicar el mecanismo central en un solo paso.",
+        "narration": (
+            "Paso uno, el mecanismo: {topic} funciona porque separa lo que entra de lo que sale. "
+            "Esa separación es toda la idea, el resto son detalles de implementación."
+        ),
+        "visual": "{topic} diagrama mecanismo",
+    },
+    {
+        "key": "protagonistas",
+        "title": "Paso 2: quién lo hace posible",
+        "weight": 0.22,
+        "purpose": "Mostrar los actores y sus incentivos.",
+        "narration": (
+            "Paso dos, los actores: detrás de {topic} hay gente con incentivos distintos. "
+            "Cuando esos incentivos se alinean, el sistema avanza; cuando chocan, se traba."
+        ),
+        "visual": "{topic} actores reunión",
+    },
+    {
+        "key": "consecuencias",
+        "title": "Paso 3: qué implica",
+        "weight": 0.16,
+        "purpose": "Consecuencias prácticas y límites.",
+        "narration": (
+            "Paso tres, las implicancias: entender {topic} cambia qué decisiones tomás. "
+            "Y también cambia qué promesas conviene no creer."
+        ),
+        "visual": "{topic} aplicación práctica",
+    },
+    {
+        "key": "cierre",
+        "title": "Resumen en 20 segundos",
+        "weight": 0.10,
+        "purpose": "Recapitular y dejar un cierre claro.",
+        "narration": (
+            "Resumen: {topic} es una cadena de pasos, no un misterio. "
+            "Si te quedó una duda, dejala en los comentarios y la resolvemos en el próximo vídeo."
+        ),
+        "visual": "{topic} resumen final",
+    },
+]
+
+QUOTE_BLUEPRINT = [
+    {
+        "key": "hook",
+        "title": "La frase",
+        "weight": 0.22,
+        "purpose": "Presentar la cita de forma directa y visual.",
+        "narration": (
+            "Hay una frase sobre {topic} que se repite mucho y se entiende poco. "
+            "Vale la pena mirarla de cerca."
+        ),
+        "visual": "{topic} cita tipografía vertical",
+    },
+    {
+        "key": "contexto",
+        "title": "Quién la dijo y cuándo",
+        "weight": 0.22,
+        "purpose": "Dar autoría y contexto real, sin inventar atribuciones.",
+        "narration": (
+            "El contexto importa: la frase sobre {topic} nace en un momento concreto, "
+            "con intereses concretos. Sin eso, es solo una frase linda."
+        ),
+        "visual": "{topic} retrato archivo",
+    },
+    {
+        "key": "desarrollo",
+        "title": "Qué significa de verdad",
+        "weight": 0.28,
+        "purpose": "Traducir la cita a una idea aplicable.",
+        "narration": (
+            "Traducida a la práctica, la frase dice algo simple sobre {topic}: "
+            "lo que se mide cambia lo que se hace, y lo que no se mide se olvida."
+        ),
+        "visual": "{topic} detalle simbólico",
+    },
+    {
+        "key": "cierre",
+        "title": "Cierre",
+        "weight": 0.28,
+        "purpose": "Cerrar con la idea y una pregunta.",
+        "narration": (
+            "Si te sirvió, guardala. Y si conocés otra frase sobre {topic} que diga lo contrario, "
+            "traéla: las contradicciones son la parte interesante."
+        ),
+        "visual": "{topic} cierre cielo",
+    },
+]
+
+BLUEPRINTS = {
+    "documentary": DOCUMENTARY_BLUEPRINT,
+    "short": SHORT_BLUEPRINT,
+    "listicle": LISTICLE_BLUEPRINT,
+    "pov": POV_BLUEPRINT,
+    "explainer": EXPLAINER_BLUEPRINT,
+    "quote": QUOTE_BLUEPRINT,
+}
+
 def _hash(text: str) -> str:
     return hashlib.sha1(text.encode("utf-8")).hexdigest()[:10]
 
 
 def blueprint(kind: str) -> list[dict]:
-    return DOCUMENTARY_BLUEPRINT if kind == "documentary" else SHORT_BLUEPRINT
+    """Blueprint narrativo por plantilla de guion (6 plantillas)."""
+    return BLUEPRINTS.get(kind or "", DOCUMENTARY_BLUEPRINT)
 
 
 def _claims(notes: list[dict]) -> list[str]:
