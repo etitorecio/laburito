@@ -135,6 +135,7 @@ export default function Autopilot() {
     setBusy(true); setError('');
     try {
       await api.patch(`/api/autopilot/${rule.id}`, { enabled: !rule.enabled });
+      if (editingId === rule.id) setForm((old) => ({ ...old, enabled: !rule.enabled }));
       await load();
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
@@ -143,7 +144,7 @@ export default function Autopilot() {
   async function remove(id: number) {
     if (!window.confirm('¿Eliminar esta regla de Autopiloto?')) return;
     setBusy(true); setError('');
-    try { await api.del(`/api/autopilot/${id}`); await load(); }
+    try { await api.del(`/api/autopilot/${id}`); if (editingId === id) cancelEdit(); await load(); }
     catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
   }
