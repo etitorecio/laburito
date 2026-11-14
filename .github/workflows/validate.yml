@@ -27,6 +27,8 @@ jobs:
         env:
           AITUBER_DISABLE_EXTERNAL_MEDIA: "1"
         run: python scripts/e2e_local.py
+      - name: Install and synthesize with the CC0 Spanish Piper voice
+        run: python scripts/test_piper.py
 
   frontend:
     runs-on: ubuntu-latest
