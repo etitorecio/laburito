@@ -10,6 +10,7 @@ export default function Settings() {
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
   const [youtube, setYoutube] = useState<{ available: boolean; missing_env: string[]; note: string } | null>(null);
+  const [youtubeVerified, setYoutubeVerified] = useState(false);
   const [youtubeRefreshToken, setYoutubeRefreshToken] = useState("");
   const [youtubeBusy, setYoutubeBusy] = useState(false);
   const [piperBusy, setPiperBusy] = useState(false);
@@ -24,7 +25,18 @@ export default function Settings() {
       setDiag(d);
       setMeta(m);
       setValues(m.settings);
-      setYoutube(p.destinations.find((x) => x.id === 'youtube') || null);
+      const youtubeDestination = p.destinations.find((x) => x.id === 'youtube') || null;
+      setYoutube(youtubeDestination);
+      if (youtubeDestination?.available) {
+        try {
+          await api.get('/api/youtube/status');
+          setYoutubeVerified(true);
+        } catch {
+          setYoutubeVerified(false);
+        }
+      } else {
+        setYoutubeVerified(false);
+      }
     } catch (e) {
       setError((e as Error).message);
     }
@@ -78,6 +90,7 @@ export default function Settings() {
     setError(''); setOk(''); setYoutubeBusy(true);
     try {
       const result = await api.get<{ channel_title: string }>('/api/youtube/status');
+      setYoutubeVerified(true);
       setOk('Conectado con el canal: ' + result.channel_title);
       await load();
     } catch (e) {
@@ -144,7 +157,7 @@ export default function Settings() {
 
       <Card title="Conectar YouTube" sub="Vinculá tu canal una sola vez para que el Autopiloto pueda subir videos automáticamente.">
         <div className="pill-row">
-          <Badge tone={youtube?.available ? 'ok' : 'warn'}>{youtube?.available ? 'YouTube conectado' : 'Falta configurar la conexión'}</Badge>
+          <Badge tone={youtube?.available ? 'ok' : 'warn'}>{youtubeVerified ? 'Canal verificado' : youtube?.available ? 'Credenciales guardadas · falta verificar' : 'Falta configurar la conexión'}</Badge>
           {youtube?.missing_env.map((item) => <Badge key={item} tone="warn">{item}</Badge>)}
         </div>
         <p className="muted">En Google Cloud habilitá YouTube Data API v3 y creá credenciales OAuth de tipo <b>Aplicación web</b>. Si el consentimiento está en Testing, agregá tu cuenta en Audiencia → Usuarios de prueba. Agregá esta URI autorizada: <code>https://developers.google.com/oauthplayground</code>. En AppJet → variables de entorno, configurá YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET y APP_TOKEN. Guardá los cambios y pegá el APP_TOKEN en la sección Acceso.</p>
