@@ -142,7 +142,7 @@ export default function Settings() {
           </Field>
         </div>
         <div className="row">
-          <Field label="Ollama local (opcional)" hint="URL de un Ollama propio, p. ej. http://127.0.0.1:11434. Nunca se usa un servicio pago.">
+          <Field label="Ollama local (opcional)" hint="URL de Ollama con el modelo llama3.2 instalado. Es opcional, local y sin pagos.">
             <input value={values.ollama_url || ''} onChange={(e) => setValues({ ...values, ollama_url: e.target.value })} placeholder="http://127.0.0.1:11434" />
           </Field>
           <Field label="Copia de seguridad automática">
