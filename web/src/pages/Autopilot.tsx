@@ -35,6 +35,7 @@ export default function Autopilot() {
   const [data, setData] = useState<Options | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [form, setForm] = useState(INITIAL);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
@@ -64,16 +65,23 @@ export default function Autopilot() {
   async function create() {
     setBusy(true); setError(''); setOk('');
     try {
-      await api.post('/api/autopilot', {
+      const payload = {
         ...form,
         channel_id: form.channel_id ? Number(form.channel_id) : null,
         duration_target_sec: Number(form.duration_target_sec),
         cadence_hours: Number(form.cadence_hours),
         auto_publish: form.auto_publish,
         enabled: form.enabled,
-      });
+      };
+      if (editingId) {
+        await api.patch('/api/autopilot/' + editingId, payload);
+        setOk('Configuración del Autopiloto actualizada.');
+      } else {
+        await api.post('/api/autopilot', payload);
+        setOk('Autopiloto creado. La primera ejecución queda programada para ahora.');
+      }
       setForm(INITIAL);
-      setOk('Autopiloto creado. La primera ejecución queda programada para ahora.');
+      setEditingId(null);
       await load();
     } catch (e) {
       setError((e as Error).message);
