@@ -5,17 +5,22 @@ se informa con claridad y el render avanza con una advertencia de calidad.
 """
 from __future__ import annotations
 
+import hashlib
 import os
+import urllib.request
 import shutil
 import subprocess
 import wave
 from pathlib import Path
 
+from . import db
+
 # Catálogo de voces del motor libre (espeak-ng). Cada entrada es una voz real:
 # "engine_voice" es el idioma/variante que entiende el motor.
 VOICES = {
     "es": {"engine_voice": "es", "label": "Español (neutro)", "gender": "neutro", "language": "es"},
-    "es-ar": {"engine_voice": "es-la", "label": "Español rioplatense", "gender": "neutro", "language": "es"},
+    "es-ar": {"engine_voice": "es-la", "label": "Español rioplatense (espeak)", "gender": "neutro", "language": "es"},
+    "es-ar-piper": {"engine_voice": "es-la", "label": "Español argentino neural (Piper Daniela)", "gender": "femenino", "language": "es"},
     "es-mx": {"engine_voice": "es-419", "label": "Español latinoamericano", "gender": "neutro", "language": "es"},
     "es-masculino": {"engine_voice": "es", "label": "Español grave (masculino)", "gender": "masculino", "language": "es"},
     "es-agudo": {"engine_voice": "es", "label": "Español agudo (femenino)", "gender": "femenino", "language": "es"},
@@ -60,11 +65,12 @@ def piper_path() -> str | None:
 def status() -> dict:
     engine = engine_path()
     piper = piper_path()
-    model = os.environ.get("PIPER_MODEL", "")
+    model = os.environ.get("PIPER_MODEL") or db.get_setting("piper_model_path", "")
+    piper_available = bool(piper and model and Path(model).exists())
     return {
         "engine": Path(engine).name if engine else None,
         "available": bool(engine),
-        "piper_available": bool(piper and model and Path(model).exists()),
+        "piper_available": piper_available,
         "piper_model": model or None,
         "voices": [
             {
@@ -101,8 +107,8 @@ def synthesize(text: str, out_path: Path, voice: str = "es", speed: int = 150, p
     pitch = max(PITCH_RANGE[0], min(PITCH_RANGE[1], int(pitch or 45)))
 
     piper = piper_path()
-    model = os.environ.get("PIPER_MODEL", "")
-    if piper and model and Path(model).exists():
+    model = os.environ.get("PIPER_MODEL") or db.get_setting("piper_model_path", "")
+    if piper and model and Path(model).exists() and voice == "es-ar-piper":
         try:
             subprocess.run(
                 [piper, "--model", model, "--output_file", str(out_path)],
@@ -158,3 +164,63 @@ def silence_wav(out_path: Path, seconds: float, sample_rate: int = 24000) -> dic
         wav.setframerate(sample_rate)
         wav.writeframes(b"\x00\x00" * frames)
     return {"engine": "silencio", "seconds": seconds}
+
+
+
+def install_piper_voice(on_progress=None) -> str:
+    """Descarga y verifica la voz argentina Daniela de Piper desde el catálogo oficial."""
+    if not piper_path():
+        raise RuntimeError("El motor Piper no está instalado en este servidor. Revisá requirements.txt y reiniciá la app.")
+    folder = db.DATA_DIR / "voices" / "es_AR-daniela-high"
+    folder.mkdir(parents=True, exist_ok=True)
+    files = [
+        (
+            "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_AR/daniela/high/es_AR-daniela-high.onnx",
+            folder / "es_AR-daniela-high.onnx",
+            "e373fb657c93877dbc438badeadff4cb",
+            114199011,
+        ),
+        (
+            "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_AR/daniela/high/es_AR-daniela-high.onnx.json",
+            folder / "es_AR-daniela-high.onnx.json",
+            "b68d699a1779d98ee94c0cd9a08ba95b",
+            7248,
+        ),
+    ]
+    total_bytes = sum(item[3] for item in files)
+    downloaded_total = 0
+    for url, destination, expected_md5, expected_size in files:
+        if destination.exists() and destination.stat().st_size == expected_size:
+            digest = hashlib.md5(destination.read_bytes()).hexdigest()
+            if digest == expected_md5:
+                downloaded_total += expected_size
+                continue
+        temporary = destination.with_suffix(destination.suffix + ".part")
+        digest = hashlib.md5()
+        size = 0
+        request = urllib.request.Request(url, headers={"User-Agent": "Laburito/1.0"})
+        try:
+            with urllib.request.urlopen(request, timeout=120) as response, temporary.open("wb") as output:
+                while True:
+                    chunk = response.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    output.write(chunk)
+                    digest.update(chunk)
+                    size += len(chunk)
+                    pct = 5 + int(85 * (downloaded_total + size) / total_bytes)
+                    if on_progress:
+                        on_progress(pct, f"Descargando voz neural argentina: {size // (1024 * 1024)} MB")
+        except Exception as exc:
+            temporary.unlink(missing_ok=True)
+            raise RuntimeError(f"No se pudo descargar el modelo Piper: {exc}") from exc
+        if size != expected_size or digest.hexdigest() != expected_md5:
+            temporary.unlink(missing_ok=True)
+            raise RuntimeError(f"El archivo {destination.name} no pasó la verificación de integridad.")
+        temporary.replace(destination)
+        downloaded_total += size
+    model_path = str(files[0][1])
+    db.set_setting("piper_model_path", model_path)
+    if on_progress:
+        on_progress(100, "Voz neural argentina instalada y verificada")
+    return model_path
