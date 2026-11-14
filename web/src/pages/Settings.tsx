@@ -92,7 +92,6 @@ export default function Settings() {
       const result = await api.get<{ channel_title: string }>('/api/youtube/status');
       setYoutubeVerified(true);
       setOk('Conectado con el canal: ' + result.channel_title);
-      await load();
     } catch (e) {
       setYoutubeVerified(false);
       setError((e as Error).message);
