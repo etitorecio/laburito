@@ -12,6 +12,7 @@ export default function Settings() {
   const [youtube, setYoutube] = useState<{ available: boolean; missing_env: string[]; note: string } | null>(null);
   const [deviceAuth, setDeviceAuth] = useState<{ user_code: string; verification_url: string; expires_in: number; interval: number } | null>(null);
   const [youtubeBusy, setYoutubeBusy] = useState(false);
+  const [piperBusy, setPiperBusy] = useState(false);
 
   async function load() {
     try {
@@ -55,6 +56,18 @@ export default function Settings() {
       setError((e as Error).message);
     } finally {
       setYoutubeBusy(false);
+    }
+  }
+
+  async function installPiperVoice() {
+    setError(''); setOk(''); setPiperBusy(true);
+    try {
+      const result = await api.post<{ installed: boolean; job_id?: number; message: string }>('/api/tts/piper/install');
+      setOk(result.job_id ? result.message + ' Tarea #' + result.job_id + ' en la Cola.' : result.message);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setPiperBusy(false);
     }
   }
 
@@ -169,6 +182,15 @@ export default function Settings() {
             <button className="btn primary" disabled={youtubeBusy} onClick={() => void checkYoutubeConnection()}>Ya autoricé, comprobar</button>
           </div>
         )}
+      </Card>
+
+      <Card title="Voz neural argentina" sub="Mejorá la narración sin pagar APIs ni servicios de voz.">
+        <div className="pill-row">
+          <Badge tone={diag?.tts.piper_available ? 'ok' : 'warn'}>{diag?.tts.piper_available ? 'Voz neural instalada' : diag?.tts.piper_installed ? 'Motor listo · falta descargar la voz' : 'Motor Piper pendiente de despliegue'}</Badge>
+        </div>
+        <p className="muted">Piper Daniela es una voz neural en español argentino. La descarga inicial ocupa aproximadamente 114 MB; después funciona localmente, sin conexión ni créditos. El modelo y sus datos incluyen atribución CC BY-SA 4.0.</p>
+        <p className="muted">Cuando termine la instalación, entrá al Autopiloto y elegí «Español argentino neural (Piper Daniela)». Si no la instalás, Laburito sigue usando espeak-ng.</p>
+        <button className="btn primary" disabled={piperBusy || !meta?.auth_required || !diag?.tts.piper_installed || !!diag?.tts.piper_available} onClick={() => void installPiperVoice()}>{piperBusy ? 'Encolando…' : diag?.tts.piper_available ? 'Voz neural instalada' : 'Instalar voz neural (114 MB)'}</button>
       </Card>
 
       <Card title="Producción" sub="Parámetros usados por el guionista y el render.">
