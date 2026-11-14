@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import random
+import re
 import urllib.error
 import urllib.request
 
@@ -503,24 +504,31 @@ def generate_script(
     )
     beats = blueprint(script_kind)
 
+    source_note = next((n for n in notes if n.get("source_url") and len((n.get("claim") or "")) >= 500), None)
+    evidence_sentences: list[str] = []
+    if source_note:
+        raw = re.sub(r"\\[[0-9]+\\]", "", source_note.get("claim") or "")
+        evidence_sentences = [re.sub(r"\\s+", " ", s).strip() for s in re.split(r"(?<=[.!?])\\s+", raw) if len(s.strip()) >= 45]
+
     claims = _claims(notes)
     rnd = random.Random(_hash(f"{project.get('id')}-{topic}-{kind}"))
     rnd.shuffle(claims)
 
     scenes = []
     claim_index = 0
+    evidence_per_scene = max(1, (len(evidence_sentences) + len(beats) - 1) // len(beats))
     for idx, beat in enumerate(beats):
         narration = beat["narration"].format(topic=topic)
-        # Inyecta evidencia real del usuario en los beats de desarrollo.
-        if beat["key"] in ("origen", "protagonistas", "descubrimiento", "evolucion", "consecuencias", "desarrollo"):
+        if len(evidence_sentences) >= len(beats):
+            first = idx * evidence_per_scene
+            factual = evidence_sentences[first:first + evidence_per_scene]
+            if factual:
+                narration = (f"Sobre {topic}: " if idx == 0 else "") + " ".join(factual)
+        elif beat["key"] in ("origen", "protagonistas", "descubrimiento", "evolucion", "consecuencias", "desarrollo"):
             if claim_index < len(claims):
-                note = None
-                for candidate in notes:
-                    if (candidate.get("claim") or "").strip() == claims[claim_index]:
-                        note = candidate
-                        break
+                note = next((n for n in notes if (n.get("claim") or "").strip() == claims[claim_index]), None)
                 if note:
-                    narration += f" Un dato para sostenerlo: {claims[claim_index].rstrip('.')}{_attribution(note)}."
+                    narration += f" Dato de contexto: {claims[claim_index].rstrip('.')}{_attribution(note)}."
                     claim_index += 1
         duration = max(3.0, round(target * beat["weight"], 2))
         scenes.append(
