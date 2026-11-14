@@ -255,7 +255,8 @@ export default function Autopilot() {
         )}
         <label className="check-row"><input type="checkbox" checked={form.enabled} onChange={(e) => setForm({ ...form, enabled: e.target.checked })} /> Activar al crear</label>
         <div className="row" style={{ marginTop: 14 }}>
-          <button className="btn primary" disabled={busy || !form.niche.trim()} onClick={create}>{busy ? 'Procesando…' : 'Crear Autopiloto'}</button>
+          <button className="btn primary" disabled={busy || !form.niche.trim()} onClick={create}>{busy ? 'Procesando…' : editingId ? 'Guardar cambios' : 'Crear Autopiloto'}</button>
+          {editingId && <button className="btn ghost" disabled={busy} onClick={cancelEdit}>Cancelar edición</button>}
           <button className="btn ghost" disabled={busy} onClick={() => void load()}>Actualizar</button>
         </div>
         <p className="muted" style={{ marginTop: 12 }}>El descubrimiento usa Wikipedia en español sin claves ni pagos. La primera fuente es orientativa, no una verificación periodística completa: revisá las fuentes antes de habilitar publicación pública automática.</p>
@@ -273,6 +274,7 @@ export default function Autopilot() {
                   <small>{rule.last_project_title ? `Último video: ${rule.last_project_title} · ${rule.last_project_status || "creado"}` : "Todavía no generó proyectos"}{rule.last_job_status ? ` · Render: ${rule.last_job_status}` : ""}{rule.last_job_message && rule.last_job_status === "error" ? ` — ${rule.last_job_message}` : ""}{rule.last_error ? ` · Último error: ${rule.last_error}` : ""}{rule.last_run_at ? ` · Ejecutado: ${new Date(rule.last_run_at).toLocaleString()}` : ""}{rule.next_run_at ? ` · Próximo: ${new Date(rule.next_run_at).toLocaleString()}` : ""}</small>
                 </div>
                 <div className="row">
+                  <button className="btn small ghost" disabled={busy} onClick={() => edit(rule)}>Editar</button>
                   <button className="btn small primary" disabled={busy} onClick={() => void run(rule.id)}>Ejecutar ahora</button>
                   <button className="btn small ghost" disabled={busy} onClick={() => void toggle(rule)}>{rule.enabled ? 'Pausar' : 'Activar'}</button>
                   <button className="btn small danger" disabled={busy} onClick={() => void remove(rule.id)}>Eliminar</button>
