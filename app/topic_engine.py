@@ -57,7 +57,7 @@ def choose_topic(niche: str, previous_topics: list[str]) -> dict:
         })
         pages = summary.get("query", {}).get("pages", {})
         page = next(iter(pages.values()), {})
-        extract = re.sub(r"\\s+", " ", page.get("extract", "")).strip()
+        extract = re.sub(r"\s+", " ", page.get("extract", "")).strip()
         if len(extract) < 650:
             continue
         return {
