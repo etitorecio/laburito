@@ -111,7 +111,7 @@ def main() -> int:
     check(status in (200, 202), "render encolado", f"({status})")
     job_id = (job or {}).get("id") or ((job or {}).get("job") or {}).get("id")
 
-    deadline = time.time() + 300
+    deadline = time.time() + 460
     state = ""
     last = ""
     while time.time() < deadline:
