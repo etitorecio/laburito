@@ -362,7 +362,7 @@ def search_openverse(query: str, limit: int = 12) -> list[dict]:
         {
             "q": query,
             "page_size": limit,
-            "license_type": "all-cc",
+            "license_type": "commercial",
             "mature": "false",
         }
     )
