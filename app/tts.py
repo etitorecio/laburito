@@ -21,7 +21,7 @@ from . import db
 VOICES = {
     "es": {"engine_voice": "es", "label": "Español (neutro)", "gender": "neutro", "language": "es"},
     "es-ar": {"engine_voice": "es-la", "label": "Español rioplatense (espeak)", "gender": "neutro", "language": "es"},
-    "es-ar-piper": {"engine_voice": "es-la", "label": "Español argentino neural (Piper Daniela)", "gender": "femenino", "language": "es"},
+    "es-es-piper": {"engine_voice": "es-la", "label": "Español neural (Piper DaveFX · España)", "gender": "femenino", "language": "es"},
     "es-mx": {"engine_voice": "es-419", "label": "Español latinoamericano", "gender": "neutro", "language": "es"},
     "es-masculino": {"engine_voice": "es", "label": "Español grave (masculino)", "gender": "masculino", "language": "es"},
     "es-agudo": {"engine_voice": "es", "label": "Español agudo (femenino)", "gender": "femenino", "language": "es"},
@@ -110,7 +110,7 @@ def synthesize(text: str, out_path: Path, voice: str = "es", speed: int = 150, p
 
     piper = piper_path()
     model = os.environ.get("PIPER_MODEL") or db.get_setting("piper_model_path", "")
-    if piper and model and Path(model).exists() and voice == "es-ar-piper":
+    if piper and model and Path(model).exists() and voice == "es-es-piper":
         try:
             subprocess.run(
                 [piper, "--model", model, "--output_file", str(out_path)],
@@ -178,26 +178,26 @@ def _md5_file(path: Path) -> str:
 
 
 def install_piper_voice(on_progress=None) -> str:
-    """Descarga y verifica la voz argentina Daniela de Piper desde el catálogo oficial."""
+    """Descarga y verifica la voz española DaveFX de Piper desde el catálogo oficial."""
     if not piper_path():
         raise RuntimeError("El motor Piper no está instalado en este servidor. Revisá requirements.txt y reiniciá la app.")
     free_bytes = shutil.disk_usage(str(db.DATA_DIR)).free
-    if free_bytes < 160 * 1024 * 1024:
-        raise RuntimeError("No hay 160 MB libres para instalar la voz neural argentina.")
-    folder = db.DATA_DIR / "voices" / "es_AR-daniela-high"
+    if free_bytes < 90 * 1024 * 1024:
+        raise RuntimeError("No hay 90 MB libres para instalar la voz neural.")
+    folder = db.DATA_DIR / "voices" / "es_ES-davefx-medium"
     folder.mkdir(parents=True, exist_ok=True)
     files = [
         (
-            "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_AR/daniela/high/es_AR-daniela-high.onnx",
-            folder / "es_AR-daniela-high.onnx",
-            "e373fb657c93877dbc438badeadff4cb",
-            114199011,
+            "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_ES/davefx/medium/es_ES-davefx-medium.onnx",
+            folder / "es_ES-davefx-medium.onnx",
+            "dc515cd4ecc5f6f72fe14a941188fc9c",
+            63201294,
         ),
         (
-            "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_AR/daniela/high/es_AR-daniela-high.onnx.json",
-            folder / "es_AR-daniela-high.onnx.json",
-            "b68d699a1779d98ee94c0cd9a08ba95b",
-            7248,
+            "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_ES/davefx/medium/es_ES-davefx-medium.onnx.json",
+            folder / "es_ES-davefx-medium.onnx.json",
+            "dd157b5eaf6930bf949cf416d9a9307a",
+            4817,
         ),
     ]
     total_bytes = sum(item[3] for item in files)
@@ -235,5 +235,5 @@ def install_piper_voice(on_progress=None) -> str:
     model_path = str(files[0][1])
     db.set_setting("piper_model_path", model_path)
     if on_progress:
-        on_progress(100, "Voz neural argentina instalada y verificada")
+        on_progress(100, "Voz neural española instalada y verificada")
     return model_path
