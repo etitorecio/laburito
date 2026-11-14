@@ -122,9 +122,22 @@ def ensure_visual(project: dict, scene: dict) -> tuple[Path, str, dict]:
                 image_url = (item.get("url") or "").strip()
                 if not image_url:
                     continue
+                license_name = (item.get("license") or "").strip()
+                license_key = license_name.lower().replace(" ", "").replace("-", "")
+                if "nc" in license_key or "noncommercial" in license_key:
+                    continue
+                if not (
+                    license_key.startswith("ccby")
+                    or license_key.startswith("cc0")
+                    or "publicdomain" in license_key
+                    or license_key in ("by", "bysa", "cc0")
+                ):
+                    continue
                 try:
                     downloaded = media.download_asset(image_url, folder)
-                    if not downloaded.get("content_type", "").startswith("image/"):
+                    if downloaded.get("content_type", "").split(";")[0] not in (
+                        "image/jpeg", "image/png", "image/webp", "image/gif"
+                    ):
                         continue
                     return Path(downloaded["path"]), provider, {
                         "license": item.get("license") or "consultar licencia",
