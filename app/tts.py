@@ -114,8 +114,7 @@ def synthesize(text: str, out_path: Path, voice: str = "es", speed: int = 150, p
     if piper and model and Path(model).exists() and voice == "es-es-piper":
         try:
             subprocess.run(
-                [piper, "--model", model, "--output_file", str(out_path)],
-                input=spoken.encode("utf-8"),
+                [piper, "-m", model, "-f", str(out_path), "--", spoken],
                 check=True,
                 timeout=300,
                 capture_output=True,
