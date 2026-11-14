@@ -281,6 +281,9 @@ def _youtube_upload(project, meta: dict, privacy: str, report) -> dict:
         },
         "status": {"privacyStatus": privacy, "selfDeclaredMadeForKids": False},
     }
+    total = source.stat().st_size
+    if total <= 0:
+        raise PublishError("El MP4 está vacío; no se puede subir.")
     init = urllib.request.Request(
         f"{YOUTUBE_UPLOAD_URL}?uploadType=resumable&part=snippet,status",
         data=json.dumps(payload).encode("utf-8"),
@@ -288,7 +291,7 @@ def _youtube_upload(project, meta: dict, privacy: str, report) -> dict:
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json; charset=UTF-8",
             "X-Upload-Content-Type": "video/mp4",
-            "X-Upload-Content-Length": str(source.stat().st_size),
+            "X-Upload-Content-Length": str(total),
         },
         method="POST",
     )
@@ -302,28 +305,79 @@ def _youtube_upload(project, meta: dict, privacy: str, report) -> dict:
         raise PublishError("YouTube no devolvió la URL de subida.")
 
     report(60, "Subiendo el video a YouTube")
-    upload = urllib.request.Request(
-        location,
-        data=source.read_bytes(),
-        headers={"Content-Type": "video/mp4", "Content-Length": str(source.stat().st_size)},
-        method="PUT",
-    )
+    chunk_size = 8 * 1024 * 1024
+    offset = 0
+    result = None
     try:
-        with urllib.request.urlopen(upload, timeout=600) as response:
-            result = json.loads(response.read().decode("utf-8", "replace"))
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", "replace")[:300]
-        raise PublishError(f"YouTube rechazó el video ({exc.code}): {detail}") from exc
-    video_id = result.get("id")
+        with source.open("rb") as video:
+            while offset < total:
+                video.seek(offset)
+                chunk = video.read(min(chunk_size, total - offset))
+                if not chunk:
+                    raise PublishError("La lectura del MP4 se interrumpió durante la subida.")
+                end = offset + len(chunk) - 1
+                upload = urllib.request.Request(
+                    location,
+                    data=chunk,
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Content-Type": "video/mp4",
+                        "Content-Length": str(len(chunk)),
+                        "Content-Range": f"bytes {offset}-{end}/{total}",
+                    },
+                    method="PUT",
+                )
+                try:
+                    with urllib.request.urlopen(upload, timeout=180) as response:
+                        if response.status in (200, 201):
+                            result = json.loads(response.read().decode("utf-8", "replace"))
+                except urllib.error.HTTPError as exc:
+                    if exc.code != 308:
+                        detail = exc.read().decode("utf-8", "replace")[:300]
+                        raise PublishError(f"YouTube rechazó el bloque de subida ({exc.code}): {detail}") from exc
+                    accepted = exc.headers.get("Range", "")
+                    if accepted.startswith("bytes=0-"):
+                        offset = int(accepted.rsplit("-", 1)[1]) + 1
+                    else:
+                        offset = end + 1
+                if result:
+                    offset = total
+                else:
+                    offset = max(offset, end + 1)
+                report(60 + int(30 * offset / total), f"Subiendo video: {int(100 * offset / total)}%")
+    except urllib.error.URLError as exc:
+        raise PublishError(f"Se cortó la conexión durante la subida a YouTube: {exc.reason}") from exc
+    video_id = (result or {}).get("id")
     if not video_id:
         raise PublishError("YouTube no devolvió el identificador del video subido.")
+
+    thumb_suffix = "short" if _g(project, "kind") == "short" else "documental"
+    thumb = Path(db.RENDER_DIR) / str(_g(project, "id")) / f"miniatura_{thumb_suffix}.jpg"
+    thumbnail_uploaded = False
+    if thumb.exists():
+        try:
+            thumb_request = urllib.request.Request(
+                "https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=" + urllib.parse.quote(video_id),
+                data=thumb.read_bytes(),
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "image/jpeg",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(thumb_request, timeout=90) as response:
+                thumbnail_uploaded = response.status in (200, 201)
+        except Exception as exc:
+            db.log("warn", "publicacion", f"Video subido pero no se pudo adjuntar la miniatura: {exc}", {"project_id": _g(project, "id")})
     report(95, "Subida terminada")
+    message = f"Subido a YouTube con privacidad {privacy}"
+    if thumbnail_uploaded:
+        message += " y miniatura personalizada"
     return {
         "url": f"https://youtu.be/{video_id}",
         "external_id": video_id,
-        "message": f"Subido a YouTube con privacidad {privacy}",
+        "message": message,
     }
-
 
 # --------------------------------------------------------------------------- #
 # Publicación
