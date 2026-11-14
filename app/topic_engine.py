@@ -44,17 +44,18 @@ def choose_topic(niche: str, previous_topics: list[str]) -> dict:
             continue
         summary = _get({
             "action": "query", "prop": "extracts|info", "explaintext": 1,
-            "exintro": 1, "inprop": "url", "titles": title, "format": "json",
+            "inprop": "url", "exchars": 14000, "titles": title, "format": "json",
         })
         pages = summary.get("query", {}).get("pages", {})
         page = next(iter(pages.values()), {})
         extract = re.sub(r"\s+", " ", page.get("extract", "")).strip()
-        if len(extract) < 180:
+        if len(extract) < 650:
             continue
         return {
             "title": title,
             "topic": title,
-            "summary": extract[:420],
+            "summary": extract[:12000],
+            "extract": extract[:12000],
             "url": page.get("fullurl") or "https://es.wikipedia.org/wiki/" + urllib.parse.quote(title.replace(" ", "_")),
             "source_title": title + " — Wikipedia",
         }
@@ -71,7 +72,7 @@ def research_topic(niche: str, previous_topics: list[str]) -> dict:
         "VALUES(?,?,?,?,?,?,?)",
         (
             niche, result["summary"], "indicio", result["url"], db.now(),
-            "Resumen introductorio recuperado automáticamente de Wikipedia. Requiere contraste con fuentes primarias antes de publicar.",
+            "Extracto del artículo de Wikipedia recuperado automáticamente. Es una fuente secundaria de orientación; requiere contraste con fuentes primarias antes de publicar.",
             db.now(),
         ),
     )
