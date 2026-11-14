@@ -83,8 +83,9 @@ export default function Autopilot() {
   async function run(id: number) {
     setBusy(true); setError(''); setOk('');
     try {
-      const result = await api.post<{ project_id: number }>(`/api/autopilot/${id}/run`);
-      setOk(`Producción iniciada. Proyecto #${result.project_id} agregado a la cola.`);
+      const result = await api.post<{ project_id: number; publish_warning?: string | null }>(`/api/autopilot/${id}/run`);
+      const started = `Producción iniciada. Proyecto #${result.project_id} agregado a la cola.`;
+      setOk(result.publish_warning ? `${started} Atención: ${result.publish_warning}` : started);
       await load();
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
