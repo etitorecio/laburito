@@ -12,6 +12,10 @@ class AutopilotResearchTests(unittest.TestCase):
     def test_piper_cli_is_installed_by_backend_requirements(self):
         self.assertTrue(tts.piper_path())
         self.assertEqual(tts.VOICES["es-es-piper"]["language"], "es")
+    def test_topic_picker_skips_near_duplicate_titles(self):
+        self.assertTrue(topic_engine._is_duplicate("Historia de la radio", ["La historia de la radio"]))
+        self.assertFalse(topic_engine._is_duplicate("Historia de la televisión", ["Historia de la radio"]))
+
     def test_topic_normalization_helps_avoid_repeats(self):
         self.assertEqual(topic_engine._normal("Historia: del Rock!"), "historia del rock")
 
