@@ -353,6 +353,35 @@ def _youtube_token() -> str:
     return token
 
 
+def youtube_account_status() -> dict:
+    token = _youtube_token()
+    url = "https://www.googleapis.com/youtube/v3/channels?" + urllib.parse.urlencode({
+        "part": "snippet",
+        "mine": "true",
+    })
+    request = urllib.request.Request(
+        url,
+        headers={"Authorization": f"Bearer {token}"},
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=45) as response:
+            data = json.loads(response.read().decode("utf-8", "replace"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", "replace")[:300]
+        raise PublishError(f"YouTube no pudo verificar el canal ({exc.code}): {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise PublishError(f"No se pudo contactar a YouTube: {exc.reason}") from exc
+    items = data.get("items") or []
+    if not items:
+        raise PublishError("Google autorizó la cuenta, pero no devolvió un canal de YouTube.")
+    snippet = items[0].get("snippet") or {}
+    return {
+        "channel_id": items[0].get("id"),
+        "channel_title": snippet.get("title") or "Canal de YouTube",
+    }
+
+
 def _youtube_upload(project, meta: dict, privacy: str, report) -> dict:
     source = video_path(project)
     token = _youtube_token()
