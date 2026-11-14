@@ -16,6 +16,9 @@ class AutopilotResearchTests(unittest.TestCase):
         )
         responses = [
             {"query": {"search": [{"title": "Tema repetido"}, {"title": "Tema nuevo"}]}},
+            {"query": {"search": []}},
+            {"query": {"search": []}},
+            {"query": {"search": []}},
             {"query": {"pages": {"1": {"extract": article, "fullurl": "https://es.wikipedia.org/wiki/Tema_nuevo"}}}},
             {"query": {"pages": {"1": {"extlinks": []}}}},
         ]
