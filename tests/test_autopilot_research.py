@@ -1,3 +1,4 @@
+import json
 import unittest
 
 from app import script_gen, topic_engine
@@ -7,6 +8,17 @@ class AutopilotResearchTests(unittest.TestCase):
     def test_topic_normalization_helps_avoid_repeats(self):
         self.assertEqual(topic_engine._normal("Historia: del Rock!"), "historia del rock")
 
+    def test_ollama_rewrite_keeps_scene_structure(self):
+        from unittest.mock import patch
+
+        project = {"id": 1000, "topic": "Tema", "kind": "short", "template": "shorts", "duration_target_sec": 60}
+        notes = [{"source_url": "https://example.org/source", "claim": " ".join(["Hecho documentado con suficiente contexto para redactar una escena completa."] * 12)}]
+        script = script_gen.generate_script(project, notes, [])
+        response = {"scenes": [{"idx": scene["idx"], "narration": "Esta es una narración original basada solamente en los datos aportados por la fuente."} for scene in script["scenes"]]}
+        with patch.object(script_gen, "expand_with_ollama", return_value=json.dumps(response)):
+            rewritten = script_gen.rewrite_with_ollama("http://localhost:11434", "llama3.2", project, script, notes)
+        self.assertEqual(rewritten["writer"], "ollama-local")
+        self.assertEqual(len(rewritten["scenes"]), len(script["scenes"]))
     def test_topic_picker_skips_previously_used_titles(self):
         from unittest.mock import patch
 
