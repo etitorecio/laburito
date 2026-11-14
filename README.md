@@ -57,7 +57,7 @@ La imagen es Alpine, compila el frontend en una etapa Node y ejecuta el servidor
 | `PORT` | Puerto HTTP (por defecto `8080`). |
 | `APP_TOKEN` o `AITUBER_TOKEN` | Protección con token (`X-App-Token`). Recomendado para cualquier despliegue público. |
 | `PIPER_BIN`, `PIPER_MODEL` | Voz neuronal local opcional en lugar de espeak-ng. |
-| `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` | Credenciales OAuth de una aplicación web de Google Cloud. El refresh token se guarda en la base local tras conectar la cuenta. |
+| `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` | Credenciales OAuth de tipo TVs y dispositivos de entrada limitada. El refresh token se guarda en la base local tras conectar la cuenta. |
 | `OLLAMA_URL` | Ollama local opcional para reescribir guiones a partir de las fuentes (nunca un servicio pago). |
 
 En **Ajustes** se configuran idioma, voz, volumen de música, estilo de subtítulos, copias de seguridad y la conexión OAuth de YouTube.
@@ -65,12 +65,12 @@ En **Ajustes** se configuran idioma, voz, volumen de música, estilo de subtítu
 ### Conectar YouTube
 
 1. En Google Cloud, creá un proyecto y habilitá **YouTube Data API v3**.
-2. Creá un cliente OAuth de tipo **aplicación web**.
-3. Copiá la URI de redirección que muestra **Ajustes → Conectar YouTube** y agregala en Google Cloud.
-4. En las variables de entorno de AppJet configurá `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` y `APP_TOKEN` (o `AITUBER_TOKEN`).
-5. Pegá el token de la app en **Ajustes**, tocá **Conectar cuenta de YouTube** y autorizá el acceso.
+2. Creá credenciales OAuth de tipo **TVs y dispositivos de entrada limitada**.
+3. En las variables de entorno de AppJet configurá `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` y `APP_TOKEN` (o `AITUBER_TOKEN`).
+4. Pegá el token de la app en **Ajustes** y tocá **Iniciar conexión**.
+5. Abrí la dirección de Google que muestra Laburito, ingresá el código de usuario y autorizá la cuenta. No hace falta URL de redirección ni dominio propio.
 
-Google entrega un refresh token que Laburito conserva en su base de datos. Si el consentimiento OAuth permanece en modo **Testing**, Google hace vencer esos refresh tokens a los 7 días; para automatización continua hay que pasar el proyecto a producción y completar la verificación que corresponda.
+El flujo de dispositivo usa el permiso `https://www.googleapis.com/auth/youtube`, necesario para este tipo de cliente. Google entrega un refresh token que Laburito conserva en su base de datos. Si el consentimiento OAuth queda en modo **Testing**, Google hace vencer esos refresh tokens a los 7 días; para automatización continua hay que revisar el estado de publicación y la verificación que corresponda.
 
 ## Arquitectura
 
