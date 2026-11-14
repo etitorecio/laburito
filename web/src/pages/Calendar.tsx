@@ -291,6 +291,7 @@ export default function Calendar({ go }: { go: (route: Route, id?: number) => vo
         )}
       </Card>
 
+      <Card title="Calendario" sub="Ordenado por día; cada entrada se puede abrir en el editor.">
         {entries.length === 0 ? (
           <Empty>Sin publicaciones programadas.</Empty>
         ) : (
