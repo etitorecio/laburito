@@ -187,6 +187,8 @@ def _valid_piper_file(path: Path, expected_size: int | None, expected_sha256: st
         return False
     try:
         if path.suffix == ".json":
+            if not 4000 <= path.stat().st_size <= 10000:
+                return False
             config = json.loads(path.read_text(encoding="utf-8"))
             return (
                 config.get("language", {}).get("code") == "es_ES"
