@@ -124,7 +124,7 @@ def youtube_credentials() -> dict:
     return {
         "client_id": os.environ.get("YOUTUBE_CLIENT_ID", "").strip(),
         "client_secret": os.environ.get("YOUTUBE_CLIENT_SECRET", "").strip(),
-        "refresh_token": (os.environ.get("YOUTUBE_REFRESH_TOKEN") or db.get_setting("youtube_refresh_token", "")).strip(),
+        "refresh_token": (db.get_setting("youtube_refresh_token", "") or os.environ.get("YOUTUBE_REFRESH_TOKEN") or "").strip(),
     }
 
 
