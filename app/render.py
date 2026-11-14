@@ -192,11 +192,14 @@ def render_scene(
     """Renderiza (o reutiliza) el vídeo de una escena. Devuelve metadatos y cues."""
     _check_cancel(should_cancel)
     width, height = _size(project)
-    style = _style(project.get("kind") or "documentary")
+    style = _style(project)
+    fps = int(project.get("fps") or 25)
+    transition = scene.get("transition") or project.get("transition_default") or "corte"
     narration = (scene.get("narration") or "").strip()
     key = _h(
         f"{narration}|{scene.get('visual_path')}|{scene.get('visual_query')}|{width}x{height}"
-        f"|{project.get('kind')}|{scene.get('transition')}"
+        f"|{project.get('kind')}|{style.get('id', '')}|{transition}|{fps}"
+        f"|{int(style.get('outline') or 0)}|{style.get('fontcolor')}|{int(bool(style.get('box')))}|{int(bool(style.get('uppercase')))}"
     )
     seg_dir = scene_dir / key
     seg_dir.mkdir(parents=True, exist_ok=True)
@@ -224,7 +227,10 @@ def render_scene(
     caption_dir.mkdir(parents=True, exist_ok=True)
     for i, cue in enumerate(cues):
         text_file = caption_dir / f"{i}.txt"
-        text_file.write_text("\n".join(cue["lines"]), encoding="utf-8")
+        lines = cue["lines"]
+        if style.get("uppercase"):
+            lines = [line.upper() for line in lines]
+        text_file.write_text("\n".join(lines), encoding="utf-8")
         cue["file"] = str(text_file)
 
     reused = scene_mp4.exists() and scene_mp4.stat().st_size > 1000
@@ -234,18 +240,16 @@ def render_scene(
             f"crop={width}:{height}",
             "format=yuv420p",
         ]
-        if (scene.get("transition") or "corte") == "fundido" and duration > 1.5:
-            filters.append("fade=t=in:st=0:d=0.45")
-            filters.append(f"fade=t=out:st={max(0.0, duration - 0.45):.2f}:d=0.45")
+        filters.extend(_motion_filters(transition, width, height, duration, fps))
         if cues:
             filters.append(_drawtext_chain(cues, font, width, height, style))
         _ff(
             [
-                "-loop", "1", "-framerate", "25", "-i", str(visual),
+                "-loop", "1", "-framerate", str(fps), "-i", str(visual),
                 "-t", f"{duration:.2f}",
                 "-vf", ",".join(filters),
                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "25",
-                "-pix_fmt", "yuv420p", "-r", "25", "-an",
+                "-pix_fmt", "yuv420p", "-r", str(fps), "-an",
                 str(scene_mp4),
             ]
         )
@@ -433,7 +437,7 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
     srt.write_text(media.build_srt(cues_global), encoding="utf-8")
     vtt.write_text(media.build_vtt(cues_global), encoding="utf-8")
 
-    thumb_w, thumb_h = (1280, 720) if project.get("kind") != "short" else (1080, 1920)
+    thumb_w, thumb_h = options.dimensions(project.get("aspect") or "16:9", "1080p")
     thumb = workdir / f"miniatura_{suffix}.jpg"
     try:
         media.make_thumbnail(final, thumb, project.get("title") or "AITuber Libre", thumb_w, thumb_h)

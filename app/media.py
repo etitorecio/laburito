@@ -515,3 +515,29 @@ def download_asset(url: str, out_dir: Path, max_bytes: int = MAX_DOWNLOAD_BYTES)
     target = out_dir / f"{digest}{ext}"
     target.write_bytes(data)
     return {"path": str(target), "bytes": len(data), "sha1": digest, "content_type": content_type}
+
+
+def ensure_music_bed(bed_id: str) -> Path:
+    """Genera una cama musical local con FFmpeg (una sola vez, sin descargas)."""
+    from . import db as _db
+    from . import options as _options
+
+    bed = next((m for m in _options.MUSIC_BEDS if m["id"] == bed_id), _options.MUSIC_BEDS[0])
+    out_dir = _db.MUSIC_DIR / "beds"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out = out_dir / f"{bed['id']}.wav"
+    if out.exists() and out.stat().st_size > 20000:
+        return out
+    inputs: list[str] = []
+    for freq in bed["freqs"]:
+        inputs += ["-f", "lavfi", "-i", f"sine=frequency={freq}:duration=45:sample_rate=44100"]
+    graph = f"amix=inputs={len(bed['freqs'])},{bed['chain']}"
+    proc = subprocess.run(
+        [ffmpeg(), "-y", *inputs, "-filter_complex", graph, "-c:a", "pcm_s16le", str(out)],
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    if proc.returncode != 0 or not out.exists():
+        raise RuntimeError(f"No se pudo generar la música local: {proc.stderr[-300:]}")
+    return out
