@@ -280,13 +280,30 @@ def _concat(list_file: Path, out_path: Path, extra: list[str] | None = None) -> 
     _ff(["-f", "concat", "-safe", "0", "-i", str(list_file), "-c", "copy", *(extra or []), str(out_path)])
 
 
-def _music_track() -> Path | None:
-    if not db.MUSIC_DIR.exists():
+def _music_track(project: dict | None = None) -> Path | None:
+    """Música de fondo elegida en el proyecto (biblioteca, cama generada o ninguna)."""
+    choice = ((project or {}).get("music") or "auto").strip()
+    if choice in ("ninguna", "none", "sin_musica"):
         return None
-    for ext in ("*.mp3", "*.wav", "*.ogg", "*.m4a", "*.flac"):
-        files = sorted(db.MUSIC_DIR.glob(ext))
-        if files:
-            return files[0]
+    if choice.startswith("bed:"):
+        try:
+            return media.ensure_music_bed(choice.split(":", 1)[1])
+        except Exception:
+            return None
+    if choice not in ("", "auto"):
+        candidate = db.MUSIC_DIR / Path(choice).name
+        if candidate.exists():
+            return candidate
+    if db.MUSIC_DIR.exists():
+        for ext in ("*.mp3", "*.wav", "*.ogg", "*.m4a", "*.flac"):
+            files = sorted(db.MUSIC_DIR.glob(ext))
+            if files:
+                return files[0]
+    if choice in ("", "auto"):
+        try:
+            return media.ensure_music_bed("pad_suave")
+        except Exception:
+            return None
     return None
 
 
@@ -363,8 +380,11 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
 
     progress(88, "Mezclando audio")
     mixed = workdir / "audio_mezcla.m4a"
-    music = _music_track()
-    volume = db.get_setting("music_volume", "0.12")
+    music = _music_track(project)
+    volume = project.get("music_volume")
+    if volume is None:
+        volume = db.get_setting("music_volume", "0.12")
+    volume = float(volume or 0.12)
     if music:
         _ff(
             [
@@ -423,9 +443,9 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
     info = media.probe_video(final)
     if not info.get("width"):
         raise RuntimeError("El MP4 final no se pudo validar con ffprobe")
-    if not music:
+    if not music and ((project.get("music") or "auto") not in ("ninguna", "none", "sin_musica")):
         warnings.append(
-            "Sin música de fondo: agregá archivos libres en data/music/ para mezclar automáticamente."
+            "Sin música de fondo: elegí una cama en el proyecto o agregá archivos libres en data/music/."
         )
     if any(r["audio_info"].get("engine") == "silencio" for r in results):
         warnings.append("Al menos una escena se renderizó sin voz (motor TTS no disponible).")
