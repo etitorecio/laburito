@@ -967,6 +967,13 @@ def youtube_device_poll():
     return result
 
 
+@app.get("/api/youtube/status")
+def youtube_status():
+    try:
+        return publish.youtube_account_status()
+    except publish.PublishError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
 @app.post("/api/projects/{project_id}/publish", status_code=202)
 def publish_project(project_id: int, payload: publish.PublishIn):
     publish.ensure_schema()
