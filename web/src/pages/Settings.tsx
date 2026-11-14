@@ -28,12 +28,10 @@ export default function Settings() {
       const youtubeDestination = p.destinations.find((x) => x.id === 'youtube') || null;
       setYoutube(youtubeDestination);
       if (youtubeDestination?.available) {
-        try {
-          await api.get('/api/youtube/status');
-          setYoutubeVerified(true);
-        } catch {
-          setYoutubeVerified(false);
-        }
+        setYoutubeVerified(false);
+        void api.get('/api/youtube/status')
+          .then(() => setYoutubeVerified(true))
+          .catch(() => setYoutubeVerified(false));
       } else {
         setYoutubeVerified(false);
       }
