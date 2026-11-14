@@ -185,8 +185,11 @@ def health():
 
 @app.get("/api/meta")
 def meta():
+    tts_status = tts.status()
     return {
-        "voices": tts.status()["voices"],
+        # Cada voz hereda la disponibilidad real del motor para que la interfaz
+        # pueda contar y ofrecer solo voces utilizables.
+        "voices": [{**v, "available": tts_status["available"]} for v in tts_status["voices"]],
         "aspects": list(render.ASPECTS.keys()),
         "kinds": [
             {"id": "documentary", "label": "Documental (8-20 min)", "aspect": "16:9"},
