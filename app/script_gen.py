@@ -510,6 +510,9 @@ def generate_script(
         raw = re.sub(r"\[[0-9]+\]", "", source_note.get("claim") or "")
         evidence_sentences = [re.sub(r"\s+", " ", s).strip() for s in re.split(r"(?<=[.!?])\s+", raw) if len(s.strip()) >= 45]
 
+    if evidence_sentences:
+        evidence_sentences = evidence_sentences[:max(len(beats), int(target / 10))]
+
     claims = _claims(notes)
     rnd = random.Random(_hash(f"{project.get('id')}-{topic}-{kind}"))
     rnd.shuffle(claims)
@@ -552,7 +555,7 @@ def generate_script(
         "topic": topic,
         "scenes": scenes,
         "warnings": [
-            "Borrador generado con plantillas narrativas locales: requiere revisión humana antes de publicar.",
+            "Guion local basado en texto de fuente; requiere contraste editorial antes de publicar." if source_note and len(evidence_sentences) >= len(beats) else "Borrador de plantilla local: requiere revisión humana antes de publicar.",
         ]
         + ([f"{len(unused)} nota(s) de investigación sin usar; revisalas y sumalas como escenas."] if unused else []),
         "sources_considered": len(sources),
