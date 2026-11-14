@@ -155,7 +155,11 @@ def build_metadata(project, scenes) -> dict:
         if text:
             hook = text
             break
-    language = _g(project, "language", "es") or "es"
+    language = _g(project, "language")
+    if not language and _g(project, "channel_id"):
+        channel = db.query_one("SELECT language FROM channels WHERE id=?", (_g(project, "channel_id"),))
+        language = _g(channel or {}, "language")
+    language = language or "es"
     keywords = [k.strip() for k in re.split(r"[,;]", _g(project, "keywords") or "") if k.strip()]
 
     credits: list[str] = []
