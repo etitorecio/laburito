@@ -316,6 +316,7 @@ def _youtube_upload(project, meta: dict, privacy: str, report) -> dict:
                 if not chunk:
                     raise PublishError("La lectura del MP4 se interrumpió durante la subida.")
                 end = offset + len(chunk) - 1
+                next_offset = end + 1
                 upload = urllib.request.Request(
                     location,
                     data=chunk,
@@ -337,13 +338,11 @@ def _youtube_upload(project, meta: dict, privacy: str, report) -> dict:
                         raise PublishError(f"YouTube rechazó el bloque de subida ({exc.code}): {detail}") from exc
                     accepted = exc.headers.get("Range", "")
                     if accepted.startswith("bytes=0-"):
-                        offset = int(accepted.rsplit("-", 1)[1]) + 1
-                    else:
-                        offset = end + 1
+                        next_offset = int(accepted.rsplit("-", 1)[1]) + 1
                 if result:
                     offset = total
                 else:
-                    offset = max(offset, end + 1)
+                    offset = next_offset
                 report(60 + int(30 * offset / total), f"Subiendo video: {int(100 * offset / total)}%")
     except urllib.error.URLError as exc:
         raise PublishError(f"Se cortó la conexión durante la subida a YouTube: {exc.reason}") from exc
