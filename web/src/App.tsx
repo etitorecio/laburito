@@ -10,6 +10,7 @@ import Editor from './pages/Editor';
 import Queue from './pages/Queue';
 import Library from './pages/Library';
 import Analytics from './pages/Analytics';
+import Autopilot from './pages/Autopilot';
 import Settings from './pages/Settings';
 import Landing from './pages/Landing';
 
@@ -125,6 +126,7 @@ export default function App() {
         {route === 'cola' && <Queue go={go} />}
         {route === 'biblioteca' && <Library />}
         {route === 'analitica' && <Analytics />}
+        {route === 'autopilot' && <Autopilot />}
         {route === 'ajustes' && <Settings />}
 
         <footer className="foot">
@@ -134,7 +136,7 @@ export default function App() {
       </main>
 
       <nav className="tabbar">
-        {ROUTES.filter((r) => ['inicio', 'investigacion', 'proyectos', 'cola', 'ajustes'].includes(r.id)).map((r) => (
+        {ROUTES.filter((r) => ['inicio', 'investigacion', 'proyectos', 'autopilot', 'cola'].includes(r.id)).map((r) => (
           <button key={r.id} className={`tab ${route === r.id ? 'active' : ''}`} onClick={() => go(r.id)}>
             <span aria-hidden>{r.icon}</span>
             <small>{r.label}</small>
