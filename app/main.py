@@ -923,8 +923,8 @@ def youtube_connect(request: Request):
     if not APP_TOKEN:
         raise HTTPException(403, "Para proteger tu cuenta, configurá APP_TOKEN en las variables de entorno antes de conectar YouTube.")
     state = secrets.token_urlsafe(32)
-    forwarded_proto = request.headers.get("x-forwarded-proto", request.url.scheme)
-    forwarded_host = request.headers.get("x-forwarded-host", request.url.netloc)
+    forwarded_proto = request.headers.get("x-forwarded-proto", request.url.scheme).split(",")[0].strip()
+    forwarded_host = request.headers.get("x-forwarded-host", request.url.netloc).split(",")[0].strip()
     redirect_uri = f"{forwarded_proto}://{forwarded_host}/api/youtube/callback"
     db.set_setting("youtube_oauth_state", state)
     db.set_setting("youtube_oauth_redirect_uri", redirect_uri)
