@@ -39,14 +39,15 @@ class AutopilotResearchTests(unittest.TestCase):
             def read(self):
                 return b'{"access_token":"access","refresh_token":"new-refresh"}'
 
-        with unittest.mock.patch.dict(os.environ, {
+        with patch.dict(os.environ, {
             "YOUTUBE_CLIENT_ID": "client-id",
             "YOUTUBE_CLIENT_SECRET": "client-secret",
             "YOUTUBE_REFRESH_TOKEN": "",
         }):
-            with patch("app.publish.urllib.request.urlopen", return_value=FakeResponse()):
-                with unittest.mock.patch("app.publish.db.set_setting") as save:
-                    publish.exchange_youtube_code("auth-code", "https://example.test/api/youtube/callback")
+            with patch("app.publish.db.get_setting", return_value=""):
+                with patch("app.publish.urllib.request.urlopen", return_value=FakeResponse()):
+                    with patch("app.publish.db.set_setting") as save:
+                        publish.exchange_youtube_code("auth-code", "https://example.test/api/youtube/callback")
         save.assert_called_once_with("youtube_refresh_token", "new-refresh")
 
     def test_ollama_rewrite_keeps_scene_structure(self):
