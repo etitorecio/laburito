@@ -1,6 +1,7 @@
 import json
 import os
 import unittest
+from unittest.mock import patch
 import urllib.parse
 
 from app import publish, script_gen, topic_engine
@@ -11,7 +12,7 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(topic_engine._normal("Historia: del Rock!"), "historia del rock")
 
     def test_youtube_oauth_requests_offline_upload_access(self):
-        with unittest.mock.patch.dict(os.environ, {
+        with patch.dict(os.environ, {
             "YOUTUBE_CLIENT_ID": "client-id",
             "YOUTUBE_CLIENT_SECRET": "client-secret",
             "YOUTUBE_REFRESH_TOKEN": "existing-refresh",
@@ -43,7 +44,7 @@ class AutopilotResearchTests(unittest.TestCase):
             "YOUTUBE_CLIENT_SECRET": "client-secret",
             "YOUTUBE_REFRESH_TOKEN": "",
         }):
-            with unittest.mock.patch("app.publish.urllib.request.urlopen", return_value=FakeResponse()):
+            with patch("app.publish.urllib.request.urlopen", return_value=FakeResponse()):
                 with unittest.mock.patch("app.publish.db.set_setting") as save:
                     publish.exchange_youtube_code("auth-code", "https://example.test/api/youtube/callback")
         save.assert_called_once_with("youtube_refresh_token", "new-refresh")
