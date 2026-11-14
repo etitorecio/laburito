@@ -1,4 +1,5 @@
 import json
+import json
 import os
 import unittest
 from unittest.mock import patch
@@ -11,25 +12,8 @@ class AutopilotResearchTests(unittest.TestCase):
     def test_topic_normalization_helps_avoid_repeats(self):
         self.assertEqual(topic_engine._normal("Historia: del Rock!"), "historia del rock")
 
-    def test_youtube_oauth_requests_offline_upload_access(self):
-        with patch.dict(os.environ, {
-            "YOUTUBE_CLIENT_ID": "client-id",
-            "YOUTUBE_CLIENT_SECRET": "client-secret",
-            "YOUTUBE_REFRESH_TOKEN": "existing-refresh",
-        }):
-            url = publish.youtube_authorization_url(
-                "https://example.test/api/youtube/callback",
-                "state-value",
-            )
-        params = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
-        self.assertEqual(params["access_type"], ["offline"])
-        self.assertEqual(params["state"], ["state-value"])
-        self.assertEqual(params["scope"], ["https://www.googleapis.com/auth/youtube.upload"])
-
-    def test_youtube_oauth_exchange_saves_refresh_token(self):
+    def test_youtube_device_start_requests_supported_youtube_scope(self):
         class FakeResponse:
-            status = 200
-
             def __enter__(self):
                 return self
 
@@ -37,7 +21,29 @@ class AutopilotResearchTests(unittest.TestCase):
                 return False
 
             def read(self):
-                return b'{"access_token":"access","refresh_token":"new-refresh"}'
+                return b'{"device_code":"device-123","user_code":"ABCD-EFGH","verification_url":"https://www.google.com/device","expires_in":1800,"interval":5}'
+
+        with patch.dict(os.environ, {
+            "YOUTUBE_CLIENT_ID": "client-id",
+            "YOUTUBE_CLIENT_SECRET": "client-secret",
+            "YOUTUBE_REFRESH_TOKEN": "existing-refresh",
+        }):
+            with patch("app.publish.urllib.request.urlopen", return_value=FakeResponse()) as request:
+                result = publish.youtube_device_start()
+        body = urllib.parse.parse_qs(request.call_args.args[0].data.decode())
+        self.assertEqual(body["scope"], ["https://www.googleapis.com/auth/youtube"])
+        self.assertEqual(result["user_code"], "ABCD-EFGH")
+
+    def test_youtube_device_poll_saves_refresh_token(self):
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return b'{"access_token":"access","refresh_token":"new-refresh","scope":"https://www.googleapis.com/auth/youtube"}'
 
         with patch.dict(os.environ, {
             "YOUTUBE_CLIENT_ID": "client-id",
@@ -47,7 +53,8 @@ class AutopilotResearchTests(unittest.TestCase):
             with patch("app.publish.db.get_setting", return_value=""):
                 with patch("app.publish.urllib.request.urlopen", return_value=FakeResponse()):
                     with patch("app.publish.db.set_setting") as save:
-                        publish.exchange_youtube_code("auth-code", "https://example.test/api/youtube/callback")
+                        result = publish.youtube_device_poll("device-123")
+        self.assertEqual(result["status"], "connected")
         save.assert_called_once_with("youtube_refresh_token", "new-refresh")
 
     def test_ollama_rewrite_keeps_scene_structure(self):
