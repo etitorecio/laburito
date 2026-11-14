@@ -123,9 +123,9 @@ export default function Settings() {
         )}
       </Card>
 
-      <Card title="Acceso" sub="Protección opcional con token. Si el servidor define APP_TOKEN o AITUBER_TOKEN, la interfaz lo pide.">
+      <Card title="Acceso" sub="Protección del servidor. Para conectar YouTube, APP_TOKEN o AITUBER_TOKEN es obligatorio.">
         <div className="row">
-          <Field label="Token de acceso" hint={meta?.auth_required ? 'El servidor exige token: pegalo acá.' : 'Opcional: solo si configuraste APP_TOKEN o AITUBER_TOKEN en el servidor.'}>
+          <Field label="Token de acceso" hint={meta?.auth_required ? 'El servidor exige token: pegalo acá.' : 'Pegalo si configuraste APP_TOKEN o AITUBER_TOKEN en el servidor.'}>
             <input type="password" value={token} onChange={(e) => setTokenValue(e.target.value)} placeholder="token" />
           </Field>
           <div className="field" style={{ justifyContent: 'flex-end' }}>
