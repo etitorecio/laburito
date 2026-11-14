@@ -14,6 +14,8 @@ import random
 import urllib.error
 import urllib.request
 
+from . import options
+
 DOCUMENTARY_BLUEPRINT = [
     {
         "key": "apertura",
@@ -492,8 +494,14 @@ def generate_script(
     sources = sources or []
     topic = (project.get("topic") or project.get("title") or "el tema").strip()
     kind = project.get("kind") or "documentary"
-    target = int(project.get("duration_target_sec") or (600 if kind == "documentary" else 40))
-    beats = blueprint(kind)
+    tpl = options.template(project.get("template"))
+    script_kind = tpl.get("script") or kind
+    target = int(
+        project.get("duration_target_sec")
+        or tpl.get("default_duration")
+        or (600 if kind == "documentary" else 40)
+    )
+    beats = blueprint(script_kind)
 
     claims = _claims(notes)
     rnd = random.Random(_hash(f"{project.get('id')}-{topic}-{kind}"))
