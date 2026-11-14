@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, type Diagnostics, type Meta } from './api';
-import { ROUTES, type Route } from './routes';
+import { ROUTES, VALID_ROUTES, type Route } from './routes';
 import Home from './pages/Home';
 import Research from './pages/Research';
 import Channels from './pages/Channels';
@@ -11,12 +11,13 @@ import Queue from './pages/Queue';
 import Library from './pages/Library';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import Landing from './pages/Landing';
 
 function parseHash(): { route: Route; id?: number } {
   const raw = window.location.hash.replace(/^#\/?/, '');
   const [name, id] = raw.split('/');
-  const valid = ROUTES.some((r) => r.id === name);
-  const route = (valid ? name : 'inicio') as Route;
+  const valid = VALID_ROUTES.includes(name as Route);
+  const route = (valid ? name : 'landing') as Route;
   const parsed = id ? Number(id) : undefined;
   return { route, id: parsed && Number.isFinite(parsed) ? parsed : undefined };
 }
@@ -58,6 +59,11 @@ export default function App() {
     })();
   }, [route]);
 
+  // La portada pública se muestra sin la barra lateral del estudio.
+  if (route === 'landing') {
+    return <Landing go={go} />;
+  }
+
   const current = ROUTES.find((r) => r.id === route);
 
   return (
@@ -79,6 +85,12 @@ export default function App() {
           ))}
         </nav>
         <div className="side-foot">
+          <button className="nav-item" onClick={() => go('landing')}>
+            <span className="ico" aria-hidden>
+              🌐
+            </span>
+            Ver sitio
+          </button>
           {diag && (
             <div className="mini">
               <span className={`led ${diag.tts.available ? 'on' : 'off'}`} />
