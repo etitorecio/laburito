@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import shutil
 import urllib.request
 import shutil
 import subprocess
@@ -172,6 +173,9 @@ def install_piper_voice(on_progress=None) -> str:
     """Descarga y verifica la voz argentina Daniela de Piper desde el catálogo oficial."""
     if not piper_path():
         raise RuntimeError("El motor Piper no está instalado en este servidor. Revisá requirements.txt y reiniciá la app.")
+    free_bytes = shutil.disk_usage(str(db.DATA_DIR)).free
+    if free_bytes < 160 * 1024 * 1024:
+        raise RuntimeError("No hay 160 MB libres para instalar la voz neural argentina.")
     folder = db.DATA_DIR / "voices" / "es_AR-daniela-high"
     folder.mkdir(parents=True, exist_ok=True)
     files = [
