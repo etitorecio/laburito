@@ -257,6 +257,33 @@ export interface OptionItem {
   note?: string;
 }
 
+export interface AutopilotRule {
+  id: number;
+  name: string;
+  niche: string;
+  channel_id: number | null;
+  channel_name?: string | null;
+  template: string;
+  duration_target_sec: number | null;
+  voice: string;
+  aspect: string;
+  caption_style: string;
+  transition_default: string;
+  resolution: string;
+  fps: number;
+  music: string;
+  music_volume: number;
+  cadence_hours: number;
+  enabled: boolean;
+  destination: string;
+  privacy: string;
+  auto_publish: boolean;
+  next_run_at: string | null;
+  last_run_at: string | null;
+  last_project_id: number | null;
+  last_project_title?: string | null;
+}
+
 export interface Meta {
   voices: { id: string; label: string; available: boolean; gender?: string; language?: string }[];
   aspects: string[];
