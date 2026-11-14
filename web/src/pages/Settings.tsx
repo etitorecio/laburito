@@ -139,7 +139,7 @@ export default function Settings() {
           <Badge tone={youtube?.available ? 'ok' : 'warn'}>{youtube?.available ? 'YouTube conectado' : 'Falta configurar la conexión'}</Badge>
           {youtube?.missing_env.map((item) => <Badge key={item} tone="warn">{item}</Badge>)}
         </div>
-        <p className="muted">En Google Cloud habilitá YouTube Data API v3 y creá credenciales OAuth del tipo <b>TVs y dispositivos de entrada limitada</b>. En AppJet → configuración del proyecto → variables de entorno, agregá YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET y APP_TOKEN. Después ingresá el APP_TOKEN en la sección Acceso.</p>
+        <p className="muted">En Google Cloud habilitá YouTube Data API v3 y creá credenciales OAuth del tipo <b>TVs y dispositivos de entrada limitada</b>. Si el consentimiento está en Testing, agregá tu cuenta de Google como usuario de prueba. En AppJet → configuración del proyecto → variables de entorno, agregá YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET y APP_TOKEN. Después ingresá el APP_TOKEN en la sección Acceso.</p>
         <p className="muted">Tocá Iniciar conexión. Google mostrará un código y una dirección: abrí esa dirección, ingresá el código exactamente como aparece y autorizá Laburito. Este flujo no necesita dominio propio ni URL de redirección.</p>
         <p className="muted">Google solicita el permiso de administración de YouTube para poder subir videos. No recibe tu contraseña; el token de actualización queda guardado del lado del servidor.</p>
         <p className="muted">Importante: si el consentimiento OAuth queda en modo Testing, los refresh tokens pueden vencer a los 7 días. Para automatización continua, revisá el estado de publicación y la verificación que Google exija.</p>
