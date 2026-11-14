@@ -191,8 +191,7 @@ def _create_project(rule: dict) -> int:
     previous_topics = [row.get("topic", "") for row in previous]
     research = topic_engine.research_topic(niche, previous_topics)
     topic = research["topic"]
-    stamp = time.strftime("%d/%m %H:%M", time.gmtime())
-    title = f"{topic} · {stamp}"
+    title = topic
     duration = int(rule.get("duration_target_sec") or tpl.get("default_duration") or 30)
     pid = db.execute(
         "INSERT INTO projects(channel_id, title, topic, kind, aspect, status, duration_target_sec, voice, speed, pitch, notes, "
@@ -223,6 +222,18 @@ def _create_project(rule: dict) -> int:
             db.now(),
         ),
     )
+    for reference_url in research.get("references", []):
+        db.execute(
+            "INSERT INTO sources(project_id, title, url, author, license, accessed_at, attribution, kind, notes, created_at) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?)",
+            (
+                pid, "Referencia externa citada en Wikipedia", reference_url,
+                "Referencia enlazada por Wikipedia", "Consultar licencia y contenido",
+                db.now(), reference_url, "referencia",
+                "Enlace citado en el artículo de Wikipedia; no fue verificado automáticamente.",
+                db.now(),
+            ),
+        )
     notes = db.query(
         "SELECT * FROM research_notes WHERE niche=? ORDER BY id DESC LIMIT 12",
         (niche,),
