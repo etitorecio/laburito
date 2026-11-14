@@ -618,3 +618,63 @@ def expand_with_ollama(url: str, model: str, prompt: str, timeout: int = 120) ->
         return (data.get("response") or "").strip()
     except urllib.error.URLError as exc:
         raise RuntimeError(f"Ollama no respondió: {exc}") from exc
+
+
+
+def rewrite_with_ollama(url: str, model: str, project: dict, script: dict, notes: list[dict]) -> dict:
+    """Reescribe el guion con un modelo Ollama local, usando solo la evidencia recuperada."""
+    source = next((n for n in notes if n.get("source_url") and n.get("claim")), None)
+    if not source:
+        raise RuntimeError("No hay una fuente documental para redactar el guion.")
+    scenes = script.get("scenes") or []
+    outline = [
+        {
+            "idx": scene.get("idx"),
+            "title": scene.get("title"),
+            "duration_target_sec": scene.get("duration_target_sec"),
+        }
+        for scene in scenes
+    ]
+    prompt = (
+        "Escribí un guion audiovisual original en español para un canal de YouTube. "
+        "Usá exclusivamente los datos del material de referencia: no inventes personas, fechas, cifras, "
+        "causas ni citas. Parafraseá; no copies párrafos. Si falta información, omitila. "
+        "La primera escena debe enganchar, las siguientes deben desarrollar una progresión clara y el cierre "
+        "debe dejar una idea o pregunta concreta. Evitá relleno, repeticiones y frases genéricas. "
+        "Respetá exactamente la cantidad y el orden de escenas del esquema. "
+        "Devolvé únicamente JSON válido con esta forma: {\"scenes\":[{\"idx\":0,\"narration\":\"...\"}]}.\n\n"
+        f"Tema: {project.get('topic') or project.get('title')}\n"
+        f"Duración total objetivo: {project.get('duration_target_sec')} segundos\n"
+        f"Esquema: {json.dumps(outline, ensure_ascii=False)}\n"
+        f"Material de referencia: {source.get('claim', '')[:12000]}\n"
+        f"Fuente: {source.get('source_url', '')}"
+    )
+    raw = expand_with_ollama(url, model, prompt, timeout=240)
+    cleaned = raw.strip()
+    if cleaned.startswith(chr(96) * 3):
+        cleaned = re.sub(r"^\x60{3}(?:json)?\s*|\s*\x60{3}$", "", cleaned, flags=re.IGNORECASE)
+    first = cleaned.find("{")
+    last = cleaned.rfind("}")
+    if first < 0 or last <= first:
+        raise RuntimeError("Ollama no devolvió un JSON reconocible.")
+    data = json.loads(cleaned[first:last + 1])
+    generated = data.get("scenes") if isinstance(data, dict) else None
+    if not isinstance(generated, list) or len(generated) != len(scenes):
+        raise RuntimeError("Ollama devolvió una cantidad de escenas distinta a la solicitada.")
+    by_idx = {int(item.get("idx", -1)): item for item in generated if isinstance(item, dict)}
+    rewritten = []
+    for scene in scenes:
+        item = by_idx.get(int(scene.get("idx", -1)))
+        narration = str((item or {}).get("narration") or "").strip()
+        if len(narration) < 35:
+            raise RuntimeError(f"Ollama dejó vacía o demasiado corta la escena {scene.get('idx')}.")
+        rewritten.append({**scene, "narration": narration})
+    return {
+        **script,
+        "scenes": rewritten,
+        "warnings": [
+            *script.get("warnings", []),
+            "Guion reescrito con un modelo Ollama local; contrastá cada afirmación con las fuentes antes de publicar.",
+        ],
+        "writer": "ollama-local",
+    }
