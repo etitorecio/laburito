@@ -124,7 +124,7 @@ def ensure_visual(project: dict, scene: dict) -> tuple[Path, str, dict]:
                     continue
                 license_name = (item.get("license") or "").strip()
                 license_key = license_name.lower().replace(" ", "").replace("-", "")
-                if "nc" in license_key or "noncommercial" in license_key:
+                if "nc" in license_key or "noncommercial" in license_key or "nd" in license_key or "noderivatives" in license_key:
                     continue
                 if not (
                     license_key.startswith("ccby")
@@ -140,7 +140,7 @@ def ensure_visual(project: dict, scene: dict) -> tuple[Path, str, dict]:
                     ):
                         continue
                     return Path(downloaded["path"]), provider, {
-                        "license": item.get("license") or "consultar licencia",
+                        "license": (item.get("license") or "consultar licencia") + (f" · {item.get('license_url')}" if item.get("license_url") else ""),
                         "author": item.get("author") or "desconocido",
                         "url": item.get("page") or image_url,
                         "title": item.get("title") or "",
