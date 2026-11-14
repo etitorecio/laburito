@@ -58,6 +58,19 @@ export default function Settings() {
     }
   }
 
+  async function testYoutubeConnection() {
+    setError(''); setOk(''); setYoutubeBusy(true);
+    try {
+      const result = await api.get<{ channel_title: string }>('/api/youtube/status');
+      setOk('Conectado con el canal: ' + result.channel_title);
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setYoutubeBusy(false);
+    }
+  }
+
   async function checkYoutubeConnection() {
     setError(''); setOk(''); setYoutubeBusy(true);
     try {
@@ -145,7 +158,7 @@ export default function Settings() {
         <p className="muted">Importante: si el consentimiento OAuth queda en modo Testing, los refresh tokens pueden vencer a los 7 días. Para automatización continua, revisá el estado de publicación y la verificación que Google exija.</p>
         <div className="row">
           <button className="btn primary" disabled={youtubeBusy || !meta?.auth_required || !youtube || youtube.missing_env.includes("YOUTUBE_CLIENT_ID") || youtube.missing_env.includes("YOUTUBE_CLIENT_SECRET")} onClick={() => void startYoutubeConnection()}>{youtubeBusy ? 'Procesando…' : 'Iniciar conexión'}</button>
-          <button className="btn ghost" onClick={() => void load()}>Comprobar conexión</button>
+          <button className="btn ghost" disabled={youtubeBusy || !youtube?.available} onClick={() => void testYoutubeConnection()}>Comprobar conexión real</button>
         </div>
         {deviceAuth && (
           <div className="stack" style={{ marginTop: 12 }}>
