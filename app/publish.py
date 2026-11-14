@@ -307,6 +307,7 @@ def _youtube_upload(project, meta: dict, privacy: str, report) -> dict:
     report(60, "Subiendo el video a YouTube")
     chunk_size = 8 * 1024 * 1024
     offset = 0
+    stalled_attempts = 0
     result = None
     try:
         with source.open("rb") as video:
@@ -339,9 +340,17 @@ def _youtube_upload(project, meta: dict, privacy: str, report) -> dict:
                     accepted = exc.headers.get("Range", "")
                     if accepted.startswith("bytes=0-"):
                         next_offset = int(accepted.rsplit("-", 1)[1]) + 1
+                    else:
+                        next_offset = offset
                 if result:
                     offset = total
                 else:
+                    if next_offset <= offset:
+                        stalled_attempts += 1
+                        if stalled_attempts > 3:
+                            raise PublishError("YouTube no confirmó el avance de la subida después de varios intentos.")
+                    else:
+                        stalled_attempts = 0
                     offset = next_offset
                 report(60 + int(30 * offset / total), f"Subiendo video: {int(100 * offset / total)}%")
     except urllib.error.URLError as exc:
