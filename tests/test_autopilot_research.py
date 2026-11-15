@@ -23,6 +23,57 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertIn("next_run_at", execute.call_args.args[0])
         self.assertIn("now", execute.call_args.args[1])
 
+    def test_autopilot_builds_script_from_only_the_current_topics_sources(self):
+        extract = " ".join([
+            "Este estudio describe con evidencia documentada un proceso histórico y sus consecuencias.",
+            "Los registros analizados permiten reconstruir el contexto y las decisiones de sus protagonistas.",
+            "Los investigadores compararon documentos originales con publicaciones posteriores.",
+            "Los resultados modificaron la interpretación que existía sobre este fenómeno.",
+            "El análisis identifica límites y preguntas que todavía requieren investigación adicional.",
+        ])
+        notes = [
+            {"id": 501, "source_url": "https://es.wikipedia.org/wiki/Tema", "claim": extract},
+            {"id": 502, "source_url": "https://doi.org/10.1234/example", "claim": extract},
+        ]
+        research = {
+            "title": "Tema recién descubierto",
+            "topic": "Tema recién descubierto",
+            "summary": extract,
+            "url": "https://es.wikipedia.org/wiki/Tema",
+            "note_ids": [501, 502],
+            "academic_sources": [{
+                "title": "Estudio independiente",
+                "url": "https://doi.org/10.1234/example",
+                "author": "Equipo de investigación",
+            }],
+            "references": [],
+        }
+        project = {
+            "id": 999,
+            "title": "Tema recién descubierto",
+            "topic": "Tema recién descubierto",
+            "kind": "short",
+            "template": "shorts",
+            "duration_target_sec": 60,
+        }
+        rule = {
+            "id": 4, "name": "Prueba", "niche": "historia",
+            "channel_id": None, "template": "shorts", "duration_target_sec": 60,
+            "voice": "es", "aspect": "9:16", "caption_style": "short_pop",
+            "transition_default": "fundido", "resolution": "1080p", "fps": 25,
+            "music": "auto", "music_volume": 0.12,
+        }
+        with patch.object(topic_engine, "research_topic", return_value=research):
+            with patch.object(autopilot.db, "query", side_effect=[[], notes, []]) as query:
+                with patch.object(autopilot.db, "query_one", return_value=project):
+                    with patch.object(autopilot.db, "execute", return_value=999):
+                        result = autopilot._create_project(rule)
+        self.assertEqual(result["project_id"], 999)
+        self.assertEqual(result["evidence_sources"], 2)
+        self.assertEqual(result["script_writer"], "source-extract")
+        self.assertIn("id IN", query.call_args_list[1].args[0])
+        self.assertEqual(query.call_args_list[1].args[1], (501, 502))
+
     def test_autopilot_holds_publication_for_unrewritten_script(self):
         rule = {"id": 9, "auto_publish": True, "cadence_hours": 24, "destination": "youtube", "privacy": "unlisted"}
         with patch.object(autopilot, "get_rule", return_value=rule):
