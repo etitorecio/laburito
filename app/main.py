@@ -301,9 +301,10 @@ async def upload_music(file: UploadFile = File(...)):
 def meta():
     tts_status = tts.status()
     return {
-        # Cada voz hereda la disponibilidad real del motor para que la interfaz
-        # pueda contar y ofrecer solo voces utilizables.
-        "voices": [{**v, "available": tts_status["available"] and (v["id"] != "es-es-piper" or tts_status["piper_available"])} for v in tts_status["voices"]],
+        # El producto está deliberadamente limitado al español: no se ofrecen
+        # idiomas que el guionista y la estrategia editorial no van a producir.
+        "language": "es",
+        "voices": [{**v, "available": tts_status["available"] and (v["id"] != "es-es-piper" or tts_status["piper_available"])} for v in tts_status["voices"] if v.get("language") == "es"],
         "aspects": list(render.ASPECTS.keys()),
         "resolutions": options.RESOLUTION_INFO,
         "fps_options": options.FPS_OPTIONS,
@@ -392,6 +393,7 @@ def list_channels():
 
 @app.post("/api/channels", status_code=201)
 def create_channel(payload: ChannelIn):
+    payload.language = "es"
     cid = db.execute(
         "INSERT INTO channels(name, topic, language, audience, tone, visual_identity, formats, cadence, created_at, updated_at) "
         "VALUES(?,?,?,?,?,?,?,?,?,?)",
@@ -406,6 +408,7 @@ def create_channel(payload: ChannelIn):
 def update_channel(channel_id: int, payload: ChannelIn):
     if not db.query_one("SELECT id FROM channels WHERE id=?", (channel_id,)):
         raise HTTPException(404, "Canal inexistente")
+    payload.language = "es"
     db.execute(
         "UPDATE channels SET name=?, topic=?, language=?, audience=?, tone=?, visual_identity=?, formats=?, cadence=?, updated_at=? WHERE id=?",
         (payload.name, payload.topic, payload.language, payload.audience, payload.tone,
@@ -441,6 +444,9 @@ def list_projects():
 @app.post("/api/projects", status_code=201)
 def create_project(payload: ProjectIn):
     data = payload.model_dump()
+    spanish_voices = {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"}
+    if data.get("voice") not in spanish_voices:
+        raise HTTPException(400, "Laburito genera contenido únicamente en español. Elegí una voz española.")
     if data.get("aspect") and data["aspect"] not in render.ASPECTS:
         raise HTTPException(400, "Formato no soportado (16:9, 9:16, 1:1 o 4:5)")
     resolved = options.resolve_defaults(data)
@@ -472,6 +478,9 @@ def patch_project(project_id: int, payload: ProjectPatch):
     if not db.query_one("SELECT id FROM projects WHERE id=?", (project_id,)):
         raise HTTPException(404, "Proyecto inexistente")
     data = payload.model_dump(exclude_none=True)
+    spanish_voices = {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"}
+    if "voice" in data and data["voice"] not in spanish_voices:
+        raise HTTPException(400, "Laburito genera contenido únicamente en español. Elegí una voz española.")
     if "aspect" in data and data["aspect"] not in render.ASPECTS:
         raise HTTPException(400, "Formato no soportado")
     if "template" in data and data["template"] not in options.TEMPLATE_IDS:
@@ -1111,8 +1120,10 @@ def get_settings():
 @app.put("/api/settings")
 def put_settings(payload: SettingsIn):
     for key, value in payload.values.items():
-        if key in db.DEFAULT_SETTINGS:
+        if key in db.DEFAULT_SETTINGS and key != "default_language":
             db.set_setting(key, value)
+    # La configuración de idioma es fija: todo el contenido sale en español.
+    db.set_setting("default_language", "es")
     return {k: db.get_setting(k) for k in db.DEFAULT_SETTINGS}
 
 
