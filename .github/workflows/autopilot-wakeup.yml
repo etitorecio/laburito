@@ -7,7 +7,7 @@ on:
     # GitHub only runs scheduled workflows from the repository default branch.
     # This file therefore also lives on main, while the app itself is deployed
     # from appjet. The worker checks next_run_at before producing anything.
-    - cron: "*/15 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 permissions:
