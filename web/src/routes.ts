@@ -32,7 +32,6 @@ export const VALID_ROUTES: Route[] = [
 
 export const ROUTES: { id: Route; label: string; icon: string }[] = [
   { id: 'inicio', label: 'Inicio', icon: '🏠' },
-  { id: 'investigacion', label: 'Investigación', icon: '🔎' },
   { id: 'canales', label: 'Canales', icon: '📺' },
   { id: 'calendario', label: 'Calendario', icon: '🗓️' },
   { id: 'proyectos', label: 'Videos', icon: '🎬' },
