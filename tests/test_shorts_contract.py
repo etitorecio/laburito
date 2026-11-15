@@ -1,7 +1,8 @@
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
-from app import autopilot, options, script_gen
+from app import autopilot, options, publish, script_gen
 
 
 class ShortsContractTests(unittest.TestCase):
@@ -46,6 +47,23 @@ class ShortsContractTests(unittest.TestCase):
         self.assertEqual(script_gen.fiction_word_range(180), (378, 450))
         self.assertEqual(script_gen.fiction_word_range(90), (189, 225))
         self.assertEqual(script_gen.fiction_word_range(45), (94, 112))
+
+    def test_factory_upload_requires_vertical_9_by_16_under_three_minutes(self):
+        valid = {"width": 1080, "height": 1920, "duration": 175}
+        with patch.object(publish.media, "probe_video", return_value=valid):
+            self.assertEqual(publish._validate_factory_short({}, Path("short.mp4")), valid)
+        with patch.object(publish.media, "probe_video", return_value={"width": 1920, "height": 1080, "duration": 30}):
+            with self.assertRaisesRegex(publish.PublishError, "vertical 9:16"):
+                publish._validate_factory_short({}, Path("wide.mp4"))
+        with patch.object(publish.media, "probe_video", return_value={"width": 1080, "height": 1920, "duration": 181}):
+            with self.assertRaisesRegex(publish.PublishError, "180 segundos"):
+                publish._validate_factory_short({}, Path("long.mp4"))
+
+    def test_youtube_validator_applies_factory_check_to_manual_projects(self):
+        valid = {"width": 1080, "height": 1920, "duration": 90}
+        project = {"template": "frutinovela", "kind": "short", "notes": "", "aspect": "9:16"}
+        with patch.object(publish.media, "probe_video", return_value=valid):
+            self.assertEqual(publish._validate_autopilot_video(project, Path("manual.mp4")), valid)
 
     def test_gameplay_clip_minimums_match_the_product_contract(self):
         self.assertEqual(options.VIDEO_CLIP_MINIMUMS, {
