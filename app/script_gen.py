@@ -504,10 +504,17 @@ def generate_script(
     )
     beats = blueprint(script_kind)
 
-    source_note = next((n for n in notes if n.get("source_url") and len((n.get("claim") or "")) >= 500), None)
+    source_notes = [
+        note for note in notes
+        if note.get("source_url") and len((note.get("claim") or "")) >= 450
+    ]
+    source_note = source_notes[0] if source_notes else None
     evidence_sentences: list[str] = []
-    if source_note:
-        raw = re.sub(r"\[[0-9]+\]", "", source_note.get("claim") or "")
+    if source_notes:
+        raw = " ".join(
+            re.sub(r"\[[0-9]+\]", "", note.get("claim") or "")
+            for note in source_notes[:5]
+        )
         evidence_sentences = [
             re.sub(r"\s+", " ", sentence).strip()
             for sentence in re.split(r"(?<=[.!?])\s+", raw)
@@ -565,7 +572,8 @@ def generate_script(
         ]
         + ([f"{len(unused)} nota(s) de investigación sin usar; revisalas y sumalas como escenas."] if unused else []),
         "sources_considered": len(sources),
-        "notes_used": 1 if source_note and evidence_sentences else claim_index,
+        "notes_used": len(source_notes) if source_notes and evidence_sentences else claim_index,
+        "evidence_sources": len(source_notes),
         "writer": "source-extract" if source_note and evidence_sentences else "template",
     }
 
