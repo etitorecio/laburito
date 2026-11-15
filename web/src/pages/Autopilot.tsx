@@ -340,11 +340,41 @@ export default function Autopilot() {
               </select>
             </Field>
             {selectedTemplate && <p className="muted">{selectedTemplate.description}</p>}
-            <Field label="Estilo visual de las escenas">
-              <select value={form.visual_style} onChange={(e) => update('visual_style', e.target.value)}>
-                {['Documental cinematográfico realista','Fotografía de archivo histórica','Periodismo visual / fotográfico','Ilustración editorial','Misterio oscuro y atmosférico','Ciencia y tecnología','Minimalista e infográfico','Anime / ilustración japonesa'].map((x) => <option key={x}>{x}</option>)}
-              </select>
-            </Field>
+            <h4>Tipo de fondo del Short</h4>
+            <p className="muted">Elegí el aspecto visual como en un catálogo de clips. Las opciones marcadas como disponibles usan el render local actual; las demás quedan identificadas pero no se pueden activar hasta contar con un motor o clips reales.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: 10 }}>
+              {[
+                { id: 'moving_images', title: 'Moving AI Images', subtitle: 'Imágenes con paneo y zoom', preview: '🖼️', available: true, style: 'Movimiento de imágenes con paneo y zoom' },
+                { id: 'stock_images', title: 'Stock visual', subtitle: 'Imágenes con licencia', preview: '🎞️', available: true, style: 'Fotografía de archivo con licencia' },
+                { id: 'full_motion_ai', title: 'Full Motion AI Video', subtitle: 'Clips generados por IA', preview: '🎬', available: false, style: 'Full Motion AI Video' },
+                { id: 'skeleton', title: 'Skeleton Video', subtitle: 'Animación 3D', preview: '💀', available: false, style: 'Skeleton Video' },
+                { id: 'minecraft', title: 'Minecraft gameplay', subtitle: '5 variantes de clips', preview: '⛏️', available: false, style: 'Minecraft gameplay' },
+                { id: 'subway', title: 'Subway Surfers gameplay', subtitle: '5 variantes de clips', preview: '🏃', available: false, style: 'Subway Surfers gameplay' },
+              ].map((item) => {
+                const selected = form.visual_style === item.style;
+                return <button key={item.id} type="button" disabled={!item.available}
+                  onClick={() => update('visual_style', item.style)}
+                  aria-pressed={selected}
+                  style={{ textAlign: 'left', padding: 0, overflow: 'hidden', borderRadius: 12,
+                    border: selected ? '2px solid #dc2626' : '1px solid var(--border, #d1d5db)',
+                    background: 'var(--card, #fff)', opacity: item.available ? 1 : 0.68,
+                    cursor: item.available ? 'pointer' : 'not-allowed' }}>
+                  <div style={{ height: 112, display: 'grid', placeItems: 'center', fontSize: 42,
+                    background: item.id === 'minecraft' ? 'linear-gradient(135deg,#476b3a,#9b7445)' :
+                      item.id === 'subway' ? 'linear-gradient(135deg,#176b9c,#e0a13b)' :
+                      item.id === 'skeleton' ? 'linear-gradient(135deg,#343434,#9a9a9a)' :
+                      item.id === 'full_motion_ai' ? 'linear-gradient(135deg,#312e81,#7c3aed)' :
+                      'linear-gradient(135deg,#334155,#94a3b8)' }}>{item.preview}</div>
+                  <div style={{ padding: 10 }}>
+                    <strong style={{ display: 'block', fontSize: 14 }}>{item.title}</strong>
+                    <small className="muted">{item.subtitle}</small>
+                    <small style={{ display: 'block', marginTop: 5, color: item.available ? '#15803d' : '#b45309' }}>
+                      {item.available ? (selected ? '✓ Seleccionado' : 'Disponible') : 'Próximamente · no implementado'}
+                    </small>
+                  </div>
+                </button>;
+              })}
+            </div>
             <Field label="Descripción visual personalizada (opcional)">
               <input value={form.visual_style} onChange={(e) => update('visual_style', e.target.value)} placeholder="Ej.: tonos fríos, alto contraste, fotografía analógica..." />
             </Field>
