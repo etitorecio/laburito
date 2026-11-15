@@ -29,7 +29,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from . import db, media
+from . import db, media, persistence
 
 YOUTUBE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 YOUTUBE_UPLOAD_URL = "https://www.googleapis.com/upload/youtube/v3/videos"
@@ -678,6 +678,10 @@ def set_auto_publish(project_id: int, enabled: bool, destination: str = "entrega
     if not db.query_one("SELECT id FROM projects WHERE id=?", (project_id,)):
         raise PublishError(f"El proyecto {project_id} no existe.")
     if enabled and destination == "youtube":
+        if not persistence.durable_storage_available():
+            raise PublishError(
+                "La autopublicación necesita Supabase o un volumen local persistente para no perder el MP4 si el servidor se reinicia."
+            )
         youtube_account_status()
     db.execute(
         "UPDATE projects SET auto_publish=?, publish_destination=?, updated_at=? WHERE id=?",
