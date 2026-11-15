@@ -495,6 +495,7 @@ export default function Autopilot() {
               />
               <small>Podés ajustar la duración con precisión. El tiempo final puede variar según la narración.</small>
             </Field>
+            {form.video_type === 'skeleton' && <p className="muted">Skeleton admite hasta 7 minutos. Si habías elegido una duración mayor, se ajustó automáticamente a ese límite.</p>}
             <Field label="Cantidad de videos">
               <input type="number" min="1" max="30" value={form.videos_per_period} onChange={(e) => update('videos_per_period', Math.max(1, Math.min(30, Number(e.target.value))))} />
             </Field>
