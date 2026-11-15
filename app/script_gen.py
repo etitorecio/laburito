@@ -530,8 +530,9 @@ def generate_script(
     for idx, beat in enumerate(beats):
         narration = beat["narration"].format(topic=topic)
         if evidence_sentences:
-            first = idx * evidence_per_scene
-            factual = evidence_sentences[first:first + evidence_per_scene]
+            first = idx * len(evidence_sentences) // len(beats)
+            last = (idx + 1) * len(evidence_sentences) // len(beats)
+            factual = evidence_sentences[first:last]
             narration = (f"Sobre {topic}: " if idx == 0 else "") + " ".join(factual)
         elif beat["key"] in ("origen", "protagonistas", "descubrimiento", "evolucion", "consecuencias", "desarrollo"):
             if claim_index < len(claims):
