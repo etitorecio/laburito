@@ -351,7 +351,7 @@ export default function Editor({ projectId, go }: Props) {
           <>
             <button className="btn small ghost" onClick={() => go('proyectos')}>Volver</button>
             <button className="btn small" onClick={() => generateScript(false)} disabled={busy === 'script'}>+ Escenas</button>
-            <button className="btn small primary" onClick={render} disabled={busy === 'render'}>Renderizar</button>
+            <button className="btn small primary" onClick={render} disabled={busy === 'render' || scenes.length === 0} title={scenes.length === 0 ? 'Primero generá el guion para crear escenas' : 'Renderizar el video'}>Renderizar</button>
           </>
         }
       >
