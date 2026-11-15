@@ -36,7 +36,7 @@ export default function Accounts() {
 
   useEffect(() => { void load(); }, [load]);
 
-  async function connect(channel: ChannelAccount) {
+  async function connect(channel?: ChannelAccount) {
     if (!oauthConfigLoaded) {
       setError("No se pudo comprobar la configuración OAuth del servidor. Actualizá la pantalla e intentá de nuevo.");
       return;
@@ -45,9 +45,10 @@ export default function Accounts() {
       setError("Faltan las credenciales OAuth de Google en el servidor: " + missingEnv.join(", "));
       return;
     }
-    setBusyId(channel.id); setError(''); setOk('');
+    setBusyId(channel?.id ?? -1); setError(''); setOk('');
     try {
-      const result = await api.post<{ authorization_url: string }>(`/api/youtube/oauth/start?channel_id=${channel.id}`, {});
+      const suffix = channel ? `?channel_id=${channel.id}` : "";
+      const result = await api.post<{ authorization_url: string }>(`/api/youtube/oauth/start${suffix}`, {});
       window.location.assign(result.authorization_url);
     } catch (e) {
       setError((e as Error).message);
@@ -78,7 +79,11 @@ export default function Accounts() {
         <p><code>{redirectUri}</code></p>
         <p className="muted">No pegues el secreto de Google en esta pantalla ni en el chat. Reiniciá la aplicación después de guardar las variables.</p>
       </Card>}
-      <Card title="Conectá tus cuentas reales de Google / YouTube" sub="No creamos canales de YouTube. Google te permite elegir la cuenta y la app guarda el canal real que devuelve la autorización.">
+      <Card title="Conectá tu canal real de YouTube" sub="Primero autorizás Google. IATuber importa el nombre y el ID del canal que devuelve YouTube; no necesitás crear canales ficticios dentro de la app.">
+        <div className="stack">
+          <p className="muted">Elegí la cuenta Google que administra tu canal. Después de autorizar, el canal real aparece automáticamente y queda listo para usar en tus proyectos.</p>
+          <button className="btn primary" disabled={busyId !== null || !oauthConfigLoaded || !oauthReady} onClick={() => void connect()}>{busyId === -1 ? "Abriendo Google…" : "Conectar mi canal real de YouTube"}</button>
+        </div>
         {loading ? <Empty>Comprobando las cuentas vinculadas…</Empty> : channels.length ? (
           <div className="stack">
             {channels.map((channel) => (
@@ -106,9 +111,9 @@ export default function Accounts() {
       </Card>
       <Card title="Cómo se conecta" sub="La autorización la hacés directamente en Google.">
         <ol>
-          <li>En cada canal que crees, tocá «Conectar cuenta de Google» y elegí la cuenta que administra el canal real de YouTube correspondiente.</li>
-          <li>Repetí el proceso para cada canal interno que quieras vincular. Podés crear tantos canales internos como necesites.</li>
-          <li>La app consulta a YouTube y muestra el nombre y el ID del canal real autorizado. No inventa ni crea canales de YouTube.</li>
+          <li>Tocá «Conectar mi canal real de YouTube» y elegí en Google la cuenta que administra tu canal.</li>
+          <li>IATuber consulta la API oficial y obtiene el nombre y el ID del canal autorizado.</li>
+          <li>Ese canal real queda importado como espacio de trabajo para organizar videos, calendario y autopiloto. También podés vincular una cuenta a un espacio existente.</li>
         </ol>
         <p className="muted">URI de redirección autorizada en Google Cloud: <code>{redirectUri}</code></p>
         <p className="muted">Las autorizaciones se guardan por separado para cada canal interno. No hay un límite fijo de dos canales. Nunca compartas contraseñas ni secretos de Google en el chat.</p>
