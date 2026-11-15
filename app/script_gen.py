@@ -859,8 +859,8 @@ def expand_with_ollama(url: str, model: str, prompt: str, timeout: int = 120) ->
 def fiction_word_range(target_seconds: int) -> tuple[int, int]:
     """Calcula una extensión de guion coherente con la duración del Short."""
     seconds = max(15, min(180, int(target_seconds or 90)))
-    minimum = max(70, round(seconds * 1.9))
-    maximum = max(minimum + 20, round(seconds * 2.4))
+    minimum = max(70, round(seconds * 2.1))
+    maximum = max(minimum + 20, round(seconds * 2.5))
     return minimum, maximum
 
 
