@@ -40,6 +40,49 @@ class PersistenceTests(unittest.TestCase):
                 value = connection.execute("SELECT value FROM restore_test").fetchone()[0]
             self.assertEqual(value, "kept")
 
+    def test_pending_video_is_uploaded_for_retry(self):
+        class FakeResponse:
+            def __enter__(self):
+                return self
+            def __exit__(self, *_args):
+                return False
+            def read(self):
+                return b""
+
+        with tempfile.TemporaryDirectory() as folder:
+            video = Path(folder) / "short.mp4"
+            video.write_bytes(b"v" * 2048)
+            with patch.object(persistence, "configured", return_value=True):
+                with patch.object(persistence, "_ensure_bucket"):
+                    with patch.object(persistence, "_request", return_value=FakeResponse()) as request:
+                        with patch.object(persistence.db, "log"):
+                            self.assertTrue(persistence.sync_pending_video(7, video))
+            args, kwargs = request.call_args
+            self.assertEqual(args[0], "POST")
+            self.assertEqual(args[3], "video/mp4")
+            self.assertEqual(args[2], video.read_bytes())
+            self.assertEqual(kwargs["extra_headers"], {"x-upsert": "true"})
+
+    def test_pending_video_is_restored_when_local_file_is_missing(self):
+        content = b"v" * 2048
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+            def __exit__(self, *_args):
+                return False
+            def read(self):
+                return content
+
+        with tempfile.TemporaryDirectory() as folder:
+            target = Path(folder) / "renders" / "7" / "short.mp4"
+            with patch.object(persistence, "configured", return_value=True):
+                with patch.object(persistence.db, "query_one", return_value={"path": str(target)}):
+                    with patch.object(persistence, "_request", return_value=FakeResponse()):
+                        with patch.object(persistence.db, "log"):
+                            self.assertTrue(persistence.restore_pending_video(7))
+            self.assertEqual(target.read_bytes(), content)
+
     def test_sync_uploads_compressed_backup_to_private_object_with_upsert(self):
         class FakeResponse:
             def __enter__(self):
