@@ -70,6 +70,7 @@ const STEPS = [
 export default function Autopilot() {
   const [data, setData] = useState<Options | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
+  const [youtubeAccounts, setYoutubeAccounts] = useState<{ id: number; account: { channel_title: string } | null }[]>([]);
   const [persistenceConfigured, setPersistenceConfigured] = useState<boolean | null>(null);
   const [persistenceNote, setPersistenceNote] = useState('');
   const [form, setForm] = useState(INITIAL);
@@ -81,10 +82,11 @@ export default function Autopilot() {
 
   async function load() {
     try {
-      const [result, m, diagnostics] = await Promise.all([
+      const [result, m, diagnostics, accountData] = await Promise.all([
         api.get<Options>('/api/autopilot'),
         api.get<Meta>('/api/meta'),
         api.get<Diagnostics>('/api/diagnostics'),
+        api.get<{ accounts: { id: number; account: { channel_title: string } | null }[] }>('/api/youtube/accounts'),
       ]);
       setData(result);
       setForm((current) => current.channel_id ? current : {
@@ -92,6 +94,7 @@ export default function Autopilot() {
         channel_id: String(result.channels.find((c) => c.name.toLocaleLowerCase() === (current.template === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id ?? ''),
       });
       setMeta(m);
+      setYoutubeAccounts(accountData.accounts);
       setPersistenceConfigured(diagnostics.persistence.configured || !!diagnostics.persistence.local_persistent);
       setPersistenceNote(diagnostics.persistence.note);
     } catch (e) {
@@ -109,7 +112,8 @@ export default function Autopilot() {
     () => (data?.templates ?? meta?.templates ?? []).filter((t) => ['shorts', 'frutinovela', 'reddit_story', 'listicle', 'pov', 'quote', 'longform', 'explainer', 'cuadrado', 'vertical_45'].includes(t.id)),
     [data, meta],
   );
-  const youtubeReady = data?.destinations?.some((d) => d.id === 'youtube' && d.available) ?? false;
+  const linkedYoutubeAccount = youtubeAccounts.find((account) => account.id === Number(form.channel_id))?.account ?? null;
+  const youtubeReady = Boolean(linkedYoutubeAccount);
   const selectedTemplate = templates.find((t) => t.id === form.template);
 
   function update<K extends keyof typeof INITIAL>(key: K, value: (typeof INITIAL)[K]) {
@@ -512,7 +516,8 @@ export default function Autopilot() {
               Publicar automáticamente en YouTube al terminar el render
             </label>}
             {form.destination === 'entrega' && <p className="muted">Los videos se guardarán en tu biblioteca para que puedas revisarlos y publicarlos manualmente. No requiere cuenta externa ni credenciales.</p>}
-            {form.destination === 'youtube' && !youtubeReady && <p className="muted">YouTube todavía no está listo. Conectalo en <a href="#/cuentas">Cuentas → YouTube</a>. Hasta entonces, no se puede publicar.</p>}
+            {form.destination === 'youtube' && !youtubeReady && <p className="muted">La fábrica seleccionada todavía no tiene una cuenta de YouTube vinculada. Elegí el canal interno correcto y conectá su cuenta en <a href="#/cuentas">Cuentas</a>. No alcanza con conectar la cuenta de la otra fábrica.</p>}
+            {form.destination === 'youtube' && linkedYoutubeAccount && <p className="muted">Esta fábrica publicará exclusivamente en: <strong>{linkedYoutubeAccount.channel_title}</strong>.</p>}
             {form.destination === 'youtube' && destinationInfo && <p className="muted">{destinationInfo.note}{destinationInfo.missing_env.length ? ' Faltan: ' + destinationInfo.missing_env.join(', ') + '.' : ''}</p>}
 
           </>}
