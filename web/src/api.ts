@@ -280,6 +280,10 @@ export interface AutopilotRule {
   content_pillars: string;
   avoid_topics: string;
   cadence_hours: number;
+  videos_per_period: number;
+  period_days: number;
+  schedule_time: string;
+  timezone: string;
   enabled: boolean;
   destination: string;
   privacy: string;
