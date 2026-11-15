@@ -262,8 +262,8 @@ EXTERNAL_TEMPLATES = [
 VIDEO_TYPES = [
     {"id": "moving_images", "label": "Imágenes con movimiento", "description": "Fotos de archivo con paneo y zoom, procesadas localmente.", "available": True},
     {"id": "full_motion_ai", "label": "Video IA de movimiento completo", "description": "Generación de clips IA; no hay un modelo local viable para este equipo todavía.", "available": False},
-    {"id": "skeleton", "label": "Skeleton Video", "description": "Esqueleto animado 2.5D generado localmente; sin IA ni créditos.", "available": True},
-    {"id": "stock_footage", "label": "Stock footage", "description": "Clips reales de archivo; falta conectar un catálogo de videos con licencia.", "available": False},
+    {"id": "skeleton", "label": "Esqueleto animado", "description": "Skeleton Video 2.5D generado localmente; sin IA ni créditos.", "available": True},
+    {"id": "stock_footage", "label": "Videos de archivo", "description": "Cinco clips reales de archivo propios o autorizados, alternados automáticamente.", "available": False},
     {"id": "minecraft", "label": "Gameplay de Minecraft", "description": "Biblioteca de clips propios o autorizados; requiere cinco clips para rotación.", "available": False},
     {"id": "subway", "label": "Gameplay de Subway Surfers", "description": "Biblioteca de clips propios o autorizados; requiere cinco clips para rotación.", "available": False},
 ]
