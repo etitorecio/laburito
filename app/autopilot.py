@@ -317,7 +317,7 @@ def _validate_auto_publish(clean: dict, current: dict | None = None) -> None:
     from . import persistence, publish
     if not persistence.durable_storage_available():
         raise ValueError(
-            "Antes de activar la autopublicación, configurá Supabase o ejecutá Laburito con un volumen local persistente."
+            "Antes de activar la autopublicación, ejecutá Laburito con la carpeta local ./data persistente."
         )
     try:
         publish.youtube_account_status()
