@@ -439,6 +439,19 @@ export default function Editor({ projectId, go }: Props) {
               />
             </Field>
             <p className="muted">La descripción guía la búsqueda de imágenes libres y algunos filtros locales; no genera imágenes IA.</p>
+            <Field label="Usar una imagen como referencia (paleta local)">
+              <input type="file" accept="image/jpeg,image/png,image/webp" disabled={!!busy} onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setBusy('style-reference'); setError(''); setOk('');
+                try {
+                  const result = await api.upload<{ visual_style_prompt: string; analysis: string }>('/api/visual-style/analyze', file);
+                  await patchProject({ notes: notesWithVisualStylePrompt(project.notes || '', result.visual_style_prompt) });
+                  setOk(result.analysis + ' Revisá la descripción antes de renderizar.');
+                } catch (error) { setError((error as Error).message); }
+                finally { setBusy(''); e.target.value = ''; }
+              }} />
+            </Field>
           </Field>
           <Field label="Movimiento de las escenas">
             <TransitionPicker
