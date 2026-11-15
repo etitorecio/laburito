@@ -45,7 +45,7 @@ cd web && npm run dev   # proxy /api -> http://127.0.0.1:8080
 
 Para usar Laburito sin pagar hosting ni Supabase, ejecutalo en una PC propia. Docker conserva la base, los videos y los trabajos en la carpeta `./data`; el Autopiloto sigue funcionando mientras la PC esté encendida, conectada a Internet y sin suspensión automática. Podés abrir la interfaz desde el celular conectado a la misma red Wi-Fi usando la IP local de la PC.
 
-En Windows, instalá Docker Desktop y activá su inicio automático al iniciar sesión. Después, hacé doble clic en `start_windows.bat`: crea un `APP_TOKEN` aleatorio si hace falta, construye la imagen, inicia el contenedor y abre la interfaz. También imprime la dirección local para entrar desde el celular por Wi-Fi. La primera compilación puede tardar.
+En Windows, instalá Docker Desktop y activá su inicio automático al iniciar sesión. Después, hacé doble clic en `start_windows.bat`: construye la imagen, inicia el contenedor y abre la interfaz. También imprime la dirección local para entrar desde el celular por Wi-Fi. No necesitás claves ni tokens de IA; la contraseña local es opcional. La primera compilación puede tardar.
 Para que se cumpla el calendario, dejá la PC encendida y evitá que entre en suspensión; Docker Desktop y el contenedor deben permanecer activos. Si la PC se apaga, el worker recupera la programación pendiente cuando vuelve a arrancar.
 
 Si preferís hacerlo manualmente:
@@ -87,7 +87,7 @@ Para reescritura de guiones con un modelo local, instalá [Ollama](https://ollam
 1. En Google Cloud, creá un proyecto y habilitá **YouTube Data API v3**.
 2. Configurá la pantalla de consentimiento y agregá tu cuenta como usuario de prueba si la app está en Testing. Creá credenciales OAuth de tipo **Aplicación web**.
 3. En **Ajustes → Conexión de YouTube**, copiá la URI de callback que muestra Laburito y agregala como URI de redirección autorizada en Google Cloud. En AppJet será `https://TU-EDGE-URL/api/youtube/callback`; en Docker local, `http://localhost:8080/api/youtube/callback`.
-4. En las variables de entorno de AppJet o en el archivo `.env` local configurá `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` y `APP_TOKEN`. `YOUTUBE_REDIRECT_URI` es opcional si necesitás fijar manualmente la URI exacta.
+4. En el archivo `.env` local configurá `YOUTUBE_CLIENT_ID` y `YOUTUBE_CLIENT_SECRET`. `APP_TOKEN` es opcional y solo protege el acceso a la instalación. `YOUTUBE_REDIRECT_URI` es opcional si necesitás fijar manualmente la URI exacta.
 5. Volvé a Ajustes y tocá **Conectar canal con Google**. Autorizá el canal. Laburito canjea el código y guarda el refresh token en el servidor; después comprobá el nombre del canal.
 
 Si la pantalla de consentimiento permanece en modo **Testing**, Google puede hacer vencer los refresh tokens de aplicaciones externas después de 7 días. Para automatización continua, revisá el estado de publicación de la app OAuth y los requisitos de verificación que Google indique. El OAuth Playground queda solo como alternativa manual avanzada.
