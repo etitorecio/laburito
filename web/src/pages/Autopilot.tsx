@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { api, type AutopilotRule, type Channel, type Meta, type TemplateOption } from '../api';
+import { api, type AutopilotRule, type Channel, type Meta, type TemplateOption, type Diagnostics } from '../api';
 import { Badge, Card, Empty, Field, Msg } from '../ui';
 
 type Options = {
@@ -111,6 +111,7 @@ const THUMB_BACKGROUNDS: Record<string, string[]> = {
 export default function Autopilot() {
   const [data, setData] = useState<Options | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
+  const [persistenceConfigured, setPersistenceConfigured] = useState<boolean | null>(null);
   const [form, setForm] = useState(INITIAL);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [step, setStep] = useState(0);
@@ -120,12 +121,14 @@ export default function Autopilot() {
 
   async function load() {
     try {
-      const [result, m] = await Promise.all([
+      const [result, m, diagnostics] = await Promise.all([
         api.get<Options>('/api/autopilot'),
         api.get<Meta>('/api/meta'),
+        api.get<Diagnostics>('/api/diagnostics'),
       ]);
       setData(result);
       setMeta(m);
+      setPersistenceConfigured(diagnostics.persistence.configured);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -282,6 +285,10 @@ export default function Autopilot() {
   return (
     <div className="stack">
       <Msg error={error} ok={ok} />
+      {persistenceConfigured === false && <p className="muted" style={{ padding: 12, border: '1px solid var(--border, #d1d5db)', borderRadius: 10 }}>
+        <strong>Falta persistencia externa.</strong> En AppJet Free, el contenedor puede perder la programación y el historial si se reemplaza. Configurá Supabase en Ajustes para activar el backup automático antes de depender del calendario.
+      </p>}
+      {persistenceConfigured === true && <p className="muted">Backup externo de Supabase activo: la configuración y la cola se conservan mediante copias periódicas.</p>}
       <Card title={editingId ? 'Editar autopiloto' : 'Crear autopiloto'} sub="Configurá una vez todo lo que querés producir. Después el sistema usa estas reglas en cada Short programado.">
         <div className="stack" style={{ gap: 12 }}>
           <div className="grid two">
