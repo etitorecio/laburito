@@ -2079,3 +2079,53 @@ th {
   font-size: 12px;
 }
 .voice-preview-player audio { width: 100%; }
+
+/* ---------- Galería de estilos visuales locales ---------- */
+.visual-style-picker { width: 100%; min-width: 0; }
+.visual-style-picker-track {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 2px 12px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.visual-style-card {
+  flex: 0 0 154px;
+  min-width: 154px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-2);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  scroll-snap-align: start;
+}
+.visual-style-card.selected {
+  border: 2px solid var(--accent);
+  padding: 6px;
+  box-shadow: 0 0 0 2px rgba(255,176,32,.13);
+}
+.visual-style-preview {
+  display: block;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  border-radius: 7px;
+  background: #0b132b;
+}
+.visual-style-preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.visual-style-card strong { font-size: 12px; line-height: 1.25; }
+.visual-style-card small { min-height: 44px; font-size: 10px; line-height: 1.35; color: var(--muted); }
+.visual-style-selected { font-size: 10px; color: var(--muted); }
+.visual-style-card.selected .visual-style-selected { color: var(--accent); font-weight: 800; }
