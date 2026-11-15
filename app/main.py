@@ -366,7 +366,7 @@ def caption_style_preview(style_id: str):
         raise HTTPException(404, "Estilo de subtítulos inexistente")
     try:
         preview = render.caption_preview(style_id)
-        return FileResponse(preview, media_type="image/png", filename=f"subtitulos-{style_id}.png")
+        return FileResponse(preview, media_type="image/png")
     except Exception as exc:
         raise HTTPException(503, f"No se pudo generar la vista previa: {exc}") from exc
 
