@@ -461,6 +461,43 @@ def _youtube_upload(project, meta: dict, privacy: str, report) -> dict:
     if not video_id:
         raise PublishError("YouTube no devolvió el identificador del video subido.")
 
+    # Confirmar que el ID ya aparece en la biblioteca del canal. La subida
+    # puede estar aceptada aunque el procesamiento de YouTube siga en curso.
+    verification = {
+        "status": "pending",
+        "upload_status": "unknown",
+        "processing_status": "unknown",
+    }
+    verify_url = "https://www.googleapis.com/youtube/v3/videos?" + urllib.parse.urlencode({
+        "part": "status,processingDetails",
+        "id": video_id,
+    })
+    verify_request = urllib.request.Request(
+        verify_url,
+        headers={"Authorization": f"Bearer {token}"},
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(verify_request, timeout=45) as response:
+            verify_data = json.loads(response.read().decode("utf-8", "replace"))
+        items = verify_data.get("items") or []
+        if items and items[0].get("id") == video_id:
+            status_data = items[0].get("status") or {}
+            processing_data = items[0].get("processingDetails") or {}
+            verification = {
+                "status": "processing_failed" if status_data.get("uploadStatus") == "failed" else "verified",
+                "upload_status": status_data.get("uploadStatus") or "unknown",
+                "processing_status": processing_data.get("processingStatus") or "unknown",
+            }
+        else:
+            db.log("warn", "publicacion", "YouTube aceptó la subida, pero el video todavía no aparece en videos.list.",
+                   {"project_id": _g(project, "id"), "video_id": video_id})
+    except Exception as exc:
+        # No repetir la subida por un fallo de lectura posterior: el upload API
+        # ya devolvió un ID válido y volver a subir podría crear un duplicado.
+        db.log("warn", "publicacion", f"Subida aceptada; verificación posterior pendiente: {exc}",
+               {"project_id": _g(project, "id"), "video_id": video_id})
+
     thumb_suffix = "short" if _g(project, "kind") == "short" else "documental"
     thumb = Path(db.RENDER_DIR) / str(_g(project, "id")) / f"miniatura_{thumb_suffix}.jpg"
     thumbnail_uploaded = False
@@ -483,12 +520,21 @@ def _youtube_upload(project, meta: dict, privacy: str, report) -> dict:
             db.log("warn", "publicacion", f"Video subido pero no se pudo adjuntar la miniatura: {exc}", {"project_id": _g(project, "id")})
     report(95, "Subida terminada")
     message = f"Subido a YouTube con privacidad {privacy}"
+    if verification["status"] == "verified":
+        message += " · ID confirmado en el canal"
+        if verification["processing_status"] not in ("succeeded", "unknown"):
+            message += " · procesamiento de YouTube en curso"
+    elif verification["status"] == "processing_failed":
+        message += " · YouTube informó un fallo de procesamiento"
+    else:
+        message += " · verificación posterior pendiente"
     if thumbnail_uploaded:
         message += " y miniatura personalizada"
     return {
         "url": f"https://youtu.be/{video_id}",
         "external_id": video_id,
         "message": message,
+        "verification": verification,
     }
 
 # --------------------------------------------------------------------------- #
@@ -555,6 +601,8 @@ def publish(project_id: int, destination: str = "entrega", calendar_id: int | No
     else:
         raise PublishError(f"Destino desconocido: {destination}. Usá 'entrega' o 'youtube'.")
 
+    if result.get("verification"):
+        meta["youtube_verification"] = result["verification"]
     now = db.now()
     db.execute(
         "INSERT INTO publicaciones(project_id, calendar_id, destination, status, url, external_id, meta_json, message, created_at, updated_at)"
@@ -587,6 +635,7 @@ def publish(project_id: int, destination: str = "entrega", calendar_id: int | No
         "url": result["url"],
         "external_id": result["external_id"],
         "message": result["message"],
+        "verification": result.get("verification"),
         "meta": meta,
     }
 
