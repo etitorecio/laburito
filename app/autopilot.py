@@ -431,11 +431,15 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
     publish_warning = ""
     if rule.get("auto_publish"):
         destination = rule.get("destination") or "entrega"
-        quality_ready = script_writer == "ollama-local" and evidence_sources >= 2
+        # No exigir Ollama: el Autopiloto debe funcionar sin instalar un
+        # modelo externo. Un guion basado en extractos recuperados es publicable
+        # si cuenta con al menos dos piezas de evidencia; los borradores sin
+        # fuentes suficientes quedan retenidos para evitar publicar inventos.
+        quality_ready = script_writer in ("source-extract", "ollama-local") and evidence_sources >= 2
         if destination == "youtube" and not quality_ready:
             publish_warning = (
-                "Publicación automática en YouTube retenida: se requiere un guion reescrito con Ollama local "
-                "y al menos dos fuentes con extractos recuperados. El video y su paquete de entrega sí se generan."
+                "Publicación automática en YouTube retenida: hacen falta al menos dos extractos "
+                "de investigación y un guion basado en fuentes. El video queda generado para revisión."
             )
             db.log("warn", "autopilot", publish_warning, {"project_id": pid, "writer": script_writer})
         else:
