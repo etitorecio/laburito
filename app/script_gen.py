@@ -566,9 +566,7 @@ def generate_script(
             if cta in cta_lines:
                 narration = narration.rstrip() + " " + cta_lines[cta]
         visual_query = beat["visual"].format(topic=topic)
-        visual_style = (project.get("visual_style") or "").strip()
-        if visual_style:
-            visual_query = visual_query + " " + visual_style
+        # El estilo visual se aplica como filtro FFmpeg en el render; no contamina la búsqueda del recurso.
         scenes.append(
             {
                 "idx": idx,
