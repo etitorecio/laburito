@@ -380,7 +380,7 @@ def create_rule(data: dict) -> dict:
     clean.setdefault("privacy", "public")
     clean.setdefault("resolution", "720p")
     clean.setdefault("music_volume", 0.3)
-    clean.setdefault("auto_publish", 1)
+    clean.setdefault("auto_publish", 0)
     _validate_auto_publish(clean)
     clean.setdefault("videos_per_period", 1)
     clean.setdefault("period_days", 1)
