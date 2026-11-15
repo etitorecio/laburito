@@ -593,7 +593,8 @@ def diagnostics():
         "render": media.capabilities(),
         "ollama": {
             "url": db.get_setting("ollama_url") or os.environ.get("OLLAMA_URL", ""),
-            "available": script_gen.ollama_available(db.get_setting("ollama_url") or os.environ.get("OLLAMA_URL", "")),
+            "available": script_gen.ollama_model_available(db.get_setting("ollama_url") or os.environ.get("OLLAMA_URL", ""), "qwen2.5:1.5b-instruct"),
+            "model": "qwen2.5:1.5b-instruct",
             "optional": True,
         },
         "counts": {
