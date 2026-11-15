@@ -112,6 +112,84 @@ def restore_if_available() -> bool:
         temporary.unlink(missing_ok=True)
 
 
+def _storage_object_path(name: str) -> str:
+    _base, _key, bucket = _settings()
+    return "/storage/v1/object/" + urllib.parse.quote(bucket, safe="") + "/" + urllib.parse.quote(name, safe="/")
+
+
+def sync_pending_video(project_id: int, video_path: str | Path) -> bool:
+    """Conserva el MP4 final hasta que YouTube confirme que lo recibió."""
+    if not configured():
+        return False
+    video = Path(video_path)
+    if not video.is_file() or video.stat().st_size < 1024:
+        raise RuntimeError("No se puede respaldar el Short: el MP4 final no existe o está vacío.")
+    _ensure_bucket()
+    object_path = _storage_object_path(f"pending/{int(project_id)}.mp4")
+    with _request(
+        "POST", object_path, video.read_bytes(), "video/mp4",
+        extra_headers={"x-upsert": "true"},
+    ) as response:
+        response.read()
+    db.log("info", "persistence", "MP4 pendiente respaldado en Supabase Storage.",
+           {"project_id": int(project_id), "bytes": video.stat().st_size})
+    return True
+
+
+def restore_pending_video(project_id: int) -> bool:
+    """Restaura el MP4 si el contenedor fue reemplazado antes de publicar."""
+    row = db.query_one(
+        "SELECT path FROM assets WHERE project_id=? AND kind='video_final' ORDER BY id DESC LIMIT 1",
+        (int(project_id),),
+    )
+    if not row or not row.get("path"):
+        raise RuntimeError("No se encontró el MP4 final asociado al proyecto.")
+    target = Path(row["path"])
+    if target.is_file() and target.stat().st_size >= 1024:
+        return True
+    if not configured():
+        raise RuntimeError("El MP4 final se perdió y no hay almacenamiento persistente configurado.")
+    object_path = _storage_object_path(f"pending/{int(project_id)}.mp4")
+    try:
+        with _request("GET", object_path) as response:
+            content = response.read()
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            raise RuntimeError("No existe una copia persistente del MP4 para reintentar la publicación.") from exc
+        detail = exc.read().decode("utf-8", "replace")[:300]
+        raise RuntimeError(f"No se pudo restaurar el MP4 pendiente ({exc.code}): {detail}") from exc
+    if len(content) < 1024:
+        raise RuntimeError("La copia persistente del MP4 está vacía o incompleta.")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_suffix(target.suffix + ".restore.tmp")
+    try:
+        temporary.write_bytes(content)
+        os.replace(temporary, target)
+    finally:
+        temporary.unlink(missing_ok=True)
+    db.log("info", "persistence", "MP4 pendiente restaurado desde Supabase Storage.",
+           {"project_id": int(project_id)})
+    return True
+
+
+def delete_pending_video(project_id: int) -> bool:
+    """Elimina el MP4 remoto solo después de completar la publicación."""
+    if not configured():
+        return False
+    _ensure_bucket()
+    _base, _key, bucket = _settings()
+    path = f"pending/{int(project_id)}.mp4"
+    payload = json.dumps({"prefixes": [path]}).encode()
+    with _request(
+        "DELETE", "/storage/v1/object/" + urllib.parse.quote(bucket, safe=""),
+        payload, "application/json",
+    ) as response:
+        response.read()
+    db.log("info", "persistence", "MP4 pendiente eliminado tras la publicación.",
+           {"project_id": int(project_id)})
+    return True
+
+
 def sync_backup() -> bool:
     """Sube una copia consistente y comprimida a un bucket privado."""
     if not configured():
