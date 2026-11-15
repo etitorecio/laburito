@@ -255,6 +255,34 @@ EXTERNAL_TEMPLATES = [
      "requires": "Render 3D con malla y animación (motor 3D externo)."},
 ]
 
+# --------------------------------------------------------------------------- #
+# Tipos de video y estilos visuales locales (sin servicios de generación)
+# --------------------------------------------------------------------------- #
+
+VIDEO_TYPES = [
+    {"id": "moving_images", "label": "Imágenes con movimiento", "description": "Fotos de archivo con paneo y zoom, procesadas localmente.", "available": True},
+    {"id": "full_motion_ai", "label": "Video IA de movimiento completo", "description": "Generación de clips IA; no hay un modelo local viable para este equipo todavía.", "available": False},
+    {"id": "skeleton", "label": "Video de esqueleto 3D", "description": "Animación 3D de esqueleto; el motor todavía no está conectado.", "available": False},
+    {"id": "stock_footage", "label": "Stock footage", "description": "Clips reales de archivo; falta conectar un catálogo de videos con licencia.", "available": False},
+    {"id": "minecraft", "label": "Gameplay de Minecraft", "description": "Biblioteca de clips propios o autorizados; requiere cinco clips para rotación.", "available": False},
+    {"id": "subway", "label": "Gameplay de Subway Surfers", "description": "Biblioteca de clips propios o autorizados; requiere cinco clips para rotación.", "available": False},
+]
+VIDEO_TYPE_IDS = {item["id"] for item in VIDEO_TYPES}
+
+VISUAL_STYLES = [
+    {"id": "automatico", "label": "Automático", "description": "Sin tratamiento adicional; conserva los colores de la imagen."},
+    {"id": "cinematico", "label": "Cinematográfico", "description": "Contraste suave, color profundo y viñeta."},
+    {"id": "realista", "label": "Realista", "description": "Nitidez moderada y color natural."},
+    {"id": "anime", "label": "Anime / ilustrado", "description": "Color más intenso y bordes definidos; no convierte fotos en dibujos."},
+    {"id": "pixel_art", "label": "Pixel art", "description": "Pixelado visible por reducción y ampliación por bloques."},
+    {"id": "noir", "label": "Cine noir", "description": "Blanco y negro de alto contraste."},
+    {"id": "vintage", "label": "Vintage", "description": "Tono sepia y viñeta suave."},
+    {"id": "cyberpunk", "label": "Cyberpunk", "description": "Saturación alta y dominante fría."},
+    {"id": "acuarela", "label": "Acuarela suave", "description": "Suavizado leve y color pastel; no es una pintura generada."},
+    {"id": "comic", "label": "Cómic", "description": "Contraste y detección de bordes."},
+]
+VISUAL_STYLE_IDS = {item["id"] for item in VISUAL_STYLES}
+
 TEMPLATE_IDS = {t["id"] for t in TEMPLATES}
 SCRIPT_TEMPLATES = ["documentary", "short", "listicle", "pov", "explainer", "quote"]
 
