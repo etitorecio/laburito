@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
     custom_tags TEXT NOT NULL DEFAULT '',
     aspect TEXT NOT NULL DEFAULT '9:16',
     caption_style TEXT NOT NULL DEFAULT 'short_pop',
+    captions_enabled INTEGER NOT NULL DEFAULT 1,
     transition_default TEXT NOT NULL DEFAULT 'fundido',
     resolution TEXT NOT NULL DEFAULT '1080p',
     fps INTEGER NOT NULL DEFAULT 25,
@@ -69,7 +70,7 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
 FIELDS = [
     "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "speed", "pitch", "visual_style", "video_type", "title_style", "custom_tags", "aspect",
     "audience", "tone", "hook_style", "cta", "content_pillars", "avoid_topics",
-    "caption_style", "transition_default", "resolution", "fps", "music", "music_volume",
+    "caption_style", "captions_enabled", "transition_default", "resolution", "fps", "music", "music_volume",
     "cadence_hours", "cadence_minutes", "videos_per_period", "period_days", "schedule_time", "timezone", "enabled", "destination", "privacy", "auto_publish", "next_run_at",
 ]
 
@@ -96,6 +97,7 @@ def ensure_schema() -> None:
         "cta": "TEXT NOT NULL DEFAULT 'Hacé una pregunta concreta al final'",
         "content_pillars": "TEXT NOT NULL DEFAULT ''",
         "avoid_topics": "TEXT NOT NULL DEFAULT ''",
+        "captions_enabled": "INTEGER NOT NULL DEFAULT 1",
     }
     for name, definition in migrations.items():
         if name not in columns:
@@ -218,6 +220,8 @@ def _clean(data: dict) -> dict:
         if data["caption_style"] not in options.CAPTION_STYLES:
             raise ValueError("Estilo de subtítulos desconocido")
         clean["caption_style"] = data["caption_style"]
+    if "captions_enabled" in data and data["captions_enabled"] is not None:
+        clean["captions_enabled"] = 1 if bool(data["captions_enabled"]) else 0
     if "transition_default" in data and data["transition_default"] is not None:
         if data["transition_default"] not in options.TRANSITION_IDS:
             raise ValueError("Transición desconocida")
@@ -418,6 +422,7 @@ def _create_project(rule: dict) -> dict:
             "[LABURITO_META]" + json.dumps({
                 "title_style": rule.get("title_style") or "automatico",
                 "custom_tags": rule.get("custom_tags") or "",
+                "captions_enabled": bool(rule.get("captions_enabled", 1)),
             }, ensure_ascii=False),
             tpl["id"], rule.get("visual_style") or "automatico",
             rule.get("video_type") or "moving_images",
