@@ -649,6 +649,20 @@ def ollama_available(url: str) -> bool:
         return False
 
 
+def ollama_model_available(url: str, model: str) -> bool:
+    if not ollama_available(url):
+        return False
+    try:
+        with urllib.request.urlopen(url.rstrip("/") + "/api/tags", timeout=5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        return any(
+            item.get("name") == model or str(item.get("name", "")).startswith(model + ":")
+            for item in data.get("models", [])
+        )
+    except Exception:
+        return False
+
+
 def expand_with_ollama(url: str, model: str, prompt: str, timeout: int = 120) -> str:
     """Expansión opcional con un modelo local (Ollama). Cero coste, sin claves."""
     if not ollama_available(url):
