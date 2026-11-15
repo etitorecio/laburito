@@ -31,8 +31,8 @@ RUN pip install --no-cache-dir --upgrade pip \
 COPY app/ /app/app/
 COPY --from=web /web/dist /app/web/dist
 
-RUN addgroup --system aituber \
- && adduser --system --ingroup aituber --home /app aituber \
+RUN groupadd --system aituber \
+ && useradd --system --gid aituber --home-dir /app aituber \
  && mkdir -p /app/data/music /app/data/renders /app/data/exports /app/data/media /app/data/tmp \
  && chown -R aituber:aituber /app
 
