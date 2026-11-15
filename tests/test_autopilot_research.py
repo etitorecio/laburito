@@ -53,6 +53,18 @@ class AutopilotResearchTests(unittest.TestCase):
         after = datetime(2026, 11, 14, 9, 0, tzinfo=ZoneInfo("America/Argentina/Buenos_Aires"))
         self.assertEqual(autopilot._next_run_at(rule, after), "2026-11-14T13:00:00Z")
 
+    def test_manual_generation_does_not_move_future_schedule(self):
+        rule = {"next_run_at": "2026-11-16T13:00:00Z"}
+        self.assertEqual(
+            autopilot._next_after_run(rule, force=True, now="2026-11-15T13:00:00Z"),
+            "2026-11-16T13:00:00Z",
+        )
+        with patch.object(autopilot, "_next_run_at", return_value="next-slot"):
+            self.assertEqual(
+                autopilot._next_after_run({"next_run_at": "2026-11-14T13:00:00Z"}, force=True, now="2026-11-15T13:00:00Z"),
+                "next-slot",
+            )
+
     def test_piper_cli_is_installed_by_backend_requirements(self):
         self.assertTrue(tts.piper_path())
         self.assertEqual(tts.VOICES["es-es-piper"]["language"], "es")
