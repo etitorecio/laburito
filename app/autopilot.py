@@ -181,7 +181,7 @@ def _clean(data: dict) -> dict:
             raise ValueError("Tipo de video no válido")
         if chosen_type in {"full_motion_ai", "skeleton"}:
             raise ValueError(f"El formato {chosen_type} todavía no está implementado.")
-        required_clips = 5 if chosen_type in {"minecraft", "subway"} else 1
+        required_clips = 5
         if chosen_type in {"minecraft", "subway", "stock_footage"}:
             clip_dir = db.DATA_DIR / "background_clips" / chosen_type
             clip_count = len(list(clip_dir.glob("*.mp4"))) if clip_dir.exists() else 0
