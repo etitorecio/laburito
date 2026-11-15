@@ -212,13 +212,18 @@ class AutopilotResearchTests(unittest.TestCase):
             schedule_time="09:30", timezone="America/Argentina/Buenos_Aires",
             audience="Jóvenes", tone="Ágil", hook_style="Pregunta",
             cta="Comentá", content_pillars="Espacio", avoid_topics="Rumores",
+            speed=165, pitch=52, visual_style="Archivo histórico",
+            title_style="pregunta", custom_tags="ciencia, espacio",
         )
         self.assertEqual(create.videos_per_period, 1)
         self.assertEqual(create.schedule_time, "09:30")
         self.assertEqual(create.content_pillars, "Espacio")
-        patch = AutopilotPatch(videos_per_period=2, period_days=1, schedule_time="12:00")
+        self.assertEqual(create.speed, 165)
+        self.assertEqual(create.visual_style, "Archivo histórico")
+        patch = AutopilotPatch(videos_per_period=2, period_days=1, schedule_time="12:00", custom_tags="misterio")
         self.assertEqual(patch.videos_per_period, 2)
         self.assertEqual(patch.schedule_time, "12:00")
+        self.assertEqual(patch.custom_tags, "misterio")
 
     def test_autopilot_holds_publication_for_unrewritten_script(self):
         rule = {"id": 9, "auto_publish": True, "cadence_hours": 24, "destination": "youtube", "privacy": "unlisted"}
@@ -230,7 +235,7 @@ class AutopilotResearchTests(unittest.TestCase):
                             with patch.object(autopilot.db, "now", return_value="now"):
                                 with patch.object(autopilot, "_ts", return_value="later"):
                                     result = autopilot.run_rule(9)
-        set_publish.assert_not_called()
+        set_publish.assert_called_once_with(77, True, "entrega")
         self.assertEqual(result["project_id"], 77)
         self.assertIn("retenida", result["publish_warning"])
 
