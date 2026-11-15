@@ -25,7 +25,7 @@ def enqueue(project_id: int | None, kind: str, payload: dict | None = None) -> i
     if kind == "publish_project" and project_id is not None:
         wanted_payload = payload or {}
         existing_jobs = db.query(
-            "SELECT id, payload_json FROM jobs WHERE project_id=? AND kind=? AND status IN ('en_cola','ejecutando','completado') ORDER BY id DESC",
+            "SELECT id, payload_json FROM jobs WHERE project_id=? AND kind=? AND status IN ('en_cola','ejecutando') ORDER BY id DESC",
             (int(project_id), kind),
         )
         for existing in existing_jobs:
