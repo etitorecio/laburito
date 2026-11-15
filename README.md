@@ -71,9 +71,6 @@ La imagen final usa Debian slim (glibc, necesaria para Piper/ONNX Runtime), comp
 | `PIPER_BIN`, `PIPER_MODEL` | Sobrescritura manual opcional de la instalación Piper; normalmente se instala desde Ajustes. |
 | `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` | Credenciales OAuth de tipo aplicación web. La autorización de YouTube se guarda en la base local tras conectar la cuenta. |
 | `YOUTUBE_REDIRECT_URI` | URI de callback OAuth opcional; por defecto se calcula con el dominio actual. |
-| `SUPABASE_URL` | Opcional para copias remotas en despliegues alojados; no se necesita en Docker local. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Clave privada opcional para copias remotas; no se necesita en Docker local. |
-| `SUPABASE_STORAGE_BUCKET` | Nombre opcional del bucket privado de backups (por defecto `laburito-private-backups`); se crea automáticamente. |
 
 En **Ajustes** se configuran voz, música, estilos visuales, subtítulos, movimientos, almacenamiento local y la conexión OAuth oficial de YouTube.
 
@@ -125,7 +122,7 @@ La opción recomendada es **Docker local en tu PC**, con la carpeta `./data` per
 ## Limitaciones conocidas
 
 - El tipo "Imágenes con movimiento" usa imágenes de archivo con paneo/zoom; no es generación de imágenes IA. "Esqueleto animado" produce un personaje 2.5D procedural local, no un modelo 3D generativo. "Videos de archivo", Minecraft y Subway Surfers funcionan con cinco clips propios o autorizados cargados en sus bibliotecas locales. "Video IA de movimiento completo" permanece desactivado: los modelos abiertos de video requieren recursos de GPU/VRAM que no son realistas para una notebook con gráficos integrados.
-- El material visual externo depende de la red y de las licencias de cada repositorio; siempre se registra autor, licencia y fecha de consulta. La subida a YouTube registra el ID devuelto por la API y consulta `videos.list` para confirmar su presencia; el procesamiento de YouTube puede continuar después de que termine la tarea.\n- La persistencia de Supabase es obligatoria para autopublicar desde AppJet Free, porque no incluye disco virtual persistente. En Docker local se usa el volumen `./data` y Supabase no es necesario. El backup remoto es una copia de SQLite, no una base multiinstancia; ejecutá una sola instancia de worker para evitar concurrencia.
+- El material visual externo depende de la red y de las licencias de cada repositorio; siempre se registra autor, licencia y fecha de consulta. La subida a YouTube registra el ID devuelto por la API y consulta `videos.list` para confirmar su presencia; el procesamiento de YouTube puede continuar después de que termine la tarea.\n- El almacenamiento local persistente se conserva en `./data`; no se necesita Supabase ni una base de datos externa.
 - Es una instalación de un solo propietario: la instancia local no tiene autenticación multiusuario y el estado OAuth/SQLite no está aislado por usuario. No la ofrezcas como SaaS compartido ni guardes canales de varios amigos en la misma instancia. Para compartirla hoy, cada persona debe desplegar su propia copia; falta autenticación multiusuario y aislamiento de credenciales. No la expongas directamente a Internet.
 - La música de fondo se toma de las camas libres integradas o de `data/music/` (el usuario puede aportar pistas libres).
 - La voz es sintética y local; para una voz neural local se puede instalar Piper DaveFX (España, CC0) desde Ajustes; la voz rioplatense espeak sigue disponible.
