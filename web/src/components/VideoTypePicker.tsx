@@ -27,6 +27,7 @@ const CLIP_SOURCES: Record<string, { label: string; url: string; detail: string 
   subway: [
     { label: 'Subway Surfers oficial · vertical 9:16 (SYBO)', url: 'https://www.youtube.com/watch?v=QPW3XwBoQlw', detail: 'La publicación oficial dice FREE TO USE, pero las condiciones generales de SYBO restringen la exhibición pública y el uso comercial salvo autorización. Para monetizar, pedí permiso escrito específico y guardalo.' },
     { label: 'Subway Surfers oficial · horizontal 16:9 (SYBO)', url: 'https://www.youtube.com/watch?v=i0M4ARe9v0Y', detail: 'También marcado FREE TO USE por el canal oficial; habría que recortarlo a vertical. La autorización comercial debe confirmarse frente a las condiciones generales de SYBO.' },
+    { label: 'Condiciones oficiales de SYBO', url: 'https://sybogames.com/terms-of-service/', detail: 'SYBO conserva los derechos del juego y limita la publicación o exhibición pública y los usos comerciales no autorizados.' },
   ],
   minecraft: [
     { label: 'Minecraft Parkour · Orbital (creador)', url: 'https://www.youtube.com/watch?v=u7kdVe8q5zs', detail: 'El creador declara permiso para monetizar y pide crédito. Es permiso del autor de la grabación, no una licencia de Mojang.' },
