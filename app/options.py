@@ -157,6 +157,18 @@ TEMPLATES = [
         "available": True,
     },
     {
+        "id": "reddit_story",
+        "label": "Historias estilo Reddit",
+        "description": "Relato original en español con gancho, contexto, tensión creciente, giro y cierre para comentarios.",
+        "kind": "short",
+        "aspect": "9:16",
+        "script": "reddit_story",
+        "caption_style": "short_pop",
+        "durations": [60, 90, 120, 180],
+        "default_duration": 180,
+        "available": True,
+    },
+    {
         "id": "frutinovela",
         "label": "Frutinovela por episodios",
         "description": "Ficción vertical melodramática con personajes recurrentes, conflicto, giro y cliffhanger para continuar la serie.",
