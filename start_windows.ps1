@@ -47,7 +47,7 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ""
 Write-Host "Laburito está iniciando en http://localhost:8080" -ForegroundColor Green
-Write-Host "No necesitás claves ni tokens de IA. El primer inicio descarga Llama 3.2 (aprox. 2 GB) para escribir guiones localmente."
+Write-Host "No necesitás claves ni tokens de IA. El primer inicio descarga Qwen 2.5 1.5B (aprox. 1 GB) para escribir guiones localmente."
 Write-Host "Para publicar en YouTube: configurá YOUTUBE_CLIENT_ID y YOUTUBE_CLIENT_SECRET en .env y reiniciá con docker compose up -d."
 Write-Host "No borres la carpeta data: conserva la programación, los videos y la autorización."
 $lan = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
