@@ -39,16 +39,6 @@ if (-not (Test-Path ".env")) {
 }
 
 $envText = Get-Content ".env" -Raw
-if ($envText -match "APP_TOKEN=CAMBIAR_POR_UN_TOKEN_LARGO_Y_ALEATORIO") {
-    $bytes = New-Object byte[] 48
-    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
-    $rng.GetBytes($bytes)
-    $rng.Dispose()
-    $token = [Convert]::ToBase64String($bytes).TrimEnd("=").Replace("+", "-").Replace("/", "_")
-    $envText = $envText -replace "APP_TOKEN=.*", "APP_TOKEN=$token"
-    Set-Content -Path ".env" -Value $envText -Encoding UTF8
-    Write-Host "Se creó un APP_TOKEN aleatorio. Lo podés consultar en el archivo .env." -ForegroundColor Green
-}
 
 Write-Host "Construyendo e iniciando Laburito. La primera compilación puede tardar." -ForegroundColor Cyan
 docker compose up -d --build
@@ -59,8 +49,8 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ""
 Write-Host "Laburito está iniciando en http://localhost:8080" -ForegroundColor Green
-Write-Host "El APP_TOKEN está guardado en .env; ingresalo en Ajustes > Acceso."
-Write-Host "Para YouTube: configurá YOUTUBE_CLIENT_ID y YOUTUBE_CLIENT_SECRET en .env y reiniciá con docker compose up -d."
+Write-Host "No necesitás claves ni tokens de IA. Si querés proteger el acceso local, podés definir APP_TOKEN en .env."
+Write-Host "Para publicar en YouTube: configurá YOUTUBE_CLIENT_ID y YOUTUBE_CLIENT_SECRET en .env y reiniciá con docker compose up -d."
 Write-Host "No borres la carpeta data: conserva la programación, los videos y la autorización."
 $lan = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
     Where-Object { $_.InterfaceAlias -match "Wi-Fi|Ethernet" -and $_.IPAddress -notmatch "^(127|169\.254)\." } |
