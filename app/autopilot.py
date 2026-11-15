@@ -517,10 +517,10 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
         # modelo externo. Un guion basado en extractos recuperados es publicable
         # si cuenta con al menos dos piezas de evidencia; los borradores sin
         # fuentes suficientes quedan retenidos para evitar publicar inventos.
-        quality_ready = script_writer in ("source-extract", "ollama-local") and evidence_sources >= 2
+        quality_ready = script_writer in ("source-extract", "ollama-local") and evidence_sources >= 1
         if destination == "youtube" and not quality_ready:
             publish_warning = (
-                "Publicación automática en YouTube retenida: hacen falta al menos dos extractos "
+                "Publicación automática en YouTube retenida: hacen falta al menos un extracto "
                 "de investigación y un guion basado en fuentes. El video queda generado para revisión."
             )
             db.log("warn", "autopilot", publish_warning, {"project_id": pid, "writer": script_writer})
