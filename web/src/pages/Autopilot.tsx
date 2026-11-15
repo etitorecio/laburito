@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api, type AutopilotRule, type Channel, type Meta, type TemplateOption } from '../api';
 import { Badge, Card, Empty, Field, Msg } from '../ui';
 
@@ -41,11 +41,23 @@ const INITIAL = {
   enabled: true,
 };
 
+const STEPS = [
+  { title: 'Canal', subtitle: 'Dónde va a trabajar tu autopiloto' },
+  { title: 'Nicho', subtitle: 'Qué contenido tiene que descubrir' },
+  { title: 'Guion', subtitle: 'Cómo cuenta cada historia' },
+  { title: 'Voz', subtitle: 'Idioma y narración' },
+  { title: 'Aspecto', subtitle: 'Formato y estilo visual' },
+  { title: 'Audio', subtitle: 'Música y mezcla' },
+  { title: 'Calendario', subtitle: 'Cantidad, duración y horario' },
+  { title: 'Publicación', subtitle: 'Dónde guardar o publicar' },
+];
+
 export default function Autopilot() {
   const [data, setData] = useState<Options | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [form, setForm] = useState(INITIAL);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
@@ -58,9 +70,6 @@ export default function Autopilot() {
       ]);
       setData(result);
       setMeta(m);
-      if (result.templates.length && !result.templates.some((t) => t.id === form.template)) {
-        setForm((old) => ({ ...old, template: result.templates[0].id }));
-      }
     } catch (e) {
       setError((e as Error).message);
     }
@@ -72,7 +81,18 @@ export default function Autopilot() {
     return () => window.clearInterval(interval);
   }, []);
 
-  async function create() {
+  const templates = useMemo(
+    () => (data?.templates ?? meta?.templates ?? []).filter((t) => ['shorts', 'listicle', 'pov', 'quote'].includes(t.id)),
+    [data, meta],
+  );
+  const youtubeReady = data?.destinations?.some((d) => d.id === 'youtube' && d.available) ?? false;
+  const selectedTemplate = templates.find((t) => t.id === form.template);
+
+  function update<K extends keyof typeof INITIAL>(key: K, value: (typeof INITIAL)[K]) {
+    setForm((old) => ({ ...old, [key]: value }));
+  }
+
+  async function save() {
     setBusy(true); setError(''); setOk('');
     try {
       const payload = {
@@ -82,20 +102,19 @@ export default function Autopilot() {
         cadence_hours: Number(form.cadence_hours),
         videos_per_period: Number(form.videos_per_period),
         period_days: Number(form.period_days),
-        schedule_time: form.schedule_time,
-        timezone: form.timezone,
-        auto_publish: form.auto_publish,
-        enabled: form.enabled,
+        music_volume: Number(form.music_volume),
+        fps: Number(form.fps),
       };
       if (editingId) {
         await api.patch('/api/autopilot/' + editingId, payload);
-        setOk('Configuración del Autopiloto actualizada.');
+        setOk('Configuración actualizada.');
       } else {
         await api.post('/api/autopilot', payload);
-        setOk('Autopiloto creado. La producción quedó programada según la cantidad, frecuencia y horario elegidos.');
+        setOk('Autopiloto creado. Quedó programado con todas las opciones elegidas.');
       }
       setForm(INITIAL);
       setEditingId(null);
+      setStep(0);
       await load();
     } catch (e) {
       setError((e as Error).message);
@@ -105,9 +124,9 @@ export default function Autopilot() {
   async function run(id: number) {
     setBusy(true); setError(''); setOk('');
     try {
-      const result = await api.post<{ project_id: number; publish_warning?: string | null }>(`/api/autopilot/${id}/run`);
-      const started = `Producción iniciada. Proyecto #${result.project_id} agregado a la cola.`;
-      setOk(result.publish_warning ? `${started} Atención: ${result.publish_warning}` : started);
+      const result = await api.post<{ project_id: number; publish_warning?: string | null }>('/api/autopilot/' + id + '/run');
+      const started = 'Producción iniciada. Proyecto #' + result.project_id + ' agregado a la cola.';
+      setOk(result.publish_warning ? started + ' Atención: ' + result.publish_warning : started);
       await load();
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
@@ -145,205 +164,278 @@ export default function Autopilot() {
       enabled: rule.enabled,
     });
     setEditingId(rule.id);
+    setStep(0);
     setError('');
     setOk('Editando «' + (rule.name || rule.niche) + '».');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function cancelEdit() {
+  function reset() {
     setEditingId(null);
     setForm(INITIAL);
+    setStep(0);
     setOk('');
+    setError('');
   }
 
   async function toggle(rule: AutopilotRule) {
     setBusy(true); setError('');
     try {
-      await api.patch(`/api/autopilot/${rule.id}`, { enabled: !rule.enabled });
-      if (editingId === rule.id) setForm((old) => ({ ...old, enabled: !rule.enabled }));
+      await api.patch('/api/autopilot/' + rule.id, { enabled: !rule.enabled });
       await load();
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
   }
 
   async function remove(id: number) {
-    if (!window.confirm('¿Eliminar esta regla de Autopiloto?')) return;
+    if (!window.confirm('¿Eliminar esta automatización?')) return;
     setBusy(true); setError('');
-    try { await api.del(`/api/autopilot/${id}`); if (editingId === id) cancelEdit(); await load(); }
-    catch (e) { setError((e as Error).message); }
+    try {
+      await api.del('/api/autopilot/' + id);
+      if (editingId === id) reset();
+      await load();
+    } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
   }
 
-  const templates = (data?.templates ?? meta?.templates ?? []).filter((t) => ["shorts", "listicle", "pov", "quote"].includes(t.id));
-  const youtubeReady = data?.destinations?.some((d) => d.id === "youtube" && d.available) ?? false;
+  function chooseTemplate(id: string) {
+    const selected = templates.find((t) => t.id === id);
+    setForm((old) => ({
+      ...old,
+      template: id,
+      ...(selected ? {
+        aspect: selected.aspect,
+        caption_style: selected.caption_style,
+        duration_target_sec: selected.default_duration,
+      } : {}),
+    }));
+  }
+
+  const voiceOptions = meta?.voices ?? [];
+  const destinationInfo = data?.destinations.find((d) => d.id === 'youtube');
 
   return (
     <div className="stack">
       <Msg error={error} ok={ok} />
-      <Card title="Autopiloto de Shorts" sub="Configurá una vez el canal, el público, la identidad editorial y la producción. Después el piloto descubre temas, crea Shorts verticales y los entrega según tu frecuencia.">
-        <h3>1. Canal y estrategia</h3>
-        <div className="grid two">
-          <Field label="Nombre de la automatización">
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Mi canal de Shorts" />
-          </Field>
-          <Field label="Nicho o temática">
-            <input value={form.niche} onChange={(e) => setForm({ ...form, niche: e.target.value })} placeholder="Misterio, ciencia, fútbol, curiosidades, historias, tecnología..." />
-          </Field>
-          <Field label="Público objetivo"><input value={form.audience} onChange={(e) => setForm({ ...form, audience: e.target.value })} placeholder="Ej.: jóvenes de 16 a 30 interesados en misterio" /></Field>
-          <Field label="Pilares / subtemas del canal"><input value={form.content_pillars} onChange={(e) => setForm({ ...form, content_pillars: e.target.value })} placeholder="Ej.: casos inexplicables, desapariciones, leyendas urbanas" /></Field>
-          <Field label="Temas o enfoques que debe evitar"><input value={form.avoid_topics} onChange={(e) => setForm({ ...form, avoid_topics: e.target.value })} placeholder="Ej.: política partidaria, tragedias recientes" /></Field>
-          <Field label="Canal">
-            <select value={form.channel_id} onChange={(e) => setForm({ ...form, channel_id: e.target.value })}>
-              <option value="">Sin canal asociado</option>
-              {(data?.channels ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </Field>
-          <Field label="Formato">
-            <select value={form.template} onChange={(e) => {
-              const selected = templates.find((t) => t.id === e.target.value);
-              setForm({
-                ...form,
-                template: e.target.value,
-                ...(selected ? {
-                  aspect: selected.aspect,
-                  caption_style: selected.caption_style,
-                  duration_target_sec: selected.default_duration,
-                } : {}),
-              });
-            }}>
-              {templates.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
-            </select>
-          </Field>
-          <Field label="Duración del Short (segundos)">
-            <input type="number" min="15" max="90" value={form.duration_target_sec} onChange={(e) => setForm({ ...form, duration_target_sec: Number(e.target.value) })} />
-          </Field>
-          <Field label="Voz (narración en español)">
-            <select value={form.voice} onChange={(e) => setForm({ ...form, voice: e.target.value })}>
-              {(meta?.voices ?? []).map((v) => <option key={v.id} value={v.id} disabled={!v.available}>{v.label}{v.available ? '' : ' (no disponible)'}</option>)}
-            </select>
-          </Field>
-          <Field label="Formato de pantalla">
-            <select value={form.aspect} onChange={(e) => setForm({ ...form, aspect: e.target.value })}>
-              {(meta?.aspects ?? ['9:16', '16:9', '1:1']).map((a) => <option key={a} value={a}>{a}</option>)}
-            </select>
-          </Field>
-          <Field label="Estilo de subtítulos">
-            <select value={form.caption_style} onChange={(e) => setForm({ ...form, caption_style: e.target.value })}>
-              {(meta?.caption_styles ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
-            </select>
-          </Field>
-          <Field label="Transiciones">
-            <select value={form.transition_default} onChange={(e) => setForm({ ...form, transition_default: e.target.value })}>
-              {(meta?.transitions ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
-            </select>
-          </Field>
-          <Field label="Resolución">
-            <select value={form.resolution} onChange={(e) => setForm({ ...form, resolution: e.target.value })}>
-              {(meta?.resolutions ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
-            </select>
-          </Field>
-          <Field label="Fotogramas por segundo">
-            <select value={form.fps} onChange={(e) => setForm({ ...form, fps: Number(e.target.value) })}>
-              {(meta?.fps_options ?? [25, 30]).map((x) => <option key={x} value={x}>{x} FPS</option>)}
-            </select>
-          </Field>
-          <Field label="Música">
-            <select value={form.music} onChange={(e) => setForm({ ...form, music: e.target.value })}>
-              <option value="auto">Automática</option>
-              {(meta?.music_beds ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
-            </select>
-          </Field>
-          <Field label="Volumen de música (0 a 1)">
-            <input type="number" min="0" max="1" step="0.01" value={form.music_volume} onChange={(e) => setForm({ ...form, music_volume: Number(e.target.value) })} />
-          </Field>
-          <Field label="Cantidad de Shorts por período">
-            <input type="number" min="1" max="30" value={form.videos_per_period} onChange={(e) => setForm({ ...form, videos_per_period: Math.max(1, Math.min(30, Number(e.target.value))) })} />
-          </Field>
-          <Field label="Período">
-            <select value={form.period_days} onChange={(e) => setForm({ ...form, period_days: Number(e.target.value) })}>
-              <option value={1}>Por día</option>
-              <option value={7}>Por semana</option>
-              <option value={30}>Por mes (30 días)</option>
-            </select>
-          </Field>
-          <Field label="Hora de publicación / producción">
-            <input type="time" value={form.schedule_time} onChange={(e) => setForm({ ...form, schedule_time: e.target.value })} />
-          </Field>
-          <Field label="Zona horaria">
-            <select value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })}>
-              <option value="America/Argentina/Buenos_Aires">Argentina (Buenos Aires)</option>
-              <option value="America/Santiago">Chile</option>
-              <option value="America/Montevideo">Uruguay</option>
-              <option value="America/Mexico_City">México (CDMX)</option>
-              <option value="America/Bogota">Colombia</option>
-              <option value="Europe/Madrid">España</option>
-              <option value="UTC">UTC</option>
-            </select>
-          </Field>
-          <Field label="Destino">
-            <select value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })}>
-              <option value="entrega">Guardar para revisar</option>
-              <option value="youtube">YouTube (requiere conexión y credenciales)</option>
-            </select>
-          </Field>
-          <Field label="Privacidad en YouTube">
-            <select value={form.privacy} onChange={(e) => setForm({ ...form, privacy: e.target.value })}>
-              <option value="private">Privado</option><option value="unlisted">Oculto</option><option value="public">Público</option>
-            </select>
-          </Field>
+      <Card title={editingId ? 'Editar autopiloto' : 'Crear autopiloto'} sub="Configurá una vez todo lo que querés producir. Después el sistema usa estas reglas en cada Short programado.">
+        <div className="stack" style={{ gap: 12 }}>
+          <div className="grid two">
+            {STEPS.map((item, index) => (
+              <button
+                key={item.title}
+                type="button"
+                className={'btn ' + (step === index ? 'primary' : 'ghost')}
+                onClick={() => setStep(index)}
+                style={{ textAlign: 'left', minHeight: 48, whiteSpace: 'normal' }}
+              >
+                <strong>{index + 1}. {item.title}</strong><br />
+                <small>{item.subtitle}</small>
+              </button>
+            ))}
+          </div>
+          <div className="muted">Paso {step + 1} de {STEPS.length}</div>
+
+          {step === 0 && <>
+            <h3>Conectá el canal que va a recibir los Shorts</h3>
+            <Field label="Nombre de esta automatización">
+              <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="Ej.: Curiosidades diarias" />
+            </Field>
+            <Field label="Canal de YouTube">
+              <select value={form.channel_id} onChange={(e) => update('channel_id', e.target.value)}>
+                <option value="">Sin canal asociado todavía</option>
+                {(data?.channels ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </Field>
+            <p className="muted">Podés dejarlo sin conectar y guardar los videos para revisarlos. Para publicar automáticamente, después necesitás autorizar YouTube en Ajustes.</p>
+          </>}
+
+          {step === 1 && <>
+            <h3>Definí el contenido del canal</h3>
+            <Field label="Nicho principal">
+              <input value={form.niche} onChange={(e) => update('niche', e.target.value)} placeholder="Misterio, ciencia, fútbol, historias, tecnología..." />
+            </Field>
+            <Field label="Público al que le hablamos">
+              <input value={form.audience} onChange={(e) => update('audience', e.target.value)} placeholder="Ej.: jóvenes interesados en historias reales" />
+            </Field>
+            <Field label="Subtemas que sí debe cubrir">
+              <textarea value={form.content_pillars} onChange={(e) => update('content_pillars', e.target.value)} rows={3} placeholder="Separalos por coma. Ej.: casos extraños, leyendas, desapariciones..." />
+            </Field>
+            <Field label="Temas que debe evitar">
+              <textarea value={form.avoid_topics} onChange={(e) => update('avoid_topics', e.target.value)} rows={2} placeholder="Ej.: tragedias recientes, política partidaria..." />
+            </Field>
+          </>}
+
+          {step === 2 && <>
+            <h3>Personalidad de los guiones</h3>
+            <Field label="Tono narrativo">
+              <select value={form.tone} onChange={(e) => update('tone', e.target.value)}>
+                {['Dinámico y cercano','Misterioso y tenso','Documental y riguroso','Humorístico e irónico','Emocional y reflexivo','Enérgico y provocador'].map((x) => <option key={x}>{x}</option>)}
+              </select>
+            </Field>
+            <Field label="Cómo empieza cada Short (gancho)">
+              <select value={form.hook_style} onChange={(e) => update('hook_style', e.target.value)}>
+                {['Dato sorprendente','Pregunta intrigante','Afirmación polémica verificable','Situación en medio de la acción','Error o mito que desmontar','Misterio sin resolver'].map((x) => <option key={x}>{x}</option>)}
+              </select>
+            </Field>
+            <Field label="Cómo termina">
+              <select value={form.cta} onChange={(e) => update('cta', e.target.value)}>
+                {['Hacé una pregunta concreta al final','Invitá a comentar una opinión','Invitá a compartir el Short','Invitá a seguir el canal','Cerrá con una reflexión, sin pedir interacción'].map((x) => <option key={x}>{x}</option>)}
+              </select>
+            </Field>
+          </>}
+
+          {step === 3 && <>
+            <h3>Idioma y voz de narración</h3>
+            <p className="muted">La voz disponible determina el idioma real de la narración. Las opciones no disponibles aparecen deshabilitadas.</p>
+            <Field label="Voz">
+              <select value={form.voice} onChange={(e) => update('voice', e.target.value)}>
+                {voiceOptions.map((v) => <option key={v.id} value={v.id} disabled={!v.available}>{v.label}{v.language ? ' · ' + v.language : ''}{v.available ? '' : ' (no disponible)'}</option>)}
+              </select>
+            </Field>
+            <div className="muted">No se muestran voces de proveedores pagos. La narración usa los motores instalados en el servidor.</div>
+          </>}
+
+          {step === 4 && <>
+            <h3>Tipo de Short y aspecto visual</h3>
+            <Field label="Formato narrativo">
+              <select value={form.template} onChange={(e) => chooseTemplate(e.target.value)}>
+                {templates.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+              </select>
+            </Field>
+            {selectedTemplate && <p className="muted">{selectedTemplate.description}</p>}
+            <Field label="Proporción de pantalla">
+              <select value={form.aspect} onChange={(e) => update('aspect', e.target.value)}>
+                {(meta?.aspects ?? ['9:16','16:9','1:1']).map((a) => <option key={a} value={a}>{a}{a === '9:16' ? ' · vertical recomendado' : ''}</option>)}
+              </select>
+            </Field>
+            <Field label="Estilo de subtítulos">
+              <select value={form.caption_style} onChange={(e) => update('caption_style', e.target.value)}>
+                {(meta?.caption_styles ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+              </select>
+            </Field>
+            <Field label="Movimiento y transición entre escenas">
+              <select value={form.transition_default} onChange={(e) => update('transition_default', e.target.value)}>
+                {(meta?.transitions ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+              </select>
+            </Field>
+            <Field label="Calidad de exportación">
+              <select value={form.resolution} onChange={(e) => update('resolution', e.target.value)}>
+                {(meta?.resolutions ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+              </select>
+            </Field>
+            <Field label="Fluidez">
+              <select value={form.fps} onChange={(e) => update('fps', Number(e.target.value))}>
+                {(meta?.fps_options ?? [25,30]).map((x) => <option key={x} value={x}>{x} FPS</option>)}
+              </select>
+            </Field>
+            <p className="muted">Motor visual disponible: imágenes de archivo con licencia compatible, movimiento y tarjetas locales de respaldo. La generación de clips de video IA, avatares y personajes 3D todavía no está implementada; no se ofrecen como si funcionaran.</p>
+          </>}
+
+          {step === 5 && <>
+            <h3>Música de fondo y mezcla</h3>
+            <Field label="Pista / ambiente musical">
+              <select value={form.music} onChange={(e) => update('music', e.target.value)}>
+                <option value="auto">Automática según el contenido</option>
+                {(meta?.music_beds ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+              </select>
+            </Field>
+            <Field label={'Volumen de música: ' + Math.round(form.music_volume * 100) + '%'}>
+              <input type="range" min="0" max="0.5" step="0.01" value={form.music_volume} onChange={(e) => update('music_volume', Number(e.target.value))} />
+            </Field>
+            <p className="muted">La música integrada se genera localmente. La carga de pistas propias y la rotación de varias canciones todavía no están conectadas al autopiloto.</p>
+          </>}
+
+          {step === 6 && <>
+            <h3>Duración y calendario automático</h3>
+            <Field label="Duración objetivo">
+              <select value={form.duration_target_sec} onChange={(e) => update('duration_target_sec', Number(e.target.value))}>
+                {[15,20,30,45,60,90].map((x) => <option key={x} value={x}>{x} segundos</option>)}
+              </select>
+            </Field>
+            <Field label="Cantidad de Shorts">
+              <input type="number" min="1" max="30" value={form.videos_per_period} onChange={(e) => update('videos_per_period', Math.max(1, Math.min(30, Number(e.target.value))))} />
+            </Field>
+            <Field label="Por período">
+              <select value={form.period_days} onChange={(e) => update('period_days', Number(e.target.value))}>
+                <option value={1}>Cada día</option>
+                <option value={7}>Cada semana</option>
+                <option value={30}>Cada 30 días</option>
+              </select>
+            </Field>
+            <Field label="Hora de producción/publicación">
+              <input type="time" value={form.schedule_time} onChange={(e) => update('schedule_time', e.target.value)} />
+            </Field>
+            <Field label="Zona horaria">
+              <select value={form.timezone} onChange={(e) => update('timezone', e.target.value)}>
+                <option value="America/Argentina/Buenos_Aires">Argentina</option>
+                <option value="America/Santiago">Chile</option>
+                <option value="America/Montevideo">Uruguay</option>
+                <option value="America/Mexico_City">México</option>
+                <option value="America/Bogota">Colombia</option>
+                <option value="Europe/Madrid">España</option>
+                <option value="UTC">UTC</option>
+              </select>
+            </Field>
+            <p className="muted">Ejemplo: 1 Short por día, a las 10:00 de Argentina. El horario configura cuándo se inicia la producción programada; la publicación ocurre al terminar si activás la publicación automática.</p>
+          </>}
+
+          {step === 7 && <>
+            <h3>Destino y publicación</h3>
+            <Field label="Qué hacer con cada video terminado">
+              <select value={form.destination} onChange={(e) => update('destination', e.target.value)}>
+                <option value="entrega">Guardar en Laburito para revisar</option>
+                <option value="youtube">Publicar en YouTube</option>
+              </select>
+            </Field>
+            <Field label="Privacidad en YouTube">
+              <select value={form.privacy} onChange={(e) => update('privacy', e.target.value)}>
+                <option value="private">Privado</option>
+                <option value="unlisted">Oculto (solo con enlace)</option>
+                <option value="public">Público</option>
+              </select>
+            </Field>
+            <label className="check-row">
+              <input type="checkbox" checked={form.auto_publish} onChange={(e) => update('auto_publish', e.target.checked)} />
+              Publicar automáticamente al terminar el render
+            </label>
+            {form.destination === 'youtube' && !youtubeReady && <p className="muted">YouTube todavía no está listo. Conectalo en <a href="#/ajustes">Ajustes → YouTube</a>. Hasta entonces, no se puede publicar.</p>}
+            {form.destination === 'youtube' && destinationInfo && <p className="muted">{destinationInfo.note}{destinationInfo.missing_env.length ? ' Faltan: ' + destinationInfo.missing_env.join(', ') + '.' : ''}</p>}
+            <label className="check-row">
+              <input type="checkbox" checked={form.enabled} onChange={(e) => update('enabled', e.target.checked)} />
+              Activar el autopiloto al guardar
+            </label>
+            <div className="card" style={{ marginTop: 12 }}>
+              <strong>Resumen</strong>
+              <p>{form.videos_per_period} Short(s) cada {form.period_days === 1 ? 'día' : form.period_days === 7 ? 'semana' : '30 días'}, a las {form.schedule_time} ({form.timezone}).</p>
+              <p>{form.niche || 'Sin nicho'} · {form.duration_target_sec}s · {form.aspect} · {form.resolution} · {form.destination === 'youtube' ? 'YouTube' : 'guardar para revisar'}.</p>
+            </div>
+          </>}
+
+          <div className="row" style={{ justifyContent: 'space-between', marginTop: 16 }}>
+            <button className="btn ghost" disabled={step === 0 || busy} onClick={() => setStep((s) => Math.max(0, s - 1))}>Atrás</button>
+            {step < STEPS.length - 1
+              ? <button className="btn primary" disabled={busy || (step === 1 && !form.niche.trim())} onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}>Continuar</button>
+              : <button className="btn primary" disabled={busy || !form.niche.trim()} onClick={() => void save()}>{busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear autopiloto'}</button>}
+            {editingId && <button className="btn ghost" disabled={busy} onClick={reset}>Cancelar</button>}
+          </div>
         </div>
-        <h3>2. Identidad del guion</h3>
-        <div className="grid two">
-          <Field label="Tono narrativo">
-            <select value={form.tone} onChange={(e) => setForm({ ...form, tone: e.target.value })}>
-              {['Dinámico y cercano','Misterioso y tenso','Documental y riguroso','Humorístico e irónico','Emocional y reflexivo','Enérgico y provocador'].map(x => <option key={x}>{x}</option>)}
-            </select>
-          </Field>
-          <Field label="Tipo de gancho inicial">
-            <select value={form.hook_style} onChange={(e) => setForm({ ...form, hook_style: e.target.value })}>
-              {['Dato sorprendente','Pregunta intrigante','Afirmación polémica verificable','Situación en medio de la acción','Error o mito que desmontar','Misterio sin resolver'].map(x => <option key={x}>{x}</option>)}
-            </select>
-          </Field>
-          <Field label="Cierre / llamada a la acción">
-            <select value={form.cta} onChange={(e) => setForm({ ...form, cta: e.target.value })}>
-              {['Hacé una pregunta concreta al final','Invitá a comentar una opinión','Invitá a compartir el Short','Invitá a seguir el canal','Cerrá con una reflexión, sin pedir interacción'].map(x => <option key={x}>{x}</option>)}
-            </select>
-          </Field>
-        </div>
-        <h3>3. Producción del Short</h3>
-        <label className="check-row"><input type="checkbox" checked={form.auto_publish} onChange={(e) => setForm({ ...form, auto_publish: e.target.checked })} /> Publicar automáticamente al terminar (YouTube requiere OAuth; si no, guardar la entrega)</label>
-        {form.auto_publish && form.destination === "youtube" && !youtubeReady && <p className="muted">Todavía no hay una cuenta de YouTube conectada. Configurala desde <a href="#/ajustes">Ajustes → Conectar YouTube</a>; mientras tanto, los videos se renderizan pero no se publican.</p>}
-        {form.destination === 'youtube' && (
-          <p className="muted">
-            {data?.destinations.find((d) => d.id === 'youtube')?.note || 'YouTube necesita credenciales OAuth configuradas en el servidor.'}
-            {(data?.destinations.find((d) => d.id === 'youtube')?.missing_env.length ?? 0) > 0
-              ? ` Faltan: ${data?.destinations.find((d) => d.id === 'youtube')?.missing_env.join(', ')}.`
-              : ''}
-          </p>
-        )}
-        <label className="check-row"><input type="checkbox" checked={form.enabled} onChange={(e) => setForm({ ...form, enabled: e.target.checked })} /> Activar al crear</label>
-        <div className="row" style={{ marginTop: 14 }}>
-          <button className="btn primary" disabled={busy || !form.niche.trim()} onClick={create}>{busy ? 'Procesando…' : editingId ? 'Guardar cambios' : 'Crear Autopiloto'}</button>
-          {editingId && <button className="btn ghost" disabled={busy} onClick={cancelEdit}>Cancelar edición</button>}
-          <button className="btn ghost" disabled={busy} onClick={() => void load()}>Actualizar</button>
-        </div>
-        <p className="muted" style={{ marginTop: 12 }}>Configuración recomendada: vertical 9:16, 1080p, 30 FPS y 20–45 segundos. El guion se adapta al público, tono, gancho, pilares y cierre que definiste. El calendario admite cantidades por día, semana o mes, con hora y zona horaria. El descubrimiento usa fuentes gratuitas; la primera fuente es orientativa y no equivale a una verificación periodística completa. Revisá las fuentes antes de habilitar publicación pública automática.</p>
       </Card>
 
-      <Card title="Tus automatizaciones" sub="Podés ejecutarlas ahora, pausarlas o eliminarlas.">
-        {!data ? <Empty>Cargando automatizaciones…</Empty> : data.rules.length === 0 ? <Empty>Todavía no configuraste ningún Autopiloto.</Empty> : (
+      <Card title="Tus autopilotos" sub="Controlá cada automatización sin perder su configuración.">
+        {!data ? <Empty>Cargando automatizaciones…</Empty> : data.rules.length === 0 ? <Empty>Todavía no configuraste ningún autopiloto.</Empty> : (
           <div className="list">
             {data.rules.map((rule) => (
               <div className="list-item" key={rule.id}>
                 <div className="grow">
                   <h4>{rule.name || rule.niche}</h4>
-                  <div className="meta"><span>{rule.niche}</span><span>·</span><span>{rule.cadence_hours} h</span><span>·</span><Badge tone={rule.enabled ? 'ok' : 'warn'}>{rule.enabled ? 'Activo' : 'Pausado'}</Badge></div>
+                  <div className="meta"><span>{rule.niche}</span><span>·</span><span>{rule.videos_per_period || 1} cada {rule.period_days || 1} día(s)</span><span>·</span><Badge tone={rule.enabled ? 'ok' : 'warn'}>{rule.enabled ? 'Activo' : 'Pausado'}</Badge></div>
                   <div className="meta"><span>{rule.channel_name || 'Sin canal'}</span><span>·</span><span>{rule.template}</span><span>·</span><span>{rule.destination === 'youtube' ? 'YouTube' : 'Entrega local'}</span></div>
-                  <small>{rule.last_project_title ? `Último video: ${rule.last_project_title} · ${rule.last_project_status || "creado"}` : "Todavía no generó proyectos"}{rule.last_job_status ? ` · Render: ${rule.last_job_status}` : ""}{rule.last_job_message && rule.last_job_status === "error" ? ` — ${rule.last_job_message}` : ""}{rule.last_error ? ` · Último error: ${rule.last_error}` : ""}{rule.last_run_at ? ` · Ejecutado: ${new Date(rule.last_run_at).toLocaleString()}` : ""}{rule.next_run_at ? ` · Próximo: ${new Date(rule.next_run_at).toLocaleString()}` : ""}</small>
+                  <small>{rule.last_project_title ? 'Último video: ' + rule.last_project_title + ' · ' + (rule.last_project_status || 'creado') : 'Todavía no generó proyectos'}{rule.last_job_status ? ' · Render: ' + rule.last_job_status : ''}{rule.last_job_message && rule.last_job_status === 'error' ? ' — ' + rule.last_job_message : ''}{rule.last_error ? ' · Último error: ' + rule.last_error : ''}{rule.last_run_at ? ' · Ejecutado: ' + new Date(rule.last_run_at).toLocaleString() : ''}{rule.next_run_at ? ' · Próximo: ' + new Date(rule.next_run_at).toLocaleString() : ''}</small>
                 </div>
                 <div className="row">
-                  <button className="btn small ghost" disabled={busy} onClick={() => edit(rule)}>Editar</button>
-                  <button className="btn small primary" disabled={busy} onClick={() => void run(rule.id)}>Ejecutar ahora</button>
-                  <button className="btn small ghost" disabled={busy} onClick={() => void toggle(rule)}>{rule.enabled ? 'Pausar' : 'Activar'}</button>
+                  <button className="btn small ghost" disabled={busy} onClick={() => edit(rule)}>Editar configuración</button>
+                  <button className="btn small primary" disabled={busy} onClick={() => void run(rule.id)}>Crear ahora</button>
+                  <button className="btn small ghost" disabled={busy} onClick={() => void toggle(rule)}>{rule.enabled ? 'Pausar' : 'Reanudar'}</button>
                   <button className="btn small danger" disabled={busy} onClick={() => void remove(rule.id)}>Eliminar</button>
                 </div>
               </div>
