@@ -1121,9 +1121,14 @@ def youtube_oauth_callback(code: str = "", state: str = "", error: str = ""):
     elif not credentials["refresh_token"]:
         raise HTTPException(400, "Google no devolvió un refresh token. Revocá el acceso anterior y volvé a autorizar con consentimiento.")
     try:
-        channel = publish.youtube_account_status()
+        publish.youtube_account_status()
     except publish.PublishError as exc:
         raise HTTPException(400, f"El token se guardó, pero no se pudo verificar el canal: {exc}") from exc
+    if persistence.configured():
+        try:
+            persistence.sync_backup()
+        except Exception as exc:
+            raise HTTPException(503, f"YouTube quedó autorizado, pero no se pudo guardar la credencial en el respaldo persistente: {exc}") from exc
     return RedirectResponse(url="/#/ajustes", status_code=303)
 
 
