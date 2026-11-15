@@ -191,7 +191,7 @@ def delete_rule(rule_id: int) -> None:
     db.execute("DELETE FROM autopilot_rules WHERE id=?", (rule_id,))
 
 
-def _create_project(rule: dict) -> int:
+def _create_project(rule: dict) -> dict:
     """Descubre un tema no usado, registra una fuente y crea el proyecto."""
     from . import script_gen, topic_engine
 
