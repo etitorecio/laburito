@@ -81,6 +81,13 @@ class AutopilotResearchTests(unittest.TestCase):
             with self.assertRaisesRegex(publish.PublishError, "no es vertical"):
                 publish._validate_autopilot_short(project, Path("fake.mp4"))
 
+    def test_youtube_autopilot_accepts_square_shorts(self):
+        from pathlib import Path
+        project = {"kind": "short", "aspect": "1:1", "notes": "Autopiloto: lista"}
+        info = {"width": 1080, "height": 1080, "duration": 45}
+        with patch("app.media.probe_video", return_value=info):
+            self.assertEqual(publish._validate_autopilot_short(project, Path("fake.mp4")), info)
+
     def test_youtube_autopilot_accepts_valid_longform_video(self):
         from pathlib import Path
         project = {"kind": "documentary", "notes": "Autopiloto: ciencia"}
