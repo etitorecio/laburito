@@ -503,7 +503,7 @@ export default function Autopilot() {
               Publicar automáticamente en YouTube al terminar el render
             </label>}
             {form.destination === 'entrega' && <p className="muted">Los videos se guardarán en tu biblioteca para que puedas revisarlos y publicarlos manualmente. No requiere cuenta externa ni credenciales.</p>}
-            {form.destination === 'youtube' && !youtubeReady && <p className="muted">YouTube todavía no está listo. Conectalo en <a href="#/ajustes">Ajustes → YouTube</a>. Hasta entonces, no se puede publicar.</p>}
+            {form.destination === 'youtube' && !youtubeReady && <p className="muted">YouTube todavía no está listo. Conectalo en <a href="#/cuentas">Cuentas → YouTube</a>. Hasta entonces, no se puede publicar.</p>}
             {form.destination === 'youtube' && destinationInfo && <p className="muted">{destinationInfo.note}{destinationInfo.missing_env.length ? ' Faltan: ' + destinationInfo.missing_env.join(', ') + '.' : ''}</p>}
 
           </>}
