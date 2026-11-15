@@ -312,7 +312,7 @@ def resolve_defaults(payload: dict) -> dict:
     aspect = payload.get("aspect") or tpl["aspect"]
     if aspect not in ASPECTS:
         aspect = tpl["aspect"]
-    resolution = payload.get("resolution") if payload.get("resolution") in RESOLUTIONS else "1080p"
+    resolution = payload.get("resolution") if payload.get("resolution") in RESOLUTIONS else "720p"
     caption = payload.get("caption_style") if payload.get("caption_style") in CAPTION_STYLES else tpl["caption_style"]
     transition = payload.get("transition_default")
     if transition not in TRANSITION_IDS:
