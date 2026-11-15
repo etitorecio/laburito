@@ -94,6 +94,7 @@ export interface Project {
   visual_style: string;
   video_type: string;
   caption_style: string;
+  captions_enabled?: boolean;
   transition_default: string;
   resolution: string;
   fps: number;
