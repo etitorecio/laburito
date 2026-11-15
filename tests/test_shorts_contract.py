@@ -1,6 +1,7 @@
 import unittest
+from unittest.mock import patch
 
-from app import options
+from app import autopilot, options
 
 
 class ShortsContractTests(unittest.TestCase):
@@ -26,6 +27,15 @@ class ShortsContractTests(unittest.TestCase):
         self.assertEqual(options.factory_template_for_channel_name("Historias"), "reddit_story")
         self.assertEqual(options.factory_template_for_channel_name("Frutinovelas"), "frutinovela")
         self.assertIsNone(options.factory_template_for_channel_name("Otro canal"))
+
+    def test_autopilot_rejects_crossed_factory_channel(self):
+        with patch.object(autopilot.db, "query_one", return_value={"name": "Historias"}):
+            with self.assertRaisesRegex(ValueError, "solo admite su fábrica"):
+                autopilot._validate_factory_channel({"channel_id": 1, "template": "frutinovela"})
+
+    def test_autopilot_accepts_matching_factory_channel(self):
+        with patch.object(autopilot.db, "query_one", return_value={"name": "Frutinovelas"}):
+            autopilot._validate_factory_channel({"channel_id": 2, "template": "frutinovela"})
 
     def test_vertical_shorts_duration_is_clamped_to_three_minutes(self):
         self.assertEqual(options.clamp_vertical_short_duration("reddit_story", 999), 180)
