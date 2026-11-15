@@ -11,11 +11,48 @@ import json
 import re
 import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
 
 from . import db
 
 API = "https://es.wikipedia.org/w/api.php"
 UA = "Laburito/1.0 (automatic topic research; contact: local project)"
+TRENDS_RSS = "https://trends.google.com/trending/rss?geo=AR"
+_TREND_STOPWORDS = {"de", "del", "la", "el", "los", "las", "en", "por", "para", "con", "y", "a", "un", "una", "the"}
+
+
+def trending_searches() -> list[dict]:
+    """Lee el RSS público de Google Trends Argentina; si falla, sigue la investigación normal."""
+    request = urllib.request.Request(TRENDS_RSS, headers={"User-Agent": UA})
+    try:
+        with urllib.request.urlopen(request, timeout=12) as response:
+            root = ET.fromstring(response.read())
+        items = []
+        for item in root.findall("./channel/item"):
+            title = (item.findtext("title") or "").strip()
+            if not title:
+                continue
+            items.append({
+                "title": title[:240],
+                "published_at": (item.findtext("pubDate") or "").strip(),
+                "url": (item.findtext("link") or "").strip(),
+            })
+        return items[:10]
+    except Exception:
+        # Las tendencias son una señal adicional, nunca una dependencia crítica.
+        return []
+
+
+def _relevant_trends(niche: str, pillars: str, trends: list[dict]) -> list[dict]:
+    scope = set(_normal(" ".join([niche or "", pillars or ""])).split()) - _TREND_STOPWORDS
+    if not scope:
+        return []
+    relevant = []
+    for trend in trends:
+        words = set(_normal(trend.get("title") or "").split()) - _TREND_STOPWORDS
+        if scope & words:
+            relevant.append(trend)
+    return relevant[:3]
 
 
 def _get(params: dict) -> dict:
@@ -142,7 +179,10 @@ def choose_topic(
     niche_key = _normal(niche)
     pillars = [part.strip() for part in re.split(r"[,;\n]+", content_pillars or "") if part.strip()]
     excluded = [_normal(part) for part in re.split(r"[,;\n]+", avoid_topics or "") if part.strip()]
+    trend_signals = _relevant_trends(niche, content_pillars, trending_searches())
     search_terms = [niche] + [f"{niche} {pillar}" for pillar in pillars[:8]] + [niche + " historia", niche + " casos", niche + " descubrimientos"]
+    # Solo suma tendencias que comparten palabras del nicho o sus pilares; no fuerza temas virales ajenos.
+    search_terms += [f"{niche} {item['title']}" for item in trend_signals]
     candidates = []
     seen = set()
     for term in search_terms:
@@ -180,6 +220,7 @@ def choose_topic(
             "url": page.get("fullurl") or "https://es.wikipedia.org/wiki/" + urllib.parse.quote(title.replace(" ", "_")),
             "source_title": title + " — Wikipedia",
             "references": _external_references(title),
+            "trend_signals": trend_signals,
         }
     raise RuntimeError(
         "No encontré un tema nuevo y documentado para este nicho. "
