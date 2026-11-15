@@ -584,6 +584,27 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(clean["duration_target_sec"], 90)
         self.assertEqual(clean["aspect"], "9:16")
 
+    def test_frutinovela_autopilot_skips_research_and_keeps_character_names(self):
+        project = {"id": 84, "title": "Frutinovela · Episodio 1", "notes": ""}
+        with patch.object(autopilot.db, "query", side_effect=[[], []]):
+            with patch.object(autopilot.db, "query_one", side_effect=[{"total": 0}, project]):
+                with patch.object(autopilot.db, "execute", return_value=84) as execute:
+                    with patch.object(autopilot.db, "now", return_value="2026-11-15T00:00:00Z"):
+                        with patch.object(autopilot.db, "log"):
+                            with patch.object(topic_engine, "research_topic", side_effect=AssertionError("La ficción no debe investigar temas reales")):
+                                result = autopilot._create_project({
+                                    "template": "frutinovela",
+                                    "niche": "La familia Frutal",
+                                    "content_pillars": "Manzana, Banana y Pera",
+                                    "duration_target_sec": 90,
+                                })
+        statements = [call.args[0] for call in execute.call_args_list]
+        self.assertFalse(any("INSERT INTO sources" in sql for sql in statements))
+        scene_calls = [call.args[1] for call in execute.call_args_list if "INSERT INTO scenes" in call.args[0]]
+        self.assertGreaterEqual(len(scene_calls), 5)
+        self.assertIn("Manzana, Banana y Pera", " ".join(str(row[4]) for row in scene_calls))
+        self.assertEqual(result["evidence_sources"], 0)
+
     def test_frutinovela_template_builds_vertical_episode_with_cliffhanger(self):
         template = options.template("frutinovela")
         self.assertEqual(template["kind"], "short")
