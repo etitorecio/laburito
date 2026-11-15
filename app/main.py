@@ -178,10 +178,6 @@ class VisualIn(BaseModel):
     title: str = ""
 
 
-class YoutubeRefreshTokenIn(BaseModel):
-    refresh_token: str
-
-
 class SettingsIn(BaseModel):
     values: dict[str, str]
 
@@ -1233,21 +1229,8 @@ def publish_destinations():
     return {"destinations": publish.destinations(), "auto_publish_available": True}
 
 
-@app.post("/api/youtube/token")
-def save_youtube_refresh_token(payload: YoutubeRefreshTokenIn):
-    if not APP_TOKEN:
-        raise HTTPException(403, "Configurá APP_TOKEN para proteger las credenciales de YouTube.")
-    token = payload.refresh_token.strip()
-    if len(token) < 20 or len(token) > 4096:
-        raise HTTPException(400, "El refresh token no tiene un formato válido.")
-    db.set_setting("youtube_refresh_token", token)
-    return {"ok": True, "message": "Token de YouTube guardado en el servidor."}
-
-
 @app.post("/api/tts/piper/install", status_code=202)
 def install_piper_voice():
-    if not APP_TOKEN:
-        raise HTTPException(403, "Configurá APP_TOKEN para proteger las acciones de administración.")
     status = tts.status()
     if status["piper_available"]:
         return {"installed": True, "message": "La voz neural ya está instalada."}
@@ -1263,8 +1246,6 @@ def install_piper_voice():
 @app.post("/api/youtube/oauth/start")
 def youtube_oauth_start(request: Request):
     """Inicia OAuth oficial; el estado es aleatorio, de un solo uso y vence en 10 minutos."""
-    if not APP_TOKEN:
-        raise HTTPException(403, "Configurá APP_TOKEN para proteger la conexión de YouTube.")
     credentials = publish.youtube_credentials()
     if not credentials["client_id"] or not credentials["client_secret"]:
         raise HTTPException(400, "Faltan YOUTUBE_CLIENT_ID y/o YOUTUBE_CLIENT_SECRET en el servidor.")
