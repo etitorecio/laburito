@@ -275,7 +275,11 @@ def _validate_auto_publish(clean: dict, current: dict | None = None) -> None:
     merged = {**(current or {}), **clean}
     if not bool(merged.get("auto_publish")) or merged.get("destination", "entrega") != "youtube":
         return
-    from . import publish
+    from . import persistence, publish
+    if not persistence.durable_storage_available():
+        raise ValueError(
+            "Antes de activar la autopublicación, configurá Supabase o ejecutá Laburito con un volumen local persistente."
+        )
     try:
         publish.youtube_account_status()
     except publish.PublishError as exc:
@@ -508,7 +512,7 @@ def _next_after_run(rule: dict, force: bool = False, now: str | None = None) -> 
 
 def run_rule(rule_id: int, force: bool = False) -> dict:
     """Ejecuta una regla ahora: crea el proyecto, escribe el guion y encola el render."""
-    from . import publish, worker
+    from . import persistence, publish, worker
 
     rule = get_rule(rule_id)
     if not rule:
@@ -516,9 +520,9 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
     # Verificar YouTube antes de consumir recursos creando y renderizando un Short.
     if rule.get("auto_publish") and (rule.get("destination") or "entrega") == "youtube":
         try:
-            publish.youtube_account_status()
-        except publish.PublishError as exc:
-            message = "Autopublicación pausada: YouTube no está disponible. " + str(exc)
+            _validate_auto_publish(rule)
+        except (publish.PublishError, ValueError) as exc:
+            message = "Autopublicación pausada: " + str(exc)
             db.execute(
                 "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE id=?",
                 (message[:500], db.now(), rule_id),
