@@ -85,6 +85,37 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertIn("Seguime para ver más historias", script["scenes"][-1]["narration"])
         self.assertIn("Fotografía de archivo histórica", script["scenes"][0]["visual_query"])
 
+    def test_topic_research_uses_content_pillars_and_excludes_avoided_topics(self):
+        queries = []
+        extract = " ".join(["La investigación documenta el desarrollo histórico de este campo y sus principales descubrimientos."] * 12)
+        def fake_get(params):
+            if params.get("list") == "search":
+                queries.append(params["srsearch"])
+                if "espacio" in params["srsearch"]:
+                    return {"query": {"search": [{"title": "Política espacial"}, {"title": "Astrobiología"}]}}
+                return {"query": {"search": []}}
+            return {"query": {"pages": {"1": {
+                "title": "Astrobiología", "extract": extract,
+                "fullurl": "https://es.wikipedia.org/wiki/Astrobiologia",
+            }}}}
+        with patch.object(topic_engine, "_get", side_effect=fake_get):
+            result = topic_engine.choose_topic("ciencia", [], "espacio", "política")
+        self.assertEqual(result["topic"], "Astrobiología")
+        self.assertTrue(any("ciencia espacio" in q for q in queries))
+
+    def test_autopilot_metadata_controls_change_title_and_tags(self):
+        project = {
+            "id": 778, "title": "La exploración espacial", "topic": "La exploración espacial",
+            "kind": "short", "notes": "[LABURITO_META]" + json.dumps({
+                "title_style": "pregunta", "custom_tags": "astronomía, universo",
+            }),
+        }
+        with patch.object(publish.db, "query", return_value=[]):
+            metadata = publish.build_metadata(project, [])
+        self.assertEqual(metadata["title"], "¿Qué hay detrás de La exploración espacial?")
+        self.assertIn("astronomía", metadata["tags"])
+        self.assertIn("universo", metadata["tags"])
+
     def test_autopilot_builds_script_from_only_the_current_topics_sources(self):
         extract = " ".join([
             "Este estudio describe con evidencia documentada un proceso histórico y sus consecuencias.",
