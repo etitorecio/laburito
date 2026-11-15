@@ -770,6 +770,12 @@ def list_projects():
 @app.post("/api/projects", status_code=201)
 def create_project(payload: ProjectIn):
     data = payload.model_dump()
+    if data.get("channel_id"):
+        selected_channel = db.query_one("SELECT name FROM channels WHERE id=?", (data["channel_id"],))
+        expected_template = options.factory_template_for_channel_name((selected_channel or {}).get("name", ""))
+        if expected_template and data.get("template") != expected_template:
+            label = "Historias" if expected_template == "reddit_story" else "Frutinovelas"
+            raise HTTPException(400, f"El canal {label} solo admite su fábrica de Shorts correspondiente.")
     spanish_voices = {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"}
     if data.get("voice") not in spanish_voices:
         raise HTTPException(400, "Laburito genera contenido únicamente en español. Elegí una voz española.")
@@ -806,11 +812,18 @@ def get_project(project_id: int):
 
 @app.patch("/api/projects/{project_id}")
 def patch_project(project_id: int, payload: ProjectPatch):
-    current_project = db.query_one("SELECT id, template FROM projects WHERE id=?", (project_id,))
+    current_project = db.query_one("SELECT id, template, channel_id FROM projects WHERE id=?", (project_id,))
     if not current_project:
         raise HTTPException(404, "Proyecto inexistente")
     data = payload.model_dump(exclude_none=True)
     effective_template = data.get("template") or current_project.get("template")
+    effective_channel_id = data.get("channel_id", current_project.get("channel_id"))
+    if effective_channel_id:
+        selected_channel = db.query_one("SELECT name FROM channels WHERE id=?", (effective_channel_id,))
+        expected_template = options.factory_template_for_channel_name((selected_channel or {}).get("name", ""))
+        if expected_template and effective_template != expected_template:
+            label = "Historias" if expected_template == "reddit_story" else "Frutinovelas"
+            raise HTTPException(400, f"El canal {label} solo admite su fábrica de Shorts correspondiente.")
     if effective_template in options.VERTICAL_SHORT_TEMPLATES:
         data["aspect"] = "9:16"
         if "duration_target_sec" in data:
