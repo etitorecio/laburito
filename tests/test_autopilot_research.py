@@ -593,7 +593,7 @@ class AutopilotResearchTests(unittest.TestCase):
                         with patch.object(autopilot.db, "get_setting", return_value=""):
                             with patch.object(autopilot.db, "log"):
                                 with patch.object(topic_engine, "research_topic", side_effect=AssertionError("La ficción no debe investigar temas reales")):
-                                result = autopilot._create_project({
+                                    result = autopilot._create_project({
                                     "template": "frutinovela",
                                     "niche": "La familia Frutal",
                                     "content_pillars": "Manzana, Banana y Pera",
