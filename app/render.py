@@ -223,7 +223,15 @@ def _drawtext_chain(cues: list[dict], font: str, width: int, height: int, style:
     return ",".join(parts)
 
 
+_PREVIEW_LOCK = threading.Lock()
+
+
 def caption_preview(style_id: str) -> Path:
+    with _PREVIEW_LOCK:
+        return _caption_preview_unlocked(style_id)
+
+
+def _caption_preview_unlocked(style_id: str) -> Path:
     """Genera una muestra PNG con el mismo filtro drawtext que usa el render."""
     if style_id not in options.CAPTION_STYLES:
         raise ValueError("Estilo de subtítulos desconocido")
@@ -299,6 +307,11 @@ def _motion_filters(transition: str, width: int, height: int, duration: float, f
 
 
 def transition_preview(transition_id: str) -> Path:
+    with _PREVIEW_LOCK:
+        return _transition_preview_unlocked(transition_id)
+
+
+def _transition_preview_unlocked(transition_id: str) -> Path:
     """Genera un clip corto que muestra el efecto real aplicado por FFmpeg."""
     if transition_id not in options.TRANSITION_IDS:
         raise ValueError("Movimiento de escena desconocido")
@@ -345,6 +358,11 @@ def _visual_style_filters(style_id: str | None) -> list[str]:
 
 
 def visual_style_preview(style_id: str) -> Path:
+    with _PREVIEW_LOCK:
+        return _visual_style_preview_unlocked(style_id)
+
+
+def _visual_style_preview_unlocked(style_id: str) -> Path:
     """Muestra PNG generado con los mismos filtros que se aplican a las escenas."""
     if style_id not in options.VISUAL_STYLE_IDS:
         raise ValueError("Estilo visual desconocido")
