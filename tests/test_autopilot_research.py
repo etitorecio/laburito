@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 import urllib.parse
 
@@ -188,6 +189,16 @@ class AutopilotResearchTests(unittest.TestCase):
     def test_autopilot_accepts_music_bed_picker_identifier(self):
         bed_id = sorted(options.MUSIC_IDS)[0]
         self.assertEqual(autopilot._clean({"music": "bed:" + bed_id})["music"], "bed:" + bed_id)
+
+    def test_autopilot_counts_all_supported_clip_extensions(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            clip_dir = Path(temporary) / "background_clips" / "minecraft"
+            clip_dir.mkdir(parents=True)
+            for index in range(5):
+                (clip_dir / f"clip-{index}.webm").write_bytes(b"video")
+            with patch.object(autopilot.db, "DATA_DIR", Path(temporary)):
+                clean = autopilot._clean({"video_type": "minecraft"})
+            self.assertEqual(clean["video_type"], "minecraft")
 
     def test_script_uses_autopilot_hook_cta_and_visual_style(self):
         project = {
