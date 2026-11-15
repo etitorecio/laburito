@@ -454,13 +454,13 @@ class AutopilotResearchTests(unittest.TestCase):
         with patch("app.persistence.durable_storage_available", return_value=True):
             with patch.object(publish, "youtube_account_status", side_effect=publish.PublishError("refresh token inválido")):
                 with self.assertRaisesRegex(ValueError, "refresh token inválido"):
-                    autopilot._validate_auto_publish({"auto_publish": 1, "destination": "youtube"})
+                    autopilot._validate_auto_publish({"auto_publish": 1, "destination": "youtube", "channel_id": 1})
 
     def test_youtube_autopilot_requires_durable_storage_before_saving_rule(self):
         with patch("app.persistence.durable_storage_available", return_value=False):
             with patch.object(publish, "youtube_account_status") as verify:
                 with self.assertRaisesRegex(ValueError, "volumen local persistente"):
-                    autopilot._validate_auto_publish({"auto_publish": 1, "destination": "youtube"})
+                    autopilot._validate_auto_publish({"auto_publish": 1, "destination": "youtube", "channel_id": 1})
         verify.assert_not_called()
 
     def test_publish_does_not_upload_same_video_twice_on_retry(self):
@@ -487,9 +487,9 @@ class AutopilotResearchTests(unittest.TestCase):
             "YOUTUBE_CLIENT_SECRET": "client-secret",
             "YOUTUBE_REFRESH_TOKEN": "old-environment-token",
         }):
-            with patch("app.publish.db.get_setting", return_value="stored-refresh-token"):
+            with patch("app.publish.db.get_setting", return_value="legacy-global-token"):
                 credentials = publish.youtube_credentials()
-        self.assertEqual(credentials["refresh_token"], "stored-refresh-token")
+        self.assertEqual(credentials["refresh_token"], "")
         self.assertEqual(credentials["client_id"], "client-id")
 
     def test_youtube_account_status_uses_authorized_channel_api(self):
@@ -511,17 +511,18 @@ class AutopilotResearchTests(unittest.TestCase):
 
     def test_youtube_autopublish_requires_live_channel_verification(self):
         with patch.object(publish, "ensure_schema"):
-            with patch.object(publish.db, "query_one", return_value={"id": 1}):
+            with patch.object(publish.db, "query_one", return_value={"id": 1, "channel_id": 10}):
                 with patch.object(publish.db, "execute"):
                     with patch.object(publish.persistence, "durable_storage_available", return_value=True):
                         with patch.object(publish, "youtube_account_status") as verify:
                             publish.set_auto_publish(1, True, "youtube")
-        verify.assert_called_once_with()
+        verify.assert_called_once_with(10)
 
     def test_youtube_autopublish_is_blocked_without_durable_storage(self):
         with patch.object(publish, "ensure_schema"):
-            with patch.object(publish.db, "query_one", return_value={"id": 1}):
-                with patch.object(publish.persistence, "durable_storage_available", return_value=False):
+            with patch.object(publish.db, "query_one", return_value={"id": 1, "channel_id": 10}):
+                with patch.object(publish, "youtube_account_status"):
+                    with patch.object(publish.persistence, "durable_storage_available", return_value=False):
                     with self.assertRaisesRegex(publish.PublishError, "volumen local persistente"):
                         publish.set_auto_publish(1, True, "youtube")
 
