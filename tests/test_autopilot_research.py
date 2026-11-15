@@ -1,5 +1,6 @@
 import json
 import os
+import tempfile
 import unittest
 from unittest.mock import patch
 import urllib.parse
@@ -264,6 +265,31 @@ class AutopilotResearchTests(unittest.TestCase):
 
     def test_topic_normalization_helps_avoid_repeats(self):
         self.assertEqual(topic_engine._normal("Historia: del Rock!"), "historia del rock")
+
+    def test_youtube_autopilot_requires_connection_before_saving_rule(self):
+        with patch.object(publish, "destinations", return_value=[
+            {"id": "youtube", "available": False, "missing_env": ["YOUTUBE_CLIENT_ID"]}
+        ]):
+            with self.assertRaisesRegex(ValueError, "conectá y verificá YouTube"):
+                autopilot._validate_auto_publish({"auto_publish": 1, "destination": "youtube"})
+
+    def test_publish_does_not_upload_same_video_twice_on_retry(self):
+        with tempfile.TemporaryDirectory() as folder:
+            video = publish.Path(folder) / "short.mp4"
+            video.write_bytes(b"same rendered video")
+            fingerprint = publish._video_fingerprint(video)
+            project = {"id": 42, "kind": "short"}
+            previous = {
+                "meta_json": json.dumps({"video_sha256": fingerprint}),
+                "url": "https://youtu.be/already-uploaded",
+                "external_id": "already-uploaded",
+            }
+            with patch.object(publish, "ensure_schema"):
+                with patch.object(publish.db, "query_one", side_effect=[project, previous]):
+                    with patch.object(publish, "video_path", return_value=video):
+                        result = publish.publish(42, destination="youtube", privacy="public")
+            self.assertEqual(result["external_id"], "already-uploaded")
+            self.assertIn("evitó una segunda subida", result["message"])
 
     def test_youtube_credentials_prefer_server_stored_refresh_token(self):
         with patch.dict(os.environ, {
