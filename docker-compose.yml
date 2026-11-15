@@ -1,4 +1,33 @@
 services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: laburito-ollama
+    restart: unless-stopped
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+    volumes:
+      - ./ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  ollama-model:
+    image: ollama/ollama:latest
+    container_name: laburito-ollama-model-setup
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: ollama:11434
+    volumes:
+      - ./ollama:/root/.ollama
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["ollama pull llama3.2 || echo 'No se pudo descargar el modelo local; se usará el guion de respaldo.'; exit 0"]
+    restart: "no"
+
   laburito:
     build:
       context: .
@@ -7,12 +36,16 @@ services:
     container_name: laburito
     restart: unless-stopped
     init: true
+    depends_on:
+      ollama-model:
+        condition: service_completed_successfully
     ports:
       - "${LABURITO_PORT:-8080}:8080"
     environment:
       PORT: "8080"
       AITUBER_DATA_DIR: /app/data
       AITUBER_LOCAL_PERSISTENT: "1"
+      OLLAMA_URL: http://ollama:11434
       YOUTUBE_CLIENT_ID: ${YOUTUBE_CLIENT_ID:-}
       YOUTUBE_CLIENT_SECRET: ${YOUTUBE_CLIENT_SECRET:-}
       YOUTUBE_REDIRECT_URI: ${YOUTUBE_REDIRECT_URI:-}
