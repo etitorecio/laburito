@@ -158,7 +158,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
               </select>
               <div className="row" style={{ gap: 8, marginTop: 6 }}>
                 {channels.length === 0 && <button type="button" className="btn small ghost" onClick={() => go('canales')}>Crear canal de contenido</button>}
-                <button type="button" className="btn small ghost" onClick={() => go('ajustes')}>Vincular cuenta de YouTube</button>
+                <button type="button" className="btn small ghost" onClick={() => go('cuentas')}>Vincular cuenta de YouTube</button>
               </div>
             </Field>
             <Field label="Duración objetivo">
