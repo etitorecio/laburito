@@ -69,7 +69,7 @@ La imagen final usa Debian slim (glibc, necesaria para Piper/ONNX Runtime), comp
 | `AITUBER_LOCAL_PERSISTENT` | Marcador de diagnóstico para un volumen local persistente (lo configura Docker Compose). |
 | `PORT` | Puerto HTTP (por defecto `8080`). |
 | `PIPER_BIN`, `PIPER_MODEL` | Sobrescritura manual opcional de la instalación Piper; normalmente se instala desde Ajustes. |
-| `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` | Credenciales OAuth de tipo aplicación web. El refresh token se guarda en la base local tras conectar la cuenta. |
+| `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` | Credenciales OAuth de tipo aplicación web. La autorización de YouTube se guarda en la base local tras conectar la cuenta. |
 | `YOUTUBE_REDIRECT_URI` | URI de callback OAuth opcional; por defecto se calcula con el dominio actual. |
 | `SUPABASE_URL` | Opcional para copias remotas en despliegues alojados; no se necesita en Docker local. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Clave privada opcional para copias remotas; no se necesita en Docker local. |
@@ -87,9 +87,9 @@ Para reescritura de guiones con un modelo local, instalá [Ollama](https://ollam
 2. Configurá la pantalla de consentimiento y agregá tu cuenta como usuario de prueba si la app está en Testing. Creá credenciales OAuth de tipo **Aplicación web**.
 3. En **Ajustes → Conexión de YouTube**, copiá la URI de callback que muestra Laburito y agregala como URI de redirección autorizada en Google Cloud. En AppJet será `https://TU-EDGE-URL/api/youtube/callback`; en Docker local, `http://localhost:8080/api/youtube/callback`.
 4. En el archivo `.env` local configurá `YOUTUBE_CLIENT_ID` y `YOUTUBE_CLIENT_SECRET`. El modo local no pide contraseña ni tokens de acceso; no expongas el puerto a Internet. `YOUTUBE_REDIRECT_URI` es opcional si necesitás fijar manualmente la URI exacta.
-5. Volvé a Ajustes y tocá **Conectar canal con Google**. Autorizá el canal. Laburito canjea el código y guarda el refresh token en el servidor; después comprobá el nombre del canal.
+5. Volvé a Ajustes y tocá **Conectar canal con Google**. Autorizá el canal. Laburito completa la autorización y guarda el permiso localmente; después comprobá el nombre del canal.
 
-Si la pantalla de consentimiento permanece en modo **Testing**, Google puede hacer vencer los refresh tokens de aplicaciones externas después de 7 días. Para automatización continua, revisá el estado de publicación de la app OAuth y los requisitos de verificación que Google indique. El OAuth Playground queda solo como alternativa manual avanzada.
+Si la pantalla de consentimiento permanece en modo **Testing**, Google puede revocar el permiso de aplicaciones externas después de 7 días. Para automatización continua, revisá el estado de publicación de la app OAuth y los requisitos de verificación que Google indique. El OAuth Playground queda solo como alternativa manual avanzada.
 
 
 ## Arquitectura
