@@ -8,6 +8,7 @@ activa la auto-subida. Todo local: no intervienen servicios pagos.
 from __future__ import annotations
 
 import json
+import os
 import time
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -499,7 +500,7 @@ def _create_project(rule: dict) -> dict:
         notes = []
     project_sources = db.query("SELECT * FROM sources WHERE project_id=? ORDER BY id", (pid,))
     script = script_gen.generate_script(project, notes, project_sources)
-    ollama_url = db.get_setting("ollama_url", "")
+    ollama_url = db.get_setting("ollama_url", "") or os.environ.get("OLLAMA_URL", "").strip()
     if ollama_url and script_gen.ollama_available(ollama_url):
         try:
             script = script_gen.rewrite_with_ollama(
