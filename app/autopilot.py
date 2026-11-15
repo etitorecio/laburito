@@ -8,6 +8,8 @@ activa la auto-subida. Todo local: no intervienen servicios pagos.
 from __future__ import annotations
 
 import time
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from . import db, options
 
@@ -36,6 +38,10 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
     content_pillars TEXT NOT NULL DEFAULT '',
     avoid_topics TEXT NOT NULL DEFAULT '',
     cadence_hours INTEGER NOT NULL DEFAULT 24,
+    videos_per_period INTEGER NOT NULL DEFAULT 1,
+    period_days INTEGER NOT NULL DEFAULT 1,
+    schedule_time TEXT NOT NULL DEFAULT '10:00',
+    timezone TEXT NOT NULL DEFAULT 'America/Argentina/Buenos_Aires',
     enabled INTEGER NOT NULL DEFAULT 1,
     destination TEXT NOT NULL DEFAULT 'entrega',
     privacy TEXT NOT NULL DEFAULT 'unlisted',
@@ -52,7 +58,7 @@ FIELDS = [
     "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "aspect",
     "audience", "tone", "hook_style", "cta", "content_pillars", "avoid_topics",
     "caption_style", "transition_default", "resolution", "fps", "music", "music_volume",
-    "cadence_hours", "enabled", "destination", "privacy", "auto_publish", "next_run_at",
+    "cadence_hours", "videos_per_period", "period_days", "schedule_time", "timezone", "enabled", "destination", "privacy", "auto_publish", "next_run_at",
 ]
 
 
@@ -61,6 +67,10 @@ def ensure_schema() -> None:
     columns = {row["name"] for row in db.query("PRAGMA table_info(autopilot_rules)")}
     migrations = {
         "last_error": "TEXT",
+        "videos_per_period": "INTEGER NOT NULL DEFAULT 1",
+        "period_days": "INTEGER NOT NULL DEFAULT 1",
+        "schedule_time": "TEXT NOT NULL DEFAULT '10:00'",
+        "timezone": "TEXT NOT NULL DEFAULT 'America/Argentina/Buenos_Aires'",
         "audience": "TEXT NOT NULL DEFAULT 'Público general'",
         "tone": "TEXT NOT NULL DEFAULT 'Dinámico y cercano'",
         "hook_style": "TEXT NOT NULL DEFAULT 'Dato sorprendente'",
@@ -159,8 +169,28 @@ def _clean(data: dict) -> dict:
     }.items():
         if key in data and data[key] is not None:
             clean[key] = str(data[key]).strip()[:limit]
-    if "cadence_hours" in data and data["cadence_hours"] is not None:
+    if "videos_per_period" in data and data["videos_per_period"] is not None:
+        clean["videos_per_period"] = max(1, min(30, int(data["videos_per_period"])))
+    if "period_days" in data and data["period_days"] is not None:
+        clean["period_days"] = max(1, min(30, int(data["period_days"])))
+    if "videos_per_period" in clean or "period_days" in clean:
+        count = clean.get("videos_per_period", int(data.get("videos_per_period", 1) or 1))
+        days = clean.get("period_days", int(data.get("period_days", 1) or 1))
+        clean["cadence_hours"] = max(1, min(720, int(round(days * 24 / count))))
+    elif "cadence_hours" in data and data["cadence_hours"] is not None:
         clean["cadence_hours"] = max(1, min(720, int(data["cadence_hours"])))
+    if "schedule_time" in data and data["schedule_time"] is not None:
+        value = str(data["schedule_time"]).strip()
+        if len(value) != 5 or value[2] != ":" or not value[:2].isdigit() or not value[3:].isdigit() or int(value[:2]) > 23 or int(value[3:]) > 59:
+            raise ValueError("El horario debe tener formato HH:MM.")
+        clean["schedule_time"] = value
+    if "timezone" in data and data["timezone"] is not None:
+        value = str(data["timezone"]).strip()[:80]
+        try:
+            ZoneInfo(value)
+        except (ZoneInfoNotFoundError, ValueError):
+            raise ValueError("Zona horaria no válida.")
+        clean["timezone"] = value
     if "destination" in data and data["destination"] is not None:
         if data["destination"] not in ("entrega", "youtube"):
             raise ValueError("Destino inválido: usá 'entrega' o 'youtube'")
@@ -178,11 +208,34 @@ def _clean(data: dict) -> dict:
     return clean
 
 
+def _next_run_at(rule: dict, after: datetime | None = None) -> str:
+    """Calcula la próxima ejecución respetando la hora y zona horaria elegidas."""
+    zone_name = rule.get("timezone") or "America/Argentina/Buenos_Aires"
+    try:
+        zone = ZoneInfo(zone_name)
+    except (ZoneInfoNotFoundError, ValueError):
+        zone = ZoneInfo("UTC")
+    now = after.astimezone(zone) if after else datetime.now(zone)
+    clock = str(rule.get("schedule_time") or "10:00")
+    hour, minute = int(clock[:2]), int(clock[3:])
+    target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if target <= now:
+        target += timedelta(days=1) if int(rule.get("cadence_hours") or 24) >= 24 else timedelta(hours=int(rule.get("cadence_hours") or 24))
+    elif target > now and int(rule.get("cadence_hours") or 24) < 24:
+        pass
+    return target.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def create_rule(data: dict) -> dict:
     ensure_schema()
     clean = _clean(data)
     clean.setdefault("name", clean.get("niche") or "Piloto automático")
-    clean.setdefault("next_run_at", _ts(0))
+    clean.setdefault("videos_per_period", 1)
+    clean.setdefault("period_days", 1)
+    clean.setdefault("schedule_time", "10:00")
+    clean.setdefault("timezone", "America/Argentina/Buenos_Aires")
+    clean.setdefault("cadence_hours", 24)
+    clean.setdefault("next_run_at", _next_run_at(clean))
     clean["created_at"] = db.now()
     clean["updated_at"] = db.now()
     cols = ", ".join(clean)
@@ -203,8 +256,9 @@ def update_rule(rule_id: int, data: dict) -> dict | None:
             clean["next_run_at"] = _ts(0)
         elif "niche" in clean and clean["niche"] != current.get("niche"):
             clean["next_run_at"] = _ts(0)
-        elif "cadence_hours" in clean and clean["cadence_hours"] != current.get("cadence_hours"):
-            clean["next_run_at"] = _ts(float(clean["cadence_hours"]))
+        elif any(key in clean for key in ("cadence_hours", "videos_per_period", "period_days", "schedule_time", "timezone")):
+            merged = {**current, **clean}
+            clean["next_run_at"] = _next_run_at(merged)
         sets = ", ".join(f"{k}=?" for k in clean)
         db.execute(
             f"UPDATE autopilot_rules SET {sets}, updated_at=? WHERE id=?",
@@ -387,7 +441,7 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
                 publish_warning = str(exc)[:500]
                 db.log("warn", "autopilot", f"No se pudo activar la auto-subida: {exc}")
     job_id = worker.enqueue(pid, "render_project", {"privacy": rule.get("privacy") or "unlisted"})
-    next_run = _ts(float(rule.get("cadence_hours") or 24))
+    next_run = _next_run_at(rule)
     db.execute(
         "UPDATE autopilot_rules SET last_run_at=?, last_project_id=?, next_run_at=?, last_error=?, updated_at=? WHERE id=?",
         (db.now(), pid, next_run, publish_warning, db.now(), rule_id),
