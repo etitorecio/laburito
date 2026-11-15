@@ -171,6 +171,21 @@ export default function Editor({ projectId, go }: Props) {
 
   const linkedYoutubeAccount = youtubeChannels.find((channel) => channel.id === project?.channel_id)?.account ?? null;
 
+  async function assignChannel(channelId: string) {
+    if (!channelId) return;
+    setBusy('channel'); setError(''); setOk('');
+    try {
+      const updated = await api.patch<Project>(`/api/projects/${projectId}`, { channel_id: Number(channelId) });
+      setProject(updated);
+      setOk('Canal asignado. YouTube usará la cuenta vinculada a ese canal.');
+      await loadPublish();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy('');
+    }
+  }
+
   async function publishNow() {
     if (publishDest === 'youtube' && !linkedYoutubeAccount) {
       setError('Conectá la cuenta de YouTube correspondiente desde Cuentas antes de publicar este proyecto.');
@@ -600,6 +615,16 @@ export default function Editor({ projectId, go }: Props) {
           </>
         }
       >
+        <div className="stack" style={{ marginBottom: 12 }}>
+          <label className="field">
+            <span>Fábrica / canal de destino</span>
+            <select value={project?.channel_id ? String(project.channel_id) : ''} onChange={(e) => void assignChannel(e.target.value)} disabled={busy === 'channel'}>
+              <option value="">Sin canal asignado</option>
+              {youtubeChannels.map((channel) => <option key={channel.id} value={channel.id}>{channel.name}</option>)}
+            </select>
+          </label>
+          {!youtubeChannels.length && <button className="btn small ghost" onClick={() => go('cuentas')}>Crear y conectar canales en Cuentas</button>}
+        </div>
         <label className="row center gap-8" style={{ marginBottom: 10 }}>
           <input type="checkbox" checked={autoPublish} onChange={(e) => toggleAutoPublish(e.target.checked)} />
           <span>Publicar automáticamente al terminar cada render</span>
