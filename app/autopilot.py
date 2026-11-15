@@ -337,16 +337,17 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
         raise
     publish_warning = ""
     if rule.get("auto_publish"):
-        if script_writer != "ollama-local" or evidence_sources < 2:
+        destination = rule.get("destination") or "entrega"
+        quality_ready = script_writer == "ollama-local" and evidence_sources >= 2
+        if destination == "youtube" and not quality_ready:
             publish_warning = (
-                "Publicación automática retenida: se requiere un guion reescrito con Ollama local "
-                "y al menos dos fuentes con extractos recuperados. Se generó el proyecto y el render, "
-                "pero requiere revisión para evitar publicar un borrador sin contraste suficiente."
+                "Publicación automática en YouTube retenida: se requiere un guion reescrito con Ollama local "
+                "y al menos dos fuentes con extractos recuperados. El video y su paquete de entrega sí se generan."
             )
             db.log("warn", "autopilot", publish_warning, {"project_id": pid, "writer": script_writer})
         else:
             try:
-                publish.set_auto_publish(pid, True, rule.get("destination") or "entrega")
+                publish.set_auto_publish(pid, True, destination)
             except publish.PublishError as exc:
                 publish_warning = str(exc)[:500]
                 db.log("warn", "autopilot", f"No se pudo activar la auto-subida: {exc}")
