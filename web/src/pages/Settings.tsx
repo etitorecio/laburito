@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, getToken, setToken, type Diagnostics, type Meta } from '../api';
 import { Badge, Card, Empty, Field, Msg } from '../ui';
 import CaptionStylePicker from '../components/CaptionStylePicker';
+import TransitionPicker from '../components/TransitionPicker';
 
 export default function Settings() {
   const [diag, setDiag] = useState<Diagnostics | null>(null);
@@ -221,12 +222,13 @@ export default function Settings() {
               ))}
             </select>
           </Field>
-          <Field label="Transición por defecto">
-            <select value={values.default_transition || 'fundido'} onChange={(e) => setValues({ ...values, default_transition: e.target.value })}>
-              {(meta?.transitions ?? [{ id: 'fundido', label: 'Fundido' }]).map((t) => (
-                <option key={t.id} value={t.id}>{t.label}</option>
-              ))}
-            </select>
+          <Field label="Movimiento por defecto">
+            <TransitionPicker
+              options={meta?.transitions ?? [{ id: 'fundido', label: 'Fundido' }]}
+              value={values.default_transition || 'fundido'}
+              onChange={(value) => setValues({ ...values, default_transition: value })}
+              compact
+            />
           </Field>
         </div>
         <div className="row">
