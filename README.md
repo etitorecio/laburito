@@ -58,7 +58,10 @@ La imagen es Alpine, compila el frontend en una etapa Node y ejecuta el servidor
 | `APP_TOKEN` o `AITUBER_TOKEN` | Protección con token (`X-App-Token`). Recomendado para cualquier despliegue público. |
 | `PIPER_BIN`, `PIPER_MODEL` | Sobrescritura manual opcional de la instalación Piper; normalmente se instala desde Ajustes. |
 | `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` | Credenciales OAuth de tipo aplicación web. El refresh token se guarda en la base local tras conectar la cuenta. |
-| `OLLAMA_URL` | Ollama local opcional para reescribir guiones a partir de las fuentes (nunca un servicio pago). |\n| `SUPABASE_URL` | URL del proyecto Supabase para persistencia externa opcional en AppJet Free. |\n| `SUPABASE_SERVICE_ROLE_KEY` | Clave service-role privada del proyecto; solo en variables de entorno del servidor, nunca en el frontend. |\n| `SUPABASE_STORAGE_BUCKET` | Nombre opcional del bucket privado de backups (por defecto `laburito-private-backups`); se crea automáticamente. |
+| `OLLAMA_URL` | Ollama local opcional para reescribir guiones a partir de las fuentes (nunca un servicio pago). |
+| `SUPABASE_URL` | URL del proyecto Supabase para persistencia externa opcional en AppJet Free. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Clave service-role privada del proyecto; solo en variables de entorno del servidor, nunca en el frontend. |
+| `SUPABASE_STORAGE_BUCKET` | Nombre opcional del bucket privado de backups (por defecto `laburito-private-backups`); se crea automáticamente. |
 
 En **Ajustes** se configuran idioma, voz, volumen de música, estilo de subtítulos, copias de seguridad y **Social Media Integration · YouTube**, la conexión OAuth oficial.
 
