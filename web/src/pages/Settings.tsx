@@ -13,6 +13,7 @@ export default function Settings() {
   const [youtubeVerified, setYoutubeVerified] = useState(false);
   const [youtubeRefreshToken, setYoutubeRefreshToken] = useState("");
   const [youtubeBusy, setYoutubeBusy] = useState(false);
+  const [youtubeOAuthBusy, setYoutubeOAuthBusy] = useState(false);
   const [piperBusy, setPiperBusy] = useState(false);
 
   async function load() {
@@ -83,6 +84,17 @@ export default function Settings() {
       setError((e as Error).message);
     } finally {
       setPiperBusy(false);
+    }
+  }
+
+  async function startYoutubeOAuth() {
+    setError(''); setOk(''); setYoutubeOAuthBusy(true);
+    try {
+      const result = await api.post<{ authorization_url: string; redirect_uri: string }>('/api/youtube/oauth/start', {});
+      window.location.assign(result.authorization_url);
+    } catch (e) {
+      setError((e as Error).message);
+      setYoutubeOAuthBusy(false);
     }
   }
 
@@ -171,10 +183,15 @@ export default function Settings() {
           <Badge tone={youtube?.available ? 'ok' : 'warn'}>{youtubeVerified ? 'Canal verificado' : youtube?.available ? 'Credenciales guardadas · falta verificar' : 'Falta configurar la conexión'}</Badge>
           {youtube?.missing_env.map((item) => <Badge key={item} tone="warn">{item}</Badge>)}
         </div>
-        <p className="muted">En Google Cloud habilitá YouTube Data API v3 y creá credenciales OAuth de tipo <b>Aplicación web</b>. Si el consentimiento está en Testing, agregá tu cuenta en Audiencia → Usuarios de prueba. Agregá esta URI autorizada: <code>https://developers.google.com/oauthplayground</code>. En AppJet → variables de entorno, configurá YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET y APP_TOKEN. Guardá los cambios y pegá el APP_TOKEN en la sección Acceso.</p>
-        <p className="muted">Abrí el <a href="https://developers.google.com/oauthplayground" target="_blank" rel="noreferrer">OAuth 2.0 Playground oficial de Google</a>. En el engranaje, activá «Use your own OAuth credentials», pegá tu Client ID y Client Secret, elegí OAuth flow «Server-side», Access type «Offline» y Force prompt «Consent Screen».</p>
-        <p className="muted">En Step 1 ingresá estos permisos: <code>https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly</code>. Tocá «Authorize APIs» y después «Exchange authorization code for tokens». Copiá el Refresh token que aparece y pegalo acá. Usá tus propias credenciales: el Playground revoca los tokens de prueba a las 24 horas si no las configurás.</p>
+        <p className="muted">En Google Cloud habilitá YouTube Data API v3 y creá credenciales OAuth de tipo <b>Aplicación web</b>. Agregá como URI de redirección autorizada esta dirección exacta: <code>{window.location.origin}/api/youtube/callback</code>. Si definiste YOUTUBE_REDIRECT_URI en el servidor, usá ese valor en lugar de la dirección calculada. En AppJet o en el archivo .env local configurá YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET y APP_TOKEN.</p>
+        <p className="muted">Después de guardar esas variables y reiniciar la app, tocá «Conectar canal con Google». Google te pedirá permiso una sola vez y Laburito guardará el refresh token en el servidor, sin que tengas que copiarlo ni pegarlo. Si la pantalla de consentimiento permanece en Testing, Google puede revocar los refresh tokens después de 7 días; para automatización continua revisá el estado de publicación de la app OAuth.</p>
         <p className="muted">El refresh token es una contraseña de acceso: pegalo solo acá, nunca en el chat. Laburito lo guarda en el servidor y no vuelve a mostrarlo. Si el consentimiento de Google sigue en Testing, los tokens pueden vencer a los 7 días.</p>
+        <div className="row">
+          <button className="btn primary" disabled={youtubeOAuthBusy || !meta?.auth_required || !!youtube?.missing_env.includes('YOUTUBE_CLIENT_ID') || !!youtube?.missing_env.includes('YOUTUBE_CLIENT_SECRET')} onClick={() => void startYoutubeOAuth()}>{youtubeOAuthBusy ? 'Abriendo Google…' : 'Conectar canal con Google'}</button>
+          <button className="btn ghost" disabled={youtubeBusy || !youtube?.available} onClick={() => void testYoutubeConnection()}>Comprobar conexión real</button>
+        </div>
+        <details>
+          <summary className="muted">Conexión manual avanzada (OAuth Playground)</summary>
         <Field label="Refresh token de YouTube">
           <input type="password" value={youtubeRefreshToken} onChange={(e) => setYoutubeRefreshToken(e.target.value)} placeholder="Pegá aquí el refresh token de Google" autoComplete="off" />
         </Field>
@@ -182,6 +199,7 @@ export default function Settings() {
           <button className="btn primary" disabled={youtubeBusy || !meta?.auth_required || youtubeRefreshToken.trim().length < 20} onClick={() => void saveYoutubeToken()}>{youtubeBusy ? 'Guardando…' : 'Guardar conexión de YouTube'}</button>
           <button className="btn ghost" disabled={youtubeBusy || !youtube?.available} onClick={() => void testYoutubeConnection()}>Comprobar conexión real</button>
         </div>
+        </details>
       </Card>
 
       <Card title="Voz neural española" sub="Mejorá la narración sin pagar APIs ni servicios de voz.">
