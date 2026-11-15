@@ -22,6 +22,11 @@ class ShortsContractTests(unittest.TestCase):
                 self.assertLessEqual(max(template["durations"]), 180)
                 self.assertLessEqual(template["default_duration"], 180)
 
+    def test_vertical_shorts_duration_is_clamped_to_three_minutes(self):
+        self.assertEqual(options.clamp_vertical_short_duration("reddit_story", 999), 180)
+        self.assertEqual(options.clamp_vertical_short_duration("frutinovela", 5), 15)
+        self.assertEqual(options.clamp_vertical_short_duration("longform", 999), 999)
+
     def test_gameplay_clip_minimums_match_the_product_contract(self):
         self.assertEqual(options.VIDEO_CLIP_MINIMUMS, {
             "stock_footage": 5,
