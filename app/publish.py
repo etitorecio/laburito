@@ -146,6 +146,15 @@ def save_youtube_account(channel_id: int, refresh_token: str, status: dict) -> N
     if not db.query_one("SELECT id FROM channels WHERE id=?", (int(channel_id),)):
         raise PublishError("El canal interno seleccionado ya no existe.")
     ensure_schema()
+    youtube_channel_id = str(status.get("channel_id") or "").strip()
+    duplicate = db.query_one(
+        "SELECT channel_id FROM youtube_accounts WHERE youtube_channel_id=? AND channel_id<>?",
+        (youtube_channel_id, int(channel_id)),
+    ) if youtube_channel_id else None
+    if duplicate:
+        raise PublishError(
+            "Esta cuenta de YouTube ya está asignada a otra fábrica. Usá una cuenta/canal distinto para Historias y Frutinovelas."
+        )
     db.execute(
         "INSERT INTO youtube_accounts(channel_id,youtube_channel_id,channel_title,refresh_token,updated_at) VALUES(?,?,?,?,?) "
         "ON CONFLICT(channel_id) DO UPDATE SET youtube_channel_id=excluded.youtube_channel_id,channel_title=excluded.channel_title,refresh_token=excluded.refresh_token,updated_at=excluded.updated_at",
