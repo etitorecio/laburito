@@ -344,6 +344,8 @@ export default function Editor({ projectId, go }: Props) {
   return (
     <div className="stack">
       <Msg error={error} ok={ok} />
+      <ProjectResearch projectId={projectId} topic={project.topic || project.title} />
+
 
       <Card
         title={project.title}
@@ -559,8 +561,6 @@ export default function Editor({ projectId, go }: Props) {
           </div>
         )}
       </Card>
-
-      <ProjectResearch projectId={projectId} topic={project.topic || project.title} />
 
       <Card
         title="Publicación y auto-subida"
