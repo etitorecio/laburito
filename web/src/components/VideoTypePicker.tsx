@@ -22,6 +22,7 @@ const ICONS: Record<string, string> = {
 };
 
 const REQUIRED: Record<string, number> = { stock_footage: 5, minecraft: 1, subway: 1 };
+const MAX_CLIPS = 5;
 const CLIP_SOURCES: Record<string, { label: string; url: string; detail: string }[]> = {
   subway: [
     { label: 'Subway Surfers oficial · vertical 9:16 (SYBO)', url: 'https://www.youtube.com/watch?v=QPW3XwBoQlw', detail: 'El canal verificado de Subway Surfers lo publica expresamente como FREE TO USE. Es la mejor fuente encontrada para Shorts.' },
@@ -117,7 +118,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
                     <small>Referencia visual · requiere clips propios o autorizados</small>
                   </div>
                   <details className="background-clip-manager">
-                    <summary>Administrar clips · {categoryClips.length}/{required}</summary>
+                    <summary>Administrar clips · {categoryClips.length} cargados · mínimo {required}, máximo {MAX_CLIPS}</summary>
                     <div className="clip-source-list">
                       <strong>Fuentes y permisos revisados</strong>
                       {(CLIP_SOURCES[option.id] || []).map((source) => (
@@ -129,7 +130,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
                       <small>Descargá únicamente desde una opción de descarga ofrecida por el creador o grabá tu propia partida. No uses páginas para extraer videos de YouTube.</small>
                     </div>
                     <div className="background-clip-slots">
-                  {Array.from({ length: 5 }, (_, index) => {
+                  {Array.from({ length: MAX_CLIPS }, (_, index) => {
                     const clip = categoryClips[index];
                     const src = clip ? `${clip.url}` : '';
                     return (
@@ -143,7 +144,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
                         ) : (
                           <label className="clip-upload-slot">
                             <span>＋</span>
-                            <small>Agregar clip {index + 1} de {required}</small>
+                            <small>Agregar clip {index + 1} (hasta {MAX_CLIPS})</small>
                             <input
                               type="file"
                               accept="video/mp4,video/quicktime,video/webm,video/x-matroska"
@@ -183,7 +184,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
               )}
 
               <div className="video-type-footer">
-                {required > 0 && <small>{categoryClips.length}/{required} clips cargados</small>}
+                {required > 0 && <small>{categoryClips.length} de {MAX_CLIPS} clips · mínimo {required}</small>}
                 <button
                   type="button"
                   className="btn small"
