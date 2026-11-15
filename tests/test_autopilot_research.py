@@ -147,6 +147,19 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(result["topic"], "Astrobiología")
         self.assertTrue(any("ciencia espacio" in q for q in queries))
 
+    def test_tick_retries_failed_rule_after_fifteen_minutes(self):
+        with patch.object(autopilot, "ensure_schema"):
+            with patch.object(autopilot.db, "now", return_value="now"):
+                with patch.object(autopilot.db, "query", return_value=[{"id": 4}]):
+                    with patch.object(autopilot, "run_rule", side_effect=RuntimeError("temporary network error")):
+                        with patch.object(autopilot, "get_rule", return_value={"id": 4}):
+                            with patch.object(autopilot, "_retry_at", return_value="retry-in-15"):
+                                with patch.object(autopilot.db, "execute") as execute:
+                                    fired = autopilot.tick()
+        self.assertEqual(fired, 0)
+        self.assertEqual(execute.call_args.args[1][0], "retry-in-15")
+        self.assertIn("temporary network error", execute.call_args.args[1][1])
+
     def test_autopilot_metadata_controls_change_title_and_tags(self):
         project = {
             "id": 778, "title": "La exploración espacial", "topic": "La exploración espacial",
