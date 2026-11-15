@@ -241,6 +241,19 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
               <textarea rows={3} maxLength={240} value={form.visual_style_prompt} onChange={(e) => setForm({ ...form, visual_style_prompt: e.target.value })} placeholder="Ej.: iluminación cálida, fotografía analógica, tonos verdes y textura de película…" />
             </Field>
             <p className="muted">La descripción guía la búsqueda de imágenes libres y algunos filtros locales; no genera imágenes IA.</p>
+            <Field label="Usar una imagen como referencia (paleta local)">
+              <input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setBusy(true); setError(''); setOk('');
+                try {
+                  const result = await api.upload<{ visual_style_prompt: string; analysis: string }>('/api/visual-style/analyze', file);
+                  setForm((old) => ({ ...old, visual_style_prompt: result.visual_style_prompt }));
+                  setOk(result.analysis + ' Revisá la descripción antes de crear el video.');
+                } catch (error) { setError((error as Error).message); }
+                finally { setBusy(false); e.target.value = ''; }
+              }} />
+            </Field>
             <h4>Tipo de video</h4>
             <VideoTypePicker options={meta?.video_types ?? []} value={form.video_type} onChange={(value) => setForm({ ...form, video_type: value })} />
             <div className="row">
