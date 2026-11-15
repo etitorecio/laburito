@@ -21,7 +21,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Redirect
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import autopilot, db, media, options, persistence, publish, render, script_gen, tts, worker
+from . import autopilot, db, media, options, persistence, publish, render, script_gen, skeleton, tts, worker
 
 APP_VERSION = "1.1.0"
 APP_TOKEN = (os.environ.get("APP_TOKEN") or os.environ.get("AITUBER_TOKEN") or "").strip()
@@ -507,6 +507,17 @@ def visual_style_sample(style_id: str):
         return FileResponse(preview, media_type="image/png")
     except Exception as exc:
         raise HTTPException(503, f"No se pudo generar la muestra visual: {exc}") from exc
+
+
+@app.get("/api/skeleton-preview/{action}")
+def skeleton_sample_preview(action: str):
+    if action not in skeleton.ACTIONS:
+        raise HTTPException(404, "Animación de esqueleto inexistente")
+    try:
+        preview = skeleton.ensure_clip(action)
+        return FileResponse(preview, media_type="video/mp4")
+    except Exception as exc:
+        raise HTTPException(503, f"No se pudo generar la muestra de esqueleto: {exc}") from exc
 
 
 @app.get("/api/voice-preview/{voice_id}")
