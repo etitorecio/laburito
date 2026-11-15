@@ -633,11 +633,11 @@ def publish(project_id: int, destination: str = "entrega", calendar_id: int | No
     if calendar_id:
         db.execute(
             "UPDATE calendar_entries SET status=?, video_url=?, updated_at=? WHERE id=?",
-            ("publicado", result["url"], now, calendar_id),
+            (publication_status, result["url"], now, calendar_id),
         )
-    db.log("info", "publicacion", f"Proyecto {project_id} publicado en {destination}",
+    db.log("info", "publicacion", f"Resultado de publicación del proyecto {project_id}: {publication_status} en {destination}",
            {"url": result["url"], "external_id": result["external_id"]})
-    report(100, "Publicado")
+    report(100, "Procesamiento rechazado por YouTube" if publication_status == "procesamiento_fallido" else "Publicado")
     return {
         "ok": True,
         "destination": destination,
