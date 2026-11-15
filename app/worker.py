@@ -11,7 +11,7 @@ import time
 import traceback
 from pathlib import Path
 
-from . import autopilot, db, publish, render
+from . import autopilot, db, persistence, publish, render
 
 _stop = threading.Event()
 _thread: threading.Thread | None = None
@@ -273,16 +273,35 @@ def run_job(job: dict) -> None:
 
 def _loop() -> None:
     last_tick = 0.0
+    last_persistence_sync = 0.0
     while not _stop.is_set():
         try:
+            now = time.time()
+            if now - last_persistence_sync >= 900:
+                last_persistence_sync = now
+                if persistence.configured():
+                    try:
+                        persistence.sync_backup()
+                    except Exception as exc:
+                        db.log("error", "persistence", f"No se pudo sincronizar la copia externa: {exc}")
             job = _claim_next()
             if job:
                 run_job(job)
+                if persistence.configured():
+                    try:
+                        persistence.sync_backup()
+                    except Exception as exc:
+                        db.log("error", "persistence", f"No se pudo respaldar después de la tarea: {exc}")
                 continue
             # Piloto automático: revisa reglas vencidas como máximo una vez por minuto.
-            if time.time() - last_tick > 60:
-                last_tick = time.time()
-                autopilot.tick()
+            if now - last_tick > 60:
+                last_tick = now
+                fired = autopilot.tick()
+                if fired and persistence.configured():
+                    try:
+                        persistence.sync_backup()
+                    except Exception as exc:
+                        db.log("error", "persistence", f"No se pudo respaldar después del Autopiloto: {exc}")
         except Exception as exc:  # nunca matar el hilo
             db.log("error", "worker", f"Bucle del worker: {exc}")
         _wake.wait(timeout=2.0)
