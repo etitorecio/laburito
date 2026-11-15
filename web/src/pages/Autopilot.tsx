@@ -102,7 +102,7 @@ export default function Autopilot() {
   }, []);
 
   const templates = useMemo(
-    () => (data?.templates ?? meta?.templates ?? []).filter((t) => ['shorts', 'frutinovela', 'listicle', 'pov', 'quote', 'longform', 'explainer', 'cuadrado', 'vertical_45'].includes(t.id)),
+    () => (data?.templates ?? meta?.templates ?? []).filter((t) => ['shorts', 'frutinovela', 'reddit_story', 'listicle', 'pov', 'quote', 'longform', 'explainer', 'cuadrado', 'vertical_45'].includes(t.id)),
     [data, meta],
   );
   const youtubeReady = data?.destinations?.some((d) => d.id === 'youtube' && d.available) ?? false;
