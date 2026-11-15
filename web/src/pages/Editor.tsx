@@ -510,13 +510,13 @@ export default function Editor({ projectId, go }: Props) {
                         onBlur={(e) => e.target.value !== scene.visual_query && patchScene(scene, { visual_query: e.target.value })}
                       />
                     </Field>
-                    <Field label="Transición">
-                      <select defaultValue={scene.transition} onChange={(e) => patchScene(scene, { transition: e.target.value })}>
-                        <option value="fundido">Fundido</option>
-                        <option value="corte">Corte</option>
-                        <option value="zoom">Zoom lento</option>
-                        <option value="deslizar">Deslizar</option>
-                      </select>
+                    <Field label="Movimiento de esta escena">
+                      <TransitionPicker
+                        options={meta?.transitions ?? [{ id: scene.transition, label: scene.transition }]}
+                        value={scene.transition || project.transition_default}
+                        onChange={(value) => void patchScene(scene, { transition: value })}
+                        compact
+                      />
                     </Field>
                   </div>
                   <div className="row gap-8">
