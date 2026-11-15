@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import csv
-import hmac
 import io
 import json
 import os
