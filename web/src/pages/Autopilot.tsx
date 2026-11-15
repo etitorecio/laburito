@@ -17,6 +17,8 @@ const INITIAL = {
   template: 'shorts',
   duration_target_sec: 30,
   voice: 'es',
+  speed: 150,
+  pitch: 45,
   cadence_hours: 24,
   videos_per_period: 1,
   period_days: 1,
@@ -140,6 +142,8 @@ export default function Autopilot() {
       template: rule.template,
       duration_target_sec: rule.duration_target_sec ?? 30,
       voice: rule.voice,
+      speed: rule.speed ?? 150,
+      pitch: rule.pitch ?? 45,
       aspect: rule.aspect,
       caption_style: rule.caption_style,
       transition_default: rule.transition_default,
@@ -292,6 +296,13 @@ export default function Autopilot() {
                 {voiceOptions.map((v) => <option key={v.id} value={v.id} disabled={!v.available}>{v.label}{v.language ? ' · ' + v.language : ''}{v.available ? '' : ' (no disponible)'}</option>)}
               </select>
             </Field>
+            <Field label={'Velocidad de narración: ' + form.speed + ' palabras/minuto'}>
+              <input type="range" min="80" max="300" step="5" value={form.speed} onChange={(e) => update('speed', Number(e.target.value))} />
+            </Field>
+            <Field label={'Tono de voz (pitch): ' + form.pitch + '/99'}>
+              <input type="range" min="0" max="99" step="1" value={form.pitch} onChange={(e) => update('pitch', Number(e.target.value))} />
+            </Field>
+            <div className="muted">La velocidad y el tono se aplican al motor espeak-ng. Piper usa el ritmo y tono propios del modelo neural.</div>
             <div className="muted">No se muestran voces de proveedores pagos. La narración usa los motores instalados en el servidor.</div>
           </>}
 
