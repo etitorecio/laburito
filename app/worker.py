@@ -159,35 +159,27 @@ def run_job(job: dict) -> None:
                         "UPDATE jobs SET message=?, updated_at=? WHERE id=?",
                         ((message + " — no se pudo recuperar una regla activa; requiere revisión.")[:400], db.now(), job_id),
                     )
-            if (
-                auto["enabled"]
-                and auto["destination"] == "youtube"
-                and not persistence.durable_storage_available()
-            ):
-                blocker = (
-                    "Publicación automática retenida: no hay almacenamiento persistente. "
-                    "Conectá Supabase o usá un volumen local persistente."
-                )
-                db.execute(
-                    "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE last_project_id=?",
-                    (blocker[:500], db.now(), int(project_id)),
-                )
-                db.log("warn", "worker", blocker, {"project_id": project_id})
-                auto = {"enabled": False, "destination": "youtube"}
-            blocker = blocker if "blocker" in locals() and blocker else _auto_publish_blocker(result)
-            if auto["enabled"] and auto["destination"] == "youtube" and blocker:
-                db.execute(
-                    "UPDATE jobs SET message=?, updated_at=? WHERE id=?",
-                    (blocker[:400], db.now(), job_id),
-                )
-                db.execute(
-                    "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE last_project_id=?",
-                    (blocker[:500], db.now(), int(project_id)),
-                )
-                db.log("warn", "worker", blocker, {"project_id": project_id})
-                # No se simula una autopublicación mediante una entrega local.
-                # El MP4 permanece en el proyecto y el bloqueo queda visible.
-                auto = {"enabled": False, "destination": "youtube"}
+            blocker = ""
+            if auto["enabled"] and auto["destination"] == "youtube":
+                if not persistence.durable_storage_available():
+                    blocker = (
+                        "Publicación automática retenida: no hay almacenamiento persistente. "
+                        "Conectá Supabase o usá un volumen local persistente."
+                    )
+                else:
+                    blocker = _auto_publish_blocker(result)
+                if blocker:
+                    db.execute(
+                        "UPDATE jobs SET message=?, updated_at=? WHERE id=?",
+                        (blocker[:400], db.now(), job_id),
+                    )
+                    db.execute(
+                        "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE last_project_id=?",
+                        (blocker[:500], db.now(), int(project_id)),
+                    )
+                    db.log("warn", "worker", blocker, {"project_id": project_id})
+                    # El MP4 permanece disponible, pero no se simula una publicación.
+                    auto = {"enabled": False, "destination": "youtube"}
             if auto["enabled"]:
                 if auto["destination"] == "youtube" and persistence.configured():
                     # En despliegues con disco efímero no iniciar la subida hasta
