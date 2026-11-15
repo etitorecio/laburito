@@ -6,7 +6,7 @@ type Go = (route: Route, id?: number) => void;
 const NAV_LINKS: { label: string; target: string }[] = [
   { label: 'Funciones', target: 'funciones' },
   { label: 'Plantillas', target: 'plantillas' },
-  { label: 'Autopilot', target: 'autopilot' },
+  { label: 'Autopiloto', target: 'autopilot' },
   { label: 'Costo cero', target: 'costo' },
   { label: 'Preguntas', target: 'faq' },
 ];
@@ -258,7 +258,7 @@ export default function Landing({ go }: { go: Go }) {
           <span className="lp-dot" /> Software libre · sin créditos ni suscripciones
         </span>
         <h1 className="lp-h1">
-          Crea Videos IA sin Rostro <span className="lp-grad">en Autopilot</span>
+          Crea Shorts sin rostro <span className="lp-grad">en piloto automático</span>
         </h1>
         <p className="lp-sub">
           Genera shorts y videos largos en minutos con voces locales, visuales con licencia, subtítulos
