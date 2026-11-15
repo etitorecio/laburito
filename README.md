@@ -9,7 +9,7 @@ Reconstrucción libre y local de la experiencia de IATuber, enfocada en **Shorts
 - **Investigación**: nichos con demanda, competencia, riesgo de copyright y potencial de serie; notas con nivel de evidencia, fuente y fecha de consulta; búsqueda de imágenes con licencia.
 - **Canales**: identidad, tono, idioma, formatos y cadencia.
 - **Guion IA local**: Ollama descarga una vez el modelo Qwen 2.5 1.5B (Apache 2.0, aprox. 1 GB) y lo ejecuta en tu PC para expandir los guiones; no usa API keys, tokens de generación ni créditos. Si el modelo no está disponible, conserva el guion estructurado de respaldo.
-- **Voz**: tarjetas de voces exclusivamente españolas, con muestra de audio antes de elegir. espeak-ng funciona localmente y Piper neural DaveFX se descarga automáticamente (63 MB), sin claves ni pagos.
+- **Voz**: tarjetas de voces exclusivamente españolas, con muestra de audio antes de elegir. espeak-ng funciona localmente y Piper neural DaveFX se descarga automáticamente al iniciar (63 MB), sin claves ni pagos.
 - **Demostraciones**: los 13 estilos de subtítulos, los movimientos de escena y los 10 tratamientos visuales tienen vistas previas generadas por FFmpeg, el mismo motor del video final.
 - **Render**: FFmpeg para Shorts verticales 9:16, con subtítulos quemados, miniaturas y música de fondo opcional.
 - **Cola persistente**: un trabajo a la vez, reanudable tras reinicio y con caché por escena (no repite trabajo).
@@ -68,7 +68,7 @@ La imagen final usa Debian slim (glibc, necesaria para Piper/ONNX Runtime), inst
 | `AITUBER_DATA_DIR` | Carpeta de datos (SQLite, medios, renders, exportaciones). Por defecto `./data`. |
 | `AITUBER_LOCAL_PERSISTENT` | Marcador de diagnóstico para un volumen local persistente (lo configura Docker Compose). |
 | `PORT` | Puerto HTTP (por defecto `8080`). |
-| `PIPER_BIN`, `PIPER_MODEL` | Sobrescritura manual opcional de la instalación Piper; normalmente se instala desde Ajustes. |
+| `PIPER_BIN`, `PIPER_MODEL` | Sobrescritura manual opcional de la instalación Piper; normalmente se instala automáticamente al iniciar. |
 | `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` | Credenciales OAuth de tipo aplicación web. La autorización de YouTube se guarda en la base local tras conectar la cuenta. |
 | `YOUTUBE_REDIRECT_URI` | URI de callback OAuth opcional; por defecto se calcula con el dominio actual. |
 
