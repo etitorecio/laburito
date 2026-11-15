@@ -128,7 +128,7 @@ export default function Autopilot() {
       return;
     }
     if (form.auto_publish && form.destination === 'youtube' && !youtubeReady) {
-      setError('Antes de activar la publicación automática, conectá y verificá tu canal de YouTube en Ajustes.');
+      setError('Antes de activar la publicación automática, conectá la cuenta correspondiente desde Cuentas.');
       return;
     }
     if (form.auto_publish && form.destination === 'youtube' && persistenceConfigured === false) {
