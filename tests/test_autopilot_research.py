@@ -46,6 +46,17 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(result["writer"], "template")
         self.assertIn("no publicar automáticamente", result["warnings"][0])
 
+    def test_research_topic_returns_only_its_own_note_ids(self):
+        topic = {"title": "Tema nuevo", "summary": "Resumen de orientación", "url": "https://es.wikipedia.org/wiki/Tema"}
+        academic = [{"title": "Artículo", "url": "https://doi.org/10.1/test", "abstract": "Resumen académico"}]
+        with patch.object(topic_engine, "choose_topic", return_value=topic):
+            with patch.object(topic_engine, "_openalex_abstracts", return_value=academic):
+                with patch.object(topic_engine.db, "now", return_value="now"):
+                    with patch.object(topic_engine.db, "execute", side_effect=[101, 102]):
+                        result = topic_engine.research_topic("ciencia", [])
+        self.assertEqual(result["note_ids"], [101, 102])
+        self.assertEqual(result["academic_sources"], academic)
+
     def test_topic_picker_skips_near_duplicate_titles(self):
         self.assertTrue(topic_engine._is_duplicate("Historia de la radio", ["La historia de la radio"]))
         self.assertFalse(topic_engine._is_duplicate("Historia de la televisión", ["Historia de la radio"]))
