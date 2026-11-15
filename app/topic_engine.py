@@ -198,7 +198,7 @@ def research_topic(niche: str, previous_topics: list[str]) -> dict:
                 "Resumen bibliográfico recuperado de OpenAlex. No equivale al texto completo; comprobar alcance y metodología en la publicación original.",
                 db.now(),
             ),
-        )
+        ))
     result["academic_sources"] = academic
     result["note_ids"] = note_ids
     return result
