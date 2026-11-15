@@ -841,17 +841,35 @@ def generate_script(project_id: int, replace: bool = True):
     custom_script = str(project_metadata.get("script_text") or "").strip()
     if project.get("template") == "frutinovela" and project.get("channel_id"):
         previous = db.query_one(
-            "SELECT id,title,topic FROM projects WHERE channel_id=? AND template='frutinovela' AND id<>? ORDER BY id DESC LIMIT 1",
+            "SELECT id,title,topic,notes FROM projects "
+            "WHERE channel_id=? AND template='frutinovela' AND id<? "
+            "AND EXISTS (SELECT 1 FROM scenes WHERE scenes.project_id=projects.id) "
+            "ORDER BY id DESC LIMIT 1",
             (project["channel_id"], project_id),
         )
+        episode_number = int(db.scalar(
+            "SELECT COUNT(*) FROM projects WHERE channel_id=? AND template='frutinovela' AND id<? "
+            "AND EXISTS (SELECT 1 FROM scenes WHERE scenes.project_id=projects.id)",
+            (project["channel_id"], project_id), 0,
+        )) + 1
+        project["series_episode"] = episode_number
         if previous:
-            ending = db.query_one(
-                "SELECT narration FROM scenes WHERE project_id=? ORDER BY idx DESC LIMIT 1",
+            if not project.get("content_pillars"):
+                previous_notes = previous.get("notes") or ""
+                if metadata_marker in previous_notes:
+                    try:
+                        previous_meta = json.loads(previous_notes.split(metadata_marker, 1)[1].splitlines()[0])
+                        project["content_pillars"] = previous_meta.get("characters", "")
+                    except (TypeError, ValueError, json.JSONDecodeError):
+                        pass
+            endings = db.query(
+                "SELECT narration FROM scenes WHERE project_id=? ORDER BY idx DESC LIMIT 2",
                 (previous["id"],),
             )
+            ending_text = " ".join(row.get("narration", "") for row in reversed(endings))
             project["series_context"] = (
-                f"{previous.get('title') or 'Episodio anterior'}: {previous.get('topic') or ''}. "
-                + (ending.get("narration") or "" if ending else "")
+                f"Episodio {episode_number}. Continuación de {previous.get('title') or 'episodio anterior'}: "
+                f"{previous.get('topic') or ''}. Últimas escenas: {ending_text}"
             )
     script = script_gen.script_from_text(project, custom_script) if custom_script else script_gen.generate_script(project, notes, sources)
     ollama_url = db.get_setting("ollama_url", "") or os.environ.get("OLLAMA_URL", "").strip()
