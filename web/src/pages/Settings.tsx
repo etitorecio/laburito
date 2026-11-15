@@ -12,7 +12,6 @@ export default function Settings() {
   const [ok, setOk] = useState('');
   const [youtube, setYoutube] = useState<{ available: boolean; missing_env: string[]; note: string } | null>(null);
   const [youtubeVerified, setYoutubeVerified] = useState(false);
-  const [youtubeRefreshToken, setYoutubeRefreshToken] = useState("");
   const [youtubeBusy, setYoutubeBusy] = useState(false);
   const [youtubeOAuthBusy, setYoutubeOAuthBusy] = useState(false);
   const [piperBusy, setPiperBusy] = useState(false);
@@ -58,24 +57,6 @@ export default function Settings() {
     }
   }
 
-  async function saveYoutubeToken() {
-    setError(''); setOk(''); setYoutubeVerified(false); setYoutubeBusy(true);
-    try {
-      await api.post<{ ok: boolean; message: string }>('/api/youtube/token', {
-        refresh_token: youtubeRefreshToken.trim(),
-      });
-      const channel = await api.get<{ channel_title: string }>('/api/youtube/status');
-      setYoutube({ available: true, missing_env: [], note: 'Canal verificado' });
-      setYoutubeVerified(true);
-      setYoutubeRefreshToken('');
-      setOk('Conectado con el canal: ' + channel.channel_title);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setYoutubeBusy(false);
-    }
-  }
-
   async function installPiperVoice() {
     setError(''); setOk(''); setPiperBusy(true);
     try {
@@ -115,7 +96,7 @@ export default function Settings() {
 
   function saveToken() {
     setToken(token.trim());
-    setOk(token.trim() ? 'Token guardado en este navegador.' : 'Token eliminado.');
+    setOk(token.trim() ? 'Contraseña guardada en este navegador.' : 'Contraseña eliminada.');
     void load();
   }
 
@@ -159,27 +140,25 @@ export default function Settings() {
         )}
       </Card>
 
-      <Card title="Persistencia externa · Supabase" sub="Usá Supabase en un contenedor efímero como AppJet; en modo local, el volumen ./data ya conserva todo.">
+      <Card title="Almacenamiento local" sub="Los proyectos, videos y reglas se guardan en la carpeta de datos de esta instalación.">
         <div className="pill-row">
-          <Badge tone={diag?.persistence.configured ? 'ok' : 'warn'}>{diag?.persistence.configured ? 'Supabase configurado · verificar primer backup' : diag?.persistence.local_persistent ? 'Volumen local persistente activo' : 'Falta conectar almacenamiento persistente'}</Badge>
+          <Badge tone={diag?.persistence.local_persistent ? 'ok' : 'warn'}>{diag?.persistence.local_persistent ? 'Disco local persistente activo' : 'Persistencia local por verificar'}</Badge>
         </div>
-        {diag?.persistence.local_persistent && !diag?.persistence.configured ? <p className="muted">Estás ejecutando Laburito en modo local: el volumen ./data conserva SQLite, proyectos, programación, videos y credenciales aunque reinicies el contenedor. No necesitás Supabase en este modo.</p> : <p className="muted">AppJet Free no incluye disco virtual persistente. Cuando Supabase esté conectado, creá un proyecto gratuito y agregá en AppJet → Settings → Environment variables: <code>SUPABASE_URL</code> y <code>SUPABASE_SERVICE_ROLE_KEY</code>. Laburito crea automáticamente el bucket privado, sincroniza SQLite después de cada cambio de configuración y cada tarea (además de una copia periódica cada 15 minutos), y conserva el MP4 pendiente hasta que YouTube lo recibe.</p>}
-        <p className="muted">La clave service-role debe quedar como secreto del servidor; nunca la pegues en el navegador ni en el chat. La fila de diagnóstico de arriba confirma si la app detectó la conexión.</p>
-        <p className="muted">La URL `*.dev.ap-jt.com` es solo preview. AppJet también ofrece un endpoint Edge en Free, sin vencimiento por edad: copiá su URL desde Settings → Overview y guardala como variable `LABURITO_URL` en <a href="https://github.com/etitorecio/laburito/settings/variables/actions" target="_blank" rel="noreferrer">GitHub → Variables</a>. AppJet Free no incluye disco virtual; para conservar reglas, trabajos y credenciales entre reemplazos del contenedor, conectá Supabase y configurá `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`. Las cuotas y condiciones propias de Supabase siguen aplicando. Importante: AppJet Free limita cada app alojada a 1 GB de RAM y 1 vCPU, no incluye disco virtual y su documentación dice que el hosting es para desarrollo, pruebas y compartir, no producción con datos reales. FFmpeg + Piper pueden alcanzar esos límites; usalo solo para probar. Para el autopiloto diario gratuito, preferí Docker local con volumen persistente.</p>
+        <p className="muted">Para no depender de claves de almacenamiento en la nube, ejecutá la aplicación en tu PC con el volumen local ./data. No necesitás Supabase ni otro servicio de almacenamiento. La PC debe permanecer encendida para que el Autopiloto siga trabajando; podés controlarlo desde el celular conectado a la misma red.</p>
       </Card>
 
-      <Card title="Acceso" sub="Protección del servidor. Para conectar YouTube, APP_TOKEN o AITUBER_TOKEN es obligatorio.">
+      <Card title="Seguridad local" sub="Esta contraseña protege el acceso a tu instalación; no es una clave de IA ni consume créditos.">
         <div className="row">
-          <Field label="Token de acceso" hint={meta?.auth_required ? 'El servidor exige token: pegalo acá.' : 'Pegalo si configuraste APP_TOKEN o AITUBER_TOKEN en el servidor.'}>
-            <input type="password" value={token} onChange={(e) => setTokenValue(e.target.value)} placeholder="token" />
+          <Field label="Contraseña de acceso" hint={meta?.auth_required ? 'El servidor exige esta contraseña.' : 'Solo hace falta si activaste la protección del servidor.'}>
+            <input type="password" value={token} onChange={(e) => setTokenValue(e.target.value)} placeholder="Contraseña" />
           </Field>
           <div className="field" style={{ justifyContent: 'flex-end' }}>
-            <button className="btn primary" onClick={saveToken}>Guardar token</button>
+            <button className="btn primary" onClick={saveToken}>Guardar contraseña</button>
           </div>
         </div>
       </Card>
 
-      <Card title="Social Media Integration · YouTube" sub="Integración social oficial: vinculá tu canal una sola vez mediante OAuth y Laburito podrá publicar Shorts automáticamente.">
+      <Card title="Conexión de YouTube" sub="Integración social oficial: vinculá tu canal una sola vez mediante OAuth y Laburito podrá publicar Shorts automáticamente.">
         <div className="pill-row">
           <Badge tone={youtube?.available ? 'ok' : 'warn'}>{youtubeVerified ? 'Canal verificado' : youtube?.available ? 'Credenciales guardadas · falta verificar' : 'Falta configurar la conexión'}</Badge>
           {youtube?.missing_env.map((item) => <Badge key={item} tone="warn">{item}</Badge>)}
@@ -188,19 +167,10 @@ export default function Settings() {
         <p className="muted">Después de guardar esas variables y reiniciar la app, tocá «Conectar canal con Google». Google te pedirá permiso una sola vez y Laburito guardará el refresh token en el servidor, sin que tengas que copiarlo ni pegarlo. Si la pantalla de consentimiento permanece en Testing, Google puede revocar los refresh tokens después de 7 días; para automatización continua revisá el estado de publicación de la app OAuth.</p>
         <p className="muted">El refresh token es una contraseña de acceso: pegalo solo acá, nunca en el chat. Laburito lo guarda en el servidor y no vuelve a mostrarlo. Si el consentimiento de Google sigue en Testing, los tokens pueden vencer a los 7 días.</p>
         <div className="row">
-          <button className="btn primary" disabled={youtubeOAuthBusy || !meta?.auth_required || !!youtube?.missing_env.includes('YOUTUBE_CLIENT_ID') || !!youtube?.missing_env.includes('YOUTUBE_CLIENT_SECRET')} onClick={() => void startYoutubeOAuth()}>{youtubeOAuthBusy ? 'Abriendo Google…' : 'Conectar canal con Google'}</button>
+          <button className="btn primary" disabled={youtubeOAuthBusy || !!youtube?.missing_env.includes('YOUTUBE_CLIENT_ID') || !!youtube?.missing_env.includes('YOUTUBE_CLIENT_SECRET')} onClick={() => void startYoutubeOAuth()}>{youtubeOAuthBusy ? 'Abriendo Google…' : 'Conectar canal con Google'}</button>
           <button className="btn ghost" disabled={youtubeBusy || !youtube?.available} onClick={() => void testYoutubeConnection()}>Comprobar conexión real</button>
         </div>
-        <details>
-          <summary className="muted">Conexión manual avanzada (OAuth Playground)</summary>
-        <Field label="Refresh token de YouTube">
-          <input type="password" value={youtubeRefreshToken} onChange={(e) => setYoutubeRefreshToken(e.target.value)} placeholder="Pegá aquí el refresh token de Google" autoComplete="off" />
-        </Field>
-        <div className="row">
-          <button className="btn primary" disabled={youtubeBusy || !meta?.auth_required || youtubeRefreshToken.trim().length < 20} onClick={() => void saveYoutubeToken()}>{youtubeBusy ? 'Guardando…' : 'Guardar conexión de YouTube'}</button>
-          <button className="btn ghost" disabled={youtubeBusy || !youtube?.available} onClick={() => void testYoutubeConnection()}>Comprobar conexión real</button>
-        </div>
-        </details>
+        
       </Card>
 
       <Card title="Voz neural española" sub="Mejorá la narración sin pagar APIs ni servicios de voz.">
@@ -209,7 +179,7 @@ export default function Settings() {
         </div>
         <p className="muted">Piper DaveFX es una voz neural en español de España. La descarga inicial ocupa aproximadamente 63 MB; después funciona localmente, sin conexión ni créditos. El modelo y sus datos son CC0: no requieren atribución. Durante la síntesis consume más RAM que espeak-ng.</p>
         <p className="muted">Cuando termine la instalación, entrá al Autopiloto y elegí «Español neural (Piper DaveFX · España)». Si no la instalás, Laburito sigue usando espeak-ng.</p>
-        <button className="btn primary" disabled={piperBusy || !meta?.auth_required || !diag?.tts.piper_installed || !!diag?.tts.piper_available} onClick={() => void installPiperVoice()}>{piperBusy ? 'Encolando…' : diag?.tts.piper_available ? 'Voz neural instalada' : 'Instalar voz neural (63 MB)'}</button>
+        <button className="btn primary" disabled={piperBusy || !diag?.tts.piper_installed || !!diag?.tts.piper_available} onClick={() => void installPiperVoice()}>{piperBusy ? 'Encolando…' : diag?.tts.piper_available ? 'Voz neural instalada' : 'Instalar voz neural (63 MB)'}</button>
       </Card>
 
       <Card title="Producción" sub="Parámetros usados por el guionista y el render.">
