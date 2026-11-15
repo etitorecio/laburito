@@ -280,8 +280,12 @@ def make_fruit_card(
         radius=int(32 * scale), fill=(255, 250, 241), outline=(226, 173, 119), width=max(2, int(4 * scale)),
     )
     title_text = (title or "Un secreto entre frutas").strip()[:72]
-    title_box = draw.textbbox((0, 0), title_text, font=title_font)
-    draw.text(((width - (title_box[2] - title_box[0])) / 2, height * .075), title_text, font=title_font, fill=(75, 45, 58))
+    title_lines = textwrap.wrap(title_text, width=max(12, int(width / (42 * scale * .58))), break_long_words=True)[:2]
+    title_y = height * .055
+    for line in title_lines:
+        title_box = draw.textbbox((0, 0), line, font=title_font)
+        draw.text(((width - (title_box[2] - title_box[0])) / 2, title_y), line, font=title_font, fill=(75, 45, 58))
+        title_y += int(52 * scale)
 
     raw_cast = [part.strip() for part in re.split(r"[,;\n]+", cast_text or "") if part.strip()]
     cast = []
