@@ -24,7 +24,7 @@ WORK = Path(tempfile.mkdtemp(prefix="aitub_e2e_"))
 os.environ["AITUBER_DATA_DIR"] = str(WORK)
 os.environ.setdefault("AITUBER_MUSIC_VOLUME", "0")
 
-from app import db, media, render, script_gen  # noqa: E402
+from app import db, media, options, render, script_gen  # noqa: E402
 
 FAILURES: list[str] = []
 NOTES: list[str] = []
@@ -139,6 +139,15 @@ def main() -> int:
 
     run_case("short-vertical", "short", "9:16", 45)
     run_case("documental-horizontal", "documental", "16:9", 60)
+
+    print("\n== Demostraciones visuales de subtítulos")
+    for style_id in options.CAPTION_STYLES:
+        try:
+            preview = render.caption_preview(style_id)
+            check(preview.exists() and preview.stat().st_size > 500,
+                  f"vista previa real del estilo {style_id}")
+        except Exception as exc:
+            check(False, f"vista previa real del estilo {style_id}", str(exc))
 
     print("\n== Persistencia")
     check(db.scalar("SELECT COUNT(*) FROM projects") == 2, "dos proyectos en SQLite")
