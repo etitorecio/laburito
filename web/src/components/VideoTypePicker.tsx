@@ -21,7 +21,17 @@ const ICONS: Record<string, string> = {
   subway: '🏃',
 };
 
-const REQUIRED: Record<string, number> = { stock_footage: 5, minecraft: 5, subway: 5 };
+const REQUIRED: Record<string, number> = { stock_footage: 5, minecraft: 1, subway: 1 };
+const CLIP_SOURCES: Record<string, { label: string; url: string; detail: string }[]> = {
+  subway: [
+    { label: 'Subway Surfers oficial · vertical 9:16 (SYBO)', url: 'https://www.youtube.com/watch?v=QPW3XwBoQlw', detail: 'El canal verificado de Subway Surfers lo publica expresamente como FREE TO USE. Es la mejor fuente encontrada para Shorts.' },
+    { label: 'Subway Surfers oficial · horizontal 16:9 (SYBO)', url: 'https://www.youtube.com/watch?v=i0M4ARe9v0Y', detail: 'También marcado FREE TO USE por el canal oficial; habría que recortar al formato vertical.' },
+  ],
+  minecraft: [
+    { label: 'Minecraft Parkour · Orbital (creador)', url: 'https://www.youtube.com/watch?v=u7kdVe8q5zs', detail: 'El creador declara permiso para monetizar y pide crédito. Es permiso del autor de la grabación, no una licencia de Mojang.' },
+    { label: 'Reglas oficiales de videos y monetización de Minecraft', url: 'https://www.minecraft.net/en-us/usage-guidelines', detail: 'Mojang permite monetizar videos de gameplay si agregás contenido propio suficiente y respetás sus condiciones.' },
+  ],
+};
 
 export default function VideoTypePicker({ options, value, onChange, compact = false }: Props) {
   const [clips, setClips] = useState<ClipLibraries>({});
@@ -108,6 +118,16 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
                   </div>
                   <details className="background-clip-manager">
                     <summary>Administrar clips · {categoryClips.length}/{required}</summary>
+                    <div className="clip-source-list">
+                      <strong>Fuentes y permisos revisados</strong>
+                      {(CLIP_SOURCES[option.id] || []).map((source) => (
+                        <div key={source.url}>
+                          <a href={source.url} target="_blank" rel="noreferrer">{source.label}</a>
+                          <small>{source.detail}</small>
+                        </div>
+                      ))}
+                      <small>Descargá únicamente desde una opción de descarga ofrecida por el creador o grabá tu propia partida. No uses páginas para extraer videos de YouTube.</small>
+                    </div>
                     <div className="background-clip-slots">
                   {Array.from({ length: required }, (_, index) => {
                     const clip = categoryClips[index];
@@ -179,7 +199,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
         })}
       </div>
       {error && <p className="error-text">{error}</p>}
-      {!compact && <p className="muted caption-style-help">Minecraft y Subway Surfers usan cinco clips propios o autorizados que se alternan automáticamente. Los archivos se guardan en tu PC y no se envían a servicios externos.</p>}
+      {!compact && <p className="muted caption-style-help">Minecraft y Subway Surfers aceptan desde un clip propio o autorizado y alternan hasta cinco. Los archivos se guardan en tu PC y no se envían a servicios externos.</p>}
     </div>
   );
 }
