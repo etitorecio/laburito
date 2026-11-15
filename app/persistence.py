@@ -24,7 +24,7 @@ OBJECT_NAME = "laburito.sqlite3.gz"
 def _settings() -> tuple[str, str, str]:
     base = (os.environ.get("SUPABASE_URL") or "").strip().rstrip("/")
     key = (os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
-    bucket = (os.environ.get("SUPABASE_STORAGE_BUCKET") or "laburito-private-backups").strip()
+    bucket = (os.environ.get("SUPABASE_STORAGE_BUCKET") or "").strip() or "laburito-private-backups"
     return base, key, bucket
 
 
@@ -41,7 +41,7 @@ def status() -> dict:
         "bucket": bucket if base and key else None,
         "private": True,
         "note": (
-            "Copia externa activa; última sincronización disponible en logs."
+            "Credenciales detectadas; verificá la primera sincronización en los logs."
             if base and key else
             "Sin almacenamiento persistente externo. En AppJet Free, los archivos del contenedor pueden perderse al reemplazarlo."
         ),
