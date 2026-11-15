@@ -161,6 +161,24 @@ def destinations() -> list[dict]:
 def build_metadata(project, scenes) -> dict:
     """Metadatos reales del video a partir del proyecto, las escenas y las fuentes."""
     title = (_g(project, "title") or "Video sin título").strip()
+    topic = (_g(project, "topic") or title).strip()
+    metadata_config = {}
+    notes_text = _g(project, "notes") or ""
+    marker = "[LABURITO_META]"
+    if marker in notes_text:
+        try:
+            metadata_config = json.loads(notes_text.split(marker, 1)[1].splitlines()[0])
+        except (ValueError, TypeError, json.JSONDecodeError):
+            metadata_config = {}
+    title_style = metadata_config.get("title_style", "automatico")
+    title_templates = {
+        "pregunta": f"¿Qué hay detrás de {topic}?",
+        "curiosidad": f"Lo que tenés que saber sobre {topic}",
+        "directo": f"Qué es {topic} y por qué importa",
+        "misterio": f"El misterio detrás de {topic}",
+    }
+    if title_style in title_templates and title == topic:
+        title = title_templates[title_style]
     if len(title) > 95:
         title = title[:92].rstrip() + "…"
     hook = ""
@@ -177,8 +195,9 @@ def build_metadata(project, scenes) -> dict:
         language = _g(channel or {}, "language")
     language = language or "es"
     manual_keywords = [k.strip() for k in re.split(r"[,;]", _g(project, "keywords") or "") if k.strip()]
+    custom_tags = [k.strip().lstrip("#") for k in re.split(r"[,;]", str(metadata_config.get("custom_tags") or "")) if k.strip()]
     topic_keywords = re.findall(r"[0-9A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{3,}", _g(project, "topic"))
-    keywords = list(dict.fromkeys(manual_keywords + topic_keywords))[:15]
+    keywords = list(dict.fromkeys(manual_keywords + custom_tags + topic_keywords))[:15]
 
     credits: list[str] = []
     for scene in scenes:
