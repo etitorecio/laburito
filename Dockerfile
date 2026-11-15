@@ -26,7 +26,7 @@ RUN tar -xf hb.tar.xz \
       -Dglib=disabled -Dgobject=disabled -Dicu=disabled -Dcairo=disabled \
       -Ddocs=disabled -Dtests=disabled -Dintrospection=disabled \
       -Dfreetype=enabled \
- && ninja -C build install
+ && ninja -j2 -C build install
 
 WORKDIR /src
 ADD https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz /src/ffmpeg.tar.xz
@@ -43,7 +43,7 @@ RUN export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH \
       --enable-libfreetype \
       --enable-libharfbuzz \
       --enable-zlib \
- && make -j"$(nproc)" \
+ && make -j2 \
  && make install
 
 FROM python:3.13-slim-bookworm
