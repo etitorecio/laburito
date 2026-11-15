@@ -526,7 +526,6 @@ def generate_script(
 
     scenes = []
     claim_index = 0
-    evidence_per_scene = max(1, (len(evidence_sentences) + len(beats) - 1) // len(beats))
     for idx, beat in enumerate(beats):
         narration = beat["narration"].format(topic=topic)
         if evidence_sentences:
