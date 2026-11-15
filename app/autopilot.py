@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
     speed INTEGER NOT NULL DEFAULT 150,
     pitch INTEGER NOT NULL DEFAULT 45,
     visual_style TEXT NOT NULL DEFAULT 'automatico',
+    visual_style_prompt TEXT NOT NULL DEFAULT '',
     video_type TEXT NOT NULL DEFAULT 'moving_images',
     title_style TEXT NOT NULL DEFAULT 'automatico',
     custom_tags TEXT NOT NULL DEFAULT '',
@@ -68,7 +69,7 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
 """
 
 FIELDS = [
-    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "speed", "pitch", "visual_style", "video_type", "title_style", "custom_tags", "aspect",
+    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "speed", "pitch", "visual_style", "visual_style_prompt", "video_type", "title_style", "custom_tags", "aspect",
     "audience", "tone", "hook_style", "cta", "content_pillars", "avoid_topics",
     "caption_style", "captions_enabled", "transition_default", "resolution", "fps", "music", "music_volume",
     "cadence_hours", "cadence_minutes", "videos_per_period", "period_days", "schedule_time", "timezone", "enabled", "destination", "privacy", "auto_publish", "next_run_at",
@@ -83,6 +84,7 @@ def ensure_schema() -> None:
         "speed": "INTEGER NOT NULL DEFAULT 150",
         "pitch": "INTEGER NOT NULL DEFAULT 45",
         "visual_style": "TEXT NOT NULL DEFAULT 'automatico'",
+        "visual_style_prompt": "TEXT NOT NULL DEFAULT ''",
         "video_type": "TEXT NOT NULL DEFAULT 'moving_images'",
         "title_style": "TEXT NOT NULL DEFAULT 'automatico'",
         "custom_tags": "TEXT NOT NULL DEFAULT ''",
@@ -192,6 +194,8 @@ def _clean(data: dict) -> dict:
         if chosen_style not in options.VISUAL_STYLE_IDS:
             raise ValueError("Estilo visual no válido")
         clean["visual_style"] = chosen_style
+    if "visual_style_prompt" in data and data["visual_style_prompt"] is not None:
+        clean["visual_style_prompt"] = str(data["visual_style_prompt"]).strip()[:240]
     if "video_type" in data and data["video_type"] is not None:
         chosen_type = str(data["video_type"]).strip()
         if chosen_type not in options.VIDEO_TYPE_IDS:
@@ -436,6 +440,7 @@ def _create_project(rule: dict) -> dict:
                 "title_style": rule.get("title_style") or "automatico",
                 "custom_tags": rule.get("custom_tags") or "",
                 "captions_enabled": bool(rule.get("captions_enabled", 1)),
+                "visual_style_prompt": rule.get("visual_style_prompt") or "",
             }, ensure_ascii=False),
             tpl["id"], rule.get("visual_style") or "automatico",
             rule.get("video_type") or "moving_images",
