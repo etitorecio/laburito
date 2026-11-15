@@ -20,6 +20,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
   const [form, setForm] = useState({
     title: '',
     topic: '',
+    characters: '',
     template: 'shorts',
     channel_id: '' as string,
     duration_target_sec: 30,
@@ -73,6 +74,10 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
       ]);
       setProjects(p);
       setChannels(c);
+      setForm((current) => current.channel_id ? current : {
+        ...current,
+        channel_id: String(c.find((channel) => channel.name.toLocaleLowerCase() === (current.template === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id ?? ''),
+      });
       setMeta(m);
     } catch (e) {
       setError((e as Error).message);
@@ -98,7 +103,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
         ...projectForm,
         channel_id: form.channel_id ? Number(form.channel_id) : (channels.find((c) => c.name.toLocaleLowerCase() === (form.template === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id ?? null),
         topic: form.topic || form.title,
-        notes: (!captions_enabled || form.visual_style_prompt.trim() || !form.create_thumbnail) ? '[LABURITO_META]' + JSON.stringify({ captions_enabled, visual_style_prompt: form.visual_style_prompt.trim(), create_thumbnail: form.create_thumbnail }) : '',
+        notes: (!captions_enabled || form.visual_style_prompt.trim() || !form.create_thumbnail || form.characters.trim()) ? '[LABURITO_META]' + JSON.stringify({ captions_enabled, visual_style_prompt: form.visual_style_prompt.trim(), create_thumbnail: form.create_thumbnail, characters: form.characters.trim() }) : '',
       });
       setOk('1/3 · Proyecto creado. Escribiendo el guion y preparando las escenas…');
       await api.post('/api/projects/' + created.id + '/script?replace=true');
@@ -163,7 +168,12 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
                 {templates.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
               </select>
             </Field>
-            {form.template === 'frutinovela' && <p className="muted">Para la serie, indicá los personajes frutales y el conflicto del episodio. Cada capítulo termina con un cliffhanger.</p>}
+            {form.template === 'frutinovela' && <>
+              <Field label="Personajes recurrentes">
+                <input value={form.characters} onChange={(e) => setForm({ ...form, characters: e.target.value })} placeholder="Manzana (protagonista), Banana (pareja), Pera (rival)..." />
+              </Field>
+              <p className="muted">Usá siempre los mismos nombres y relaciones. El sistema recupera el final del episodio anterior para continuar la trama.</p>
+            </>}
             {form.template === 'reddit_story' && <p className="muted">Historias originales en español con estructura de Reddit: gancho, contexto, escalada, giro y pregunta final. Duración predeterminada: 3 minutos.</p>}
             <Field label="Canal de contenido" hint="Agrupa proyectos y calendario; es independiente de tu cuenta de YouTube.">
               <select value={form.channel_id} onChange={(e) => setForm({ ...form, channel_id: e.target.value })}>
