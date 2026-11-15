@@ -125,7 +125,7 @@ def ensure_visual(project: dict, scene: dict) -> tuple[Path, str, dict]:
             "provider": "biblioteca_local",
         }
     existing = (scene.get("visual_path") or "").strip()
-    if existing and Path(existing).exists():
+    if existing and Path(existing).exists() and Path(existing).suffix.lower() not in {".mp4", ".mov", ".webm", ".mkv"}:
         return Path(existing), scene.get("visual_kind") or "recurso", {
             "license": scene.get("visual_license") or "sin verificar",
             "author": scene.get("visual_author") or "desconocido",
@@ -394,6 +394,7 @@ def render_scene(
     key = _h(
         f"{narration}|{visual_signature}|{duration:.3f}|{width}x{height}"
         f"|{project.get('kind')}|{style_signature}|{transition}|{fps}|{font}"
+        f"|{project.get('visual_style') or 'automatico'}|{project.get('video_type') or 'moving_images'}"
         f"|{scene.get('visual_query') or ''}"
     )
     seg_dir = scene_dir / key
