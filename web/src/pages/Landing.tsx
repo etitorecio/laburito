@@ -67,7 +67,7 @@ const TEMPLATES = [
     icon: '🗣️',
     title: 'Voz en off en español',
     desc: 'Voces locales en español, con alternativas de voz neural que funcionan sin servicios pagos.',
-    tags: ['es', 'en', 'pt'],
+    tags: ['Español', 'Voces locales', 'Sin API'],
     grad: 'linear-gradient(135deg,#4338ca,#0ea5e9)',
   },
   {
@@ -146,8 +146,8 @@ const FEATURES = [
   },
   {
     icon: '🔒',
-    title: 'Todo local',
-    desc: 'Sin claves de API, sin créditos y sin cuotas: el render corre en tu propia máquina.',
+    title: 'Sin APIs pagas',
+    desc: 'Voz, subtítulos y montaje usan herramientas libres en el entorno donde instalás la app; no dependen de créditos comerciales.',
   },
   {
     icon: '📅',
@@ -262,7 +262,7 @@ export default function Landing({ go }: { go: Go }) {
 
       <section className="lp-hero">
         <span className="lp-badge">
-          <span className="lp-dot" /> Software libre · sin créditos ni suscripciones
+          <span className="lp-dot" /> Software libre · sin créditos de IA ni suscripciones
         </span>
         <h1 className="lp-h1">
           Crea Shorts sin rostro <span className="lp-grad">en piloto automático</span>
@@ -279,7 +279,7 @@ export default function Landing({ go }: { go: Go }) {
             Ver plantillas
           </button>
         </div>
-        <p className="lp-fineprint">Sin tarjeta de crédito · Sin límite de créditos · Todo local</p>
+        <p className="lp-fineprint">Sin tarjeta de crédito · Sin APIs de IA pagas · Herramientas libres</p>
 
         <div className="lp-platforms">
           <span>Crear para</span>
