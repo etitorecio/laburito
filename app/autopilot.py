@@ -97,6 +97,9 @@ def ensure_schema() -> None:
     for name, definition in migrations.items():
         if name not in columns:
             db.execute(f"ALTER TABLE autopilot_rules ADD COLUMN {name} {definition}")
+    # Normaliza IDs de camas musicales guardados por versiones anteriores.
+    for bed_id in options.MUSIC_IDS:
+        db.execute("UPDATE autopilot_rules SET music=? WHERE music=?", (f"bed:{bed_id}", bed_id))
     # Migra reglas antiguas: el Autopiloto queda dedicado exclusivamente a Shorts.
     placeholders = ",".join("?" for _ in SHORT_TEMPLATE_IDS)
     db.execute(
