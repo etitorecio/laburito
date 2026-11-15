@@ -290,6 +290,52 @@ def transition_preview(transition_id: str) -> Path:
     return output
 
 
+def _visual_style_filters(style_id: str | None) -> list[str]:
+    """Tratamientos visuales locales compartidos por render y demostraciones."""
+    filters = {
+        "automatico": [],
+        "cinematico": ["eq=contrast=1.12:saturation=1.08:brightness=-0.015", "vignette=PI/5"],
+        "realista": ["eq=contrast=1.03:saturation=1.05", "unsharp=5:5:0.4:5:5:0.0"],
+        "anime": ["eq=contrast=1.15:saturation=1.6", "unsharp=5:5:0.7:5:5:0.0"],
+        "pixel_art": ["scale=iw/8:ih/8:flags=neighbor", "scale=iw*8:ih*8:flags=neighbor"],
+        "noir": ["hue=s=0", "eq=contrast=1.35:brightness=-0.03", "vignette=PI/4"],
+        "vintage": [
+            "colorchannelmixer=.393:.769:.189:.349:.686:.168:.272:.534:.131",
+            "eq=contrast=1.05:saturation=0.85", "vignette=PI/5",
+        ],
+        "cyberpunk": [
+            "eq=contrast=1.15:saturation=1.65",
+            "colorbalance=rs=.08:gs=-.04:bs=.15",
+        ],
+        "acuarela": ["gblur=sigma=0.6", "eq=saturation=1.2:contrast=.95"],
+        "comic": ["edgedetect=low=0.1:high=0.3", "eq=contrast=1.2:saturation=1.3"],
+    }
+    return filters.get((style_id or "automatico").strip(), [])
+
+
+def visual_style_preview(style_id: str) -> Path:
+    """Muestra PNG generado con los mismos filtros que se aplican a las escenas."""
+    if style_id not in options.VISUAL_STYLE_IDS:
+        raise ValueError("Estilo visual desconocido")
+    preview_dir = db.DATA_DIR / "visual_style_previews"
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    output = preview_dir / f"{style_id}.png"
+    if output.exists() and output.stat().st_size > 500:
+        return output
+    filters = _visual_style_filters(style_id)
+    filters.extend([
+        "drawbox=x=iw*0.12:y=ih*0.20:w=iw*0.76:h=ih*0.22:color=0xf59e0b@0.32:t=fill",
+        "format=rgb24",
+    ])
+    _ff([
+        "-f", "lavfi", "-i", "testsrc2=size=480x854:rate=1:duration=1",
+        "-vf", ",".join(filters), "-frames:v", "1", "-c:v", "png", str(output),
+    ], timeout=60)
+    if not output.exists() or output.stat().st_size < 500:
+        raise RuntimeError("FFmpeg no pudo generar la demostración del estilo")
+    return output
+
+
 def render_scene(
     project: dict,
     scene: dict,
@@ -359,6 +405,7 @@ def render_scene(
             f"crop={width}:{height}",
             "format=yuv420p",
         ]
+        filters.extend(_visual_style_filters(project.get("visual_style")))
         filters.extend(_motion_filters(transition, width, height, duration, fps))
         if cues:
             filters.append(_drawtext_chain(cues, font, width, height, style))
