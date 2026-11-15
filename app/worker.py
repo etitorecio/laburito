@@ -91,10 +91,6 @@ def run_job(job: dict) -> None:
                 "UPDATE jobs SET status='completado', progress=100, message=?, result_json=?, finished_at=?, updated_at=? WHERE id=?",
                 ("Render terminado", json.dumps(result, ensure_ascii=False), db.now(), db.now(), job_id),
             )
-            db.execute(
-                "UPDATE autopilot_rules SET last_error='', updated_at=? WHERE last_project_id=?",
-                (db.now(), int(project_id)),
-            )
             # Auto-subida: si el proyecto la tiene activada, se publica al terminar.
             try:
                 auto = publish.auto_publish_settings(int(project_id))
@@ -153,8 +149,8 @@ def run_job(job: dict) -> None:
                 ),
             )
             db.execute(
-                "UPDATE autopilot_rules SET last_error='', updated_at=? WHERE last_project_id=?",
-                (db.now(), int(project_id)),
+                "UPDATE autopilot_rules SET last_error=CASE WHEN destination='youtube' AND ?!='youtube' THEN last_error ELSE '' END, updated_at=? WHERE last_project_id=?",
+                (published["destination"], db.now(), int(project_id)),
             )
         elif job["kind"] == "export_project":
             path = render.export_project(int(project_id))
