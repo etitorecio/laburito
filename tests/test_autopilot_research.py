@@ -574,5 +574,25 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertTrue(all(len(scene["narration"]) >= 45 for scene in result["scenes"]))
 
 
+    def test_frutinovela_template_builds_vertical_episode_with_cliffhanger(self):
+        template = options.template("frutinovela")
+        self.assertEqual(template["kind"], "short")
+        self.assertEqual(template["aspect"], "9:16")
+        self.assertEqual(template["script"], "frutinovela")
+        result = script_gen.generate_script(
+            {
+                "id": 731,
+                "title": "La herencia de la familia Frutal",
+                "topic": "La herencia de la familia Frutal",
+                "kind": "short",
+                "template": "frutinovela",
+                "duration_target_sec": 90,
+            }
+        )
+        self.assertGreaterEqual(len(result["scenes"]), 5)
+        self.assertIn("Continuará", result["scenes"][-1]["title"])
+        self.assertIn("Esto no termina acá", result["scenes"][-1]["narration"])
+
+
 if __name__ == "__main__":
     unittest.main()
