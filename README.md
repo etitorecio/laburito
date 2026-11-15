@@ -9,7 +9,8 @@ Reconstrucción libre y local de la experiencia de IATuber, para **Shorts y docu
 - **Investigación**: nichos con demanda, competencia, riesgo de copyright y potencial de serie; notas con nivel de evidencia, fuente y fecha de consulta; búsqueda de imágenes con licencia.
 - **Canales**: identidad, tono, idioma, formatos y cadencia.
 - **Guion IA local**: Ollama descarga una vez el modelo Qwen 2.5 1.5B (Apache 2.0, aprox. 1 GB) y lo ejecuta en tu PC para expandir los guiones; no usa API keys, tokens de generación ni créditos. Si el modelo no está disponible, conserva el guion estructurado de respaldo.
-- **Voz**: tarjetas de voces exclusivamente españolas, con muestra de audio antes de elegir. espeak-ng funciona localmente y Piper neural DaveFX se descarga automáticamente al iniciar (63 MB), sin claves ni pagos.
+- **Voz**: tarjetas de voces exclusivamente españolas, con muestra de audio antes de elegir.
+- **Rendimiento local**: 720p y 25 FPS por defecto para reducir carga en CPU; se puede subir a 1080p o más cuando el equipo lo permita. espeak-ng funciona localmente y Piper neural DaveFX se descarga automáticamente al iniciar (63 MB), sin claves ni pagos.
 - **Demostraciones**: los 13 estilos de subtítulos, los movimientos de escena y los 10 tratamientos visuales tienen vistas previas generadas por FFmpeg, el mismo motor del video final.
 - **Render**: FFmpeg para Shorts verticales 9:16, con subtítulos quemados, miniaturas y música de fondo opcional.
 - **Cola persistente**: un trabajo a la vez, reanudable tras reinicio y con caché por escena (no repite trabajo).
