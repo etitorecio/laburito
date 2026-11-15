@@ -7,7 +7,7 @@ class UserScriptTests(unittest.TestCase):
     def test_paragraphs_become_ordered_scenes(self):
         result = script_from_text(
             {"title": "Mi historia", "topic": "Una historia"},
-            "Primera escena. Sigue la acción.\\n\\nLlega el giro final.",
+            "Primera escena. Sigue la acción.\n\nLlega el giro final.",
         )
         self.assertEqual(result["writer"], "user-script")
         self.assertEqual(len(result["scenes"]), 2)
