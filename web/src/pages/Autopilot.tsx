@@ -319,7 +319,7 @@ export default function Autopilot() {
             <Field label="Nicho principal">
               <input value={form.niche} onChange={(e) => update('niche', e.target.value)} placeholder="Misterio, ciencia, fútbol, historias, tecnología..." />
             </Field>
-            <p className="muted">El descubrimiento automático busca temas documentados en Wikipedia y resúmenes académicos de OpenAlex. Todavía no mide tendencias virales en tiempo real.</p>
+            <p className="muted">El descubrimiento automático combina temas documentados en Wikipedia y resúmenes académicos de OpenAlex con señales del RSS público de Google Trends Argentina cuando coinciden con el nicho. Las tendencias son señales de búsqueda, no garantía de viralidad ni de ingresos.</p>
             <Field label="Público al que le hablamos">
               <input value={form.audience} onChange={(e) => update('audience', e.target.value)} placeholder="Ej.: jóvenes interesados en historias reales" />
             </Field>
