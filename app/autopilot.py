@@ -200,6 +200,8 @@ def _clean(data: dict) -> dict:
             clip_count = len(list(clip_dir.glob("*.mp4"))) if clip_dir.exists() else 0
             if clip_count < required_clips:
                 raise ValueError(f"El formato {chosen_type} necesita {required_clips} clip(s) propios o autorizados.")
+        if chosen_type == "skeleton" and int(data.get("duration_target_sec") or 0) > 420:
+            raise ValueError("Skeleton admite una duración máxima de 7 minutos.")
         clean["video_type"] = chosen_type
     if "title_style" in data and data["title_style"] is not None:
         if data["title_style"] not in ("automatico", "pregunta", "curiosidad", "directo", "misterio"):
@@ -208,9 +210,10 @@ def _clean(data: dict) -> dict:
     if "custom_tags" in data and data["custom_tags"] is not None:
         clean["custom_tags"] = str(data["custom_tags"]).strip()[:300]
     if "aspect" in data and data["aspect"] is not None:
-        if data["aspect"] != "9:16":
-            raise ValueError("Los Shorts del Autopiloto deben ser verticales 9:16.")
-        clean["aspect"] = "9:16"
+        aspect = str(data["aspect"])
+        if aspect not in {"9:16", "16:9", "1:1", "4:5"}:
+            raise ValueError("Formato de video no válido.")
+        clean["aspect"] = aspect
     if "caption_style" in data and data["caption_style"] is not None:
         if data["caption_style"] not in options.CAPTION_STYLES:
             raise ValueError("Estilo de subtítulos desconocido")
@@ -350,7 +353,7 @@ def update_rule(rule_id: int, data: dict) -> dict | None:
     current = get_rule(rule_id)
     if not current:
         return None
-    clean = _clean(data)
+    clean = _clean({**current, **data})
     _validate_auto_publish(clean, current)
     if clean:
         if clean.get("enabled") == 1 and not current.get("enabled"):
