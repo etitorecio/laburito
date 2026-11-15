@@ -106,7 +106,7 @@ class AutopilotResearchTests(unittest.TestCase):
     def test_autopilot_metadata_controls_change_title_and_tags(self):
         project = {
             "id": 778, "title": "La exploración espacial", "topic": "La exploración espacial",
-            "kind": "short", "notes": "[LABURITO_META]" + json.dumps({
+            "kind": "short", "voice": "en-gb", "notes": "[LABURITO_META]" + json.dumps({
                 "title_style": "pregunta", "custom_tags": "astronomía, universo",
             }),
         }
@@ -115,6 +115,7 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(metadata["title"], "¿Qué hay detrás de La exploración espacial?")
         self.assertIn("astronomía", metadata["tags"])
         self.assertIn("universo", metadata["tags"])
+        self.assertEqual(metadata["language"], "en")
 
     def test_autopilot_builds_script_from_only_the_current_topics_sources(self):
         extract = " ".join([
