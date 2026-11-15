@@ -291,6 +291,20 @@ def _project_full(project_id: int) -> dict:
 def _touch_project(project_id: int) -> None:
     db.execute("UPDATE projects SET updated_at=? WHERE id=?", (db.now(), project_id))
 
+def _validate_video_type(video_type: str) -> None:
+    if video_type not in options.VIDEO_TYPE_IDS:
+        raise HTTPException(400, "Tipo de video desconocido")
+    if video_type == "moving_images":
+        return
+    if video_type in {"full_motion_ai", "skeleton"}:
+        raise HTTPException(400, "Este tipo de video todavía no tiene un motor local conectado.")
+    required = 5 if video_type in {"minecraft", "subway"} else 1
+    folder = db.DATA_DIR / "background_clips" / video_type
+    count = len(list(folder.glob("*.mp4"))) if folder.exists() else 0
+    if count < required:
+        raise HTTPException(400, f"Este formato necesita {required} clip(s) propios o autorizados. Hay {count} cargados.")
+
+
 
 # --------------------------------------------------------------------------- #
 # Salud, metadatos y diagnóstico
@@ -645,8 +659,7 @@ def create_project(payload: ProjectIn):
         raise HTTPException(400, "Formato no soportado (16:9, 9:16, 1:1 o 4:5)")
     if data.get("visual_style") not in options.VISUAL_STYLE_IDS:
         raise HTTPException(400, "Estilo visual desconocido")
-    if data.get("video_type") not in options.VIDEO_TYPE_IDS:
-        raise HTTPException(400, "Tipo de video desconocido")
+    _validate_video_type(data.get("video_type") or "moving_images")
     resolved = options.resolve_defaults(data)
     tpl = options.template(resolved["template"])
     duration = int(data.get("duration_target_sec") or tpl["default_duration"])
@@ -688,8 +701,8 @@ def patch_project(project_id: int, payload: ProjectPatch):
         raise HTTPException(400, "Estilo de subtítulos desconocido")
     if "visual_style" in data and data["visual_style"] not in options.VISUAL_STYLE_IDS:
         raise HTTPException(400, "Estilo visual desconocido")
-    if "video_type" in data and data["video_type"] not in options.VIDEO_TYPE_IDS:
-        raise HTTPException(400, "Tipo de video desconocido")
+    if "video_type" in data:
+        _validate_video_type(data["video_type"])
     if "transition_default" in data and data["transition_default"] not in options.TRANSITION_IDS:
         raise HTTPException(400, "Transición desconocida")
     if "resolution" in data and data["resolution"] not in options.RESOLUTIONS:
