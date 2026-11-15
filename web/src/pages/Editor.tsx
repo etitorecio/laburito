@@ -32,6 +32,31 @@ interface Publication {
   created_at: string;
 }
 
+const META_MARKER = '[LABURITO_META]';
+
+function captionsEnabledFromNotes(notes: string): boolean {
+  if (!notes.includes(META_MARKER)) return true;
+  try {
+    const metadata = JSON.parse(notes.split(META_MARKER, 2)[1] || '{}');
+    return metadata.captions_enabled !== false;
+  } catch {
+    return true;
+  }
+}
+
+function notesWithCaptionsSetting(notes: string, enabled: boolean): string {
+  const [prefix, rawMetadata] = notes.includes(META_MARKER)
+    ? notes.split(META_MARKER, 2)
+    : [notes, '{}'];
+  let metadata: Record<string, unknown> = {};
+  try {
+    metadata = JSON.parse(rawMetadata || '{}');
+  } catch {
+    metadata = {};
+  }
+  return prefix + META_MARKER + JSON.stringify({ ...metadata, captions_enabled: enabled });
+}
+
 export default function Editor({ projectId, go }: Props) {
   const [project, setProject] = useState<Project | null>(null);
   const [error, setError] = useState('');
@@ -259,6 +284,7 @@ export default function Editor({ projectId, go }: Props) {
   const scenes = project.scenes ?? [];
   const words = scenes.reduce((acc, s) => acc + (s.narration || '').trim().split(/\s+/).filter(Boolean).length, 0);
   const quality = project.quality ?? {};
+  const captionsEnabled = captionsEnabledFromNotes(project.notes || '');
   const warnings = Array.isArray(quality.warnings) ? (quality.warnings as string[]) : [];
   const totalChars = scenes.reduce((acc, s) => acc + (s.narration || '').length, 0);
 
@@ -308,6 +334,7 @@ export default function Editor({ projectId, go }: Props) {
               <option value="16:9">16:9 horizontal</option>
               <option value="9:16">9:16 vertical</option>
               <option value="1:1">1:1 cuadrado</option>
+              <option value="4:5">4:5 feed vertical</option>
             </select>
           </Field>
           <Field label="Voz en español">
@@ -342,14 +369,26 @@ export default function Editor({ projectId, go }: Props) {
               ))}
             </select>
           </Field>
-          <Field label="Subtítulos">
-            <CaptionStylePicker
-              options={meta?.caption_styles ?? [{ id: project.caption_style, label: project.caption_style }]}
-              value={project.caption_style}
-              onChange={(value) => void patchProject({ caption_style: value })}
-              compact
-            />
-          </Field>
+          <div className="field">
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={captionsEnabled}
+                onChange={(e) => void patchProject({ notes: notesWithCaptionsSetting(project.notes || '', e.target.checked) })}
+              />
+              Agregar subtítulos al video
+            </label>
+          </div>
+          {captionsEnabled ? (
+            <Field label="Estilo de subtítulos">
+              <CaptionStylePicker
+                options={meta?.caption_styles ?? [{ id: project.caption_style, label: project.caption_style }]}
+                value={project.caption_style}
+                onChange={(value) => void patchProject({ caption_style: value })}
+                compact
+              />
+            </Field>
+          ) : <p className="muted">Los subtítulos están desactivados para este proyecto.</p>}
           <Field label="Tipo de video">
             <VideoTypePicker
               options={meta?.video_types ?? []}
