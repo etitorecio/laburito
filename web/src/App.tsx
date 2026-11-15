@@ -18,7 +18,7 @@ function parseHash(): { route: Route; id?: number } {
   const raw = window.location.hash.replace(/^#\/?/, '');
   const [name, id] = raw.split('/');
   const valid = VALID_ROUTES.includes(name as Route);
-  const route = (valid ? name : 'landing') as Route;
+  const route = (valid ? name : 'inicio') as Route;
   const parsed = id ? Number(id) : undefined;
   return { route, id: parsed && Number.isFinite(parsed) ? parsed : undefined };
 }
