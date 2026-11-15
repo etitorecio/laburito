@@ -503,14 +503,18 @@ def _music_track(project: dict | None = None) -> Path | None:
         candidate = db.MUSIC_DIR / Path(choice).name
         if candidate.exists():
             return candidate
-    if db.MUSIC_DIR.exists():
-        for ext in ("*.mp3", "*.wav", "*.ogg", "*.m4a", "*.flac"):
-            files = sorted(db.MUSIC_DIR.glob(ext))
-            if files:
-                return files[0]
     if choice in ("", "auto"):
+        uploaded = []
+        if db.MUSIC_DIR.exists():
+            for ext in ("*.mp3", "*.wav", "*.ogg", "*.m4a", "*.flac"):
+                uploaded.extend(sorted(db.MUSIC_DIR.glob(ext)))
+        if uploaded:
+            project_index = int((project or {}).get("id") or 0)
+            return uploaded[project_index % len(uploaded)]
+        beds = [item["id"] for item in options.MUSIC_BEDS]
+        project_index = int((project or {}).get("id") or 0)
         try:
-            return media.ensure_music_bed("padsuave")
+            return media.ensure_music_bed(beds[project_index % len(beds)])
         except Exception:
             return None
     return None
