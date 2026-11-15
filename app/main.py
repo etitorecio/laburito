@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import autopilot, db, media, options, publish, render, script_gen, tts, worker
+from . import autopilot, db, media, options, persistence, publish, render, script_gen, tts, worker
 
 APP_VERSION = "1.0.0"
 APP_TOKEN = (os.environ.get("APP_TOKEN") or os.environ.get("AITUBER_TOKEN") or "").strip()
@@ -26,6 +26,8 @@ WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Restaurar la base antes de que init_db cree un SQLite vacío en un contenedor nuevo.
+    persistence.restore_if_available()
     db.init_db()
     worker.start()
     db.log("info", "app", "AITuber Libre iniciado", {"version": APP_VERSION})
@@ -366,6 +368,7 @@ def diagnostics():
             "fuentes": db.scalar("SELECT COUNT(*) FROM sources", default=0),
         },
         "worker": worker.status(),
+        "persistence": persistence.status(),
         "token_configured": bool(APP_TOKEN),
         "note": "Todo corre localmente. No hay servicios pagos ni claves obligatorias.",
     }
