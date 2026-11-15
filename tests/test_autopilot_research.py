@@ -1,12 +1,18 @@
+import asyncio
 import json
 import os
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from io import BytesIO
+
+from fastapi import UploadFile
+from starlette.datastructures import Headers
+from PIL import Image
 import urllib.parse
 
-from app import autopilot, options, publish, render, script_gen, topic_engine, tts, worker
+from app import autopilot, main as main_app, options, publish, render, script_gen, topic_engine, tts, worker
 
 
 class AutopilotResearchTests(unittest.TestCase):
@@ -102,6 +108,19 @@ class AutopilotResearchTests(unittest.TestCase):
         project = {"notes": notes, "visual_style": "automatico"}
         self.assertEqual(render._custom_visual_style_id(project), "cyberpunk")
         self.assertEqual(render._project_metadata(project)["visual_style_prompt"], "Anime cyberpunk con luces de neón")
+
+    def test_visual_reference_image_is_analyzed_locally(self):
+        buffer = BytesIO()
+        Image.new("RGB", (24, 24), (20, 45, 190)).save(buffer, format="PNG")
+        buffer.seek(0)
+        upload = UploadFile(
+            filename="referencia.png",
+            file=buffer,
+            headers=Headers({"content-type": "image/png"}),
+        )
+        result = asyncio.run(main_app.analyze_visual_style_reference(upload))
+        self.assertIn("azulada", result["visual_style_prompt"])
+        self.assertIn("localmente", result["analysis"])
 
     def test_autopilot_short_duration_supports_youtube_three_minute_limit(self):
         self.assertEqual(autopilot._clean({"template": "shorts", "duration_target_sec": 180})["duration_target_sec"], 180)
