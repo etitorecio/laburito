@@ -11,6 +11,7 @@ import Queue from './pages/Queue';
 import Library from './pages/Library';
 import Analytics from './pages/Analytics';
 import Autopilot from './pages/Autopilot';
+import Accounts from './pages/Accounts';
 import Settings from './pages/Settings';
 import Landing from './pages/Landing';
 
@@ -129,6 +130,7 @@ export default function App() {
         {route === 'biblioteca' && <Library />}
         {route === 'analitica' && <Analytics />}
         {route === 'autopilot' && <Autopilot />}
+        {route === 'cuentas' && <Accounts />}
         {route === 'ajustes' && <Settings />}
 
         <footer className="foot">
