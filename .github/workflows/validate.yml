@@ -36,6 +36,14 @@ jobs:
       - name: Install and synthesize with the CC0 Spanish Piper voice
         run: python scripts/test_piper.py
 
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the self-hosted production container
+        run: docker build --pull -t laburito:ci .
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
