@@ -85,9 +85,9 @@ La instalación Docker incluye Ollama y descarga automáticamente Qwen 2.5 1.5B 
 
 1. En Google Cloud, creá un proyecto y habilitá **YouTube Data API v3**.
 2. Configurá la pantalla de consentimiento y agregá tu cuenta como usuario de prueba si la app está en Testing. Creá credenciales OAuth de tipo **Aplicación web**.
-3. En **Ajustes → Conexión de YouTube**, copiá la URI de callback que muestra Laburito y agregala como URI de redirección autorizada en Google Cloud. En AppJet será `https://TU-EDGE-URL/api/youtube/callback`; en Docker local, `http://localhost:8080/api/youtube/callback`.
-4. En el archivo `.env` local configurá `YOUTUBE_CLIENT_ID` y `YOUTUBE_CLIENT_SECRET`. El modo local no pide contraseña ni tokens de acceso; no expongas el puerto a Internet. `YOUTUBE_REDIRECT_URI` es opcional si necesitás fijar manualmente la URI exacta.
-5. Volvé a Ajustes y tocá **Conectar canal con Google**. Autorizá el canal. Laburito completa la autorización y guarda el permiso localmente; después comprobá el nombre del canal.
+3. Abrí **Cuentas** en Laburito y copiá la URI de redirección exacta que aparece en el aviso de configuración. Agregala como URI de redirección autorizada en Google Cloud.
+4. En el archivo `.env` local configurá `YOUTUBE_CLIENT_ID` y `YOUTUBE_CLIENT_SECRET`; en un hosting, agregalas como variables/secretos del servidor. `YOUTUBE_REDIRECT_URI` es opcional si necesitás fijar manualmente la URI exacta. Reiniciá la aplicación.
+5. Volvé a **Cuentas** y conectá primero la cuenta Google del canal Historias y después la cuenta del canal Frutinovelas. Cada autorización se guarda por separado. No compartas el secreto de cliente ni lo pegues en el chat.
 
 Si la pantalla de consentimiento permanece en modo **Testing**, Google puede revocar el permiso de aplicaciones externas después de 7 días. Para automatización continua, revisá el estado de publicación de la app OAuth y los requisitos de verificación que Google indique. El OAuth Playground queda solo como alternativa manual avanzada.
 
