@@ -221,8 +221,7 @@ def build_metadata(project, scenes) -> dict:
     if hook:
         parts.append(hook)
     parts.append(
-        f"{len(scenes)} escenas · formato {_g(project, 'kind') or 'short'} · voz local ({language}) · "
-        "generado con AITuber Libre (voces locales, sin créditos)."
+        f"{len(scenes)} escenas · formato {_g(project, 'kind') or 'short'} · narración en {language}."
     )
     if keywords:
         parts.append("Temas: " + ", ".join(keywords[:12]))
