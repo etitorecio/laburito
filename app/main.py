@@ -89,6 +89,8 @@ class ProjectIn(BaseModel):
     voice: str = "es"
     speed: int = 150
     pitch: int = 45
+    visual_style: str = "automatico"
+    video_type: str = "moving_images"
     aspect: str = ""
     notes: str = ""
     template: str = options.DEFAULT_TEMPLATE
@@ -109,6 +111,7 @@ class ProjectPatch(BaseModel):
     speed: int | None = None
     pitch: int | None = None
     visual_style: str | None = None
+    video_type: str | None = None
     title_style: str | None = None
     custom_tags: str | None = None
     aspect: str | None = None
@@ -200,7 +203,8 @@ class AutopilotIn(BaseModel):
     voice: str = "es"
     speed: int = 150
     pitch: int = 45
-    visual_style: str = ""
+    visual_style: str = "automatico"
+    video_type: str = "moving_images"
     title_style: str = "automatico"
     custom_tags: str = ""
     aspect: str | None = None
@@ -237,6 +241,7 @@ class AutopilotPatch(BaseModel):
     speed: int | None = None
     pitch: int | None = None
     visual_style: str | None = None
+    video_type: str | None = None
     title_style: str | None = None
     custom_tags: str | None = None
     aspect: str | None = None
@@ -340,6 +345,8 @@ def meta():
         "fps_options": options.FPS_OPTIONS,
         "templates": options.TEMPLATES,
         "external_templates": options.EXTERNAL_TEMPLATES,
+        "video_types": options.VIDEO_TYPES,
+        "visual_styles": options.VISUAL_STYLES,
         "caption_styles": [
             {"id": key, "label": options.CAPTION_LABELS.get(key, key), **style}
             for key, style in options.CAPTION_STYLES.items()
@@ -528,12 +535,13 @@ def create_project(payload: ProjectIn):
     duration = int(data.get("duration_target_sec") or tpl["default_duration"])
     pid = db.execute(
         "INSERT INTO projects(channel_id, title, topic, kind, aspect, status, duration_target_sec, voice, speed, pitch, notes, "
-        "template, caption_style, transition_default, resolution, fps, music, music_volume, created_at, updated_at) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "template, visual_style, video_type, caption_style, transition_default, resolution, fps, music, music_volume, created_at, updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (
             data.get("channel_id"), payload.title, payload.topic or payload.title, resolved["kind"],
             resolved["aspect"], "borrador", duration, payload.voice, payload.speed, payload.pitch,
-            payload.notes, resolved["template"], resolved["caption_style"], resolved["transition_default"],
+            payload.notes, resolved["template"], payload.visual_style, payload.video_type,
+            resolved["caption_style"], resolved["transition_default"],
             resolved["resolution"], resolved["fps"], resolved["music"], data.get("music_volume"),
             db.now(), db.now(),
         ),
@@ -561,6 +569,10 @@ def patch_project(project_id: int, payload: ProjectPatch):
         raise HTTPException(400, "Plantilla desconocida")
     if "caption_style" in data and data["caption_style"] not in options.CAPTION_STYLES:
         raise HTTPException(400, "Estilo de subtítulos desconocido")
+    if "visual_style" in data and data["visual_style"] not in options.VISUAL_STYLE_IDS:
+        raise HTTPException(400, "Estilo visual desconocido")
+    if "video_type" in data and data["video_type"] not in options.VIDEO_TYPE_IDS:
+        raise HTTPException(400, "Tipo de video desconocido")
     if "transition_default" in data and data["transition_default"] not in options.TRANSITION_IDS:
         raise HTTPException(400, "Transición desconocida")
     if "resolution" in data and data["resolution"] not in options.RESOLUTIONS:
