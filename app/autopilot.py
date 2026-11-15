@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
     pitch INTEGER NOT NULL DEFAULT 45,
     visual_style TEXT NOT NULL DEFAULT 'automatico',
     visual_style_prompt TEXT NOT NULL DEFAULT '',
+    create_thumbnail INTEGER NOT NULL DEFAULT 1,
     video_type TEXT NOT NULL DEFAULT 'moving_images',
     title_style TEXT NOT NULL DEFAULT 'automatico',
     custom_tags TEXT NOT NULL DEFAULT '',
@@ -69,7 +70,7 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
 """
 
 FIELDS = [
-    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "speed", "pitch", "visual_style", "visual_style_prompt", "video_type", "title_style", "custom_tags", "aspect",
+    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "speed", "pitch", "visual_style", "visual_style_prompt", "create_thumbnail", "video_type", "title_style", "custom_tags", "aspect",
     "audience", "tone", "hook_style", "cta", "content_pillars", "avoid_topics",
     "caption_style", "captions_enabled", "transition_default", "resolution", "fps", "music", "music_volume",
     "cadence_hours", "cadence_minutes", "videos_per_period", "period_days", "schedule_time", "timezone", "enabled", "destination", "privacy", "auto_publish", "next_run_at",
@@ -85,6 +86,7 @@ def ensure_schema() -> None:
         "pitch": "INTEGER NOT NULL DEFAULT 45",
         "visual_style": "TEXT NOT NULL DEFAULT 'automatico'",
         "visual_style_prompt": "TEXT NOT NULL DEFAULT ''",
+        "create_thumbnail": "INTEGER NOT NULL DEFAULT 1",
         "video_type": "TEXT NOT NULL DEFAULT 'moving_images'",
         "title_style": "TEXT NOT NULL DEFAULT 'automatico'",
         "custom_tags": "TEXT NOT NULL DEFAULT ''",
@@ -232,6 +234,8 @@ def _clean(data: dict) -> dict:
         clean["caption_style"] = data["caption_style"]
     if "captions_enabled" in data and data["captions_enabled"] is not None:
         clean["captions_enabled"] = 1 if bool(data["captions_enabled"]) else 0
+    if "create_thumbnail" in data and data["create_thumbnail"] is not None:
+        clean["create_thumbnail"] = 1 if bool(data["create_thumbnail"]) else 0
     if "transition_default" in data and data["transition_default"] is not None:
         if data["transition_default"] not in options.TRANSITION_IDS:
             raise ValueError("Transición desconocida")
@@ -441,6 +445,7 @@ def _create_project(rule: dict) -> dict:
                 "custom_tags": rule.get("custom_tags") or "",
                 "captions_enabled": bool(rule.get("captions_enabled", 1)),
                 "visual_style_prompt": rule.get("visual_style_prompt") or "",
+                "create_thumbnail": bool(rule.get("create_thumbnail", 1)),
             }, ensure_ascii=False),
             tpl["id"], rule.get("visual_style") or "automatico",
             rule.get("video_type") or "moving_images",
