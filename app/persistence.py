@@ -49,7 +49,7 @@ def status() -> dict:
 
 
 def _request(method: str, path: str, body: bytes | None = None,
-             content_type: str = "application/json"):
+             content_type: str = "application/json", extra_headers: dict | None = None):
     base, key, _bucket = _settings()
     if not base or not key:
         raise RuntimeError("Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY.")
@@ -59,6 +59,7 @@ def _request(method: str, path: str, body: bytes | None = None,
     }
     if body is not None:
         headers["Content-Type"] = content_type
+    headers.update(extra_headers or {})
     request = urllib.request.Request(base + path, data=body, headers=headers, method=method)
     return urllib.request.urlopen(request, timeout=90)
 
@@ -70,9 +71,10 @@ def _ensure_bucket() -> None:
         with _request("POST", "/storage/v1/bucket", payload):
             pass
     except urllib.error.HTTPError as exc:
-        if exc.code not in (400, 409):
-            detail = exc.read().decode("utf-8", "replace")[:300]
-            raise RuntimeError(f"No se pudo preparar el bucket privado de Supabase ({exc.code}): {detail}") from exc
+        detail = exc.read().decode("utf-8", "replace")[:300]
+        if exc.code == 409 or (exc.code == 400 and "already exists" in detail.lower()):
+            return
+        raise RuntimeError(f"No se pudo preparar el bucket privado de Supabase ({exc.code}): {detail}") from exc
 
 
 def restore_if_available() -> bool:
@@ -121,27 +123,11 @@ def sync_backup() -> bool:
     compressed = gzip.compress(Path(backup_path).read_bytes(), compresslevel=6)
     _base, _key, bucket = _settings()
     object_path = "/storage/v1/object/" + urllib.parse.quote(bucket, safe="") + "/" + OBJECT_NAME
-    headers = None
-    try:
-        with _request("POST", object_path, compressed, "application/gzip") as response:
-            response.read()
-    except urllib.error.HTTPError as exc:
-        if exc.code not in (400, 409):
-            detail = exc.read().decode("utf-8", "replace")[:300]
-            raise RuntimeError(f"No se pudo sincronizar la copia en Supabase ({exc.code}): {detail}") from exc
-        # Reemplazo explícito del único objeto de backup del proyecto.
-        request_headers = {
-            "apikey": _settings()[1],
-            "Authorization": f"Bearer {_settings()[1]}",
-            "Content-Type": "application/gzip",
-            "x-upsert": "true",
-        }
-        request = urllib.request.Request(
-            _settings()[0] + object_path, data=compressed,
-            headers=request_headers, method="POST",
-        )
-        with urllib.request.urlopen(request, timeout=90) as response:
-            response.read()
+    with _request(
+        "POST", object_path, compressed, "application/gzip",
+        extra_headers={"x-upsert": "true"},
+    ) as response:
+        response.read()
     db.log("info", "persistence", "Copia SQLite sincronizada con Supabase Storage.",
            {"compressed_bytes": len(compressed)})
     return True
