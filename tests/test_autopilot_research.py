@@ -141,8 +141,9 @@ class AutopilotResearchTests(unittest.TestCase):
                 "title": "Astrobiología", "extract": extract,
                 "fullurl": "https://es.wikipedia.org/wiki/Astrobiologia",
             }}}}
-        with patch.object(topic_engine, "_get", side_effect=fake_get):
-            result = topic_engine.choose_topic("ciencia", [], "espacio", "política")
+        with patch.object(topic_engine, "trending_searches", return_value=[]):
+            with patch.object(topic_engine, "_get", side_effect=fake_get):
+                result = topic_engine.choose_topic("ciencia", [], "espacio", "política")
         self.assertEqual(result["topic"], "Astrobiología")
         self.assertTrue(any("ciencia espacio" in q for q in queries))
 
@@ -395,8 +396,9 @@ class AutopilotResearchTests(unittest.TestCase):
             {"query": {"pages": {"1": {"extract": article, "fullurl": "https://es.wikipedia.org/wiki/Tema_nuevo"}}}},
             {"query": {"pages": {"1": {"extlinks": []}}}},
         ]
-        with patch.object(topic_engine, "_get", side_effect=responses):
-            result = topic_engine.choose_topic("misterio", ["Tema repetido"])
+        with patch.object(topic_engine, "trending_searches", return_value=[]):
+            with patch.object(topic_engine, "_get", side_effect=responses):
+                result = topic_engine.choose_topic("misterio", ["Tema repetido"])
         self.assertEqual(result["topic"], "Tema nuevo")
     def test_script_uses_retrieved_source_sentences(self):
         extract = "La fuente describe un proceso histórico documentado con detalles verificables y fechas precisas. "
