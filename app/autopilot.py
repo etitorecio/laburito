@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
     template TEXT NOT NULL DEFAULT 'shorts',
     duration_target_sec INTEGER,
     voice TEXT NOT NULL DEFAULT 'es',
+    speed INTEGER NOT NULL DEFAULT 150,
+    pitch INTEGER NOT NULL DEFAULT 45,
     aspect TEXT NOT NULL DEFAULT '9:16',
     caption_style TEXT NOT NULL DEFAULT 'short_pop',
     transition_default TEXT NOT NULL DEFAULT 'fundido',
@@ -56,7 +58,7 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
 """
 
 FIELDS = [
-    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "aspect",
+    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "speed", "pitch", "aspect",
     "audience", "tone", "hook_style", "cta", "content_pillars", "avoid_topics",
     "caption_style", "transition_default", "resolution", "fps", "music", "music_volume",
     "cadence_hours", "cadence_minutes", "videos_per_period", "period_days", "schedule_time", "timezone", "enabled", "destination", "privacy", "auto_publish", "next_run_at",
@@ -68,6 +70,8 @@ def ensure_schema() -> None:
     columns = {row["name"] for row in db.query("PRAGMA table_info(autopilot_rules)")}
     migrations = {
         "last_error": "TEXT",
+        "speed": "INTEGER NOT NULL DEFAULT 150",
+        "pitch": "INTEGER NOT NULL DEFAULT 45",
         "videos_per_period": "INTEGER NOT NULL DEFAULT 1",
         "cadence_minutes": "INTEGER NOT NULL DEFAULT 1440",
         "period_days": "INTEGER NOT NULL DEFAULT 1",
@@ -138,6 +142,10 @@ def _clean(data: dict) -> dict:
             clean["duration_target_sec"] = max(5, min(3600, int(data["duration_target_sec"])))
     if "voice" in data and data["voice"] is not None:
         clean["voice"] = str(data["voice"])[:40]
+    if "speed" in data and data["speed"] is not None:
+        clean["speed"] = max(80, min(300, int(data["speed"])))
+    if "pitch" in data and data["pitch"] is not None:
+        clean["pitch"] = max(0, min(99, int(data["pitch"])))
     if "aspect" in data and data["aspect"] is not None:
         if data["aspect"] not in options.ASPECTS:
             raise ValueError("Aspecto no soportado")
@@ -302,7 +310,7 @@ def _create_project(rule: dict) -> dict:
         (
             rule.get("channel_id"), title, topic, tpl.get("kind", "short"),
             rule.get("aspect") or tpl.get("aspect"), "borrador", duration,
-            rule.get("voice") or "es", 150, 45,
+            rule.get("voice") or "es", int(rule.get("speed") or 150), int(rule.get("pitch") if rule.get("pitch") is not None else 45),
             f"Autopiloto: {rule.get('name') or niche}. Fuente inicial: {research['url']}. "
             "La fuente es introductoria y debe contrastarse antes de publicar.",
             tpl["id"], rule.get("caption_style") or tpl.get("caption_style"),
