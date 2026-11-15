@@ -2,14 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import { Badge, Card, Empty, Msg } from '../ui';
 
-type Destination = { available: boolean; missing_env: string[]; note: string };
-type AccountStatus = { channel_id: string; channel_title: string };
+type LinkedAccount = { channel_id: number; youtube_channel_id: string; channel_title: string; workspace_name: string };
+type WorkspaceChannel = { id: number; name: string; topic: string; account: LinkedAccount | null };
 
 export default function Accounts() {
-  const [destination, setDestination] = useState<Destination | null>(null);
-  const [account, setAccount] = useState<AccountStatus | null>(null);
+  const [channels, setChannels] = useState<WorkspaceChannel[]>([]);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [busyId, setBusyId] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
 
@@ -17,18 +16,16 @@ export default function Accounts() {
     setLoading(true);
     setError('');
     try {
-      const result = await api.get<{ destinations: ({ id: string } & Destination)[] }>('/api/publish/destinations');
-      const youtube = result.destinations.find((item) => item.id === 'youtube') as (Destination & { id: string }) | undefined;
-      setDestination(youtube ?? null);
-      if (youtube?.available) {
-        try {
-          setAccount(await api.get<AccountStatus>('/api/youtube/status'));
-        } catch {
-          setAccount(null);
-        }
-      } else {
-        setAccount(null);
+      let result = await api.get<{ accounts: WorkspaceChannel[] }>('/api/youtube/accounts');
+      const names = new Set(result.accounts.map((item) => item.name.toLocaleLowerCase()));
+      if (!names.has('historias')) {
+        await api.post('/api/channels', { name: 'Historias', topic: 'Historias estilo Reddit', language: 'es', audience: 'Público general', tone: 'Intrigante y dinámico', visual_identity: 'Gameplay vertical de fondo', formats: 'short', cadence: 'diario' });
       }
+      if (!names.has('frutinovelas')) {
+        await api.post('/api/channels', { name: 'Frutinovelas', topic: 'Telenovelas de frutas por episodios', language: 'es', audience: 'Público general', tone: 'Dramático, emotivo y divertido', visual_identity: 'Personajes frutales recurrentes', formats: 'short', cadence: 'diario' });
+      }
+      result = await api.get<{ accounts: WorkspaceChannel[] }>('/api/youtube/accounts');
+      setChannels(result.accounts);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -38,74 +35,67 @@ export default function Accounts() {
 
   useEffect(() => { void load(); }, [load]);
 
-  async function connect() {
-    setBusy(true); setError(''); setOk('');
+  async function connect(channel: WorkspaceChannel) {
+    setBusyId(channel.id); setError(''); setOk('');
     try {
-      const result = await api.post<{ authorization_url: string }>('/api/youtube/oauth/start', {});
+      const result = await api.post<{ authorization_url: string }>(`/api/youtube/oauth/start?channel_id=${channel.id}`, {});
       window.location.assign(result.authorization_url);
     } catch (e) {
       setError((e as Error).message);
-      setBusy(false);
+      setBusyId(null);
     }
   }
 
-  async function disconnect() {
-    if (!window.confirm('¿Desconectar esta cuenta de YouTube? Laburito dejará de poder publicar en ella.')) return;
-    setBusy(true); setError(''); setOk('');
+  async function disconnect(channel: WorkspaceChannel) {
+    if (!window.confirm(`¿Desconectar la cuenta de YouTube asignada a «${channel.name}»?`)) return;
+    setBusyId(channel.id); setError(''); setOk('');
     try {
-      await api.post('/api/youtube/disconnect', {});
-      setAccount(null);
-      setOk('Cuenta desconectada. Podés vincular otra cuenta cuando quieras.');
+      await api.post(`/api/youtube/disconnect?channel_id=${channel.id}`, {});
+      setOk(`Cuenta desconectada de ${channel.name}. La otra cuenta no se modifica.`);
       await load();
     } catch (e) {
       setError((e as Error).message);
     } finally {
-      setBusy(false);
+      setBusyId(null);
     }
   }
 
   return (
     <div className="stack">
       <Msg error={error} ok={ok} />
-      <Card title="Cuenta de YouTube" sub="Vinculá la cuenta que va a recibir tus publicaciones. Se administra una cuenta a la vez; podés cambiarla cuando quieras. La autorización se hace directamente con Google.">
-        {loading ? <Empty>Comprobando conexión…</Empty> : account ? (
+      <Card title="Dos canales, dos cuentas independientes" sub="Cada fábrica conserva su propia autorización de Google. Conectar o desconectar una cuenta no cambia la otra.">
+        {loading ? <Empty>Comprobando canales y conexiones…</Empty> : channels.length ? (
           <div className="stack">
-            <div className="pill-row">
-              <Badge tone="ok">YouTube conectado</Badge>
-              <Badge tone="ok">Permisos verificados</Badge>
-            </div>
-            <div className="row center between">
-              <div>
-                <strong>{account.channel_title}</strong>
-                <p className="muted" style={{ margin: '4px 0 0' }}>Canal autorizado para subir videos.</p>
-              </div>
-              <span aria-hidden>▶️</span>
-            </div>
-            <div className="row">
-              <button className="btn primary" disabled={busy} onClick={() => void connect()}>Conectar otra cuenta</button>
-              <button className="btn ghost" disabled={busy} onClick={() => void disconnect()}>{busy ? 'Procesando…' : 'Desconectar'}</button>
-              <button className="btn ghost" disabled={busy} onClick={() => void load()}>Actualizar estado</button>
-            </div>
+            {channels.map((channel) => (
+              <section className="card inset" key={channel.id}>
+                <div className="row center between">
+                  <div>
+                    <strong>{channel.name}</strong>
+                    <p className="muted" style={{ margin: '4px 0 0' }}>{channel.topic}</p>
+                  </div>
+                  {channel.account ? <Badge tone="ok">Conectado</Badge> : <Badge tone="warn">Sin conectar</Badge>}
+                </div>
+                {channel.account ? (
+                  <div className="stack">
+                    <p><strong>{channel.account.channel_title}</strong><br /><span className="muted">Cuenta de YouTube asignada exclusivamente a {channel.name}.</span></p>
+                    <button className="btn ghost" disabled={busyId !== null} onClick={() => void disconnect(channel)}>{busyId === channel.id ? 'Desconectando…' : 'Desconectar esta cuenta'}</button>
+                  </div>
+                ) : (
+                  <button className="btn primary" disabled={busyId !== null} onClick={() => void connect(channel)}>{busyId === channel.id ? 'Abriendo Google…' : `Conectar cuenta de Google para ${channel.name}`}</button>
+                )}
+              </section>
+            ))}
           </div>
-        ) : (
-          <div className="stack">
-            <div className="pill-row"><Badge tone="warn">YouTube no conectado</Badge></div>
-            <p className="muted">Todavía no hay una cuenta autorizada. Tocá el botón para elegir una cuenta de Google y conceder los permisos de publicación. Podés cambiarla o desconectarla después.</p>
-            {destination?.missing_env?.length ? (
-              <p className="muted">Falta completar la configuración del servidor: {destination.missing_env.join(', ')}.</p>
-            ) : null}
-            <button className="btn primary" disabled={busy || !!destination?.missing_env?.some((item) => item.includes('CLIENT'))} onClick={() => void connect()}>{busy ? 'Abriendo Google…' : 'Conectar cuenta de YouTube'}</button>
-          </div>
-        )}
+        ) : <Empty>No hay canales internos creados.</Empty>}
+        <button className="btn ghost" disabled={busyId !== null || loading} onClick={() => void load()}>Actualizar conexiones</button>
       </Card>
-      <Card title="Cómo funciona" sub="Sin intermediarios ni servicios de publicación pagos.">
-        <ul>
-          <li>Google te muestra qué cuenta y canal estás autorizando.</li>
-          <li>Laburito guarda el permiso en su almacenamiento local para poder publicar.</li>
-          <li>En Autopiloto elegís YouTube como destino y definís la privacidad de cada video.</li>
-          <li>Desconectar revoca el permiso ante Google cuando es posible y borra el token guardado localmente.</li>
-        </ul>
-        <p className="muted">La cuenta conectada es independiente de los canales internos que usás para organizar tus proyectos.</p>
+      <Card title="Cómo conectarlas" sub="Hacelo una vez por cada canal.">
+        <ol>
+          <li>Conectá la cuenta Google que administra el canal de Historias.</li>
+          <li>Volvé a esta pantalla y conectá la otra cuenta Google para Frutinovelas.</li>
+          <li>En cada fábrica, la publicación se dirige a la cuenta asignada a su canal interno.</li>
+        </ol>
+        <p className="muted">Los permisos OAuth se guardan por separado en el servidor. Nunca compartas contraseñas ni secretos de Google en el chat.</p>
       </Card>
     </div>
   );
