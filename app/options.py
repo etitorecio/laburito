@@ -293,6 +293,7 @@ VIDEO_TYPES = [
     {"id": "subway", "label": "Gameplay de Subway Surfers", "description": "Biblioteca de clips propios o autorizados; requiere al menos uno y permite hasta cinco en rotación.", "available": False},
 ]
 VIDEO_TYPE_IDS = {item["id"] for item in VIDEO_TYPES}
+VIDEO_CLIP_MINIMUMS = {"stock_footage": 5, "minecraft": 1, "subway": 1}
 
 # Plantillas de las dos fábricas: siempre deben producir Shorts verticales.
 VERTICAL_SHORT_TEMPLATES = {"shorts", "reddit_story", "frutinovela"}
