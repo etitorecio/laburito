@@ -772,7 +772,9 @@ def create_project(payload: ProjectIn):
     data = payload.model_dump()
     if data.get("channel_id"):
         selected_channel = db.query_one("SELECT name FROM channels WHERE id=?", (data["channel_id"],))
-        expected_template = options.factory_template_for_channel_name((selected_channel or {}).get("name", ""))
+        if not selected_channel:
+            raise HTTPException(404, "El canal interno seleccionado no existe.")
+        expected_template = options.factory_template_for_channel_name(selected_channel.get("name", ""))
         if expected_template and data.get("template") != expected_template:
             label = "Historias" if expected_template == "reddit_story" else "Frutinovelas"
             raise HTTPException(400, f"El canal {label} solo admite su fábrica de Shorts correspondiente.")
@@ -820,7 +822,9 @@ def patch_project(project_id: int, payload: ProjectPatch):
     effective_channel_id = data.get("channel_id", current_project.get("channel_id"))
     if effective_channel_id:
         selected_channel = db.query_one("SELECT name FROM channels WHERE id=?", (effective_channel_id,))
-        expected_template = options.factory_template_for_channel_name((selected_channel or {}).get("name", ""))
+        if not selected_channel:
+            raise HTTPException(404, "El canal interno seleccionado no existe.")
+        expected_template = options.factory_template_for_channel_name(selected_channel.get("name", ""))
         if expected_template and effective_template != expected_template:
             label = "Historias" if expected_template == "reddit_story" else "Frutinovelas"
             raise HTTPException(400, f"El canal {label} solo admite su fábrica de Shorts correspondiente.")
