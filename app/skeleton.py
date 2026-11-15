@@ -4,6 +4,7 @@ from __future__ import annotations
 import math
 import subprocess
 import tempfile
+import threading
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter
@@ -182,7 +183,15 @@ def _frame(background: Image.Image, action: str, frame_index: int, frame_count: 
     return final.convert("RGB")
 
 
+_SKELETON_LOCK = threading.Lock()
+
+
 def ensure_clip(action: str, output: Path | None = None) -> Path:
+    with _SKELETON_LOCK:
+        return _ensure_clip_unlocked(action, output)
+
+
+def _ensure_clip_unlocked(action: str, output: Path | None = None) -> Path:
     """Genera una animación en bucle reutilizable para escenas de video."""
     from . import db, media
 
