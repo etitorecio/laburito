@@ -464,7 +464,9 @@ def _youtube_upload(project, meta: dict, privacy: str, report) -> dict:
     thumb_suffix = "short" if _g(project, "kind") == "short" else "documental"
     thumb = Path(db.RENDER_DIR) / str(_g(project, "id")) / f"miniatura_{thumb_suffix}.jpg"
     thumbnail_uploaded = False
-    if thumb.exists():
+    is_autopilot_short = (_g(project, "notes") or "").startswith("Autopiloto:")
+    # YouTube no permite fijar por API la portada de un Short; se conserva el JPG local.
+    if thumb.exists() and not is_autopilot_short:
         try:
             thumb_request = urllib.request.Request(
                 "https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=" + urllib.parse.quote(video_id),
