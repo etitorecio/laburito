@@ -7,6 +7,7 @@ activa la auto-subida. Todo local: no intervienen servicios pagos.
 """
 from __future__ import annotations
 
+import json
 import time
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -27,6 +28,8 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
     speed INTEGER NOT NULL DEFAULT 150,
     pitch INTEGER NOT NULL DEFAULT 45,
     visual_style TEXT NOT NULL DEFAULT '',
+    title_style TEXT NOT NULL DEFAULT 'automatico',
+    custom_tags TEXT NOT NULL DEFAULT '',
     aspect TEXT NOT NULL DEFAULT '9:16',
     caption_style TEXT NOT NULL DEFAULT 'short_pop',
     transition_default TEXT NOT NULL DEFAULT 'fundido',
@@ -59,7 +62,7 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
 """
 
 FIELDS = [
-    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "speed", "pitch", "visual_style", "aspect",
+    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "speed", "pitch", "visual_style", "title_style", "custom_tags", "aspect",
     "audience", "tone", "hook_style", "cta", "content_pillars", "avoid_topics",
     "caption_style", "transition_default", "resolution", "fps", "music", "music_volume",
     "cadence_hours", "cadence_minutes", "videos_per_period", "period_days", "schedule_time", "timezone", "enabled", "destination", "privacy", "auto_publish", "next_run_at",
@@ -74,6 +77,8 @@ def ensure_schema() -> None:
         "speed": "INTEGER NOT NULL DEFAULT 150",
         "pitch": "INTEGER NOT NULL DEFAULT 45",
         "visual_style": "TEXT NOT NULL DEFAULT ''",
+        "title_style": "TEXT NOT NULL DEFAULT 'automatico'",
+        "custom_tags": "TEXT NOT NULL DEFAULT ''",
         "videos_per_period": "INTEGER NOT NULL DEFAULT 1",
         "cadence_minutes": "INTEGER NOT NULL DEFAULT 1440",
         "period_days": "INTEGER NOT NULL DEFAULT 1",
@@ -150,6 +155,12 @@ def _clean(data: dict) -> dict:
         clean["pitch"] = max(0, min(99, int(data["pitch"])))
     if "visual_style" in data and data["visual_style"] is not None:
         clean["visual_style"] = str(data["visual_style"]).strip()[:180]
+    if "title_style" in data and data["title_style"] is not None:
+        if data["title_style"] not in ("automatico", "pregunta", "curiosidad", "directo", "misterio"):
+            raise ValueError("Estilo de título no válido")
+        clean["title_style"] = data["title_style"]
+    if "custom_tags" in data and data["custom_tags"] is not None:
+        clean["custom_tags"] = str(data["custom_tags"]).strip()[:300]
     if "aspect" in data and data["aspect"] is not None:
         if data["aspect"] not in options.ASPECTS:
             raise ValueError("Aspecto no soportado")
@@ -322,7 +333,11 @@ def _create_project(rule: dict) -> dict:
             rule.get("aspect") or tpl.get("aspect"), "borrador", duration,
             rule.get("voice") or "es", int(rule.get("speed") or 150), int(rule.get("pitch") if rule.get("pitch") is not None else 45),
             f"Autopiloto: {rule.get('name') or niche}. Fuente inicial: {research['url']}. "
-            "La fuente es introductoria y debe contrastarse antes de publicar.",
+            "La fuente es introductoria y debe contrastarse antes de publicar. "
+            "[LABURITO_META]" + json.dumps({
+                "title_style": rule.get("title_style") or "automatico",
+                "custom_tags": rule.get("custom_tags") or "",
+            }, ensure_ascii=False),
             tpl["id"], rule.get("caption_style") or tpl.get("caption_style"),
             rule.get("transition_default") or "fundido", rule.get("resolution") or "1080p",
             int(rule.get("fps") or 25), rule.get("music") or "auto",
