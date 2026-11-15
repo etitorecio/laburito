@@ -281,13 +281,6 @@ def _create_project(rule: dict) -> int:
             db.log("info", "autopilot", "Guion reescrito con Ollama local", {"project_id": pid})
         except Exception as exc:
             db.log("warn", "autopilot", f"Ollama no pudo reescribir el guion; se conserva el borrador basado en fuentes: {exc}")
-    ollama_url = (db.get_setting("ollama_url", "") or "").strip()
-    if ollama_url and script_gen.ollama_available(ollama_url):
-        try:
-            script = script_gen.rewrite_with_ollama(ollama_url, "llama3.2", project, script, notes)
-            db.log("info", "autopilot", "Guion reescrito con Ollama local", {"project_id": pid})
-        except Exception as exc:
-            db.log("warn", "autopilot", f"Ollama no pudo reescribir el guion; se conserva el guion basado en fuentes: {exc}", {"project_id": pid})
     for scene in script["scenes"]:
         db.execute(
             "INSERT INTO scenes(project_id, idx, title, narration, visual_query, transition, status, created_at, updated_at) "
