@@ -910,7 +910,7 @@ def rewrite_fiction_with_ollama(url: str, model: str, project: dict, script: dic
         f"Continuidad anterior: {project.get('series_context') or 'Es el primer episodio; presentá la situación y los vínculos'}\n"
         f"Público: {project.get('audience') or 'Público general'}\n"
         f"Tono: {project.get('tone') or 'Dramático y cercano'}\n"
-        f"Duración objetivo: {project.get('duration_target_sec') or 180} segundos\n"
+        f"Duración objetivo: {target_seconds} segundos\n"
         f"Esquema de escenas: {json.dumps(outline, ensure_ascii=False)}"
     )
     raw = expand_with_ollama(url, model, prompt, timeout=240)
