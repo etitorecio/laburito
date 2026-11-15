@@ -533,8 +533,6 @@ def generate_script(
             first = idx * evidence_per_scene
             factual = evidence_sentences[first:first + evidence_per_scene]
             narration = (f"Sobre {topic}: " if idx == 0 else "") + " ".join(factual)
-            if source_note:
-                narration += f" Fuente de orientación: {source_note.get('source_url')}."
         elif beat["key"] in ("origen", "protagonistas", "descubrimiento", "evolucion", "consecuencias", "desarrollo"):
             if claim_index < len(claims):
                 note = next((n for n in notes if (n.get("claim") or "").strip() == claims[claim_index]), None)
