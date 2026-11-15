@@ -164,7 +164,7 @@ export default function Settings() {
         </div>
         {diag?.persistence.local_persistent && !diag?.persistence.configured ? <p className="muted">Estás ejecutando Laburito en modo local: el volumen ./data conserva SQLite, proyectos, programación, videos y credenciales aunque reinicies el contenedor. No necesitás Supabase en este modo.</p> : <p className="muted">AppJet Free no incluye disco virtual persistente. Cuando Supabase esté conectado, creá un proyecto gratuito y agregá en AppJet → Settings → Environment variables: <code>SUPABASE_URL</code> y <code>SUPABASE_SERVICE_ROLE_KEY</code>. Laburito crea automáticamente el bucket privado, sincroniza SQLite después de cada cambio de configuración y cada tarea (además de una copia periódica cada 15 minutos), y conserva el MP4 pendiente hasta que YouTube lo recibe.</p>}
         <p className="muted">La clave service-role debe quedar como secreto del servidor; nunca la pegues en el navegador ni en el chat. La fila de diagnóstico de arriba confirma si la app detectó la conexión.</p>
-        <p className="muted">La URL actual `*.dev.ap-jt.com` es de preview. Para usar el endpoint Edge de la rama `appjet`, copiá la URL exacta desde AppJet → Settings → Overview y guardala como variable `LABURITO_URL` en GitHub. El hosting de AppJet está orientado a preview y pruebas, no a producción con usuarios reales.</p>
+        <p className="muted">La URL `*.dev.ap-jt.com` es solo preview. Para usar Laburito desde el celular sin dejar tu PC encendida, desplegá la rama `appjet` en el endpoint Edge de AppJet (incluido en el plan Free y sin vencimiento por edad). Copiá la URL Edge desde Settings → Overview y guardala como variable de repositorio `LABURITO_URL` en <a href="https://github.com/etitorecio/laburito/settings/variables/actions" target="_blank" rel="noreferrer">GitHub → Variables</a>. AppJet Free no incluye disco virtual: para autopublicar en la nube, conectá Supabase y configurá `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`. Las cuotas y condiciones propias de Supabase siguen aplicando.</p>
       </Card>
 
       <Card title="Acceso" sub="Protección del servidor. Para conectar YouTube, APP_TOKEN o AITUBER_TOKEN es obligatorio.">
@@ -258,8 +258,8 @@ export default function Settings() {
           </Field>
         </div>
         <div className="row">
-          <Field label="Ollama local (opcional)" hint="URL de Ollama con el modelo llama3.2 instalado. Es opcional, local y sin pagos.">
-            <input value={values.ollama_url || ''} onChange={(e) => setValues({ ...values, ollama_url: e.target.value })} placeholder="http://127.0.0.1:11434" />
+          <Field label="Ollama local (opcional)" hint="Instalá Ollama y ejecutá ollama pull llama3.2. En Docker Desktop para Windows usá host.docker.internal; si Laburito corre directamente en la PC, usá 127.0.0.1.">
+            <input value={values.ollama_url || ''} onChange={(e) => setValues({ ...values, ollama_url: e.target.value })} placeholder="http://host.docker.internal:11434" />
           </Field>
           <Field label="Copia de seguridad automática">
             <select value={values.auto_backup || '1'} onChange={(e) => setValues({ ...values, auto_backup: e.target.value })}>
