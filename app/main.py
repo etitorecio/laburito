@@ -341,7 +341,8 @@ def meta():
         "templates": options.TEMPLATES,
         "external_templates": options.EXTERNAL_TEMPLATES,
         "caption_styles": [
-            {"id": key, "label": options.CAPTION_LABELS.get(key, key)} for key in options.CAPTION_STYLES
+            {"id": key, "label": options.CAPTION_LABELS.get(key, key), **style}
+            for key, style in options.CAPTION_STYLES.items()
         ],
         "transitions": options.TRANSITIONS,
         "music_beds": [{"id": m["id"], "label": m["label"]} for m in options.MUSIC_BEDS],
