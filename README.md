@@ -44,7 +44,7 @@ cd web && npm run dev   # proxy /api -> http://127.0.0.1:8080
 
 Para usar Laburito sin pagar hosting ni Supabase, ejecutalo en una PC propia. Docker conserva la base, los videos y los trabajos en la carpeta `./data`; el Autopiloto sigue funcionando mientras la PC esté encendida, conectada a Internet y sin suspensión automática. Podés abrir la interfaz desde el celular conectado a la misma red Wi-Fi usando la IP local de la PC.
 
-En Windows, con Docker Desktop instalado:
+En Windows, con Docker Desktop instalado y configurado para iniciarse al iniciar sesión:
 
 ```powershell
 Copy-Item .env.example .env
@@ -62,7 +62,7 @@ La imagen es Alpine, compila FFmpeg y el frontend, y ejecuta el servidor como us
 
 | Variable | Uso |
 | --- | --- |
-| `AITUBER_DATA_DIR` | Carpeta de datos (SQLite, medios, renders, exportaciones). Por defecto `./data`. |
+| `AITUBER_DATA_DIR` | Carpeta de datos (SQLite, medios, renders, exportaciones). Por defecto `./data`. |\n| `AITUBER_LOCAL_PERSISTENT` | Marcador de diagnóstico para un volumen local persistente (lo configura Docker Compose). |
 | `PORT` | Puerto HTTP (por defecto `8080`). |
 | `APP_TOKEN` o `AITUBER_TOKEN` | Protección con token (`X-App-Token`). Recomendado para cualquier despliegue público. |
 | `PIPER_BIN`, `PIPER_MODEL` | Sobrescritura manual opcional de la instalación Piper; normalmente se instala desde Ajustes. |
