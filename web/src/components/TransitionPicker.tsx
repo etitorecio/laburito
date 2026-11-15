@@ -17,19 +17,20 @@ export default function TransitionPicker({ options, value, onChange, compact = f
           const selected = value === option.id;
           const src = `/api/transition-preview/${encodeURIComponent(option.id)}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
           return (
-            <button
-              key={option.id}
-              type="button"
-              className={`transition-card ${selected ? 'selected' : ''}`}
-              aria-pressed={selected}
-              onClick={() => onChange(option.id)}
-            >
+            <div key={option.id} className={`transition-card ${selected ? 'selected' : ''}`}>
               <span className="transition-screen">
                 <video src={src} controls muted loop playsInline preload="metadata" autoPlay={selected} />
               </span>
-              <span className="transition-name">{option.label}</span>
-              <span className="transition-state">{selected ? '✓ Seleccionado' : 'Tocar para elegir · ▶ para ver'}</span>
-            </button>
+              <button
+                type="button"
+                className="transition-select"
+                aria-pressed={selected}
+                onClick={() => onChange(option.id)}
+              >
+                <span className="transition-name">{option.label}</span>
+                <span className="transition-state">{selected ? '✓ Seleccionado' : 'Tocar para elegir'}</span>
+              </button>
+            </div>
           );
         })}
       </div>
