@@ -46,7 +46,7 @@ def _claim_next() -> dict | None:
         return None
     job = rows[0]
     db.execute(
-        "UPDATE jobs SET status='ejecutando', started_at=?, message=?, updated_at=? WHERE id=? AND status='en_cola'",
+        "UPDATE jobs SET status='ejecutando', attempts=attempts+1, started_at=?, message=?, updated_at=? WHERE id=? AND status='en_cola'",
         (db.now(), "Iniciando", db.now(), job["id"]),
     )
     current = db.query_one("SELECT * FROM jobs WHERE id=?", (job["id"],))
@@ -157,11 +157,27 @@ def run_job(job: dict) -> None:
             ("Cancelada por el usuario", db.now(), db.now(), job_id),
         )
     except Exception as exc:
-        db.log("error", "worker", f"Tarea {job_id} falló: {exc}", {"trace": traceback.format_exc()[-2000:]})
-        db.execute(
-            "UPDATE jobs SET status='error', message=?, finished_at=?, updated_at=? WHERE id=?",
-            (str(exc)[:400], db.now(), db.now(), job_id),
+        attempt = int(job.get("attempts") or 1)
+        retry = attempt < 3
+        db.log(
+            "warn" if retry else "error",
+            "worker",
+            f"Tarea {job_id} falló: {exc}" + (f" — reintento {attempt}/3" if retry else " — máximo de intentos alcanzado"),
+            {"trace": traceback.format_exc()[-2000:], "attempt": attempt},
         )
+        if retry:
+            # Reintentos acotados para errores transitorios de red, TTS o FFmpeg.
+            time.sleep(min(2 ** attempt, 8))
+            db.execute(
+                "UPDATE jobs SET status='en_cola', progress=0, message=?, finished_at=NULL, updated_at=? WHERE id=?",
+                (f"Falló el intento {attempt}; reintentando automáticamente ({attempt}/3)", db.now(), job_id),
+            )
+            _wake.set()
+        else:
+            db.execute(
+                "UPDATE jobs SET status='error', message=?, finished_at=?, updated_at=? WHERE id=?",
+                (str(exc)[:400], db.now(), db.now(), job_id),
+            )
 
 
 def _loop() -> None:
