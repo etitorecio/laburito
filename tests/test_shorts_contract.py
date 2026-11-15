@@ -2,7 +2,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app import autopilot, options, publish, script_gen
+from app import autopilot, options, publish, render, script_gen
 
 
 class ShortsContractTests(unittest.TestCase):
@@ -47,6 +47,18 @@ class ShortsContractTests(unittest.TestCase):
         self.assertEqual(script_gen.fiction_word_range(180), (378, 450))
         self.assertEqual(script_gen.fiction_word_range(90), (189, 225))
         self.assertEqual(script_gen.fiction_word_range(45), (94, 112))
+
+    def test_factory_render_requires_vertical_video_under_three_minutes_and_voice(self):
+        project = {"template": "reddit_story"}
+        info = {"width": 720, "height": 1280, "duration": 175}
+        results = [{"audio_info": {"engine": "espeak-ng"}}]
+        render._validate_vertical_short_render(project, info, results)
+        with self.assertRaisesRegex(RuntimeError, "máximo permitido es 180"):
+            render._validate_vertical_short_render(project, {**info, "duration": 181}, results)
+        with self.assertRaisesRegex(RuntimeError, "motor TTS"):
+            render._validate_vertical_short_render(project, info, [{"audio_info": {"engine": "silencio"}}])
+        with self.assertRaisesRegex(RuntimeError, "vertical 9:16"):
+            render._validate_vertical_short_render(project, {"width": 1280, "height": 720, "duration": 30}, results)
 
     def test_factory_upload_requires_vertical_9_by_16_under_three_minutes(self):
         valid = {"width": 1080, "height": 1920, "duration": 175}
