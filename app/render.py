@@ -165,7 +165,7 @@ def ensure_visual(project: dict, scene: dict) -> tuple[Path, str, dict]:
     if video_type in {"stock_footage", "minecraft", "subway"}:
         clip_dir = db.DATA_DIR / "background_clips" / video_type
         clips = sorted(clip_dir.glob("*.mp4")) if clip_dir.exists() else []
-        required = 5
+        required = 5 if video_type == "stock_footage" else 1
         if len(clips) < required:
             raise RuntimeError(
                 f"El formato {video_type} necesita {required} clip(s) propios o autorizados. "
