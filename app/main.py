@@ -643,6 +643,10 @@ def create_project(payload: ProjectIn):
         raise HTTPException(400, "Laburito genera contenido únicamente en español. Elegí una voz española.")
     if data.get("aspect") and data["aspect"] not in render.ASPECTS:
         raise HTTPException(400, "Formato no soportado (16:9, 9:16, 1:1 o 4:5)")
+    if data.get("visual_style") not in options.VISUAL_STYLE_IDS:
+        raise HTTPException(400, "Estilo visual desconocido")
+    if data.get("video_type") not in options.VIDEO_TYPE_IDS:
+        raise HTTPException(400, "Tipo de video desconocido")
     resolved = options.resolve_defaults(data)
     tpl = options.template(resolved["template"])
     duration = int(data.get("duration_target_sec") or tpl["default_duration"])
