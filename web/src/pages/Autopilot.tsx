@@ -158,6 +158,10 @@ export default function Autopilot() {
       setError('Antes de activar la publicación automática, conectá y verificá tu canal de YouTube en Ajustes.');
       return;
     }
+    if (form.auto_publish && form.destination === 'youtube' && persistenceConfigured === false) {
+      setError('Para autopublicar sin perder el Short ante un reinicio, conectá Supabase o ejecutá Laburito con un volumen local persistente.');
+      return;
+    }
     setBusy(true); setError(''); setOk('');
     try {
       const payload = {
