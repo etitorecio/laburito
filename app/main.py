@@ -175,6 +175,8 @@ class AutopilotIn(BaseModel):
     template: str = "shorts"
     duration_target_sec: int | None = None
     voice: str = "es"
+    speed: int = 150
+    pitch: int = 45
     aspect: str | None = None
     caption_style: str | None = None
     transition_default: str | None = None
@@ -206,6 +208,8 @@ class AutopilotPatch(BaseModel):
     template: str | None = None
     duration_target_sec: int | None = None
     voice: str | None = None
+    speed: int | None = None
+    pitch: int | None = None
     aspect: str | None = None
     caption_style: str | None = None
     transition_default: str | None = None
