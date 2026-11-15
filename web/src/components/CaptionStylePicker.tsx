@@ -35,6 +35,8 @@ function previewStyle(option: CaptionStyleOption): CSSProperties {
   const top = option.y_from_bottom !== undefined && option.y_from_bottom >= 0.75;
   const color = option.fontcolor || 'white';
   const boxColor = option.boxcolor || 'black';
+  const alpha = Number.parseFloat(option.box_alpha || '0.55');
+  const boxBackground = boxColor === 'yellow' ? `rgba(250,204,21,${alpha})` : boxColor === 'red' ? `rgba(220,38,38,${alpha})` : `rgba(0,0,0,${alpha})`;
   const fontSize = Math.max(10, Math.min(19, 132 * (option.font_ratio || 0.04)));
   const shadow = option.outline
     ? `0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000, 0 2px 3px #000`
@@ -45,7 +47,7 @@ function previewStyle(option: CaptionStyleOption): CSSProperties {
     right: 6,
     ...(top ? { top: '12%' } : centered ? { top: '50%', transform: 'translateY(-50%)' } : { bottom: option.y_from_bottom !== undefined && option.y_from_bottom < 0.1 ? '7%' : option.y_from_bottom !== undefined && option.y_from_bottom > 0.25 ? '28%' : '15%' }),
     color,
-    background: option.box ? `${boxColor === 'yellow' ? '#facc15' : boxColor === 'red' ? '#dc2626' : '#000'} / ${option.box_alpha || '0.55'}` : 'transparent',
+    background: option.box ? boxBackground : 'transparent',
     borderRadius: option.box ? 4 : 0,
     padding: option.box ? '4px 3px' : 0,
     fontFamily: option.id === 'serif_cine' ? 'Georgia, serif' : 'Arial, sans-serif',
