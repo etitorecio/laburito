@@ -355,7 +355,9 @@ def _validate_factory_channel(data: dict) -> None:
     if not channel_id:
         return
     channel = db.query_one("SELECT name FROM channels WHERE id=?", (channel_id,))
-    expected = options.factory_template_for_channel_name((channel or {}).get("name", ""))
+    if not channel:
+        raise ValueError("El canal interno seleccionado no existe.")
+    expected = options.factory_template_for_channel_name(channel.get("name", ""))
     if expected and data.get("template") != expected:
         label = "Historias" if expected == "reddit_story" else "Frutinovelas"
         raise ValueError(f"El canal {label} solo admite su fábrica de Shorts correspondiente.")
