@@ -40,6 +40,3 @@ export const ROUTES: { id: Route; label: string; icon: string }[] = [
   { id: 'cuentas', label: 'Cuentas', icon: '🔗' },
   { id: 'ajustes', label: 'Ajustes', icon: '⚡' },
 ];
-
-// En móvil mostramos las cinco secciones principales en la barra inferior.
-export const TAB_ROUTES: Route[] = ['inicio', 'proyectos', 'cola', 'biblioteca'];
