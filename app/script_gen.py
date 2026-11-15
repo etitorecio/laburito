@@ -932,6 +932,12 @@ def rewrite_fiction_with_ollama(url: str, model: str, project: dict, script: dic
         if len(narration) < 50:
             raise RuntimeError(f"Ollama dejó vacía o demasiado corta la escena {scene.get('idx')}.")
         rewritten.append({**scene, "narration": narration})
+    total_words = sum(len(str(scene.get("narration") or "").split()) for scene in rewritten)
+    if total_words < round(min_words * 0.8) or total_words > round(max_words * 1.2):
+        raise RuntimeError(
+            f"Ollama devolvió {total_words} palabras; para {target_seconds} segundos "
+            f"se esperaban aproximadamente {min_words}-{max_words}. Se usará el guion de respaldo."
+        )
     return {
         **script,
         "scenes": rewritten,
