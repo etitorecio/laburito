@@ -387,8 +387,8 @@ def _validate_autopilot_video(project, source: Path) -> dict:
     duration = float(info.get("duration") or 0)
     if not width or not height or width <= height:
         raise PublishError("Publicación cancelada: el documental debe ser horizontal 16:9.")
-    if duration < 180 or duration > 1200:
-        raise PublishError(f"Publicación cancelada: duración inválida para un documental ({duration:.1f} s). El límite es 20 minutos.")
+    if duration <= 0 or duration > 1200:
+        raise PublishError(f"Publicación cancelada: duración inválida para un documental ({duration:.1f} s). El máximo es 20 minutos.")
     ratio = width / height
     if abs(ratio - (16 / 9)) > 0.04:
         raise PublishError(f"Publicación cancelada: proporción {width}x{height}; se esperaba 16:9.")
