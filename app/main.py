@@ -298,7 +298,7 @@ def _validate_video_type(video_type: str) -> None:
         return
     if video_type in {"full_motion_ai", "skeleton"}:
         raise HTTPException(400, "Este tipo de video todavía no tiene un motor local conectado.")
-    required = 5 if video_type in {"minecraft", "subway"} else 1
+    required = 5
     folder = db.DATA_DIR / "background_clips" / video_type
     count = len(list(folder.glob("*.mp4"))) if folder.exists() else 0
     if count < required:
@@ -384,6 +384,8 @@ async def upload_background_clip(
     if not rights_confirmed:
         raise HTTPException(400, "Confirmá que tenés derechos o permiso para usar este clip.")
     folder = _background_clip_folder(category)
+    if len(list(folder.glob("*.mp4"))) >= 5:
+        raise HTTPException(400, "Esta biblioteca ya tiene cinco clips. Quitá uno antes de agregar otro.")
     original = Path(file.filename or "clip.mp4").name
     extension = Path(original).suffix.lower()
     if extension not in {".mp4", ".mov", ".webm", ".mkv"}:
