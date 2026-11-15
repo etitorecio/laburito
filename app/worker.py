@@ -175,13 +175,10 @@ def run_job(job: dict) -> None:
                 auto = {"enabled": False, "destination": "youtube"}
             if auto["enabled"]:
                 if auto["destination"] == "youtube" and persistence.configured():
-                    try:
-                        persistence.sync_pending_video(int(project_id), result["video"])
-                    except Exception as exc:
-                        # La subida seguirá mientras el archivo local exista; el error
-                        # queda visible y la copia remota se puede volver a intentar.
-                        db.log("error", "persistence", f"No se pudo respaldar el MP4 antes de YouTube: {exc}",
-                               {"project_id": project_id})
+                    # En despliegues con disco efímero no iniciar la subida hasta
+                    # confirmar una copia remota recuperable del MP4.
+                    # Si falla, el trabajo de render se reintenta y no se pierde el Short.
+                    persistence.sync_pending_video(int(project_id), result["video"])
                 publish_job = enqueue(
                     int(project_id),
                     "publish_project",
