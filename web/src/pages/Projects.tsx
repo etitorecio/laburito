@@ -95,7 +95,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
       const { captions_enabled, ...projectForm } = form;
       created = await api.post<Project>('/api/projects', {
         ...projectForm,
-        channel_id: form.channel_id ? Number(form.channel_id) : null,
+        channel_id: form.channel_id ? Number(form.channel_id) : (channels.find((c) => c.name.toLocaleLowerCase() === (form.template === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id ?? null),
         topic: form.topic || form.title,
         notes: (!captions_enabled || form.visual_style_prompt.trim() || !form.create_thumbnail) ? '[LABURITO_META]' + JSON.stringify({ captions_enabled, visual_style_prompt: form.visual_style_prompt.trim(), create_thumbnail: form.create_thumbnail }) : '',
       });
@@ -162,7 +162,8 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
                 {templates.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
               </select>
             </Field>
-            {form.template === 'frutinovela' && <p className="muted">Para una serie coherente, escribí en Tema / idea los nombres de las frutas protagonistas y el conflicto central. El guion deja un cliffhanger al final para continuar en otro episodio.</p>}
+            {form.template === 'frutinovela' && <p className="muted">Para la serie, indicá los personajes frutales y el conflicto del episodio. Cada capítulo termina con un cliffhanger.</p>}
+            {form.template === 'reddit_story' && <p className="muted">Historias originales en español con estructura de Reddit: gancho, contexto, escalada, giro y pregunta final. Duración predeterminada: 3 minutos.</p>}
             <Field label="Canal de contenido" hint="Agrupa proyectos y calendario; es independiente de tu cuenta de YouTube.">
               <select value={form.channel_id} onChange={(e) => setForm({ ...form, channel_id: e.target.value })}>
                 <option value="">Sin canal de contenido</option>
