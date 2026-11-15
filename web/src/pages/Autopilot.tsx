@@ -56,7 +56,7 @@ const INITIAL = {
 
 const STEPS = [
   { title: 'Nicho', subtitle: 'Elegí el tema y definí qué contenido debe producir' },
-  { title: 'Voz', subtitle: 'Escuchá y elegí la voz que narrará tus videos' },
+  { title: 'Idioma y voz', subtitle: 'Todo el contenido se crea en español; elegí la voz y el ritmo' },
   { title: 'Música', subtitle: 'Automática, pistas propias o sin música' },
   { title: 'Estilo visual', subtitle: 'Elegí el aspecto que tendrán las escenas' },
   { title: 'Subtítulos', subtitle: 'Elegí un estilo y su movimiento con vista previa' },
@@ -330,8 +330,8 @@ export default function Autopilot() {
           </>}
 
           {step === 1 && <>
-<h3>Voz española</h3>
-            <p className="muted">Todos los videos se escriben y narran en español. Elegí únicamente la voz y el ritmo de narración.</p>
+<h3>Idioma y voz</h3>
+            <p className="muted">Idioma fijo: Español. Los guiones, la narración y los subtítulos se generan en español; elegí la voz que más te guste.</p>
             <Field label="Elegí una voz en español">
               <VoicePicker
                 options={voiceOptions}
