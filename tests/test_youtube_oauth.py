@@ -56,12 +56,12 @@ class YouTubeOAuthTests(unittest.TestCase):
         self.assertEqual(params["access_type"][0], "offline")
         self.assertIn("youtube.upload", params["scope"][0])
         self.assertGreaterEqual(len(params["state"][0]), 32)
-        self.assertIn(("youtube_oauth_channel_id", "7"), [call.args for call in save.call_args_list])
+        self.assertTrue(any(call.args[0].startswith("youtube_oauth_attempt:") and json.loads(call.args[1])["channel_id"] == 7 for call in save.call_args_list))
 
     def test_callback_saves_refresh_token_to_selected_channel_and_returns_to_accounts(self):
         account = {"channel_id": "UC123", "channel_title": "Canal de prueba"}
-        settings = ["expected-state", "995", "https://laburito.example/api/youtube/callback", "7"]
-        with patch.object(main.db, "get_setting", side_effect=settings):
+        settings = json.dumps({"created": 995, "redirect_uri": "https://laburito.example/api/youtube/callback", "channel_id": 7})
+        with patch.object(main.db, "get_setting", return_value=settings):
             with patch.object(main.time, "time", return_value=1000):
                 with patch.object(publish, "youtube_credentials", return_value={
                     "client_id": "client-id", "client_secret": "client-secret", "refresh_token": ""
@@ -83,8 +83,8 @@ class YouTubeOAuthTests(unittest.TestCase):
         backup.assert_called_once_with()
 
     def test_callback_rejects_expired_or_mismatched_state_before_token_exchange(self):
-        settings = ["expected-state", "0", "https://laburito.example/api/youtube/callback", "7"]
-        with patch.object(main.db, "get_setting", side_effect=settings):
+        settings = json.dumps({"created": 0, "redirect_uri": "https://laburito.example/api/youtube/callback", "channel_id": 7})
+        with patch.object(main.db, "get_setting", return_value=settings):
             with patch.object(main.time, "time", return_value=1000):
                 with patch.object(main.urllib.request, "urlopen") as exchange:
                     with self.assertRaises(HTTPException) as error:
