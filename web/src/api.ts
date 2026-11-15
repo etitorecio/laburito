@@ -338,6 +338,7 @@ export interface Diagnostics {
   ollama: { url: string; available: boolean; optional: boolean };
   counts: Record<string, number>;
   worker: { worker_alive: boolean; queued: number; running: number; done: number; failed: number; engine?: string };
+  persistence: { configured: boolean; provider: string | null; bucket: string | null; private: boolean; note: string };
   token_configured: boolean;
   note: string;
 }
