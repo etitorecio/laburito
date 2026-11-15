@@ -70,12 +70,15 @@ La imagen final usa Debian slim (glibc, necesaria para Piper/ONNX Runtime), comp
 | `PIPER_BIN`, `PIPER_MODEL` | Sobrescritura manual opcional de la instalación Piper; normalmente se instala desde Ajustes. |
 | `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` | Credenciales OAuth de tipo aplicación web. El refresh token se guarda en la base local tras conectar la cuenta. |
 | `YOUTUBE_REDIRECT_URI` | URI de callback OAuth opcional; por defecto se calcula con el dominio actual. |
-| `OLLAMA_URL` | Ollama local opcional para reescribir guiones a partir de las fuentes (nunca un servicio pago). |
 | `SUPABASE_URL` | URL del proyecto Supabase para persistencia externa opcional en AppJet Free. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Clave service-role privada del proyecto; solo en variables de entorno del servidor, nunca en el frontend. |
 | `SUPABASE_STORAGE_BUCKET` | Nombre opcional del bucket privado de backups (por defecto `laburito-private-backups`); se crea automáticamente. |
 
 En **Ajustes** se configuran idioma, voz, volumen de música, estilo de subtítulos, copias de seguridad y **Social Media Integration · YouTube**, la conexión OAuth oficial.
+
+### Guionista IA local sin coste
+
+Para reescritura de guiones con un modelo local, instalá [Ollama](https://ollama.com/download), ejecutá `ollama pull llama3.2` y guardá la URL en Ajustes → Ollama local. Con Docker Desktop para Windows usá `http://host.docker.internal:11434`; si ejecutás Laburito directamente en la PC, usá `http://127.0.0.1:11434`. Sin Ollama, el autopiloto conserva el guionista gratuito basado en fuentes.
 
 ### Conectar YouTube
 
@@ -116,11 +119,11 @@ La prueba E2E crea un directorio de datos temporal, verifica resolución, duraci
 
 ## Despliegue y uso real
 
-La URL `*.dev.ap-jt.com` es un endpoint de desarrollo/preview. AppJet también crea un endpoint Edge para la rama `appjet` en todos los planes, incluido Free; la URL exacta aparece en Settings → Overview. Configurá esa dirección como variable de repositorio `LABURITO_URL` en GitHub. El endpoint Edge y el despliegue Free no sustituyen una revisión de límites, persistencia y disponibilidad antes de ofrecer el servicio a terceros.
+La URL `*.dev.ap-jt.com` es solo un endpoint de desarrollo/preview. Para uso diario desde Android, desplegá la rama `appjet` en el endpoint Edge de AppJet, disponible también en el plan Free y sin vencimiento por edad. Copiá la URL exacta desde Settings → Overview y guardala como variable de repositorio `LABURITO_URL` en [GitHub → Variables](https://github.com/etitorecio/laburito/settings/variables/actions). El workflow de GitHub Actions despierta ese endpoint cada cinco minutos y el health check reanima el worker si se detuvo. AppJet Free no incluye disco virtual: conectá Supabase y configurá `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` en las variables del servidor. La integración está disponible, pero las cuotas y condiciones del propio Supabase siguen aplicando.
 
 ## Limitaciones conocidas
 
 - El Autopiloto solo publica Shorts verticales 9:16 de hasta 180 segundos en YouTube. Actualmente el motor visual usa imágenes de archivo con paneo/zoom y tarjetas locales de respaldo: Full Motion AI Video, Skeleton Video y gameplay de Minecraft/Subway Surfers aparecen como opciones de referencia, pero todavía no producen clips reales. Las miniaturas del selector son ilustrativas; para gameplay hacen falta clips propios o con licencia. La portada personalizada no se puede fijar mediante la API para Shorts; se guarda localmente para uso manual. TikTok no está integrado.
-- El material visual externo depende de la red y de las licencias de cada repositorio; siempre se registra autor, licencia y fecha de consulta. La subida a YouTube registra el ID devuelto por la API y consulta `videos.list` para confirmar su presencia; el procesamiento de YouTube puede continuar después de que termine la tarea.\n- La persistencia externa de Supabase es opcional y requiere configurar una URL y una clave service-role en el servidor. El backup es una copia periódica de SQLite, no una base multiinstancia; ejecutá una sola instancia de worker para evitar concurrencia.
+- El material visual externo depende de la red y de las licencias de cada repositorio; siempre se registra autor, licencia y fecha de consulta. La subida a YouTube registra el ID devuelto por la API y consulta `videos.list` para confirmar su presencia; el procesamiento de YouTube puede continuar después de que termine la tarea.\n- La persistencia de Supabase es obligatoria para autopublicar desde AppJet Free, porque no incluye disco virtual persistente. En Docker local se usa el volumen `./data` y Supabase no es necesario. El backup remoto es una copia de SQLite, no una base multiinstancia; ejecutá una sola instancia de worker para evitar concurrencia.
 - La música de fondo se toma de las camas libres integradas o de `data/music/` (el usuario puede aportar pistas libres).
 - La voz es sintética y local; para una voz neural local se puede instalar Piper DaveFX (España, CC0) desde Ajustes; la voz rioplatense espeak sigue disponible.
