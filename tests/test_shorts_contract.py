@@ -43,6 +43,10 @@ class ShortsContractTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "no existe"):
                 autopilot._validate_factory_channel({"channel_id": 999, "template": "reddit_story"})
 
+    def test_autopilot_requires_a_channel_for_each_factory(self):
+        with self.assertRaisesRegex(ValueError, "Asigná la fábrica"):
+            autopilot._validate_factory_channel({"template": "reddit_story"})
+
     def test_vertical_shorts_duration_is_clamped_to_three_minutes(self):
         self.assertEqual(options.clamp_vertical_short_duration("reddit_story", 999), 180)
         self.assertEqual(options.clamp_vertical_short_duration("frutinovela", 5), 15)
