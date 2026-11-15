@@ -24,7 +24,7 @@ WORK = Path(tempfile.mkdtemp(prefix="aitub_e2e_"))
 os.environ["AITUBER_DATA_DIR"] = str(WORK)
 os.environ.setdefault("AITUBER_MUSIC_VOLUME", "0")
 
-from app import db, media, options, render, script_gen, tts  # noqa: E402
+from app import db, media, options, render, script_gen, skeleton, tts  # noqa: E402
 
 FAILURES: list[str] = []
 NOTES: list[str] = []
@@ -166,6 +166,14 @@ def main() -> int:
                   f"vista previa del estilo visual {style_id}")
         except Exception as exc:
             check(False, f"vista previa del estilo visual {style_id}", str(exc))
+
+    print("\n== Skeleton Video local")
+    try:
+        skeleton_clip = skeleton.ensure_clip("walk")
+        check(skeleton_clip.exists() and skeleton_clip.stat().st_size > 1000,
+              "generar animación procedural de esqueleto")
+    except Exception as exc:
+        check(False, "generar animación procedural de esqueleto", str(exc))
 
     print("\n== Render con clip de fondo propio")
     clip_dir = db.DATA_DIR / "background_clips" / "stock_footage"
