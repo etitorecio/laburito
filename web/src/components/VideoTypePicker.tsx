@@ -25,8 +25,8 @@ const REQUIRED: Record<string, number> = { stock_footage: 5, minecraft: 1, subwa
 const MAX_CLIPS = 5;
 const CLIP_SOURCES: Record<string, { label: string; url: string; detail: string }[]> = {
   subway: [
-    { label: 'Subway Surfers oficial · vertical 9:16 (SYBO)', url: 'https://www.youtube.com/watch?v=QPW3XwBoQlw', detail: 'El canal verificado de Subway Surfers lo publica expresamente como FREE TO USE. Es la mejor fuente encontrada para Shorts.' },
-    { label: 'Subway Surfers oficial · horizontal 16:9 (SYBO)', url: 'https://www.youtube.com/watch?v=i0M4ARe9v0Y', detail: 'También marcado FREE TO USE por el canal oficial; habría que recortar al formato vertical.' },
+    { label: 'Subway Surfers oficial · vertical 9:16 (SYBO)', url: 'https://www.youtube.com/watch?v=QPW3XwBoQlw', detail: 'La publicación oficial dice FREE TO USE, pero las condiciones generales de SYBO restringen la exhibición pública y el uso comercial salvo autorización. Para monetizar, pedí permiso escrito específico y guardalo.' },
+    { label: 'Subway Surfers oficial · horizontal 16:9 (SYBO)', url: 'https://www.youtube.com/watch?v=i0M4ARe9v0Y', detail: 'También marcado FREE TO USE por el canal oficial; habría que recortarlo a vertical. La autorización comercial debe confirmarse frente a las condiciones generales de SYBO.' },
   ],
   minecraft: [
     { label: 'Minecraft Parkour · Orbital (creador)', url: 'https://www.youtube.com/watch?v=u7kdVe8q5zs', detail: 'El creador declara permiso para monetizar y pide crédito. Es permiso del autor de la grabación, no una licencia de Mojang.' },
@@ -127,7 +127,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
                           <small>{source.detail}</small>
                         </div>
                       ))}
-                      <small>Descargá únicamente desde una opción de descarga ofrecida por el creador o grabá tu propia partida. No uses páginas para extraer videos de YouTube.</small>
+                      <small>Subí solo material con permiso comercial explícito del titular. Grabar tu propia partida no elimina los derechos sobre el juego. No uses páginas para extraer videos de YouTube.</small>
                     </div>
                     <div className="background-clip-slots">
                   {Array.from({ length: MAX_CLIPS }, (_, index) => {
