@@ -368,9 +368,33 @@ def _validate_autopilot_short(project, source: Path) -> dict:
     return info
 
 
+def _validate_autopilot_video(project, source: Path) -> dict:
+    """Valida Shorts y documentales del Autopiloto antes de subirlos."""
+    if not (_g(project, "notes") or "").startswith("Autopiloto:"):
+        return {}
+    if _g(project, "kind") == "short":
+        return _validate_autopilot_short(project, source)
+    if _g(project, "kind") != "documentary":
+        raise PublishError("Publicación cancelada: tipo de video del Autopiloto no compatible.")
+    try:
+        info = media.probe_video(source)
+    except Exception as exc:
+        raise PublishError(f"No se pudo validar el MP4 antes de publicar: {exc}") from exc
+    width, height = int(info.get("width") or 0), int(info.get("height") or 0)
+    duration = float(info.get("duration") or 0)
+    if not width or not height or width <= height:
+        raise PublishError("Publicación cancelada: el documental debe ser horizontal 16:9.")
+    if duration < 180 or duration > 1200:
+        raise PublishError(f"Publicación cancelada: duración inválida para un documental ({duration:.1f} s). El límite es 20 minutos.")
+    ratio = width / height
+    if abs(ratio - (16 / 9)) > 0.04:
+        raise PublishError(f"Publicación cancelada: proporción {width}x{height}; se esperaba 16:9.")
+    return info
+
+
 def _youtube_upload(project, meta: dict, privacy: str, report) -> dict:
     source = video_path(project)
-    _validate_autopilot_short(project, source)
+    _validate_autopilot_video(project, source)
     token = _youtube_token()
     report(40, "Credenciales de YouTube aceptadas")
     payload = {
@@ -566,7 +590,7 @@ def publish(project_id: int, destination: str = "entrega", calendar_id: int | No
     if destination == "youtube" and privacy not in ("public", "unlisted", "private"):
         raise PublishError("Privacidad inválida para YouTube. Elegí público, oculto o privado.")
     if destination == "youtube" and (_g(project, "notes") or "").startswith("Autopiloto:"):
-        _validate_autopilot_short(project, source)
+        _validate_autopilot_video(project, source)
     if destination not in ("entrega", "youtube"):
         raise PublishError(f"Destino desconocido: {destination}. Usá 'entrega' o 'youtube'.")
 
