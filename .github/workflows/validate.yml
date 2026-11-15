@@ -9,6 +9,7 @@ on:
       - "scripts/**"
       - "requirements.txt"
       - "Dockerfile"
+      - ".github/workflows/**"
       - "docker-compose.yml"
   pull_request:
     branches: [appjet]
