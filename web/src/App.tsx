@@ -58,7 +58,7 @@ export default function App() {
         setAuthError((e as Error).message);
       }
     })();
-  }, [route]);
+  }, []);
 
   // La portada pública se muestra sin la barra lateral del estudio.
   if (route === 'landing') {
@@ -107,9 +107,6 @@ export default function App() {
           <h1>{current?.label ?? 'Inicio'}</h1>
           <div className="top-actions">
             {diag && !diag.tts.available && <span className="badge bad">sin voz</span>}
-            {route !== 'inicio' && route !== 'proyectos' && route !== 'editor' && (
-              <button className="btn small primary" onClick={() => go('proyectos')}>Crear video</button>
-            )}
           </div>
         </header>
 
