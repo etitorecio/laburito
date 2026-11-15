@@ -48,6 +48,13 @@ class PersistenceTests(unittest.TestCase):
         with patch.dict("os.environ", {}, clear=True):
             self.assertFalse(persistence.status()["configured"])
 
+    def test_status_detects_local_persistent_volume_without_supabase(self):
+        with patch.dict("os.environ", {"AITUBER_LOCAL_PERSISTENT": "1"}, clear=True):
+            status = persistence.status()
+        self.assertFalse(status["configured"])
+        self.assertTrue(status["local_persistent"])
+        self.assertEqual(status["provider"], "Volumen local")
+
     def test_restore_validates_and_restores_private_bucket_backup(self):
         class FakeResponse:
             def __enter__(self):
