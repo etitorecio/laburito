@@ -269,6 +269,27 @@ def health():
     return {"ok": True, "app": "AITuber Libre", "version": APP_VERSION, "time": db.now()}
 
 
+@app.post("/api/music/upload")
+async def upload_music(file: UploadFile = File(...)):
+    """Guarda una pista propia para usarla como música de fondo en los videos."""
+    allowed = {".mp3", ".wav", ".ogg", ".m4a", ".flac"}
+    original = Path(file.filename or "musica").name
+    extension = Path(original).suffix.lower()
+    if extension not in allowed:
+        raise HTTPException(400, "Formato no admitido. Usá MP3, WAV, OGG, M4A o FLAC.")
+    content = await file.read(25 * 1024 * 1024 + 1)
+    if not content:
+        raise HTTPException(400, "El archivo está vacío.")
+    if len(content) > 25 * 1024 * 1024:
+        raise HTTPException(400, "La pista supera el límite de 25 MB.")
+    stem = "".join(ch for ch in Path(original).stem if ch.isalnum() or ch in "-_")[:48] or "musica"
+    db.MUSIC_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"{stem}-{time.time_ns()}{extension}"
+    target = db.MUSIC_DIR / filename
+    target.write_bytes(content)
+    return {"filename": filename, "music_library": sorted(p.name for p in db.MUSIC_DIR.iterdir() if p.is_file())}
+
+
 @app.get("/api/meta")
 def meta():
     tts_status = tts.status()
