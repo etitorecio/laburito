@@ -3,8 +3,22 @@ name: Validate Laburito
 on:
   push:
     branches: [appjet]
+    paths:
+      - "app/**"
+      - "tests/**"
+      - "scripts/**"
+      - "requirements.txt"
+      - "Dockerfile"
+      - "docker-compose.yml"
   pull_request:
     branches: [appjet]
+    paths:
+      - "app/**"
+      - "tests/**"
+      - "scripts/**"
+      - "requirements.txt"
+      - "Dockerfile"
+      - "docker-compose.yml"
   workflow_dispatch:
 
 concurrency:
