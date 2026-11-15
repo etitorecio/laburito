@@ -218,7 +218,7 @@ def caption_preview(style_id: str) -> Path:
         if style.get("uppercase"):
             lines = [line.upper() for line in lines]
         text_file = cue_dir / f"{index}.txt"
-        text_file.write_text("\\n".join(lines), encoding="utf-8")
+        text_file.write_text("\n".join(lines), encoding="utf-8")
         cue["file"] = str(text_file)
 
     background = [
