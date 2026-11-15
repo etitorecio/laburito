@@ -294,7 +294,7 @@ export default function Landing({ go }: { go: Go }) {
           {HERO_CARDS.map((c) => (
             <div className="lp-phone" key={c.caption} style={{ background: c.grad }}>
               <span className="lp-phone-tag">{c.tag}</span>
-              <span className="lp-play">▶</span>
+              <span className="lp-play" aria-label="Vista de ejemplo">Ejemplo</span>
               <div className="lp-wave">
                 {Array.from({ length: 14 }).map((_, i) => (
                   <i key={i} style={{ height: 5 + ((i * 7) % 17) }} />
