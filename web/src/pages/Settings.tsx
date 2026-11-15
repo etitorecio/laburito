@@ -48,8 +48,8 @@ export default function Settings() {
     setError('');
     setOk('');
     try {
-      const res = await api.put<{ settings: Record<string, string> }>('/api/settings', values);
-      setValues(res.settings);
+      const res = await api.put<Record<string, string>>('/api/settings', { values });
+      setValues(res);
       setOk('Configuración guardada.');
     } catch (e) {
       setError((e as Error).message);
@@ -185,7 +185,7 @@ export default function Settings() {
       <Card title="Producción" sub="Parámetros usados por el guionista y el render.">
         <div className="row">
           <Field label="Idioma de producción">
-            <div className="input" aria-readonly="true">Español · único idioma disponible</div>
+            <p className="muted" style={{ margin: 0 }}>Español (fijo para todos los Shorts y proyectos).</p>
           </Field>
           <Field label="Voz por defecto">
             <select value={values.default_voice || 'es'} onChange={(e) => setValues({ ...values, default_voice: e.target.value })}>
