@@ -74,10 +74,10 @@ const PRODUCTION_STAGES = [
 ];
 
 const VISUAL_OPTIONS = [
-  { id: 'moving_images', title: 'Moving AI Images', subtitle: 'Imágenes con movimiento; no son imágenes generadas por IA', preview: '🖼️', available: true, style: 'Movimiento de imágenes con paneo y zoom', kind: 'stock' },
-  { id: 'stock_images', title: 'Stock footage / imágenes', subtitle: 'Fotografías de archivo con licencia y movimiento', preview: '🎞️', available: true, style: 'Fotografía de archivo con licencia', kind: 'stock' },
+  { id: 'moving_images', title: 'Moving AI Images', subtitle: 'En esta versión: imágenes de archivo con paneo y zoom; no se generan con IA', preview: '🖼️', available: true, style: 'Movimiento de imágenes con paneo y zoom', kind: 'stock' },
+  { id: 'stock_images', title: 'Stock Footage', subtitle: 'Fotografías y material de archivo con licencia; el catálogo depende de las fuentes disponibles', preview: '🎞️', available: true, style: 'Fotografía de archivo con licencia', kind: 'stock' },
   { id: 'full_motion_ai', title: 'Full Motion AI Video', subtitle: 'Clips de video generados por IA', preview: '🎬', available: false, style: 'Full Motion AI Video', kind: 'ai' },
-  { id: 'skeleton', title: 'Skeleton Video', subtitle: 'Animación 3D de esqueleto', preview: '💀', available: false, style: 'Skeleton Video', kind: 'skeleton' },
+  { id: 'skeleton', title: 'Skeleton Video', subtitle: 'Animación 3D de esqueleto: todavía no hay motor de animación conectado', preview: '💀', available: false, style: 'Skeleton Video', kind: 'skeleton' },
   { id: 'minecraft', title: 'Minecraft gameplay', subtitle: '5 miniaturas de preview · requiere gameplay propio o licenciado', preview: '⛏️', available: false, style: 'Minecraft gameplay', kind: 'minecraft' },
   { id: 'subway', title: 'Subway Surfers gameplay', subtitle: '5 clips de ejemplo · requiere videos con licencia o propios', preview: '🏃', available: false, style: 'Subway Surfers gameplay', kind: 'subway' },
 ];
@@ -398,7 +398,7 @@ export default function Autopilot() {
             {selectedTemplate && <p className="muted">{selectedTemplate.description}</p>}
             <h4>Formato visual y catálogo de clips</h4>
             <p className="muted">Cada tarjeta muestra miniaturas rectangulares como referencia. Las miniaturas de Minecraft y Subway son ilustrativas: no incluyen ni descargan gameplay real. Solo se pueden activar formatos que el motor actual puede producir.</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))', gap: 10 }}>
+            <div className="visual-style-track">
               {VISUAL_OPTIONS.map((item) => {
                 const selected = form.visual_style === item.style;
                 const imageThumbs = THUMB_IMAGES[item.kind];
@@ -407,7 +407,7 @@ export default function Autopilot() {
                 return <button key={item.id} type="button" disabled={!item.available}
                   onClick={() => update('visual_style', item.style)}
                   aria-pressed={selected}
-                  style={{ textAlign: 'left', padding: 0, overflow: 'hidden', borderRadius: 12,
+                  style={{ flex: '0 0 250px', minWidth: 250, textAlign: 'left', padding: 0, overflow: 'hidden', borderRadius: 12, scrollSnapAlign: 'start',
                     border: selected ? '2px solid #dc2626' : '1px solid var(--border, #d1d5db)',
                     background: 'var(--card, #fff)', opacity: item.available ? 1 : 0.76,
                     cursor: item.available ? 'pointer' : 'not-allowed' }}>
