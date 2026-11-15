@@ -300,6 +300,8 @@ export interface AutopilotRule {
   last_project_status?: string | null;
   last_job_status?: string | null;
   last_job_message?: string | null;
+  last_job_progress?: number | null;
+  last_job_kind?: string | null;
   last_error?: string | null;
 }
 
