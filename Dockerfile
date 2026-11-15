@@ -1,32 +1,23 @@
-# AITuber Libre — imagen única: FFmpeg propio + espeak-ng + FastAPI + React compilado
-#
-# FFmpeg se compila desde la fuente (9.0.2, última rama estable) en lugar de
-# instalarse desde Alpine. El paquete de Alpine arrastra libass -> harfbuzz ->
-# glib, y el escáner de la imagen marca glib con un rango invertido
-# (ALPINE-CVE-2021-27219: "introducido en 2.67.0", "corregido en 2.66.6-r0"),
-# es decir, sin versión corregida posible en ninguna rama de Alpine. Este
-# renderizador no usa libass: los subtítulos se queman con drawtext (freetype),
-# así que compilamos sin libass y glib no llega a la imagen final.
+# Laburito — FFmpeg compilado sin libass/GLib + FastAPI + React.
+# Debian/glibc es necesario para las ruedas oficiales manylinux de ONNX Runtime
+# usadas por Piper TTS; Alpine/musl no tiene esas ruedas y rompería el contenedor.
 
 FROM node:24-alpine AS web
-
 WORKDIR /web
 COPY web/package.json /web/package.json
-RUN npm install --no-audit --no-fund
+COPY web/package-lock.json /web/package-lock.json
+RUN npm ci --no-audit --no-fund
 COPY web/ /web/
 RUN npm run build
 
-FROM alpine:3.24 AS ffmpeg-build
+FROM debian:bookworm-slim AS ffmpeg-build
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      build-essential nasm pkg-config zlib1g-dev libfreetype6-dev libx264-dev \
+      meson ninja-build ca-certificates xz-utils python3 \
+ && rm -rf /var/lib/apt/lists/*
 
-RUN echo "os-refresh 2026-11-13" \
- && apk upgrade --no-cache \
- && apk add --no-cache build-base nasm pkgconf zlib-dev freetype-dev x264-dev meson ninja
-
-# Harfbuzz sin glib: FFmpeg 8/9 exigen libharfbuzz para el filtro drawtext
-# (subtitulos quemados), pero el paquete de Alpine lo enlaza con glib, que el
-# escaner marca con un rango invertido (ALPINE-CVE-2021-27219) sin correccion
-# posible en ninguna rama. Se compila aqui con glib desactivado y a la imagen
-# final solo se copia la libreria resultante.
+# HarfBuzz se compila sin GLib para mantener la dependencia mínima.
 WORKDIR /hb
 ADD https://github.com/harfbuzz/harfbuzz/releases/download/15.1.0/harfbuzz-15.1.0.tar.xz /hb/hb.tar.xz
 RUN tar -xf hb.tar.xz \
@@ -54,12 +45,12 @@ RUN tar -xf ffmpeg.tar.xz --strip-components=1 \
  && make -j"$(nproc)" \
  && make install
 
-FROM python:3.13-alpine
-
-RUN echo "os-refresh 2026-11-13" \
- && apk upgrade --no-cache \
- && apk add --no-cache espeak-ng tzdata x264-libs freetype zlib libstdc++ \
- && (apk add --no-cache font-dejavu || apk add --no-cache ttf-dejavu)
+FROM python:3.13-slim-bookworm
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      espeak-ng tzdata ca-certificates libx264-164 libfreetype6 zlib1g \
+      libstdc++6 libgomp1 fonts-dejavu-core \
+ && rm -rf /var/lib/apt/lists/*
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -73,18 +64,18 @@ COPY --from=ffmpeg-build /usr/local/lib/libharfbuzz.so* /usr/local/lib/
 
 WORKDIR /app
 COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+ && pip install --no-cache-dir -r /app/requirements.txt \
+ && ! ldd /usr/local/bin/ffmpeg | grep -q "not found"
 
 COPY app/ /app/app/
 COPY --from=web /web/dist /app/web/dist
 
-# El proceso corre sin privilegios y solo es dueño de sus propios directorios.
-RUN addgroup -S aituber \
- && adduser -S -G aituber -h /app aituber \
+RUN addgroup --system aituber \
+ && adduser --system --ingroup aituber --home /app aituber \
  && mkdir -p /app/data/music /app/data/renders /app/data/exports /app/data/media /app/data/tmp \
  && chown -R aituber:aituber /app
 
 USER aituber
-
 EXPOSE 8080
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
