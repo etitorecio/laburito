@@ -429,6 +429,57 @@ QUOTE_BLUEPRINT = [
     },
 ]
 
+REDDIT_STORY_BLUEPRINT = [
+    {
+        "key": "hook",
+        "title": "El comienzo que no cierra",
+        "weight": 0.10,
+        "purpose": "Abrir en medio del problema y dejar una pregunta que obligue a seguir.",
+        "narration": "Nunca pensé que {topic} iba a terminar convirtiéndose en el peor problema de mi vida. Al principio parecía una situación normal, hasta que pasó algo que no pude explicar.",
+        "visual": "{topic} historia reddit escena intensa primer plano vertical",
+    },
+    {
+        "key": "contexto",
+        "title": "Cómo empezó todo",
+        "weight": 0.15,
+        "purpose": "Presentar protagonista, vínculos y situación con detalles concretos.",
+        "narration": "Para entender lo que pasó, tengo que explicar cómo era todo antes. Yo confiaba en las personas involucradas y tenía motivos para pensar que nada raro estaba pasando. Ahora, mirando hacia atrás, había señales que no quise ver.",
+        "visual": "{topic} vida cotidiana casa teléfono mensajes vertical",
+    },
+    {
+        "key": "primer_conflicto",
+        "title": "La primera señal",
+        "weight": 0.18,
+        "purpose": "Introducir una anomalía concreta que cambie la situación.",
+        "narration": "Todo cambió cuando apareció un detalle que no encajaba. Pregunté qué estaba pasando y recibí una explicación demasiado rápida. En ese momento decidí dejarlo pasar, pero esa decisión hizo que el problema creciera.",
+        "visual": "{topic} mensaje sospechoso reacción persona vertical",
+    },
+    {
+        "key": "escalada",
+        "title": "Cada vez peor",
+        "weight": 0.22,
+        "purpose": "Elevar las consecuencias y mostrar decisiones, no repetir el conflicto.",
+        "narration": "Durante los días siguientes, las cosas empeoraron. Cada vez que intentaba aclararlo aparecía una contradicción nueva. Lo más difícil no era lo que estaba pasando, sino darme cuenta de que la gente en la que confiaba sabía mucho más de lo que decía.",
+        "visual": "{topic} discusión tensión llamada teléfono vertical",
+    },
+    {
+        "key": "giro",
+        "title": "Lo que realmente había pasado",
+        "weight": 0.20,
+        "purpose": "Revelar una información que reinterprete las pistas anteriores.",
+        "narration": "Entonces descubrí el detalle que lo cambió todo: la explicación que me habían dado era cierta solo a medias. Había otra persona involucrada y una razón que nadie se había animado a contarme. De golpe, todas las piezas empezaron a encajar.",
+        "visual": "{topic} revelación sorpresa prueba documento vertical",
+    },
+    {
+        "key": "cierre",
+        "title": "La decisión y la pregunta",
+        "weight": 0.15,
+        "purpose": "Mostrar la consecuencia y terminar con una pregunta concreta para comentarios.",
+        "narration": "Al final tuve que tomar una decisión que cambió esa relación para siempre. Todavía no sé si hice lo correcto, por eso quiero preguntarles algo: ¿ustedes habrían hecho lo mismo en mi lugar o creen que me equivoqué?",
+        "visual": "{topic} persona reflexionando final historia vertical",
+    },
+]
+
 FRUTINOVELA_BLUEPRINT = [
     {
         "key": "gancho",
@@ -488,6 +539,7 @@ BLUEPRINTS = {
     "explainer": EXPLAINER_BLUEPRINT,
     "quote": QUOTE_BLUEPRINT,
     "frutinovela": FRUTINOVELA_BLUEPRINT,
+    "reddit_story": REDDIT_STORY_BLUEPRINT,
 }
 
 def _hash(text: str) -> str:
