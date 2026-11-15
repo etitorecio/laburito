@@ -1,6 +1,7 @@
 name: Validate application
 
 on:
+  workflow_dispatch:
   push:
     branches: [appjet]
   pull_request:
