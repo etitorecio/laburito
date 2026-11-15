@@ -144,7 +144,7 @@ def youtube_credentials(channel_id: int | None = None) -> dict:
 
 def save_youtube_account(channel_id: int, refresh_token: str, status: dict) -> None:
     if not db.query_one("SELECT id FROM channels WHERE id=?", (int(channel_id),)):
-        raise PublishError("El canal interno seleccionado ya no existe.")
+        raise PublishError("La fábrica seleccionada ya no existe.")
     ensure_schema()
     youtube_channel_id = str(status.get("channel_id") or "").strip()
     duplicate = db.query_one(
@@ -187,7 +187,7 @@ def destinations() -> list[dict]:
             "label": "YouTube (publicación OAuth por canal)",
             "available": not missing,
             "missing_env": missing,
-            "note": "Cada canal interno debe tener su propia cuenta de YouTube conectada desde Cuentas.",
+            "note": "Conectá en Cuentas la cuenta real de Google/YouTube que publicará para cada fábrica.",
         },
     ]
 
@@ -757,7 +757,7 @@ def set_auto_publish(project_id: int, enabled: bool, destination: str = "entrega
         raise PublishError(f"El proyecto {project_id} no existe.")
     if enabled and destination == "youtube":
         if not _g(project, "channel_id"):
-            raise PublishError("Asigná este proyecto a un canal interno para elegir su cuenta de YouTube.")
+            raise PublishError("Elegí la fábrica de este proyecto para saber qué cuenta real de YouTube debe publicar.")
         youtube_account_status(int(_g(project, "channel_id")))
         if not persistence.durable_storage_available():
             raise PublishError(
@@ -799,7 +799,7 @@ def api_publish(project_id: int, payload: PublishIn):
     if payload.destination == "youtube":
         channel_id = _g(project, "channel_id")
         if not channel_id:
-            raise HTTPException(400, "Asigná el proyecto a un canal interno antes de publicar en YouTube.")
+            raise HTTPException(400, "Elegí la fábrica del proyecto antes de publicar en YouTube.")
         try:
             youtube_account_status(int(channel_id))
         except PublishError as exc:
