@@ -148,6 +148,10 @@ def run_job(job: dict) -> None:
                     job_id,
                 ),
             )
+            db.execute(
+                "UPDATE autopilot_rules SET last_error='', updated_at=? WHERE last_project_id=?",
+                (db.now(), int(project_id)),
+            )
         elif job["kind"] == "export_project":
             path = render.export_project(int(project_id))
             db.execute(
@@ -192,6 +196,11 @@ def run_job(job: dict) -> None:
             f"Tarea {job_id} falló: {exc}" + (f" — reintento {attempt}/3" if retry else " — máximo de intentos alcanzado"),
             {"trace": traceback.format_exc()[-2000:], "attempt": attempt},
         )
+        if project_id is not None and job.get("kind") == "publish_project":
+            db.execute(
+                "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE last_project_id=?",
+                (str(exc)[:500], db.now(), int(project_id)),
+            )
         if retry:
             # Reintentos acotados para errores transitorios de red, TTS o FFmpeg.
             time.sleep(min(2 ** attempt, 8))
