@@ -11,39 +11,16 @@ export default function Settings() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
-  const [youtube, setYoutube] = useState<{ available: boolean; missing_env: string[]; note: string } | null>(null);
-  const [youtubeVerified, setYoutubeVerified] = useState(false);
-  const [youtubeChannel, setYoutubeChannel] = useState('');
-  const [youtubeBusy, setYoutubeBusy] = useState(false);
-  const [youtubeOAuthBusy, setYoutubeOAuthBusy] = useState(false);
 
   async function load() {
     try {
-      const [d, m, p] = await Promise.all([
+      const [d, m] = await Promise.all([
         api.get<Diagnostics>('/api/diagnostics'),
         api.get<Meta>('/api/meta'),
-        api.get<{ destinations: { id: string; available: boolean; missing_env: string[]; note: string }[] }>('/api/publish/destinations'),
       ]);
       setDiag(d);
       setMeta(m);
       setValues(m.settings);
-      const youtubeDestination = p.destinations.find((x) => x.id === 'youtube') || null;
-      setYoutube(youtubeDestination);
-      if (youtubeDestination?.available) {
-        setYoutubeVerified(false);
-        void api.get<{ channel_title: string }>('/api/youtube/status')
-          .then((status) => {
-            setYoutubeVerified(true);
-            setYoutubeChannel(status.channel_title || 'Canal conectado');
-          })
-          .catch(() => {
-            setYoutubeVerified(false);
-            setYoutubeChannel('');
-          });
-      } else {
-        setYoutubeVerified(false);
-        setYoutubeChannel('');
-      }
     } catch (e) {
       setError((e as Error).message);
     }
@@ -65,32 +42,7 @@ export default function Settings() {
     }
   }
 
-  async function startYoutubeOAuth() {
-    setError(''); setOk(''); setYoutubeOAuthBusy(true);
-    try {
-      const result = await api.post<{ authorization_url: string; redirect_uri: string }>('/api/youtube/oauth/start', {});
-      window.location.assign(result.authorization_url);
-    } catch (e) {
-      setError((e as Error).message);
-      setYoutubeOAuthBusy(false);
-    }
-  }
 
-  async function testYoutubeConnection() {
-    setError(''); setOk(''); setYoutubeBusy(true);
-    try {
-      const result = await api.get<{ channel_title: string }>('/api/youtube/status');
-      setYoutubeVerified(true);
-      setYoutubeChannel(result.channel_title);
-      setOk('Conectado con el canal: ' + result.channel_title);
-    } catch (e) {
-      setYoutubeVerified(false);
-      setYoutubeChannel('');
-      setError((e as Error).message);
-    } finally {
-      setYoutubeBusy(false);
-    }
-  }
 
   return (
     <div className="stack">
@@ -138,23 +90,10 @@ export default function Settings() {
         <p className="muted">Para no depender de claves de almacenamiento en la nube, ejecutá la aplicación en tu PC con el volumen local ./data. No necesitás Supabase ni otro servicio de almacenamiento. La PC debe permanecer encendida para que el Autopiloto siga trabajando; podés controlarlo desde el celular conectado a la misma red.</p>
       </Card>
 
-      <Card title="Conexión de YouTube" sub="Integración social oficial: vinculá tu canal una sola vez mediante OAuth y Laburito podrá publicar Shorts automáticamente.">
-        <div className="pill-row">
-          <Badge tone={youtube?.available ? 'ok' : 'warn'}>{youtubeVerified ? 'Canal verificado' : youtube?.available ? 'Credenciales guardadas · falta verificar' : 'Falta configurar la conexión'}</Badge>
-          {youtubeVerified && <Badge tone="ok">YouTube: {youtubeChannel}</Badge>}
-          {youtube?.missing_env.map((item) => <Badge key={item} tone="warn">{item}</Badge>)}
-        </div>
-        <p className="muted"><a href="#/cuentas">Administrar cuentas conectadas →</a></p>
-        <p className="muted">Aclaración: el selector «Canal de contenido» de Proyectos sirve para organizar tus series dentro de Laburito. La cuenta real de YouTube se conecta acá; al autorizarla se mostrará el nombre del canal en esta pantalla.</p>
-        <p className="muted">En Google Cloud habilitá YouTube Data API v3 y creá credenciales OAuth de tipo <b>Aplicación web</b>. Agregá como URI de redirección autorizada esta dirección exacta: <code>{window.location.origin}/api/youtube/callback</code>. Si definiste YOUTUBE_REDIRECT_URI en el servidor, usá ese valor en lugar de la dirección calculada. En el archivo .env local configurá YOUTUBE_CLIENT_ID y YOUTUBE_CLIENT_SECRET. No hace falta ninguna contraseña ni token de IA para usarlo en tu red local.</p>
-        <p className="muted">Después de guardar esas variables y reiniciar la app, tocá «Conectar canal con Google». Google te pedirá autorizar el canal una sola vez y Laburito guardará ese permiso en tu carpeta local. Si la pantalla de consentimiento permanece en Testing, Google puede revocar el permiso después de 7 días; para automatización continua revisá el estado de publicación de la app OAuth.</p>
-        <p className="muted">La conexión de YouTube sí requiere configurar una vez el Client ID y el Client Secret de tu aplicación OAuth de Google en el archivo .env. Son credenciales de publicación de Google, no claves ni créditos de IA: no intervienen en la escritura, voz ni render. Después solo tocás «Conectar canal» y autorizás tu cuenta; no tenés que copiar ni pegar códigos o refresh tokens. La autorización queda guardada localmente. Si la pantalla de consentimiento permanece en Testing, Google puede revocar el acceso después de 7 días.</p>
-        <p className="muted">Importante: hacé la primera conexión desde el navegador de la notebook usando la dirección local «localhost», no desde la IP que abrís en el celular. Google permite redirecciones HTTP locales para localhost, pero puede rechazar una IP privada de la red. Una vez autorizado el canal, podés seguir manejando el Autopiloto desde el teléfono.</p>
-        <div className="row">
-          <button className="btn primary" disabled={youtubeOAuthBusy || !!youtube?.missing_env.includes('YOUTUBE_CLIENT_ID') || !!youtube?.missing_env.includes('YOUTUBE_CLIENT_SECRET')} onClick={() => void startYoutubeOAuth()}>{youtubeOAuthBusy ? 'Abriendo Google…' : 'Conectar canal con Google'}</button>
-          <button className="btn ghost" disabled={youtubeBusy || !youtube?.available} onClick={() => void testYoutubeConnection()}>Comprobar conexión real</button>
-        </div>
-        
+      <Card title="Cuentas de publicación" sub="Cada fábrica usa una cuenta de Google independiente.">
+        <p className="muted">Conectá Historias y Frutinovelas por separado desde la administración de cuentas. La asignación y verificación se hacen por canal.</p>
+        <a className="btn primary" href="#/cuentas">Administrar las dos cuentas de YouTube</a>
+        <p className="muted">La aplicación OAuth de Google ya configurada se reutiliza para autorizar ambas cuentas; no hace falta crear credenciales distintas.</p>
       </Card>
 
       <Card title="Voz neural española" sub="Mejorá la narración sin pagar APIs ni servicios de voz.">
