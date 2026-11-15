@@ -7,6 +7,14 @@ from app import publish, worker
 
 
 class WorkerReliabilityTests(unittest.TestCase):
+    def test_auto_publish_blocks_missing_voice_engine(self):
+        message = worker._auto_publish_blocker({"quality": {"tts_engines": []}})
+        self.assertIn("sin narración", message)
+
+    def test_auto_publish_blocks_silence_fallback(self):
+        message = worker._auto_publish_blocker({"quality": {"tts_engines": ["silencio"]}})
+        self.assertIn("sin narración", message)
+
     def test_render_result_requires_real_nonempty_mp4_and_probe_metadata(self):
         with tempfile.TemporaryDirectory() as folder:
             video = Path(folder) / "final_short.mp4"
