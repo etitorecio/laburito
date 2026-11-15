@@ -40,6 +40,30 @@ class WorkerReliabilityTests(unittest.TestCase):
             "enabled": True, "destination": "youtube", "privacy": "public"
         })
 
+    def test_worker_holds_youtube_upload_when_durable_storage_is_missing(self):
+        job = {
+            "id": 95, "project_id": 12, "kind": "render_project",
+            "payload_json": '{"privacy":"public"}', "attempts": 1,
+        }
+        statements = []
+        with patch.object(worker.render, "render_project", return_value={
+            "video": "/tmp/final_short.mp4",
+            "quality": {"tts_engines": ["espeak-ng"]},
+        }):
+            with patch.object(worker, "_validate_render_result", return_value={"path": "/tmp/final_short.mp4"}):
+                with patch.object(publish, "auto_publish_settings", return_value={
+                    "enabled": True, "destination": "youtube", "privacy": "public"
+                }):
+                    with patch.object(worker.persistence, "durable_storage_available", return_value=False):
+                        with patch.object(worker, "enqueue") as enqueue:
+                            with patch.object(worker.db, "execute", side_effect=lambda sql, params=(): statements.append((sql, params))):
+                                with patch.object(worker.db, "now", return_value="now"):
+                                    with patch.object(worker.db, "log"):
+                                        worker.run_job(job)
+        enqueue.assert_not_called()
+        self.assertTrue(any("no hay almacenamiento persistente" in params[0].lower()
+                            for sql, params in statements if "UPDATE jobs SET message" in sql))
+
     def test_youtube_upload_waits_for_durable_mp4_backup(self):
         job = {
             "id": 93, "project_id": 12, "kind": "render_project",
