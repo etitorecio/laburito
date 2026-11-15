@@ -94,6 +94,15 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertFalse(render._captions_enabled({"notes": notes}))
         self.assertTrue(render._captions_enabled({"notes": "Proyecto normal"}))
 
+    def test_custom_visual_prompt_selects_a_local_filter_and_search_hint(self):
+        notes = "[LABURITO_META]" + json.dumps({
+            "captions_enabled": True,
+            "visual_style_prompt": "Anime cyberpunk con luces de neón",
+        })
+        project = {"notes": notes, "visual_style": "automatico"}
+        self.assertEqual(render._custom_visual_style_id(project), "cyberpunk")
+        self.assertEqual(render._project_metadata(project)["visual_style_prompt"], "Anime cyberpunk con luces de neón")
+
     def test_autopilot_short_duration_supports_youtube_three_minute_limit(self):
         self.assertEqual(autopilot._clean({"template": "shorts", "duration_target_sec": 180})["duration_target_sec"], 180)
         self.assertEqual(autopilot._clean({"template": "shorts", "duration_target_sec": 240})["duration_target_sec"], 180)
