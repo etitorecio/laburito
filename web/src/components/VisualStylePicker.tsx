@@ -1,5 +1,4 @@
 import type { OptionItem } from '../api';
-import { getToken } from '../api';
 
 interface VisualStyleOption extends OptionItem {
   description: string;
@@ -13,13 +12,12 @@ interface Props {
 }
 
 export default function VisualStylePicker({ options, value, onChange, compact = false }: Props) {
-  const token = getToken();
   return (
     <div className="visual-style-picker">
       <div className="visual-style-picker-track">
         {options.map((style) => {
           const selected = value === style.id;
-          const src = `/api/visual-style-preview/${encodeURIComponent(style.id)}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+          const src = `/api/visual-style-preview/${encodeURIComponent(style.id)}`;
           return (
             <button
               key={style.id}
