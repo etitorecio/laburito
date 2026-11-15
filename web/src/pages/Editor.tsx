@@ -630,7 +630,7 @@ export default function Editor({ projectId, go }: Props) {
         </label>
         {publishDest === 'youtube' && (
           linkedYoutubeAccount ? (
-            <p className="muted">Este proyecto se publicará en <strong>{linkedYoutubeAccount.channel_title}</strong>, la cuenta vinculada a {project?.channel_name || 'su canal interno'}.</p>
+            <p className="muted">Este proyecto se publicará en <strong>{linkedYoutubeAccount.channel_title}</strong>, la cuenta vinculada a {youtubeChannels.find((channel) => channel.id === project?.channel_id)?.name || 'su canal interno'}.</p>
           ) : (
             <div className="stack">
               <p className="error-text">{project?.channel_id ? 'Todavía no hay una cuenta de YouTube conectada a este canal.' : 'Este proyecto no está asignado a Historias ni a Frutinovelas.'}</p>
