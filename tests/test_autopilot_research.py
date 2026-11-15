@@ -231,7 +231,8 @@ class AutopilotResearchTests(unittest.TestCase):
     def test_autopilot_allows_free_source_based_youtube_publication_without_ollama(self):
         rule = {"id": 10, "auto_publish": True, "cadence_hours": 24, "destination": "youtube", "privacy": "public"}
         with patch.object(autopilot, "get_rule", return_value=rule):
-            with patch("app.publish.youtube_account_status", return_value={"channel_title": "Test channel"}):
+            with patch("app.persistence.durable_storage_available", return_value=True):
+                with patch("app.publish.youtube_account_status", return_value={"channel_title": "Test channel"}):
                 with patch.object(autopilot, "_create_project", return_value={"project_id": 78, "script_writer": "source-extract", "evidence_sources": 1}):
                     with patch("app.publish.set_auto_publish") as set_publish:
                         with patch("app.worker.enqueue", return_value=89):
@@ -264,8 +265,9 @@ class AutopilotResearchTests(unittest.TestCase):
     def test_autopilot_holds_publication_for_unrewritten_script(self):
         rule = {"id": 9, "auto_publish": True, "cadence_hours": 24, "destination": "youtube", "privacy": "unlisted"}
         with patch.object(autopilot, "get_rule", return_value=rule):
-            with patch("app.publish.youtube_account_status", return_value={"channel_title": "Test channel"}):
-                with patch.object(autopilot, "_create_project", return_value={"project_id": 77, "script_writer": "source-extract"}):
+            with patch("app.persistence.durable_storage_available", return_value=True):
+                with patch("app.publish.youtube_account_status", return_value={"channel_title": "Test channel"}):
+                    with patch.object(autopilot, "_create_project", return_value={"project_id": 77, "script_writer": "source-extract"}):
                     with patch("app.publish.set_auto_publish") as set_publish:
                         with patch("app.worker.enqueue", return_value=88):
                             with patch.object(autopilot.db, "execute"):
@@ -328,9 +330,17 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(topic_engine._normal("Historia: del Rock!"), "historia del rock")
 
     def test_youtube_autopilot_requires_connection_before_saving_rule(self):
-        with patch.object(publish, "youtube_account_status", side_effect=publish.PublishError("refresh token inválido")):
-            with self.assertRaisesRegex(ValueError, "refresh token inválido"):
-                autopilot._validate_auto_publish({"auto_publish": 1, "destination": "youtube"})
+        with patch("app.persistence.durable_storage_available", return_value=True):
+            with patch.object(publish, "youtube_account_status", side_effect=publish.PublishError("refresh token inválido")):
+                with self.assertRaisesRegex(ValueError, "refresh token inválido"):
+                    autopilot._validate_auto_publish({"auto_publish": 1, "destination": "youtube"})
+
+    def test_youtube_autopilot_requires_durable_storage_before_saving_rule(self):
+        with patch("app.persistence.durable_storage_available", return_value=False):
+            with patch.object(publish, "youtube_account_status") as verify:
+                with self.assertRaisesRegex(ValueError, "volumen local persistente"):
+                    autopilot._validate_auto_publish({"auto_publish": 1, "destination": "youtube"})
+        verify.assert_not_called()
 
     def test_publish_does_not_upload_same_video_twice_on_retry(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -382,9 +392,17 @@ class AutopilotResearchTests(unittest.TestCase):
         with patch.object(publish, "ensure_schema"):
             with patch.object(publish.db, "query_one", return_value={"id": 1}):
                 with patch.object(publish.db, "execute"):
-                    with patch.object(publish, "youtube_account_status") as verify:
-                        publish.set_auto_publish(1, True, "youtube")
+                    with patch.object(publish.persistence, "durable_storage_available", return_value=True):
+                        with patch.object(publish, "youtube_account_status") as verify:
+                            publish.set_auto_publish(1, True, "youtube")
         verify.assert_called_once_with()
+
+    def test_youtube_autopublish_is_blocked_without_durable_storage(self):
+        with patch.object(publish, "ensure_schema"):
+            with patch.object(publish.db, "query_one", return_value={"id": 1}):
+                with patch.object(publish.persistence, "durable_storage_available", return_value=False):
+                    with self.assertRaisesRegex(publish.PublishError, "volumen local persistente"):
+                        publish.set_auto_publish(1, True, "youtube")
 
     def test_ollama_rewrite_keeps_scene_structure(self):
         from unittest.mock import patch
