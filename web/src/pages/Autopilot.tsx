@@ -6,6 +6,7 @@ import TransitionPicker from '../components/TransitionPicker';
 import VoicePicker from '../components/VoicePicker';
 import VideoTypePicker from '../components/VideoTypePicker';
 import VisualStylePicker from '../components/VisualStylePicker';
+import MusicPicker from '../components/MusicPicker';
 
 type Options = {
   rules: AutopilotRule[];
@@ -175,7 +176,7 @@ export default function Autopilot() {
       transition_default: rule.transition_default,
       resolution: rule.resolution,
       fps: rule.fps,
-      music: (rule.music || 'auto').replace(/^bed:/, ''),
+      music: rule.music || 'auto',
       music_volume: rule.music_volume,
       cadence_hours: rule.cadence_hours,
       videos_per_period: rule.videos_per_period || 1,
@@ -338,13 +339,14 @@ export default function Autopilot() {
 
           {step === 2 && <>
 <h3>Música de fondo y mezcla</h3>
-            <Field label="Pista / ambiente musical">
-              <select value={form.music} onChange={(e) => update('music', e.target.value)}>
-                <option value="auto">Automática según el contenido</option>
-                <option value="ninguna">Sin música</option>
-                {(meta?.music_beds ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
-                {(meta?.music_library ?? []).map((x) => <option key={x} value={x}>{x}</option>)}
-              </select>
+            <Field label="Elegí la música de fondo">
+              <MusicPicker
+                beds={meta?.music_beds ?? []}
+                library={meta?.music_library ?? []}
+                value={form.music}
+                onChange={(value) => update('music', value)}
+                compact
+              />
             </Field>
             <Field label="Subir una pista propia (máximo 25 MB)">
               <input type="file" accept=".mp3,.wav,.ogg,.m4a,.flac,audio/*" onChange={async (e) => {
@@ -363,7 +365,7 @@ export default function Autopilot() {
             <Field label={'Volumen de música: ' + Math.round(form.music_volume * 100) + '%'}>
               <input type="range" min="0" max="0.5" step="0.01" value={form.music_volume} onChange={(e) => update('music_volume', Number(e.target.value))} />
             </Field>
-            <p className="muted">La música integrada se genera localmente. La carga de pistas propias y la rotación de varias canciones todavía no están conectadas al autopiloto.</p>
+            <p className="muted">Las camas musicales se generan localmente. El modo automático alterna las pistas que cargaste y, si no hay ninguna, rota las camas integradas.</p>
           </>}
 
           {step === 3 && <>
