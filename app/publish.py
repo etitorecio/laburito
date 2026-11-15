@@ -165,25 +165,20 @@ def destinations() -> list[dict]:
         missing.append("YOUTUBE_CLIENT_ID")
     if not credentials["client_secret"]:
         missing.append("YOUTUBE_CLIENT_SECRET")
-    if not credentials["refresh_token"]:
-        missing.append("Conectar cuenta YouTube (refresh token)")
     return [
         {
             "id": "entrega",
             "label": "Carpeta de entregas (sin claves)",
             "available": True,
             "missing_env": [],
-            "note": "Copia el MP4, los subtítulos y los metadatos a media/publicados y devuelve el enlace para revisarlo.",
+            "note": "Copia el MP4, los subtítulos y los metadatos a media/publicados.",
         },
         {
             "id": "youtube",
-            "label": "YouTube (auto-subida OAuth)",
+            "label": "YouTube (publicación OAuth por canal)",
             "available": not missing,
             "missing_env": missing,
-            "note": (
-                "Subida real a la Data API v3. Necesita YOUTUBE_CLIENT_ID, "
-                "YOUTUBE_CLIENT_SECRET y una cuenta conectada desde Ajustes (permisos youtube.upload y youtube.readonly)."
-            ),
+            "note": "Cada canal interno debe tener su propia cuenta de YouTube conectada desde Cuentas.",
         },
     ]
 
