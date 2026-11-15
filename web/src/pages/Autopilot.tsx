@@ -392,14 +392,7 @@ export default function Autopilot() {
               onChange={(value) => update('visual_style', value)}
               compact
             />
-            <Field label="Proporción de pantalla">
-              <select value={form.aspect} onChange={(e) => update('aspect', e.target.value)}>
-                {(meta?.aspects ?? ['9:16','16:9','1:1']).map((a) => <option key={a} value={a}>{a}{a === '9:16' ? ' · vertical recomendado' : ''}</option>)}
-              </select>
-            </Field>
-
-
-            <Field label="Calidad de exportación">
+<Field label="Calidad de exportación">
               <select value={form.resolution} onChange={(e) => update('resolution', e.target.value)}>
                 {(meta?.resolutions ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
               </select>
