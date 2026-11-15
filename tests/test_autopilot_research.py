@@ -9,6 +9,24 @@ from app import autopilot, publish, script_gen, topic_engine, tts
 
 
 class AutopilotResearchTests(unittest.TestCase):
+    def test_shorts_autopilot_saves_editorial_brief_and_bounds_duration(self):
+        clean = autopilot._clean({
+            "template": "shorts",
+            "duration_target_sec": 180,
+            "audience": "Jóvenes interesados en ciencia",
+            "tone": "Dinámico y cercano",
+            "hook_style": "Pregunta intrigante",
+            "cta": "Invitá a comentar una opinión",
+            "content_pillars": "Espacio, física, curiosidades",
+            "avoid_topics": "Desinformación médica",
+        })
+        self.assertEqual(clean["duration_target_sec"], 90)
+        self.assertEqual(clean["audience"], "Jóvenes interesados en ciencia")
+        self.assertEqual(clean["hook_style"], "Pregunta intrigante")
+        self.assertEqual(clean["content_pillars"], "Espacio, física, curiosidades")
+        self.assertEqual(clean["avoid_topics"], "Desinformación médica")
+
+
     def test_piper_cli_is_installed_by_backend_requirements(self):
         self.assertTrue(tts.piper_path())
         self.assertEqual(tts.VOICES["es-es-piper"]["language"], "es")
