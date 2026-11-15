@@ -4,6 +4,8 @@ import { Badge, Card, Empty, Field, Msg } from '../ui';
 import CaptionStylePicker from '../components/CaptionStylePicker';
 import TransitionPicker from '../components/TransitionPicker';
 import VoicePicker from '../components/VoicePicker';
+import VideoTypePicker from '../components/VideoTypePicker';
+import VisualStylePicker from '../components/VisualStylePicker';
 
 type Options = {
   rules: AutopilotRule[];
@@ -22,7 +24,8 @@ const INITIAL = {
   voice: 'es',
   speed: 150,
   pitch: 45,
-  visual_style: 'Movimiento de imágenes con paneo y zoom',
+  visual_style: 'automatico',
+  video_type: 'moving_images',
   title_style: 'automatico',
   custom_tags: '',
   cadence_hours: 24,
@@ -65,7 +68,7 @@ const PRODUCTION_STAGES = [
   ['2', 'Investigación y fuentes', 'Busca material documental y registra enlaces y atribuciones.'],
   ['3', 'Guion y gancho', 'Organiza apertura, desarrollo y cierre a partir de la evidencia disponible.'],
   ['4', 'Voz en off', 'Genera la narración en español con el motor TTS configurado.'],
-  ['5', 'Selección visual', 'Busca imágenes por escena; los clips de gameplay y los generadores de video aún no están conectados.'],
+  ['5', 'Selección visual', 'Busca imágenes con licencia o utiliza clips propios/autorizados de las bibliotecas locales.'],
   ['6', 'Preparación de escenas', 'Prepara cada visual, encuadre, duración y transición con FFmpeg.'],
   ['7', 'Subtítulos', 'Sincroniza y quema subtítulos; también exporta SRT y VTT.'],
   ['8', 'Música y mezcla', 'Mezcla voz y música de fondo según el volumen configurado.'],
@@ -74,48 +77,6 @@ const PRODUCTION_STAGES = [
   ['11', 'Publicación', 'Encola la subida real a YouTube cuando OAuth y la evidencia estén listos.'],
   ['12', 'Registro', 'Guarda el enlace, el ID de YouTube y el resultado de la tarea.'],
 ];
-
-const VISUAL_OPTIONS = [
-  { id: 'moving_images', title: 'Imágenes con movimiento', subtitle: 'En esta versión: imágenes de archivo con paneo y zoom; no se generan con IA', preview: '🖼️', available: true, style: 'Movimiento de imágenes con paneo y zoom', kind: 'stock' },
-  { id: 'stock_images', title: 'Videos de archivo', subtitle: 'Fotografías y material de archivo con licencia; el catálogo depende de las fuentes disponibles', preview: '🎞️', available: true, style: 'Fotografía de archivo con licencia', kind: 'stock' },
-  { id: 'full_motion_ai', title: 'Video IA de movimiento completo', subtitle: 'Clips de video generados por IA', preview: '🎬', available: false, style: 'Full Motion AI Video', kind: 'ai' },
-  { id: 'skeleton', title: 'Video de esqueleto 3D', subtitle: 'Animación 3D de esqueleto: todavía no hay motor de animación conectado', preview: '💀', available: false, style: 'Skeleton Video', kind: 'skeleton' },
-  { id: 'minecraft', title: 'Gameplay de Minecraft', subtitle: '5 miniaturas de preview · requiere gameplay propio o licenciado', preview: '⛏️', available: false, style: 'Minecraft gameplay', kind: 'minecraft' },
-  { id: 'subway', title: 'Gameplay de Subway Surfers', subtitle: '5 clips de ejemplo · requiere videos con licencia o propios', preview: '🏃', available: false, style: 'Subway Surfers gameplay', kind: 'subway' },
-];
-
-const THUMB_IMAGES: Record<string, string[]> = {
-  stock: ['/previews/stock-01.svg', '/previews/stock-02.svg', '/previews/stock-03.svg', '/previews/stock-04.svg', '/previews/stock-05.svg'],
-  minecraft: ['/previews/voxel-01.svg', '/previews/voxel-02.svg', '/previews/voxel-03.svg', '/previews/voxel-04.svg', '/previews/voxel-05.svg'],
-  subway: ['/previews/runner-01.svg', '/previews/runner-02.svg', '/previews/runner-03.svg', '/previews/runner-04.svg', '/previews/runner-05.svg'],
-};
-
-const THUMB_BACKGROUNDS: Record<string, string[]> = {
-  stock: [
-    'linear-gradient(135deg,#1e3a5f,#78a6c8)',
-    'linear-gradient(135deg,#4b3621,#c69b63)',
-    'linear-gradient(135deg,#253b32,#8ba88d)',
-    'linear-gradient(135deg,#3f315d,#b19acb)',
-    'linear-gradient(135deg,#293747,#9aa7b6)',
-  ],
-  minecraft: [
-    'linear-gradient(180deg,#8bc6ec 0 45%,#4d8b43 45% 70%,#79553a 70%)',
-    'linear-gradient(180deg,#b7d7e8 0 40%,#315d39 40% 68%,#72513a 68%)',
-    'linear-gradient(180deg,#6b778d 0 42%,#555b42 42% 70%,#41352c 70%)',
-    'linear-gradient(180deg,#f0c77b 0 38%,#56884a 38% 68%,#8b6240 68%)',
-    'linear-gradient(180deg,#7db3d1 0 40%,#426b42 40% 70%,#594632 70%)',
-  ],
-  subway: [
-    'linear-gradient(180deg,#54b8e8 0 40%,#f2c34b 40% 50%,#326b9e 50% 100%)',
-    'linear-gradient(180deg,#9bd7f0 0 38%,#f08a37 38% 52%,#275c88 52% 100%)',
-    'linear-gradient(180deg,#4c9cc8 0 40%,#e6bb44 40% 50%,#334d75 50% 100%)',
-    'linear-gradient(180deg,#8bd0e9 0 36%,#e36c45 36% 50%,#1d5a83 50% 100%)',
-    'linear-gradient(180deg,#63b9d9 0 40%,#e9c85a 40% 50%,#244f78 50% 100%)',
-  ],
-  ai: ['linear-gradient(135deg,#172554,#7c3aed)'],
-  skeleton: ['linear-gradient(135deg,#171717,#737373)'],
-};
-
 
 export default function Autopilot() {
   const [data, setData] = useState<Options | null>(null);
@@ -220,7 +181,8 @@ export default function Autopilot() {
       voice: rule.voice?.startsWith('es') ? rule.voice : 'es',
       speed: rule.speed ?? 150,
       pitch: rule.pitch ?? 45,
-      visual_style: rule.visual_style || 'Movimiento de imágenes con paneo y zoom',
+      visual_style: rule.visual_style || 'automatico',
+      video_type: rule.video_type || 'moving_images',
       title_style: rule.title_style || 'automatico',
       custom_tags: rule.custom_tags || '',
       aspect: rule.aspect,
@@ -428,50 +390,21 @@ export default function Autopilot() {
               </select>
             </Field>
             {selectedTemplate && <p className="muted">{selectedTemplate.description}</p>}
-            <h4>Formato visual y catálogo de clips</h4>
-            <p className="muted">Cada tarjeta muestra miniaturas rectangulares como referencia. Las miniaturas de Minecraft y Subway son ilustrativas: no incluyen ni descargan gameplay real. Solo se pueden activar formatos que el motor actual puede producir.</p>
-            <div className="visual-style-track">
-              {VISUAL_OPTIONS.map((item) => {
-                const selected = form.visual_style === item.style;
-                const imageThumbs = THUMB_IMAGES[item.kind];
-                const thumbs = imageThumbs ?? THUMB_BACKGROUNDS[item.kind] ?? THUMB_BACKGROUNDS.stock;
-                const count = item.kind === 'minecraft' || item.kind === 'subway' ? 5 : Math.min(3, thumbs.length);
-                return <button key={item.id} type="button" disabled={!item.available}
-                  onClick={() => update('visual_style', item.style)}
-                  aria-pressed={selected}
-                  style={{ flex: '0 0 250px', minWidth: 250, textAlign: 'left', padding: 0, overflow: 'hidden', borderRadius: 12, scrollSnapAlign: 'start',
-                    border: selected ? '2px solid #dc2626' : '1px solid var(--border, #d1d5db)',
-                    background: 'var(--card, #fff)', opacity: item.available ? 1 : 0.76,
-                    cursor: item.available ? 'pointer' : 'not-allowed' }}>
-                  <div aria-label={`Previews de ${item.title}`} style={{ height: 96, display: 'flex', gap: 6, padding: 6, background: '#111827',
-                    overflowX: 'auto', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}>
-                    {Array.from({ length: count }, (_, index) => (
-                      <div key={index} style={{ flex: '0 0 88px', minWidth: 88, borderRadius: 5,
-                        position: 'relative', overflow: 'hidden', scrollSnapAlign: 'start',
-                        background: imageThumbs ? `center / cover no-repeat url("${thumbs[index % thumbs.length]}")` : thumbs[index % thumbs.length] }}>
-                        <span style={{ position: 'absolute', left: 3, bottom: 3, color: '#fff',
-                          fontSize: 9, fontWeight: 800, textShadow: '0 1px 3px #000' }}>
-                          {count > 1 ? '0' + (index + 1) : item.preview}
-                        </span>
-                        {item.kind === 'minecraft' && <span style={{ position: 'absolute', right: 2, top: 4, fontSize: 16 }}>⛏️</span>}
-                        {item.kind === 'subway' && <span style={{ position: 'absolute', right: 2, top: 4, fontSize: 16 }}>🏃</span>}
-                        {item.kind === 'skeleton' && <span style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 30 }}>💀</span>}
-                        {item.kind === 'ai' && <span style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 30 }}>🎬</span>}
-                        {item.kind === 'stock' && <span style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 25 }}>▧</span>}
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ padding: 10 }}>
-                    <strong style={{ display: 'block', fontSize: 14 }}>{item.title}</strong>
-                    <small className="muted">{item.subtitle}</small>
-                    <small style={{ display: 'block', marginTop: 5, color: item.available ? '#15803d' : '#b45309' }}>
-                      {item.available ? (selected ? '✓ Seleccionado' : 'Disponible') : 'No implementado todavía'}
-                    </small>
-                  </div>
-                </button>;
-              })}
-            </div>
-            <p className="muted">La selección de formato se conserva por separado de los ajustes de guion. La personalización libre del estilo visual se habilitará cuando tenga un campo propio y no pueda sobrescribir el formato elegido.</p>
+            <h4>Tipo de video</h4>
+            <p className="muted">Elegí el formato de imagen o clip que va a acompañar la narración. Los formatos que requieren material propio se activan al cargar su biblioteca.</p>
+            <VideoTypePicker
+              options={meta?.video_types ?? []}
+              value={form.video_type}
+              onChange={(value) => update('video_type', value)}
+              compact
+            />
+            <h4>Estilo visual</h4>
+            <VisualStylePicker
+              options={meta?.visual_styles ?? []}
+              value={form.visual_style}
+              onChange={(value) => update('visual_style', value)}
+              compact
+            />
             <Field label="Proporción de pantalla">
               <select value={form.aspect} onChange={(e) => update('aspect', e.target.value)}>
                 {(meta?.aspects ?? ['9:16','16:9','1:1']).map((a) => <option key={a} value={a}>{a}{a === '9:16' ? ' · vertical recomendado' : ''}</option>)}
@@ -489,7 +422,7 @@ export default function Autopilot() {
                 {(meta?.fps_options ?? [25,30]).map((x) => <option key={x} value={x}>{x} FPS</option>)}
               </select>
             </Field>
-            <p className="muted">El estilo orienta la búsqueda de imágenes de archivo y las consultas visuales de cada escena. No convierte una imagen en otra ni genera imágenes IA; los clips IA, avatares y personajes 3D todavía no están implementados.</p>
+            <p className="muted">El estilo aplica filtros locales de color, contraste y textura a las imágenes. No genera imágenes IA ni convierte una fotografía en un dibujo.</p>
           </>}
 
           {step === 4 && <>
@@ -590,7 +523,7 @@ export default function Autopilot() {
               <p>{form.videos_per_period} Short(s) cada {form.period_days === 1 ? 'día' : form.period_days === 7 ? 'semana' : '30 días'}, a las {form.schedule_time} ({form.timezone}).</p>
               <p>{form.duration_target_sec}s · 9:16 · {form.resolution} · {form.destination === 'youtube' && form.auto_publish ? 'Publicación automática en YouTube Shorts' : 'Guardar en Laburito'}.</p>
               <p>Voz: {voiceOptions.find((v) => v.id === form.voice)?.label || form.voice} · Música: {form.music === 'auto' ? 'Automática' : form.music === 'ninguna' ? 'Sin música' : form.music}</p>
-              <p>Visual: {VISUAL_OPTIONS.find((v) => v.style === form.visual_style)?.title || form.visual_style} · Subtítulos: {meta?.caption_styles.find((x) => x.id === form.caption_style)?.label || form.caption_style}</p>
+              <p>Tipo: {meta?.video_types.find((v) => v.id === form.video_type)?.label || form.video_type} · Estilo: {meta?.visual_styles.find((v) => v.id === form.visual_style)?.label || form.visual_style} · Subtítulos: {meta?.caption_styles.find((x) => x.id === form.caption_style)?.label || form.caption_style}</p>
             </div>
             <label className="check-row">
               <input type="checkbox" checked={form.enabled} onChange={(e) => update('enabled', e.target.checked)} />
