@@ -607,7 +607,7 @@ def _create_project(rule: dict) -> dict:
         f"Proyecto automático creado con tema descubierto: {title}",
         {"id": pid, "topic": topic, "source": research["url"], "scenes": len(script["scenes"])},
     )
-    return {"project_id": pid, "script_writer": script.get("writer", "template"), "evidence_sources": int(script.get("evidence_sources", 0))}
+    return {"project_id": pid, "script_writer": script.get("writer", "template"), "evidence_sources": int(script.get("evidence_sources", 0)), "fiction": template_id == "frutinovela"}
 
 
 def _next_after_run(rule: dict, force: bool = False, now: str | None = None) -> str:
@@ -641,7 +641,7 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
         project_result = _create_project(rule)
         pid = int(project_result["project_id"])
         script_writer = project_result.get("script_writer", "template")
-        evidence_sources = int(project_result.get("evidence_sources", 0))
+        evidence_sources = int(project_result.get("evidence_sources", 0))\n        fiction = bool(project_result.get("fiction", False))
     except Exception as exc:
         db.execute(
             "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE id=?",
@@ -655,7 +655,7 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
         # modelo externo. Un guion basado en extractos recuperados es publicable
         # si cuenta con al menos un extracto de evidencia; los borradores sin
         # fuentes suficientes quedan retenidos para evitar publicar inventos.
-        quality_ready = script_writer in ("source-extract", "ollama-local") and evidence_sources >= 1
+        quality_ready = fiction or (script_writer in ("source-extract", "ollama-local") and evidence_sources >= 1)
         if destination == "youtube" and not quality_ready:
             publish_warning = (
                 "Publicación automática en YouTube retenida: hace falta al menos un extracto "
