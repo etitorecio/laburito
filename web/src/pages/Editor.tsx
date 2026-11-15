@@ -396,7 +396,7 @@ export default function Editor({ projectId, go }: Props) {
       >
         <div className="pill-row" style={{ marginBottom: 12 }}>
           <Badge tone={statusTone(project.status)}>{project.status}</Badge>
-          <Badge tone="info">{project.channel_name || 'sin canal'}</Badge>
+          <Badge tone="info">{project.channel_name || 'fábrica sin asignar'}</Badge>
           {quality.resolution ? <Badge>{String(quality.resolution)}</Badge> : null}
           {quality.duration_sec ? <Badge>{fmtDuration(Number(quality.duration_sec))}</Badge> : null}
         </div>
@@ -618,13 +618,13 @@ export default function Editor({ projectId, go }: Props) {
         }
       >
         <div className="stack" style={{ marginBottom: 12 }}>
-          <Field label="Fábrica / canal de destino">
+          <Field label="Fábrica que publicará">
             <select value={project?.channel_id ? String(project.channel_id) : ''} onChange={(e) => void assignChannel(e.target.value)} disabled={busy === 'channel'}>
-              <option value="">Sin canal asignado</option>
+              <option value="">Elegí una fábrica</option>
               {youtubeChannels.map((channel) => <option key={channel.id} value={channel.id}>{channel.name}</option>)}
             </select>
           </Field>
-          {!youtubeChannels.length && <button className="btn small ghost" onClick={() => go('cuentas')}>Crear y conectar canales en Cuentas</button>}
+          {!youtubeChannels.length && <button className="btn small ghost" onClick={() => go('cuentas')}>Conectar cuenta de Google en Cuentas</button>}
         </div>
         <label className="row center gap-8" style={{ marginBottom: 10 }}>
           <input type="checkbox" checked={autoPublish} onChange={(e) => toggleAutoPublish(e.target.checked)} />
@@ -636,7 +636,7 @@ export default function Editor({ projectId, go }: Props) {
           ) : (
             <div className="stack">
               <p className="error-text">{project?.channel_id ? 'Todavía no hay una cuenta de YouTube conectada a este canal.' : 'Este proyecto no está asignado a Historias ni a Frutinovelas.'}</p>
-              <button className="btn small ghost" onClick={() => go('cuentas')}>Administrar cuentas de YouTube</button>
+              <button className="btn small ghost" onClick={() => go('cuentas')}>Conectar cuenta de Google</button>
             </div>
           )
         )}
