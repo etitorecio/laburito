@@ -45,7 +45,8 @@ class YouTubeOAuthTests(unittest.TestCase):
             "client_id": "client-id", "client_secret": "client-secret", "refresh_token": ""
         }):
             with patch.object(main.db, "set_setting") as save:
-                result = main.youtube_oauth_start(fake_request())
+                with patch.object(main.db, "query_one", return_value={"id": 7}):
+                    result = main.youtube_oauth_start(fake_request(), channel_id=7)
         from urllib.parse import parse_qs, urlparse
         parsed = urlparse(result["authorization_url"])
         params = parse_qs(parsed.query)
@@ -55,10 +56,11 @@ class YouTubeOAuthTests(unittest.TestCase):
         self.assertEqual(params["access_type"][0], "offline")
         self.assertIn("youtube.upload", params["scope"][0])
         self.assertGreaterEqual(len(params["state"][0]), 32)
-        self.assertEqual(save.call_count, 3)
+        self.assertEqual(save.call_count, 4)
+        self.assertIn(("youtube_oauth_channel_id", "7"), [call.args for call in save.call_args_list])
 
     def test_callback_saves_refresh_token_and_returns_to_settings(self):
-        with patch.object(main.db, "get_setting", side_effect=["expected-state", "995", "https://laburito.example/api/youtube/callback"]):
+        with patch.object(main.db, "get_setting", side_effect=["expected-state", "995", "https://laburito.example/api/youtube/callback", "7"]):
             with patch.object(main.time, "time", return_value=1000):
                 with patch.object(publish, "youtube_credentials", return_value={
                     "client_id": "client-id", "client_secret": "client-secret", "refresh_token": ""
@@ -66,20 +68,26 @@ class YouTubeOAuthTests(unittest.TestCase):
                     with patch.object(main.urllib.request, "urlopen", return_value=FakeResponse({
                         "access_token": "access-token", "refresh_token": "refresh-token"
                     })):
+                        with patch.object(main.db, "query_one", return_value={"id": 7}):
                         with patch.object(main.db, "set_setting") as save:
                             with patch.object(publish, "youtube_account_status", return_value={
-                                "channel_title": "Canal de prueba"
-                            }):
+                                "channel_id": "UC123", "channel_title": "Canal de prueba"
+                            }) as verify:
+                                with patch.object(publish, "save_youtube_account") as save_account:
                                 with patch.object(main.persistence, "configured", return_value=True):
                                     with patch.object(main.persistence, "sync_backup", return_value=True) as backup:
                                         response = main.youtube_oauth_callback("auth-code", "expected-state", "")
+                                save_account.assert_called_once_with(7, "refresh-token", {
+                                    "channel_id": "UC123", "channel_title": "Canal de prueba"
+                                })
+                                verify.assert_called_once_with(refresh_token_override="refresh-token")
         self.assertEqual(response.status_code, 303)
-        self.assertEqual(response.headers["location"], "/#/ajustes")
-        self.assertIn(("youtube_refresh_token", "refresh-token"), [call.args for call in save.call_args_list])
+        self.assertEqual(response.headers["location"], "/#/cuentas")
+        self.assertNotIn(("youtube_refresh_token", "refresh-token"), [call.args for call in save.call_args_list])
         backup.assert_called_once_with()
 
     def test_callback_rejects_expired_or_mismatched_state(self):
-        with patch.object(main.db, "get_setting", side_effect=["expected-state", "0", "https://laburito.example/api/youtube/callback"]):
+        with patch.object(main.db, "get_setting", side_effect=["expected-state", "0", "https://laburito.example/api/youtube/callback", "7"]):
             with patch.object(main.time, "time", return_value=1000):
                 with self.assertRaises(HTTPException) as error:
                     main.youtube_oauth_callback("auth-code", "wrong-state", "")
