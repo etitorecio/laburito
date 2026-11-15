@@ -68,7 +68,7 @@ export default function App() {
   const current = ROUTES.find((r) => r.id === route);
 
   return (
-    <div className="app">
+    <div className={`app ${route === 'editor' && projectId ? 'editor-fullscreen' : ''}`}>
       <aside className="sidebar">
         <div className="brand">
           <span className="dot" />
