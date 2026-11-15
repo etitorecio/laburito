@@ -537,11 +537,7 @@ export default function Autopilot() {
             </label>
             {form.destination === 'youtube' && !youtubeReady && <p className="muted">YouTube todavía no está listo. Conectalo en <a href="#/ajustes">Ajustes → YouTube</a>. Hasta entonces, no se puede publicar.</p>}
             {form.destination === 'youtube' && destinationInfo && <p className="muted">{destinationInfo.note}{destinationInfo.missing_env.length ? ' Faltan: ' + destinationInfo.missing_env.join(', ') + '.' : ''}</p>}
-<div className="card" style={{ marginTop: 12 }}>
-              <strong>Resumen</strong>
-              <p>{form.videos_per_period} Short(s) cada {form.period_days === 1 ? 'día' : form.period_days === 7 ? 'semana' : '30 días'}, a las {form.schedule_time} ({form.timezone}).</p>
-              <p>{form.niche || 'Sin nicho'} · {form.duration_target_sec}s · 9:16 · {form.resolution} · {form.destination === 'youtube' && form.auto_publish ? 'Publicación automática en YouTube Shorts' : 'guardar para revisar'}.</p>
-            </div>
+
           </>}
 
           {step === 6 && <>
