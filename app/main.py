@@ -771,7 +771,11 @@ def list_projects():
 def create_project(payload: ProjectIn):
     data = payload.model_dump()
     if data.get("template") in {"reddit_story", "frutinovela"} and not data.get("channel_id"):
-        raise HTTPException(400, "Asigná el Short a su canal interno de Historias o Frutinovelas.")
+        expected_name = "Frutinovelas" if data["template"] == "frutinovela" else "Historias"
+        default_channel = db.query_one("SELECT id,name FROM channels WHERE lower(name)=?", (expected_name.lower(),))
+        if not default_channel:
+            raise HTTPException(400, f"No existe el canal interno {expected_name}.")
+        data["channel_id"] = int(default_channel["id"])
     if data.get("channel_id"):
         selected_channel = db.query_one("SELECT name FROM channels WHERE id=?", (data["channel_id"],))
         if not selected_channel:
@@ -823,7 +827,12 @@ def patch_project(project_id: int, payload: ProjectPatch):
     effective_template = data.get("template") or current_project.get("template")
     effective_channel_id = data.get("channel_id", current_project.get("channel_id"))
     if effective_template in {"reddit_story", "frutinovela"} and not effective_channel_id:
-        raise HTTPException(400, "Asigná el Short a su canal interno de Historias o Frutinovelas.")
+        expected_name = "Frutinovelas" if effective_template == "frutinovela" else "Historias"
+        default_channel = db.query_one("SELECT id,name FROM channels WHERE lower(name)=?", (expected_name.lower(),))
+        if not default_channel:
+            raise HTTPException(400, f"No existe el canal interno {expected_name}.")
+        effective_channel_id = int(default_channel["id"])
+        data["channel_id"] = effective_channel_id
     if effective_channel_id:
         selected_channel = db.query_one("SELECT name FROM channels WHERE id=?", (effective_channel_id,))
         if not selected_channel:
