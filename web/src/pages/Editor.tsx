@@ -6,6 +6,7 @@ import CaptionStylePicker from '../components/CaptionStylePicker';
 import TransitionPicker from '../components/TransitionPicker';
 import VisualStylePicker from '../components/VisualStylePicker';
 import VideoTypePicker from '../components/VideoTypePicker';
+import VoicePicker from '../components/VoicePicker';
 
 interface Props {
   projectId: number;
@@ -309,15 +310,16 @@ export default function Editor({ projectId, go }: Props) {
               <option value="1:1">1:1 cuadrado</option>
             </select>
           </Field>
-          <Field label="Voz">
-            <select defaultValue={project.voice} onChange={(e) => patchProject({ voice: e.target.value })}>
-              {voices.length === 0 ? <option value={project.voice}>{project.voice}</option> : null}
-              {voices.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.label}
-                </option>
-              ))}
-            </select>
+          <Field label="Voz en español">
+            <VoicePicker
+              options={meta?.voices ?? []}
+              value={project.voice}
+              onChange={(value) => void patchProject({
+                voice: value,
+                ...(value === 'es-masculino' ? { pitch: 30 } : value === 'es-agudo' ? { pitch: 65 } : { pitch: 45 }),
+              })}
+              compact
+            />
           </Field>
         </div>
         <div className="row">
