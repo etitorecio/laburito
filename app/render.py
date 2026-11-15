@@ -19,6 +19,8 @@ import threading
 import zipfile
 from pathlib import Path
 
+from PIL import Image, ImageDraw, ImageFilter
+
 from . import db, media, options, tts
 
 ASPECTS = options.ASPECTS
