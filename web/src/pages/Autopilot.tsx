@@ -42,6 +42,7 @@ const INITIAL = {
   avoid_topics: '',
   aspect: '9:16',
   caption_style: 'short_pop',
+  captions_enabled: true,
   transition_default: 'fundido',
   resolution: '1080p',
   fps: 25,
@@ -174,6 +175,7 @@ export default function Autopilot() {
       custom_tags: rule.custom_tags || '',
       aspect: rule.aspect,
       caption_style: rule.caption_style,
+      captions_enabled: rule.captions_enabled !== false,
       transition_default: rule.transition_default,
       resolution: rule.resolution,
       fps: rule.fps,
@@ -395,13 +397,19 @@ export default function Autopilot() {
           {step === 4 && <>
             <h3>Subtítulos y movimiento</h3>
             <p className="muted">Elegí cómo se muestran los textos y cómo se mueve cada escena. Podés ver una muestra antes de seleccionar.</p>
-            <Field label="Estilo de subtítulos">
-              <CaptionStylePicker
-                options={meta?.caption_styles ?? []}
-                value={form.caption_style}
-                onChange={(value) => update('caption_style', value)}
-              />
-            </Field>
+            <label className="check-row">
+              <input type="checkbox" checked={form.captions_enabled} onChange={(e) => update('captions_enabled', e.target.checked)} />
+              Agregar subtítulos al video
+            </label>
+            {form.captions_enabled ? (
+              <Field label="Elegí el estilo de subtítulos">
+                <CaptionStylePicker
+                  options={meta?.caption_styles ?? []}
+                  value={form.caption_style}
+                  onChange={(value) => update('caption_style', value)}
+                />
+              </Field>
+            ) : <p className="muted">El video se renderizará sin texto superpuesto ni archivos de subtítulos.</p>}
             <Field label="Movimiento de las escenas">
               <TransitionPicker
                 options={meta?.transitions ?? []}
