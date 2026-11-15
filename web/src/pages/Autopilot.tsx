@@ -92,7 +92,9 @@ export default function Autopilot() {
       setData(result);
       setForm((current) => ({
         ...current,
-        channel_id: String(result.channels.find((c) => c.name.toLocaleLowerCase() === (current.template === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id ?? ''),
+        channel_id: current.channel_id && result.channels.some((c) => c.id === Number(current.channel_id))
+          ? current.channel_id
+          : String(result.channels[0]?.id ?? ''),
       }));
       setMeta(m);
       setOllamaAvailable(diagnostics.ollama.available);
@@ -111,14 +113,13 @@ export default function Autopilot() {
   }, []);
 
   const templates = useMemo(
-    () => (data?.templates ?? meta?.templates ?? []).filter((t) => ['reddit_story', 'frutinovela'].includes(t.id)),
+    () => data?.templates ?? meta?.templates ?? [],
     [data, meta],
   );
   const linkedYoutubeAccount = youtubeAccounts.find((account) => account.id === Number(form.channel_id))?.account ?? null;
   const youtubeReady = Boolean(linkedYoutubeAccount);
   const selectedTemplate = templates.find((t) => t.id === form.template);
-  const expectedChannelName = form.template === 'frutinovela' ? 'frutinovelas' : 'historias';
-  const selectedFactoryChannel = data?.channels.find((channel) => channel.name.toLocaleLowerCase() === expectedChannelName) ?? null;
+  const selectedChannel = data?.channels.find((channel) => channel.id === Number(form.channel_id)) ?? null;
 
   function update<K extends keyof typeof INITIAL>(key: K, value: (typeof INITIAL)[K]) {
     setForm((old) => {
@@ -131,8 +132,8 @@ export default function Autopilot() {
   }
 
   async function save() {
-    if (!selectedFactoryChannel || !form.channel_id || Number(form.channel_id) !== selectedFactoryChannel.id) {
-      setError('No se encontró la configuración de la fábrica. Actualizá la pantalla e intentá de nuevo. Actualizá la pantalla e intentá de nuevo.');
+    if (!selectedChannel || !form.channel_id) {
+      setError('Elegí un canal válido antes de guardar el Autopiloto.');
       return;
     }
     if (form.auto_publish && form.destination === 'youtube' && !youtubeReady) {
@@ -271,7 +272,6 @@ export default function Autopilot() {
     setForm((old) => ({
       ...old,
       template: id,
-      channel_id: String(data?.channels.find((c) => c.name.toLocaleLowerCase() === (id === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id ?? ''),
       ...(selected ? {
         aspect: selected.aspect,
         caption_style: selected.caption_style,
@@ -344,10 +344,10 @@ export default function Autopilot() {
             </Field>
             <Field label="Canal interno de Laburito">
               <select value={form.channel_id} onChange={(e) => update('channel_id', e.target.value)}>
-                {(data?.channels ?? []).filter((c) => c.name.toLocaleLowerCase() === expectedChannelName).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {(data?.channels ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </Field>
-            <p className="muted">Elegí Historias o Frutinovelas. La cuenta de YouTube vinculada a ese canal en Cuentas será la única que reciba sus videos.</p>
+            <p className="muted">Podés elegir cualquiera de tus canales. La cuenta de YouTube vinculada a ese canal será el destino de sus videos.</p>
           </>}
 
           {step === 1 && <>
@@ -520,8 +520,8 @@ export default function Autopilot() {
               Publicar automáticamente en YouTube al terminar el render
             </label>}
             {form.destination === 'entrega' && <p className="muted">Los videos se guardarán en tu biblioteca para que puedas revisarlos y publicarlos manualmente. No requiere cuenta externa ni credenciales.</p>}
-            {form.destination === 'youtube' && !youtubeReady && <p className="muted">La fábrica seleccionada todavía no tiene una cuenta de YouTube vinculada. Elegí la fábrica correcta y conectá tu cuenta de Google en <a href="#/cuentas">Cuentas</a>. No alcanza con conectar la cuenta de la otra fábrica.</p>}
-            {form.destination === 'youtube' && linkedYoutubeAccount && <p className="muted">Esta fábrica publicará exclusivamente en: <strong>{linkedYoutubeAccount.channel_title}</strong>.</p>}
+            {form.destination === 'youtube' && !youtubeReady && <p className="muted">El canal seleccionado todavía no tiene una cuenta de YouTube vinculada. Conectá la cuenta de Google correspondiente en <a href="#/cuentas">Cuentas</a>. No alcanza con conectar la cuenta de la otra fábrica.</p>}
+            {form.destination === 'youtube' && linkedYoutubeAccount && <p className="muted">Este canal publicará exclusivamente en: <strong>{linkedYoutubeAccount.channel_title}</strong>.</p>}
             {form.destination === 'youtube' && destinationInfo && <p className="muted">{destinationInfo.note}{destinationInfo.missing_env.length ? ' Faltan: ' + destinationInfo.missing_env.join(', ') + '.' : ''}</p>}
 
           </>}
@@ -619,7 +619,7 @@ export default function Autopilot() {
             <button className="btn ghost" disabled={step === 0 || busy} onClick={() => setStep((s) => Math.max(0, s - 1))}>Atrás</button>
             {step < STEPS.length - 1
               ? <button className="btn primary" disabled={busy || (step === 0 && !form.niche.trim())} onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}>Continuar</button>
-              : <button className="btn primary" disabled={busy || !form.niche.trim() || !selectedFactoryChannel || !form.channel_id || (form.video_type === 'skeleton' && form.duration_target_sec > 420)} onClick={() => void save()}>{busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear autopiloto'}</button>}
+              : <button className="btn primary" disabled={busy || !form.niche.trim() || !selectedChannel || !form.channel_id || (form.video_type === 'skeleton' && form.duration_target_sec > 420)} onClick={() => void save()}>{busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear autopiloto'}</button>}
             {editingId && <button className="btn ghost" disabled={busy} onClick={reset}>Cancelar</button>}
           </div>
         </div>
@@ -633,7 +633,7 @@ export default function Autopilot() {
                 <div className="grow">
                   <h4>{rule.name || rule.niche}</h4>
                   <div className="meta"><span>{rule.niche}</span><span>·</span><span>{rule.videos_per_period || 1} cada {rule.period_days || 1} día(s)</span><span>·</span><Badge tone={rule.enabled ? 'ok' : 'warn'}>{rule.enabled ? 'Activo' : 'Pausado'}</Badge></div>
-                  <div className="meta"><span>{rule.channel_name || 'Fábrica sin asignar'}</span><span>·</span><span>{rule.template}</span><span>·</span><span>{rule.destination === 'youtube' ? 'YouTube' : 'Entrega local'}</span></div>
+                  <div className="meta"><span>{rule.channel_name || 'Canal sin asignar'}</span><span>·</span><span>{rule.template}</span><span>·</span><span>{rule.destination === 'youtube' ? 'YouTube' : 'Entrega local'}</span></div>
                   <small>{rule.last_project_title ? 'Último video: ' + rule.last_project_title + ' · ' + (rule.last_project_status || 'creado') : 'Todavía no generó proyectos'}{rule.last_job_status ? ' · ' + (rule.last_job_kind === 'publish_project' ? 'Publicación' : 'Producción') + ': ' + rule.last_job_status : ''}{rule.last_job_message ? ' — ' + rule.last_job_message : ''}{rule.last_error ? ' · Último error: ' + rule.last_error : ''}{rule.last_run_at ? ' · Ejecutado: ' + new Date(rule.last_run_at).toLocaleString() : ''}{rule.next_run_at ? ' · Próximo: ' + new Date(rule.next_run_at).toLocaleString() : ''}</small>
                   {rule.last_job_status && ['en_cola', 'ejecutando'].includes(rule.last_job_status) && <div style={{ marginTop: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}><span>{rule.last_job_kind === 'publish_project' ? 'Publicando video' : 'Produciendo video'}</span><strong>{Math.max(0, Math.min(100, rule.last_job_progress || 0))}%</strong></div>
