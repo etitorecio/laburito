@@ -112,6 +112,8 @@ export interface Project {
   pitch: number;
   notes: string;
   template: string;
+  visual_style: string;
+  video_type: string;
   caption_style: string;
   transition_default: string;
   resolution: string;
@@ -269,6 +271,7 @@ export interface AutopilotRule {
   speed: number;
   pitch: number;
   visual_style: string;
+  video_type: string;
   title_style: string;
   custom_tags: string;
   aspect: string;
