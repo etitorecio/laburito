@@ -54,13 +54,14 @@ const INITIAL = {
 };
 
 const STEPS = [
-  { title: 'Nicho', subtitle: 'Qué contenido va a descubrir y producir' },
-  { title: 'Voz', subtitle: 'Elegí una voz en español y su ritmo' },
-  { title: 'Música', subtitle: 'Automática, una pista o sin música' },
-  { title: 'Apariencia', subtitle: 'Elegí el tipo de video y el estilo visual' },
-  { title: 'Subtítulos', subtitle: 'Vista previa del texto y movimiento' },
-  { title: 'Publicación', subtitle: 'Dónde se guarda o publica cada Short' },
-  { title: 'Calendario', subtitle: 'Duración, frecuencia y horario' },
+  { title: 'Nicho', subtitle: 'Elegí el tema y definí qué contenido debe producir' },
+  { title: 'Voz', subtitle: 'Escuchá y elegí la voz que narrará tus videos' },
+  { title: 'Música', subtitle: 'Automática, pistas propias o sin música' },
+  { title: 'Estilo visual', subtitle: 'Elegí el aspecto que tendrán las escenas' },
+  { title: 'Subtítulos', subtitle: 'Elegí un estilo y su movimiento con vista previa' },
+  { title: 'Canales', subtitle: 'Elegí si guardar los videos o publicarlos en YouTube' },
+  { title: 'Calendario', subtitle: 'Definí duración, frecuencia y horario' },
+  { title: 'Tipo de video', subtitle: 'Elegí Shorts, documental largo y formato visual' },
   { title: 'Confirmación', subtitle: 'Revisá y activá tu Autopiloto' },
 ];
 
@@ -99,7 +100,7 @@ export default function Autopilot() {
   }, []);
 
   const templates = useMemo(
-    () => (data?.templates ?? meta?.templates ?? []).filter((t) => ['shorts', 'listicle', 'pov', 'quote'].includes(t.id)),
+    () => (data?.templates ?? meta?.templates ?? []).filter((t) => ['shorts', 'listicle', 'pov', 'quote', 'longform', 'explainer', 'cuadrado', 'vertical_45'].includes(t.id)),
     [data, meta],
   );
   const youtubeReady = data?.destinations?.some((d) => d.id === 'youtube' && d.available) ?? false;
@@ -371,40 +372,15 @@ export default function Autopilot() {
           </>}
 
           {step === 3 && <>
-<h3>Tipo de Short y aspecto visual</h3>
-            <p className="muted">Este autopiloto solo crea Shorts verticales 9:16. No genera documentales ni videos horizontales.</p>
-            <Field label="Formato narrativo">
-              <select value={form.template} onChange={(e) => chooseTemplate(e.target.value)}>
-                {templates.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
-              </select>
-            </Field>
-            {selectedTemplate && <p className="muted">{selectedTemplate.description}</p>}
-            <h4>Tipo de video</h4>
-            <p className="muted">Elegí el formato de imagen o clip que va a acompañar la narración. Los formatos que requieren material propio se activan al cargar su biblioteca.</p>
-            <VideoTypePicker
-              options={meta?.video_types ?? []}
-              value={form.video_type}
-              onChange={(value) => update('video_type', value)}
-              compact
-            />
-            <h4>Estilo visual</h4>
+            <h3>Elegí el aspecto de tus escenas</h3>
+            <p className="muted">Cada tarjeta muestra una vista previa del tratamiento visual local. El estilo se aplicará a las imágenes de cada escena.</p>
             <VisualStylePicker
               options={meta?.visual_styles ?? []}
               value={form.visual_style}
               onChange={(value) => update('visual_style', value)}
               compact
             />
-<Field label="Calidad de exportación">
-              <select value={form.resolution} onChange={(e) => update('resolution', e.target.value)}>
-                {(meta?.resolutions ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
-              </select>
-            </Field>
-            <Field label="Fluidez">
-              <select value={form.fps} onChange={(e) => update('fps', Number(e.target.value))}>
-                {(meta?.fps_options ?? [25,30]).map((x) => <option key={x} value={x}>{x} FPS</option>)}
-              </select>
-            </Field>
-            <p className="muted">El estilo aplica filtros locales de color, contraste y textura a las imágenes. No genera imágenes IA ni convierte una fotografía en un dibujo.</p>
+            <p className="muted">Los estilos disponibles aplican filtros de color, contraste y textura. No se presentan como generadores de imágenes IA.</p>
           </>}
 
           {step === 4 && <>
@@ -499,11 +475,40 @@ export default function Autopilot() {
           </>}
 
           {step === 7 && <>
+            <h3>Elegí el tipo y formato de video</h3>
+            <Field label="Plantilla de contenido">
+              <select value={form.template} onChange={(e) => chooseTemplate(e.target.value)}>
+                {templates.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+              </select>
+            </Field>
+            {selectedTemplate && <p className="muted">{selectedTemplate.description}</p>}
+            <p className="muted">Los documentales largos usan formato horizontal. Los Shorts y Reels usan formato vertical. Minecraft, Subway y stock requieren que cargues clips propios o con permiso.</p>
+            <VideoTypePicker
+              options={meta?.video_types ?? []}
+              value={form.video_type}
+              onChange={(value) => update('video_type', value)}
+              compact
+            />
+            <div className="row">
+              <Field label="Calidad de exportación">
+                <select value={form.resolution} onChange={(e) => update('resolution', e.target.value)}>
+                  {(meta?.resolutions ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+                </select>
+              </Field>
+              <Field label="Fluidez">
+                <select value={form.fps} onChange={(e) => update('fps', Number(e.target.value))}>
+                  {(meta?.fps_options ?? [25,30]).map((x) => <option key={x} value={x}>{x} FPS</option>)}
+                </select>
+              </Field>
+            </div>
+            {form.video_type === 'skeleton' && form.duration_target_sec > 420 && <p className="muted">Skeleton admite hasta 7 minutos. Reducí la duración en el paso anterior para usar este formato.</p>}
+          </>}
+          {step === 8 && <>
             <h3>Revisá tu Autopiloto</h3>
             <div className="card" style={{ marginTop: 12 }}>
               <strong>{form.name || 'Nuevo Autopiloto'} · {form.niche || 'Sin nicho'}</strong>
               <p>{form.videos_per_period} Short(s) cada {form.period_days === 1 ? 'día' : form.period_days === 7 ? 'semana' : '30 días'}, a las {form.schedule_time} ({form.timezone}).</p>
-              <p>{form.duration_target_sec}s · 9:16 · {form.resolution} · {form.destination === 'youtube' && form.auto_publish ? 'Publicación automática en YouTube Shorts' : 'Guardar en Laburito'}.</p>
+              <p>{form.duration_target_sec >= 60 ? Math.floor(form.duration_target_sec / 60) + ' min' : form.duration_target_sec + ' s'} · {form.aspect} · {form.resolution} · {form.destination === 'youtube' && form.auto_publish ? 'Publicación automática en YouTube Shorts' : 'Guardar en Laburito'}.</p>
               <p>Voz: {voiceOptions.find((v) => v.id === form.voice)?.label || form.voice} · Música: {form.music === 'auto' ? 'Automática' : form.music === 'ninguna' ? 'Sin música' : form.music}</p>
               <p>Tipo: {meta?.video_types.find((v) => v.id === form.video_type)?.label || form.video_type} · Estilo: {meta?.visual_styles.find((v) => v.id === form.visual_style)?.label || form.visual_style} · Subtítulos: {meta?.caption_styles.find((x) => x.id === form.caption_style)?.label || form.caption_style}</p>
             </div>
@@ -517,7 +522,7 @@ export default function Autopilot() {
             <button className="btn ghost" disabled={step === 0 || busy} onClick={() => setStep((s) => Math.max(0, s - 1))}>Atrás</button>
             {step < STEPS.length - 1
               ? <button className="btn primary" disabled={busy || (step === 0 && !form.niche.trim())} onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}>Continuar</button>
-              : <button className="btn primary" disabled={busy || !form.niche.trim()} onClick={() => void save()}>{busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear autopiloto'}</button>}
+              : <button className="btn primary" disabled={busy || !form.niche.trim() || (form.video_type === 'skeleton' && form.duration_target_sec > 420)} onClick={() => void save()}>{busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear autopiloto'}</button>}
             {editingId && <button className="btn ghost" disabled={busy} onClick={reset}>Cancelar</button>}
           </div>
         </div>
