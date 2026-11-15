@@ -20,7 +20,7 @@ jobs:
         run: APP_TOKEN=ci-test docker compose config --quiet
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
       - name: Install backend dependencies
         run: pip install -r requirements.txt
       - name: Check Python syntax
