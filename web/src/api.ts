@@ -307,6 +307,8 @@ export interface AutopilotRule {
 
 export interface Meta {
   voices: { id: string; label: string; available: boolean; gender?: string; language?: string }[];
+  video_types: (OptionItem & { description: string; available: boolean })[];
+  visual_styles: (OptionItem & { description: string })[];
   aspects: string[];
   kinds: { id: string; label: string; aspect: string }[];
   templates: TemplateOption[];
