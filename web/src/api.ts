@@ -273,6 +273,12 @@ export interface AutopilotRule {
   fps: number;
   music: string;
   music_volume: number;
+  audience: string;
+  tone: string;
+  hook_style: string;
+  cta: string;
+  content_pillars: string;
+  avoid_topics: string;
   cadence_hours: number;
   enabled: boolean;
   destination: string;
