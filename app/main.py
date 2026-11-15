@@ -44,7 +44,21 @@ async def token_guard(request: Request, call_next):
         supplied = request.headers.get("x-app-token") or request.query_params.get("token") or ""
         if not hmac.compare_digest(supplied, APP_TOKEN):
             return JSONResponse({"detail": "Token de acceso requerido"}, status_code=401)
-    return await call_next(request)
+    response = await call_next(request)
+    # Persistir inmediatamente los cambios de configuración, calendario y OAuth.
+    # El backup periódico sigue cubriendo cambios hechos por el worker.
+    if (
+        request.method in {"POST", "PUT", "PATCH", "DELETE"}
+        and request.url.path.startswith("/api/")
+        and response.status_code < 400
+        and persistence.configured()
+    ):
+        try:
+            persistence.sync_backup()
+        except Exception as exc:
+            db.log("error", "persistence", f"No se pudo guardar el cambio de API en Supabase: {exc}",
+                   {"path": request.url.path, "method": request.method})
+    return response
 
 
 # --------------------------------------------------------------------------- #
