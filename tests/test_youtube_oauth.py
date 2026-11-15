@@ -40,6 +40,9 @@ class FakeResponse:
 
 
 class YouTubeOAuthTests(unittest.TestCase):
+    def test_autopilot_api_does_not_enable_unattended_publishing_by_default(self):
+        self.assertFalse(main.AutopilotIn().auto_publish)
+
     def test_start_builds_google_authorization_url_for_selected_workspace_channel(self):
         with patch.object(publish, "youtube_credentials", return_value={
             "client_id": "client-id", "client_secret": "client-secret", "refresh_token": ""
