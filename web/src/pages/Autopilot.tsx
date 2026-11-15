@@ -371,7 +371,12 @@ export default function Autopilot() {
               <VoicePicker
                 options={voiceOptions}
                 value={form.voice}
-                onChange={(value) => update('voice', value)}
+                onChange={(value) => {
+                  update('voice', value);
+                  if (value === 'es-masculino') update('pitch', 30);
+                  else if (value === 'es-agudo') update('pitch', 65);
+                  else update('pitch', 45);
+                }}
                 compact
               />
             </Field>
