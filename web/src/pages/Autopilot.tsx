@@ -457,7 +457,7 @@ export default function Autopilot() {
                 {(form.template === 'longform' || form.template === 'explainer' ? [180,300,600,900,1200] : [15,20,30,45,60,90,120,180]).map((x) => <option key={x} value={x}>{x >= 60 ? Math.floor(x / 60) + ' minuto(s)' : x + ' segundos'}</option>)}
               </select>
             </Field>
-            <Field label="Cantidad de Shorts">
+            <Field label="Cantidad de videos">
               <input type="number" min="1" max="30" value={form.videos_per_period} onChange={(e) => update('videos_per_period', Math.max(1, Math.min(30, Number(e.target.value))))} />
             </Field>
             <Field label="Por período">
@@ -517,8 +517,8 @@ export default function Autopilot() {
             <h3>Revisá tu Autopiloto</h3>
             <div className="card" style={{ marginTop: 12 }}>
               <strong>{form.name || 'Nuevo Autopiloto'} · {form.niche || 'Sin nicho'}</strong>
-              <p>{form.videos_per_period} Short(s) cada {form.period_days === 1 ? 'día' : form.period_days === 7 ? 'semana' : '30 días'}, a las {form.schedule_time} ({form.timezone}).</p>
-              <p>{form.duration_target_sec >= 60 ? Math.floor(form.duration_target_sec / 60) + ' min' : form.duration_target_sec + ' s'} · {form.aspect} · {form.resolution} · {form.destination === 'youtube' && form.auto_publish ? 'Publicación automática en YouTube Shorts' : 'Guardar en Laburito'}.</p>
+              <p>{form.videos_per_period} video(s) cada {form.period_days === 1 ? 'día' : form.period_days === 7 ? 'semana' : '30 días'}, a las {form.schedule_time} ({form.timezone}).</p>
+              <p>{form.duration_target_sec >= 60 ? Math.floor(form.duration_target_sec / 60) + ' min' : form.duration_target_sec + ' s'} · {form.aspect} · {form.resolution} · {form.destination === 'youtube' && form.auto_publish ? 'Publicación automática en YouTube' : 'Guardar en Laburito'}.</p>
               <p>Voz: {voiceOptions.find((v) => v.id === form.voice)?.label || form.voice} · Música: {form.music === 'auto' ? 'Automática' : form.music === 'ninguna' ? 'Sin música' : form.music}</p>
               <p>Tipo: {meta?.video_types.find((v) => v.id === form.video_type)?.label || form.video_type} · Estilo: {meta?.visual_styles.find((v) => v.id === form.visual_style)?.label || form.visual_style} · Subtítulos: {meta?.caption_styles.find((x) => x.id === form.caption_style)?.label || form.caption_style}</p>
             </div>
