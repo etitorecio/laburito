@@ -16,7 +16,9 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from . import db, options
 
 CADENCE_OPTIONS = [6, 12, 24, 48, 72, 168]
-SHORT_TEMPLATE_IDS = {"shorts", "listicle", "pov", "quote"}
+SHORT_TEMPLATE_IDS = {"shorts", "listicle", "pov", "quote", "cuadrado", "vertical_45"}
+LONGFORM_TEMPLATE_IDS = {"longform", "explainer"}
+AUTOPILOT_TEMPLATE_IDS = SHORT_TEMPLATE_IDS | LONGFORM_TEMPLATE_IDS
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS autopilot_rules(
@@ -101,16 +103,23 @@ def ensure_schema() -> None:
     # Normaliza IDs de camas musicales guardados por versiones anteriores.
     for bed_id in options.MUSIC_IDS:
         db.execute("UPDATE autopilot_rules SET music=? WHERE music=?", (f"bed:{bed_id}", bed_id))
-    # Migra reglas antiguas: el Autopiloto queda dedicado exclusivamente a Shorts.
-    placeholders = ",".join("?" for _ in SHORT_TEMPLATE_IDS)
+    # Migra plantillas desconocidas, pero conserva documentales largos y formatos válidos.
+    placeholders = ",".join("?" for _ in AUTOPILOT_TEMPLATE_IDS)
     db.execute(
         f"UPDATE autopilot_rules SET template='shorts', aspect='9:16', "
         "duration_target_sec=CASE WHEN duration_target_sec IS NULL THEN 30 "
         "WHEN duration_target_sec<15 THEN 15 WHEN duration_target_sec>180 THEN 180 "
         "ELSE duration_target_sec END "
-        f"WHERE template NOT IN ({placeholders}) OR aspect!='9:16'",
-        tuple(sorted(SHORT_TEMPLATE_IDS)),
+        f"WHERE template NOT IN ({placeholders})",
+        tuple(sorted(AUTOPILOT_TEMPLATE_IDS)),
     )
+    for template_id in AUTOPILOT_TEMPLATE_IDS:
+        template = options.template(template_id)
+        if template:
+            db.execute(
+                "UPDATE autopilot_rules SET aspect=? WHERE template=?",
+                (template.get("aspect", "9:16"), template_id),
+            )
 
 
 def _ts(offset_hours: float = 0.0) -> str:
@@ -155,15 +164,15 @@ def _clean(data: dict) -> dict:
     if "channel_id" in data:
         clean["channel_id"] = data["channel_id"]
     if "template" in data and data["template"] is not None:
-        if data["template"] not in SHORT_TEMPLATE_IDS:
-            raise ValueError("El Autopiloto de Laburito produce exclusivamente Shorts.")
+        if data["template"] not in AUTOPILOT_TEMPLATE_IDS:
+            raise ValueError("Elegí una plantilla de video compatible.")
         clean["template"] = data["template"]
     if "duration_target_sec" in data and data["duration_target_sec"] is not None:
         short_templates = SHORT_TEMPLATE_IDS
         if data.get("template", "shorts") in short_templates:
             clean["duration_target_sec"] = max(15, min(180, int(data["duration_target_sec"])))
         else:
-            clean["duration_target_sec"] = max(5, min(3600, int(data["duration_target_sec"])))
+            clean["duration_target_sec"] = max(180, min(1200, int(data["duration_target_sec"])))
     if "voice" in data and data["voice"] is not None:
         voice = str(data["voice"]).strip()
         spanish_voices = {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"}
@@ -315,7 +324,8 @@ def create_rule(data: dict) -> dict:
     clean = _clean(data)
     clean.setdefault("name", clean.get("niche") or "Piloto automático")
     clean.setdefault("template", "shorts")
-    clean.setdefault("aspect", "9:16")
+    selected_template = options.template(clean.get("template", "shorts")) or options.template("shorts")
+    clean.setdefault("aspect", selected_template.get("aspect", "9:16"))
     clean.setdefault("destination", "youtube")
     clean.setdefault("privacy", "public")
     clean.setdefault("auto_publish", 1)
@@ -367,7 +377,7 @@ def _create_project(rule: dict) -> dict:
     """Descubre un tema no usado, registra una fuente y crea el proyecto."""
     from . import script_gen, topic_engine
 
-    template_id = rule.get("template") if rule.get("template") in SHORT_TEMPLATE_IDS else "shorts"
+    template_id = rule.get("template") if rule.get("template") in AUTOPILOT_TEMPLATE_IDS else "shorts"
     tpl = options.template(template_id)
     # Compatibilidad con reglas antiguas: nunca producir narración en otro idioma.
     rule["voice"] = rule.get("voice") if rule.get("voice") in {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"} else "es"
@@ -388,14 +398,17 @@ def _create_project(rule: dict) -> dict:
     )
     topic = research["topic"]
     title = topic
-    duration = max(15, min(180, int(rule.get("duration_target_sec") or tpl.get("default_duration") or 30)))
+    duration_default = int(tpl.get("default_duration") or 30)
+    duration_max = 180 if template_id in SHORT_TEMPLATE_IDS else 1200
+    duration_min = 15 if template_id in SHORT_TEMPLATE_IDS else 180
+    duration = max(duration_min, min(duration_max, int(rule.get("duration_target_sec") or duration_default)))
     pid = db.execute(
         "INSERT INTO projects(channel_id, title, topic, kind, aspect, status, duration_target_sec, voice, speed, pitch, notes, "
         "template, visual_style, video_type, caption_style, transition_default, resolution, fps, music, music_volume, created_at, updated_at) "
         "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (
-            rule.get("channel_id"), title, topic, "short",
-            "9:16", "borrador", duration,
+            rule.get("channel_id"), title, topic, tpl.get("kind", "short"),
+            tpl.get("aspect", "9:16"), "borrador", duration,
             rule.get("voice") or "es", int(rule.get("speed") or 150), int(rule.get("pitch") if rule.get("pitch") is not None else 45),
             f"Autopiloto: {rule.get('name') or niche}. Fuente inicial: {research['url']}. "
             "La fuente es introductoria y debe contrastarse antes de publicar. "
