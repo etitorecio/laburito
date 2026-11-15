@@ -124,7 +124,7 @@ La opción recomendada es **Docker local en tu PC**, con la carpeta `./data` per
 
 ## Limitaciones conocidas
 
-- El tipo "Imágenes con movimiento" usa imágenes de archivo con paneo/zoom; no es generación de imágenes IA. "Esqueleto animado" produce un personaje 2.5D procedural local, no un modelo 3D generativo. "Videos de archivo", Minecraft y Subway Surfers funcionan con cinco clips propios o autorizados cargados en sus bibliotecas locales. "Video IA de movimiento completo" permanece desactivado: los modelos abiertos de video requieren recursos de GPU/VRAM que no son realistas para una notebook con gráficos integrados.
+- El tipo "Imágenes con movimiento" usa imágenes de archivo con paneo/zoom; no es generación de imágenes IA. "Esqueleto animado" produce un personaje 2.5D procedural local, no un modelo 3D generativo. "Videos de archivo", Minecraft y Subway Surfers stock footage requiere cinco clips; Minecraft y Subway Surfers requieren uno como mínimo y permiten hasta cinco clips propios o autorizados en sus bibliotecas locales. "Video IA de movimiento completo" permanece desactivado: los modelos abiertos de video requieren recursos de GPU/VRAM que no son realistas para una notebook con gráficos integrados.
 - El material visual externo depende de la red y de las licencias de cada repositorio; siempre se registra autor, licencia y fecha de consulta. La subida a YouTube registra el ID devuelto por la API y consulta `videos.list` para confirmar su presencia; el procesamiento de YouTube puede continuar después de que termine la tarea.
 - El almacenamiento local persistente se conserva en `./data`; no se necesita Supabase ni una base de datos externa.
 - Es una instalación de un solo propietario: la instancia local no tiene autenticación multiusuario y el estado OAuth/SQLite no está aislado por usuario. No la ofrezcas como SaaS compartido ni guardes canales de varios amigos en la misma instancia. Para compartirla hoy, cada persona debe desplegar su propia copia; falta autenticación multiusuario y aislamiento de credenciales. No la expongas directamente a Internet.
@@ -137,3 +137,8 @@ La opción recomendada es **Docker local en tu PC**, con la carpeta `./data` per
 - Subway Surfers: el canal verificado oficial publica una captura vertical 9:16 y otra horizontal 16:9 marcadas expresamente como `FREE TO USE`. Revisar la descripción vigente antes de cada uso: [vertical](https://www.youtube.com/watch?v=QPW3XwBoQlw) · [horizontal](https://www.youtube.com/watch?v=i0M4ARe9v0Y).
 - Minecraft: la opción más sólida es grabar una partida propia y cumplir las [Usage Guidelines oficiales de Mojang](https://www.minecraft.net/en-us/usage-guidelines). Como alternativa, [Orbital](https://www.youtube.com/watch?v=u7kdVe8q5zs) declara que permite monetizar su grabación y pide crédito; ese permiso cubre la grabación del creador, no reemplaza las reglas de Mojang.
 - El selector de gameplay ahora muestra estas fuentes y permite empezar con un clip, con hasta cinco por biblioteca. No se descarga material automáticamente desde YouTube ni se eluden sus restricciones.
+
+
+## Fábricas de YouTube Shorts
+
+Las dos fábricas principales son **Historias estilo Reddit** y **Frutinovelas**. Ambas producen exclusivamente video vertical 9:16, con una duración máxima de 180 segundos. La interfaz de creación y el Autopiloto ofrecen esas dos plantillas; el backend vuelve a validar formato, duración y correspondencia entre cada fábrica y su canal para evitar cruces accidentales.
