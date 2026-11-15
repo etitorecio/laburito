@@ -122,7 +122,7 @@ export default function Autopilot() {
       return;
     }
     if (form.auto_publish && form.destination === 'youtube' && persistenceConfigured === false) {
-      setError('Para autopublicar sin perder el Short ante un reinicio, ejecutá Laburito en tu PC con un volumen local persistente.');
+      setError('Para autopublicar sin perder el video ante un reinicio, ejecutá Laburito en tu PC con un volumen local persistente.');
       return;
     }
     setBusy(true); setError(''); setOk('');
@@ -269,7 +269,7 @@ export default function Autopilot() {
         <strong>Falta almacenamiento persistente.</strong> Para conservar la programación y el historial, ejecutá Laburito en tu PC con la carpeta local ./data.
       </p>}
       {persistenceConfigured === true && <p className="muted">{persistenceNote}</p>}
-      <Card title={editingId ? 'Editar autopiloto' : 'Crear autopiloto'} sub="Configurá una vez todo lo que querés producir. Después el sistema usa estas reglas en cada Short programado.">
+      <Card title={editingId ? 'Editar autopiloto' : 'Crear autopiloto'} sub="Configurá una vez todo lo que querés producir. Después el sistema usa estas reglas en cada video programado.">
         <div className="stack" style={{ gap: 12 }}>
           <div className="autopilot-progress">
             <div className="autopilot-progress-top">
@@ -304,19 +304,19 @@ export default function Autopilot() {
                 {['Dinámico y cercano','Misterioso y tenso','Documental y riguroso','Humorístico e irónico','Emocional y reflexivo','Enérgico y provocador'].map((x) => <option key={x}>{x}</option>)}
               </select>
             </Field>
-            <Field label="Cómo empieza cada Short (gancho)">
+            <Field label="Cómo empieza cada video (gancho)">
               <select value={form.hook_style} onChange={(e) => update('hook_style', e.target.value)}>
                 {['Dato sorprendente','Pregunta intrigante','Afirmación polémica verificable','Situación en medio de la acción','Error o mito que desmontar','Misterio sin resolver'].map((x) => <option key={x}>{x}</option>)}
               </select>
             </Field>
             <Field label="Cómo termina">
               <select value={form.cta} onChange={(e) => update('cta', e.target.value)}>
-                {['Hacé una pregunta concreta al final','Invitá a comentar una opinión','Invitá a compartir el Short','Invitá a seguir el canal','Cerrá con una reflexión, sin pedir interacción'].map((x) => <option key={x}>{x}</option>)}
+                {['Hacé una pregunta concreta al final','Invitá a comentar una opinión','Invitá a compartir el video','Invitá a seguir el canal','Cerrá con una reflexión, sin pedir interacción'].map((x) => <option key={x}>{x}</option>)}
               </select>
             </Field>
           </details>
 
-<h3>Organizá los Shorts en un canal de contenido</h3>
+<h3>Organizá los videos en un canal de contenido</h3>
             <Field label="Nombre de esta automatización">
               <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="Ej.: Curiosidades diarias" />
             </Field>
@@ -331,7 +331,7 @@ export default function Autopilot() {
 
           {step === 1 && <>
 <h3>Voz española</h3>
-            <p className="muted">Todos los Shorts se escriben y narran en español. Elegí únicamente la voz y el ritmo de narración.</p>
+            <p className="muted">Todos los videos se escriben y narran en español. Elegí únicamente la voz y el ritmo de narración.</p>
             <Field label="Elegí una voz en español">
               <VoicePicker
                 options={voiceOptions}
@@ -584,9 +584,9 @@ export default function Autopilot() {
                   <h4>{rule.name || rule.niche}</h4>
                   <div className="meta"><span>{rule.niche}</span><span>·</span><span>{rule.videos_per_period || 1} cada {rule.period_days || 1} día(s)</span><span>·</span><Badge tone={rule.enabled ? 'ok' : 'warn'}>{rule.enabled ? 'Activo' : 'Pausado'}</Badge></div>
                   <div className="meta"><span>{rule.channel_name || 'Sin canal'}</span><span>·</span><span>{rule.template}</span><span>·</span><span>{rule.destination === 'youtube' ? 'YouTube' : 'Entrega local'}</span></div>
-                  <small>{rule.last_project_title ? 'Último Short: ' + rule.last_project_title + ' · ' + (rule.last_project_status || 'creado') : 'Todavía no generó proyectos'}{rule.last_job_status ? ' · ' + (rule.last_job_kind === 'publish_project' ? 'Publicación' : 'Producción') + ': ' + rule.last_job_status : ''}{rule.last_job_message ? ' — ' + rule.last_job_message : ''}{rule.last_error ? ' · Último error: ' + rule.last_error : ''}{rule.last_run_at ? ' · Ejecutado: ' + new Date(rule.last_run_at).toLocaleString() : ''}{rule.next_run_at ? ' · Próximo: ' + new Date(rule.next_run_at).toLocaleString() : ''}</small>
+                  <small>{rule.last_project_title ? 'Último video: ' + rule.last_project_title + ' · ' + (rule.last_project_status || 'creado') : 'Todavía no generó proyectos'}{rule.last_job_status ? ' · ' + (rule.last_job_kind === 'publish_project' ? 'Publicación' : 'Producción') + ': ' + rule.last_job_status : ''}{rule.last_job_message ? ' — ' + rule.last_job_message : ''}{rule.last_error ? ' · Último error: ' + rule.last_error : ''}{rule.last_run_at ? ' · Ejecutado: ' + new Date(rule.last_run_at).toLocaleString() : ''}{rule.next_run_at ? ' · Próximo: ' + new Date(rule.next_run_at).toLocaleString() : ''}</small>
                   {rule.last_job_status && ['en_cola', 'ejecutando'].includes(rule.last_job_status) && <div style={{ marginTop: 8 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}><span>{rule.last_job_kind === 'publish_project' ? 'Publicando Short' : 'Produciendo Short'}</span><strong>{Math.max(0, Math.min(100, rule.last_job_progress || 0))}%</strong></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}><span>{rule.last_job_kind === 'publish_project' ? 'Publicando video' : 'Produciendo video'}</span><strong>{Math.max(0, Math.min(100, rule.last_job_progress || 0))}%</strong></div>
                     <div style={{ height: 6, borderRadius: 99, overflow: 'hidden', background: 'var(--border, #d1d5db)', marginTop: 4 }}><div style={{ width: Math.max(0, Math.min(100, rule.last_job_progress || 0)) + '%', height: '100%', background: 'var(--accent, #2563eb)', transition: 'width .3s ease' }} /></div>
                   </div>}
                 </div>
