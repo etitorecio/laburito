@@ -603,6 +603,8 @@ class AutopilotResearchTests(unittest.TestCase):
         scene_calls = [call.args[1] for call in execute.call_args_list if "INSERT INTO scenes" in call.args[0]]
         self.assertGreaterEqual(len(scene_calls), 5)
         self.assertIn("Manzana, Banana y Pera", " ".join(str(row[3]) for row in scene_calls))
+        self.assertIn("Esto no termina acá", scene_calls[-1][3])
+        self.assertNotIn("Te leo en los comentarios", scene_calls[-1][3])
         self.assertEqual(result["evidence_sources"], 0)
 
     def test_frutinovela_template_builds_vertical_episode_with_cliffhanger(self):
