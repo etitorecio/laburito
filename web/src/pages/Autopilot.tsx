@@ -18,6 +18,10 @@ const INITIAL = {
   duration_target_sec: 30,
   voice: 'es',
   cadence_hours: 24,
+  videos_per_period: 1,
+  period_days: 1,
+  schedule_time: '10:00',
+  timezone: 'America/Argentina/Buenos_Aires',
   audience: 'Público general',
   tone: 'Dinámico y cercano',
   hook_style: 'Dato sorprendente',
@@ -76,6 +80,10 @@ export default function Autopilot() {
         channel_id: form.channel_id ? Number(form.channel_id) : null,
         duration_target_sec: Number(form.duration_target_sec),
         cadence_hours: Number(form.cadence_hours),
+        videos_per_period: Number(form.videos_per_period),
+        period_days: Number(form.period_days),
+        schedule_time: form.schedule_time,
+        timezone: form.timezone,
         auto_publish: form.auto_publish,
         enabled: form.enabled,
       };
@@ -84,7 +92,7 @@ export default function Autopilot() {
         setOk('Configuración del Autopiloto actualizada.');
       } else {
         await api.post('/api/autopilot', payload);
-        setOk('Autopiloto creado. La primera ejecución queda programada para ahora.');
+        setOk('Autopiloto creado. La producción quedó programada según la cantidad, frecuencia y horario elegidos.');
       }
       setForm(INITIAL);
       setEditingId(null);
@@ -121,6 +129,10 @@ export default function Autopilot() {
       music: rule.music,
       music_volume: rule.music_volume,
       cadence_hours: rule.cadence_hours,
+      videos_per_period: rule.videos_per_period || 1,
+      period_days: rule.period_days || 1,
+      schedule_time: rule.schedule_time || '10:00',
+      timezone: rule.timezone || 'America/Argentina/Buenos_Aires',
       audience: rule.audience || 'Público general',
       tone: rule.tone || 'Dinámico y cercano',
       hook_style: rule.hook_style || 'Dato sorprendente',
@@ -243,9 +255,28 @@ export default function Autopilot() {
           <Field label="Volumen de música (0 a 1)">
             <input type="number" min="0" max="1" step="0.01" value={form.music_volume} onChange={(e) => setForm({ ...form, music_volume: Number(e.target.value) })} />
           </Field>
-          <Field label="Frecuencia de producción">
-            <select value={form.cadence_hours} onChange={(e) => setForm({ ...form, cadence_hours: Number(e.target.value) })}>
-              {[6, 12, 24, 48, 72, 168].map((h) => <option key={h} value={h}>{h < 24 ? `Cada ${h} horas` : h === 24 ? 'Diariamente' : h === 168 ? 'Semanalmente' : `Cada ${h / 24} días`}</option>)}
+          <Field label="Cantidad de Shorts por período">
+            <input type="number" min="1" max="30" value={form.videos_per_period} onChange={(e) => setForm({ ...form, videos_per_period: Math.max(1, Math.min(30, Number(e.target.value))) })} />
+          </Field>
+          <Field label="Período">
+            <select value={form.period_days} onChange={(e) => setForm({ ...form, period_days: Number(e.target.value) })}>
+              <option value={1}>Por día</option>
+              <option value={7}>Por semana</option>
+              <option value={30}>Por mes (30 días)</option>
+            </select>
+          </Field>
+          <Field label="Hora de publicación / producción">
+            <input type="time" value={form.schedule_time} onChange={(e) => setForm({ ...form, schedule_time: e.target.value })} />
+          </Field>
+          <Field label="Zona horaria">
+            <select value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })}>
+              <option value="America/Argentina/Buenos_Aires">Argentina (Buenos Aires)</option>
+              <option value="America/Santiago">Chile</option>
+              <option value="America/Montevideo">Uruguay</option>
+              <option value="America/Mexico_City">México (CDMX)</option>
+              <option value="America/Bogota">Colombia</option>
+              <option value="Europe/Madrid">España</option>
+              <option value="UTC">UTC</option>
             </select>
           </Field>
           <Field label="Destino">
@@ -295,7 +326,7 @@ export default function Autopilot() {
           {editingId && <button className="btn ghost" disabled={busy} onClick={cancelEdit}>Cancelar edición</button>}
           <button className="btn ghost" disabled={busy} onClick={() => void load()}>Actualizar</button>
         </div>
-        <p className="muted" style={{ marginTop: 12 }}>Configuración recomendada: vertical 9:16, 1080p, 30 FPS y 20–45 segundos. El guion se adapta al público, tono, gancho, pilares y cierre que definiste. El descubrimiento usa fuentes gratuitas; la primera fuente es orientativa y no equivale a una verificación periodística completa. Revisá las fuentes antes de habilitar publicación pública automática.</p>
+        <p className="muted" style={{ marginTop: 12 }}>Configuración recomendada: vertical 9:16, 1080p, 30 FPS y 20–45 segundos. El guion se adapta al público, tono, gancho, pilares y cierre que definiste. El calendario admite cantidades por día, semana o mes, con hora y zona horaria. El descubrimiento usa fuentes gratuitas; la primera fuente es orientativa y no equivale a una verificación periodística completa. Revisá las fuentes antes de habilitar publicación pública automática.</p>
       </Card>
 
       <Card title="Tus automatizaciones" sub="Podés ejecutarlas ahora, pausarlas o eliminarlas.">
