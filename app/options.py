@@ -18,10 +18,11 @@ ASPECTS: dict[str, tuple[int, int]] = {
     "4:5": (1080, 1350),
 }
 
-RESOLUTIONS: dict[str, float] = {"1080p": 1.0, "1440p": 4 / 3, "2160p": 2.0}
+RESOLUTIONS: dict[str, float] = {"720p": 2 / 3, "1080p": 1.0, "1440p": 4 / 3, "2160p": 2.0}
 
 RESOLUTION_INFO = [
-    {"id": "1080p", "label": "1080p (Full HD)", "note": "Rápido. Recomendado para Shorts y Reels."},
+    {"id": "720p", "label": "720p (HD)", "note": "Más rápido para equipos modestos; recomendado para probar."},
+    {"id": "1080p", "label": "1080p (Full HD)", "note": "Recomendado para la publicación final."},
     {"id": "1440p", "label": "1440p (2K)", "note": "Intermedio. Más nitidez, ~1.8x tiempo de render."},
     {"id": "2160p", "label": "2160p (4K)", "note": "Máxima calidad. ~4x tiempo de render en 1 vCPU."},
 ]
