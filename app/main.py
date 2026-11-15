@@ -20,6 +20,7 @@ from fastapi import Body, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from PIL import Image, ImageStat
 
 from . import autopilot, db, media, options, persistence, publish, render, script_gen, skeleton, tts, worker
 
@@ -321,6 +322,42 @@ def health():
         "worker": worker.status(),
         "persistence": persistence.status(),
     }
+
+
+@app.post("/api/visual-style/analyze")
+async def analyze_visual_style_reference(file: UploadFile = File(...)):
+    """Extrae una descripción sencilla de paleta/iluminación de una imagen, sin servicios IA."""
+    if not (file.content_type or "").startswith("image/"):
+        raise HTTPException(400, "Subí una imagen JPG, PNG o WebP.")
+    raw = await file.read(8 * 1024 * 1024 + 1)
+    if len(raw) > 8 * 1024 * 1024:
+        raise HTTPException(413, "La imagen de referencia no puede superar 8 MB.")
+    try:
+        image = Image.open(io.BytesIO(raw)).convert("RGB")
+        if image.width * image.height > 40_000_000:
+            raise HTTPException(413, "La imagen tiene demasiados píxeles para analizarla.")
+        image.thumbnail((96, 96))
+        red, green, blue = ImageStat.Stat(image).mean[:3]
+        brightness = (red + green + blue) / 3
+        saturation = max(red, green, blue) - min(red, green, blue)
+        contrast = ImageStat.Stat(image.convert("L")).stddev[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(400, "No se pudo leer la imagen de referencia.") from exc
+
+    if blue > red * 1.12 and blue > green * 1.04:
+        palette = "paleta fría azulada"
+    elif red > blue * 1.12 and red > green * 1.05:
+        palette = "paleta cálida rojiza y dorada"
+    elif green > red * 1.08 and green > blue * 1.04:
+        palette = "paleta natural verde"
+    else:
+        palette = "paleta neutra equilibrada"
+    light = "iluminación luminosa" if brightness > 165 else "iluminación oscura" if brightness < 90 else "iluminación media"
+    contrast_text = "contraste alto" if contrast > 55 else "contraste suave" if contrast < 28 else "contraste medio"
+    color_text = "colores intensos" if saturation > 75 else "colores apagados" if saturation < 28 else "saturación moderada"
+    return {"visual_style_prompt": f"{palette}, {light}, {contrast_text}, {color_text}", "analysis": "Paleta y luz calculadas localmente; no se subió la imagen a ningún servicio externo."}
 
 
 @app.post("/api/music/upload")
