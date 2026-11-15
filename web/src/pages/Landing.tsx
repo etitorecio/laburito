@@ -548,9 +548,6 @@ export default function Landing({ go }: { go: Go }) {
               <li>
                 <button onClick={() => go('analitica')}>Analítica</button>
               </li>
-              <li>
-                <button onClick={() => go('investigacion')}>Investigación</button>
-              </li>
             </ul>
           </div>
         </div>
