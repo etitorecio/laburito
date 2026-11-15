@@ -21,6 +21,13 @@ _wake = threading.Event()
 def enqueue(project_id: int | None, kind: str, payload: dict | None = None) -> int:
     import json
 
+    if kind == "publish_project" and project_id is not None:
+        existing = db.query_one(
+            "SELECT id FROM jobs WHERE project_id=? AND kind=? AND status IN ('en_cola','ejecutando','completado') ORDER BY id DESC LIMIT 1",
+            (int(project_id), kind),
+        )
+        if existing:
+            return int(existing["id"])
     job_id = db.execute(
         "INSERT INTO jobs(project_id, kind, status, progress, message, payload_json, created_at, updated_at) "
         "VALUES(?,?,?,?,?,?,?,?)",
@@ -123,10 +130,6 @@ def run_job(job: dict) -> None:
                 on_progress=lambda pct, msg: _set_progress(job_id, pct, msg),
             )
             result["validation"] = _validate_render_result(result)
-            db.execute(
-                "UPDATE jobs SET status='completado', progress=100, message=?, result_json=?, finished_at=?, updated_at=? WHERE id=?",
-                ("Render terminado", json.dumps(result, ensure_ascii=False), db.now(), db.now(), job_id),
-            )
             # Auto-subida: si el proyecto la tiene activada, se publica al terminar.
             try:
                 auto = publish.auto_publish_settings(int(project_id))
@@ -186,6 +189,12 @@ def run_job(job: dict) -> None:
                     f"Auto-subida encolada para el proyecto {project_id}",
                     {"destination": auto["destination"], "job": publish_job},
                 )
+            # Completar el render después de encolar la publicación: así un reinicio
+            # no deja un MP4 terminado sin su tarea de subida.
+            db.execute(
+                "UPDATE jobs SET status='completado', progress=100, result_json=?, finished_at=?, updated_at=? WHERE id=?",
+                (json.dumps(result, ensure_ascii=False), db.now(), db.now(), job_id),
+            )
         elif job["kind"] == "publish_project":
             payload = json.loads(job.get("payload_json") or "{}")
             persistence.restore_pending_video(int(project_id))
