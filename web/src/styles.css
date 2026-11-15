@@ -1883,14 +1883,24 @@ th {
   border-radius: 12px;
   background: var(--panel-2);
   color: var(--text);
-  text-align: left;
-  cursor: pointer;
   scroll-snap-align: start;
 }
 .transition-card.selected {
   border: 2px solid var(--accent);
   padding: 6px;
   box-shadow: 0 0 0 2px rgba(255,176,32,.13);
+}
+.transition-select {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 .transition-screen {
   display: block;
