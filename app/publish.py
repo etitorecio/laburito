@@ -29,7 +29,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from . import db
+from . import db, media
 
 YOUTUBE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 YOUTUBE_UPLOAD_URL = "https://www.googleapis.com/upload/youtube/v3/videos"
@@ -345,8 +345,32 @@ def youtube_account_status() -> dict:
     }
 
 
+def _validate_autopilot_short(project, source: Path) -> dict:
+    """Valida el archivo final para que un autopiloto nunca suba un video largo."""
+    notes = _g(project, "notes") or ""
+    if not notes.startswith("Autopiloto:"):
+        return {}
+    if _g(project, "kind") != "short":
+        raise PublishError("Publicación cancelada: el Autopiloto solo puede publicar proyectos tipo Short.")
+    try:
+        info = media.probe_video(source)
+    except Exception as exc:
+        raise PublishError(f"No se pudo validar el MP4 antes de publicar: {exc}") from exc
+    width, height = int(info.get("width") or 0), int(info.get("height") or 0)
+    duration = float(info.get("duration") or 0)
+    if not width or not height or height <= width:
+        raise PublishError("Publicación cancelada: el archivo no es vertical. Los Shorts deben renderizarse en 9:16.")
+    if duration <= 0 or duration > 180:
+        raise PublishError(f"Publicación cancelada: duración inválida para un Short ({duration:.1f} s). El máximo es 180 segundos.")
+    ratio = width / height
+    if abs(ratio - (9 / 16)) > 0.025:
+        raise PublishError(f"Publicación cancelada: proporción {width}x{height}; se esperaba 9:16.")
+    return info
+
+
 def _youtube_upload(project, meta: dict, privacy: str, report) -> dict:
     source = video_path(project)
+    _validate_autopilot_short(project, source)
     token = _youtube_token()
     report(40, "Credenciales de YouTube aceptadas")
     payload = {
@@ -490,6 +514,8 @@ def publish(project_id: int, destination: str = "entrega", calendar_id: int | No
         raise PublishError("Todavía no hay un MP4 renderizado para este proyecto: ejecutá el render y volvé a publicar.")
     if destination == "youtube" and privacy not in ("public", "unlisted", "private"):
         raise PublishError("Privacidad inválida para YouTube. Elegí público, oculto o privado.")
+    if destination == "youtube" and (_g(project, "notes") or "").startswith("Autopiloto:"):
+        _validate_autopilot_short(project, source)
     if destination not in ("entrega", "youtube"):
         raise PublishError(f"Destino desconocido: {destination}. Usá 'entrega' o 'youtube'.")
 
