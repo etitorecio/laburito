@@ -83,13 +83,13 @@ Para reescritura de guiones con un modelo local, instalá [Ollama](https://ollam
 ### Conectar YouTube
 
 1. En Google Cloud, creá un proyecto y habilitá **YouTube Data API v3**.
-2. Configurá la pantalla de consentimiento; si está en Testing, agregá tu cuenta como usuario de prueba. Creá credenciales OAuth de tipo **Aplicación web** y agregá `https://developers.google.com/oauthplayground` como URI de redirección autorizada.
-3. En las variables de entorno de AppJet configurá `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` y `APP_TOKEN` (o `AITUBER_TOKEN`).
-4. Abrí el [OAuth 2.0 Playground oficial](https://developers.google.com/oauthplayground). En el engranaje activá **Use your own OAuth credentials**, pegá tu Client ID y Client Secret, seleccioná flujo **Server-side**, acceso **Offline** y forzá la pantalla de consentimiento.
-5. En Step 1 solicitá `https://www.googleapis.com/auth/youtube.upload` y `https://www.googleapis.com/auth/youtube.readonly`. Autorizá y canjeá el código por tokens.
-6. Copiá el **Refresh token** y pegalo en **Ajustes → Social Media Integration · YouTube**. Laburito lo guarda en el servidor; después podés verificar el nombre del canal.
+2. Configurá la pantalla de consentimiento y agregá tu cuenta como usuario de prueba si la app está en Testing. Creá credenciales OAuth de tipo **Aplicación web**.
+3. En **Ajustes → Social Media Integration · YouTube**, copiá la URI de callback que muestra Laburito y agregala como URI de redirección autorizada en Google Cloud. En AppJet será `https://TU-EDGE-URL/api/youtube/callback`; en Docker local, `http://localhost:8080/api/youtube/callback`.
+4. En las variables de entorno de AppJet o en el archivo `.env` local configurá `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` y `APP_TOKEN`. `YOUTUBE_REDIRECT_URI` es opcional si necesitás fijar manualmente la URI exacta.
+5. Volvé a Ajustes y tocá **Conectar canal con Google**. Autorizá el canal. Laburito canjea el código y guarda el refresh token en el servidor; después comprobá el nombre del canal.
 
-Usá tus propias credenciales en OAuth Playground: su cliente de prueba revoca refresh tokens a las 24 horas. Si la pantalla de consentimiento de Google permanece en modo **Testing**, los tokens de aplicaciones externas pueden vencer a los 7 días. Para automatización continua hay que revisar el estado de publicación y la verificación que Google exija.
+Si la pantalla de consentimiento permanece en modo **Testing**, Google puede hacer vencer los refresh tokens de aplicaciones externas después de 7 días. Para automatización continua, revisá el estado de publicación de la app OAuth y los requisitos de verificación que Google indique. El OAuth Playground queda solo como alternativa manual avanzada.
+
 
 ## Arquitectura
 
