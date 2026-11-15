@@ -38,11 +38,29 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(clean["cadence_hours"], 24)
         self.assertEqual(clean["schedule_time"], "09:30")
 
-    def test_autopilot_rejects_non_short_templates_and_landscape(self):
-        with self.assertRaisesRegex(ValueError, "exclusivamente Shorts"):
-            autopilot._clean({"template": "longform"})
-        with self.assertRaisesRegex(ValueError, "verticales 9:16"):
-            autopilot._clean({"aspect": "16:9"})
+    def test_autopilot_supports_longform_and_landscape(self):
+        clean = autopilot._clean({
+            "template": "longform",
+            "duration_target_sec": 1200,
+            "aspect": "16:9",
+        })
+        self.assertEqual(clean["template"], "longform")
+        self.assertEqual(clean["duration_target_sec"], 1200)
+        self.assertEqual(clean["aspect"], "16:9")
+
+    def test_autopilot_longform_duration_is_bounded_to_twenty_minutes(self):
+        self.assertEqual(
+            autopilot._clean({"template": "longform", "duration_target_sec": 1800})["duration_target_sec"],
+            1200,
+        )
+
+    def test_autopilot_rejects_unsupported_aspect_ratio(self):
+        with self.assertRaisesRegex(ValueError, "Formato de video no válido"):
+            autopilot._clean({"aspect": "3:2"})
+
+    def test_skeleton_autopilot_is_limited_to_seven_minutes(self):
+        with self.assertRaisesRegex(ValueError, "máxima de 7 minutos"):
+            autopilot._clean({"template": "longform", "duration_target_sec": 600, "video_type": "skeleton"})
 
     def test_autopilot_short_duration_supports_youtube_three_minute_limit(self):
         self.assertEqual(autopilot._clean({"template": "shorts", "duration_target_sec": 180})["duration_target_sec"], 180)
