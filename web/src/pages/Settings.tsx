@@ -3,6 +3,7 @@ import { api, getToken, setToken, type Diagnostics, type Meta } from '../api';
 import { Badge, Card, Empty, Field, Msg } from '../ui';
 import CaptionStylePicker from '../components/CaptionStylePicker';
 import TransitionPicker from '../components/TransitionPicker';
+import VoicePicker from '../components/VoicePicker';
 
 export default function Settings() {
   const [diag, setDiag] = useState<Diagnostics | null>(null);
@@ -189,11 +190,12 @@ export default function Settings() {
             <p className="muted" style={{ margin: 0 }}>Español (fijo para todos los Shorts y proyectos).</p>
           </Field>
           <Field label="Voz por defecto">
-            <select value={values.default_voice || 'es'} onChange={(e) => setValues({ ...values, default_voice: e.target.value })}>
-              {(meta?.voices ?? []).map((v) => (
-                <option key={v.id} value={v.id} disabled={!v.available}>{v.label}{v.available ? '' : ' (no instalada)'}</option>
-              ))}
-            </select>
+            <VoicePicker
+              options={meta?.voices ?? []}
+              value={values.default_voice || 'es'}
+              onChange={(value) => setValues({ ...values, default_voice: value })}
+              compact
+            />
           </Field>
           <Field label="Volumen de música (0-1)">
             <input type="number" step="0.01" min="0" max="1" value={values.music_volume || '0.12'} onChange={(e) => setValues({ ...values, music_volume: e.target.value })} />
