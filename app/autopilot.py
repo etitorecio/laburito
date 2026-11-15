@@ -142,6 +142,7 @@ def list_rules() -> list[dict]:
     for row in rows:
         row["enabled"] = bool(row["enabled"])
         row["auto_publish"] = bool(row["auto_publish"])
+        row["captions_enabled"] = bool(row.get("captions_enabled", 1))
     return rows
 
 
