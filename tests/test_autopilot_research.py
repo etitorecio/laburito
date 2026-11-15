@@ -48,6 +48,32 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(clean["duration_target_sec"], 1200)
         self.assertEqual(clean["aspect"], "16:9")
 
+    def test_longform_autopilot_creates_documentary_project(self):
+        project = {"id": 42, "title": "Documental de prueba", "notes": ""}
+        research = {
+            "topic": "La historia del universo",
+            "url": "https://es.wikipedia.org/wiki/Universo",
+            "source_title": "Universo",
+            "trend_signals": [],
+            "references": [],
+            "academic_sources": [],
+            "note_ids": [],
+        }
+        rule = {"template": "longform", "niche": "ciencia", "duration_target_sec": 600, "voice": "es"}
+        with patch.object(topic_engine, "research_topic", return_value=research):
+            with patch.object(autopilot.db, "query", side_effect=[[], []]):
+                with patch.object(autopilot.db, "query_one", return_value=project):
+                    with patch.object(autopilot.db, "execute", return_value=42) as execute:
+                        with patch.object(autopilot.db, "get_setting", return_value=""):
+                            with patch.object(autopilot.db, "now", return_value="2026-11-15T00:00:00Z"):
+                                with patch.object(script_gen, "generate_script", return_value={"scenes": [], "writer": "template", "evidence_sources": 0}):
+                                    with patch.object(autopilot.db, "log"):
+                                        autopilot._create_project(rule)
+        inserted = execute.call_args_list[0].args[1]
+        self.assertEqual(inserted[3], "documentary")
+        self.assertEqual(inserted[4], "16:9")
+        self.assertEqual(inserted[6], 600)
+
     def test_autopilot_longform_duration_is_bounded_to_twenty_minutes(self):
         self.assertEqual(
             autopilot._clean({"template": "longform", "duration_target_sec": 1800})["duration_target_sec"],
