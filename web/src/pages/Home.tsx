@@ -31,7 +31,7 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
       <Card
         title="AITuber Libre"
         sub="Estudio local para investigar nichos y producir documentales y Shorts con software libre."
-        actions={<button className="btn primary" onClick={() => go('proyectos')}>Nuevo proyecto</button>}
+        actions={<button className="btn primary" onClick={() => go('proyectos')}>Crear video</button>}
       >
         {error && <div className="msg error">{error}</div>}
         <div className="pill-row" style={{ marginBottom: 12 }}>
@@ -50,7 +50,7 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
         )}
         <div className="grid stats">
           <Stat value={diag?.counts.canales ?? 0} label="Canales" />
-          <Stat value={diag?.counts.proyectos ?? 0} label="Proyectos" />
+          <Stat value={diag?.counts.proyectos ?? 0} label="Videos" />
           <Stat value={diag?.counts.escenas ?? 0} label="Escenas" />
           <Stat value={`${diag?.disk_free_mb ?? 0} MB`} label="Disco libre" />
         </div>
@@ -74,7 +74,7 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
           </div>
         </Card>
 
-        <Card title="Proyectos recientes" actions={<button className="btn small ghost" onClick={() => go('proyectos')}>Ver todos</button>}>
+        <Card title="Videos recientes" actions={<button className="btn small ghost" onClick={() => go('proyectos')}>Ver todos</button>}>
           {projects.length === 0 ? (
             <Empty>
               Todavía no hay proyectos. Creá uno, generá el guion y renderizá tu primer documental o Short.
