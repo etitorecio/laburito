@@ -33,7 +33,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     visual_style_prompt: '',
     create_thumbnail: true,
     video_type: 'moving_images',
-    music_volume: 0.12,
+    music_volume: 0.3,
     transition_default: 'fundido',
     resolution: '720p',
     fps: 25,
