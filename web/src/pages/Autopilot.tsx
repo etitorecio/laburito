@@ -293,8 +293,8 @@ export default function Autopilot() {
             <Field label="Público al que le hablamos">
               <input value={form.audience} onChange={(e) => update('audience', e.target.value)} placeholder="Ej.: jóvenes interesados en historias reales" />
             </Field>
-            <Field label="Subtemas que sí debe cubrir">
-              <textarea value={form.content_pillars} onChange={(e) => update('content_pillars', e.target.value)} rows={3} placeholder="Separalos por coma. Ej.: casos extraños, leyendas, desapariciones..." />
+            <Field label={form.template === 'frutinovela' ? 'Personajes recurrentes y relaciones' : 'Subtemas que sí debe cubrir'}>
+              <textarea value={form.content_pillars} onChange={(e) => update('content_pillars', e.target.value)} rows={3} placeholder={form.template === 'frutinovela' ? 'Ej.: Manzana (protagonista), Banana (pareja), Pera (rival), Naranja (hermana)' : 'Separalos por coma. Ej.: casos extraños, leyendas, desapariciones...'} />
             </Field>
             <Field label="Temas que debe evitar">
               <textarea value={form.avoid_topics} onChange={(e) => update('avoid_topics', e.target.value)} rows={2} placeholder="Ej.: tragedias recientes, política partidaria..." />
