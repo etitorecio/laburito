@@ -313,7 +313,11 @@ export interface Meta {
   external_templates: TemplateOption[];
   resolutions: OptionItem[];
   fps_options: number[];
-  caption_styles: OptionItem[];
+  caption_styles: (OptionItem & {
+    max_words?: number; max_chars?: number; max_lines?: number; font_ratio?: number;
+    y_from_bottom?: number; box?: boolean; box_alpha?: string; boxcolor?: string;
+    fontcolor?: string; outline?: number; uppercase?: boolean;
+  })[];
   transitions: OptionItem[];
   music_beds: OptionItem[];
   music_library: string[];
