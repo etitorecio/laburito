@@ -259,9 +259,23 @@ def _next_run_at(rule: dict, after: datetime | None = None) -> str:
     return target.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _validate_auto_publish(clean: dict, current: dict | None = None) -> None:
+    """No deja activar YouTube si la conexión todavía no está configurada."""
+    merged = {**(current or {}), **clean}
+    if not bool(merged.get("auto_publish")) or merged.get("destination", "entrega") != "youtube":
+        return
+    from . import publish
+    youtube = next((item for item in publish.destinations() if item.get("id") == "youtube"), {})
+    if not youtube.get("available"):
+        missing = ", ".join(youtube.get("missing_env") or [])
+        suffix = f" Faltan: {missing}." if missing else ""
+        raise ValueError("Antes de activar la publicación automática, conectá y verificá YouTube en Ajustes." + suffix)
+
+
 def create_rule(data: dict) -> dict:
     ensure_schema()
     clean = _clean(data)
+    _validate_auto_publish(clean)
     clean.setdefault("name", clean.get("niche") or "Piloto automático")
     clean.setdefault("videos_per_period", 1)
     clean.setdefault("period_days", 1)
@@ -284,6 +298,7 @@ def update_rule(rule_id: int, data: dict) -> dict | None:
     if not current:
         return None
     clean = _clean(data)
+    _validate_auto_publish(clean, current)
     if clean:
         if clean.get("enabled") == 1 and not current.get("enabled"):
             clean["next_run_at"] = _ts(0)
