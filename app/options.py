@@ -334,6 +334,12 @@ def caption_style(project: dict) -> dict:
     return CAPTION_STYLES.get(template(project.get("template")).get("caption_style"), CAPTION_STYLES["documental"])
 
 
+def clamp_vertical_short_duration(template_id: str, duration: int) -> int:
+    """Mantiene las fábricas verticales dentro del límite de 3 minutos de Shorts."""
+    value = int(duration)
+    return max(15, min(180, value)) if template_id in VERTICAL_SHORT_TEMPLATES else value
+
+
 def resolve_defaults(payload: dict) -> dict:
     """Completa las opciones de un proyecto a partir de su plantilla."""
     tpl = template(payload.get("template"))
