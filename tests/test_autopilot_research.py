@@ -100,6 +100,11 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertFalse(render._captions_enabled({"notes": notes}))
         self.assertTrue(render._captions_enabled({"notes": "Proyecto normal"}))
 
+    def test_thumbnail_generation_is_enabled_by_default_and_can_be_disabled(self):
+        self.assertTrue(render._thumbnail_enabled({"notes": ""}))
+        notes = "[LABURITO_META]" + json.dumps({"create_thumbnail": False})
+        self.assertFalse(render._thumbnail_enabled({"notes": notes}))
+
     def test_custom_visual_prompt_selects_a_local_filter_and_search_hint(self):
         notes = "[LABURITO_META]" + json.dumps({
             "captions_enabled": True,
