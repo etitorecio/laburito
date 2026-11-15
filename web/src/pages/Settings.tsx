@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, getToken, setToken, type Diagnostics, type Meta } from '../api';
 import { Badge, Card, Empty, Field, Msg } from '../ui';
+import CaptionStylePicker from '../components/CaptionStylePicker';
 
 export default function Settings() {
   const [diag, setDiag] = useState<Diagnostics | null>(null);
@@ -229,11 +230,12 @@ export default function Settings() {
         </div>
         <div className="row">
           <Field label="Estilo de subtítulos por defecto">
-            <select value={values.caption_style || 'documental'} onChange={(e) => setValues({ ...values, caption_style: e.target.value })}>
-              {(meta?.caption_styles ?? [{ id: 'documental', label: 'Documental' }]).map((c) => (
-                <option key={c.id} value={c.id}>{c.label}</option>
-              ))}
-            </select>
+            <CaptionStylePicker
+              options={meta?.caption_styles ?? [{ id: 'documental', label: 'Documental' }]}
+              value={values.caption_style || 'documental'}
+              onChange={(value) => setValues({ ...values, caption_style: value })}
+              compact
+            />
           </Field>
           <Field label="Plantilla por defecto">
             <select value={values.default_template || 'shorts'} onChange={(e) => setValues({ ...values, default_template: e.target.value })}>
