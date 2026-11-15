@@ -269,6 +269,8 @@ export interface AutopilotRule {
   speed: number;
   pitch: number;
   visual_style: string;
+  title_style: string;
+  custom_tags: string;
   aspect: string;
   caption_style: string;
   transition_default: string;
