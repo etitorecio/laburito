@@ -152,6 +152,7 @@ export default function Settings() {
         </div>
         <p className="muted">AppJet Free no incluye disco virtual persistente. Cuando Supabase esté conectado, creá un proyecto gratuito y agregá en AppJet → Settings → Environment variables: <code>SUPABASE_URL</code> y <code>SUPABASE_SERVICE_ROLE_KEY</code>. Laburito crea automáticamente el bucket privado, sincroniza SQLite cada 15 minutos y después de cada tarea, y conserva el MP4 pendiente hasta que YouTube lo recibe.</p>
         <p className="muted">La clave service-role debe quedar como secreto del servidor; nunca la pegues en el navegador ni en el chat. La fila de diagnóstico de arriba confirma si la app detectó la conexión.</p>
+        <p className="muted">La URL actual `*.dev.ap-jt.com` es de preview. Para usar el endpoint Edge de la rama `appjet`, copiá la URL exacta desde AppJet → Settings → Overview y guardala como variable `LABURITO_URL` en GitHub. El hosting de AppJet está orientado a preview y pruebas, no a producción con usuarios reales.</p>
       </Card>
 
       <Card title="Acceso" sub="Protección del servidor. Para conectar YouTube, APP_TOKEN o AITUBER_TOKEN es obligatorio.">
