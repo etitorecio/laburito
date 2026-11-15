@@ -149,7 +149,7 @@ export default function Autopilot() {
       transition_default: rule.transition_default,
       resolution: rule.resolution,
       fps: rule.fps,
-      music: rule.music,
+      music: (rule.music || 'auto').replace(/^bed:/, ''),
       music_volume: rule.music_volume,
       cadence_hours: rule.cadence_hours,
       videos_per_period: rule.videos_per_period || 1,
