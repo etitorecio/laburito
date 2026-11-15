@@ -150,6 +150,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
                 {templates.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
               </select>
             </Field>
+            {form.template === 'frutinovela' && <p className="muted">Para una serie coherente, escribí en Tema / idea los nombres de las frutas protagonistas y el conflicto central. El guion deja un cliffhanger al final para continuar en otro episodio.</p>}
             <Field label="Canal interno">
               <select value={form.channel_id} onChange={(e) => setForm({ ...form, channel_id: e.target.value })}>
                 <option value="">Sin canal</option>
