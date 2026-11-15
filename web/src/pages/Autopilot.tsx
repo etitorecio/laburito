@@ -44,7 +44,7 @@ const INITIAL = {
   caption_style: 'short_pop',
   captions_enabled: true,
   transition_default: 'fundido',
-  resolution: '1080p',
+  resolution: '720p',
   fps: 25,
   music: 'auto',
   music_volume: 0.12,
