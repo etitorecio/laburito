@@ -206,11 +206,6 @@ export default function Landing({ go }: { go: Go }) {
 
   const openStudio = () => go('inicio');
 
-  const price = (monthly: number) => {
-    if (monthly === 0) return '0';
-    return annual ? String(Math.round(monthly * 0.83)) : String(monthly);
-  };
-
   return (
     <div className="lp">
       <header className="lp-nav">
