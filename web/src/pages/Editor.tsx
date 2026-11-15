@@ -540,9 +540,6 @@ export default function Editor({ projectId, go }: Props) {
             {busy === 'script' ? 'Generando…' : 'Generar guion completo'}
           </button>
           <a className="btn ghost" href={`/api/projects/${projectId}/download`}>Descargar paquete ZIP</a>
-          <button className="btn ghost" onClick={async () => { await api.post(`/api/projects/${projectId}/export`); setOk('Exportación encolada. El ZIP estará disponible en unos segundos.'); }}>
-            Preparar exportación
-          </button>
         </div>
 
         {project.jobs && project.jobs.length > 0 && (
