@@ -38,7 +38,7 @@ const CLIP_SOURCES: Record<string, { label: string; url: string; detail: string 
 
 export default function VideoTypePicker({ options, value, onChange, compact = false }: Props) {
   const [clips, setClips] = useState<ClipLibraries>({});
-  const [rightsConfirmed, setRightsConfirmed] = useState(false);
+  const [rightsConfirmed, setRightsConfirmed] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
 
@@ -54,7 +54,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
 
   async function upload(category: string, file?: File) {
     if (!file) return;
-    if (!rightsConfirmed) {
+    if (!rightsConfirmed[category]) {
       setError('Antes de cargar clips, confirmá que tenés derechos o permiso para usarlos.');
       return;
     }
@@ -93,10 +93,6 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
 
   return (
     <div className="video-type-picker">
-      <label className="clip-rights-confirm">
-        <input type="checkbox" checked={rightsConfirmed} onChange={(e) => setRightsConfirmed(e.target.checked)} />
-        Confirmo que los clips que cargue son míos o tengo permiso para utilizarlos y publicarlos
-      </label>
       <div className="video-type-track">
         {options.map((option) => {
           const selected = value === option.id;
@@ -119,6 +115,14 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
                     <span>{ICONS[option.id] || '🎥'}</span>
                     <small>Referencia visual · requiere clips propios o autorizados</small>
                   </div>
+                  <label className="clip-rights-confirm">
+                    <input
+                      type="checkbox"
+                      checked={rightsConfirmed[option.id] ?? false}
+                      onChange={(e) => setRightsConfirmed((current) => ({ ...current, [option.id]: e.target.checked }))}
+                    />
+                    Confirmo que tengo permiso comercial para usar y publicar clips de {option.label}
+                  </label>
                   <details className="background-clip-manager">
                     <summary>Administrar clips · {categoryClips.length} cargados · mínimo {required}, máximo {MAX_CLIPS}</summary>
                     <div className="clip-source-list">
