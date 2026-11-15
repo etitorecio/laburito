@@ -146,7 +146,7 @@ export default function Settings() {
         )}
       </Card>
 
-      <Card title="Persistencia externa · Supabase" sub="Necesaria para que el Autopiloto conserve reglas, cola, proyectos y autorización de YouTube si AppJet reemplaza el contenedor.">
+      <Card title="Persistencia externa · Supabase" sub="Usá Supabase en un contenedor efímero como AppJet; en modo local, el volumen ./data ya conserva todo.">
         <div className="pill-row">
           <Badge tone={diag?.persistence.configured ? 'ok' : 'warn'}>{diag?.persistence.configured ? 'Supabase configurado · verificar primer backup' : diag?.persistence.local_persistent ? 'Volumen local persistente activo' : 'Falta conectar almacenamiento persistente'}</Badge>
         </div>
