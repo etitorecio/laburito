@@ -1458,7 +1458,7 @@ def youtube_accounts(request: Request):
 
 @app.post("/api/youtube/oauth/start")
 def youtube_oauth_start(request: Request, channel_id: int):
-    """Inicia OAuth asociado a un canal interno concreto."""
+    """Inicia OAuth y asocia la cuenta real autorizada a la fábrica seleccionada."""
     credentials = publish.youtube_credentials()
     if not credentials["client_id"] or not credentials["client_secret"]:
         raise HTTPException(400, "Faltan las credenciales OAuth de YouTube en el servidor.")
@@ -1496,7 +1496,7 @@ def youtube_oauth_callback(code: str = "", state: str = "", error: str = ""):
     if not code or not state or not expected or not hmac.compare_digest(state, expected) or age > 600:
         raise HTTPException(403, "La autorización venció o no coincide. Volvé a iniciar la conexión desde Cuentas.")
     if not db.query_one("SELECT id FROM channels WHERE id=?", (channel_id,)):
-        raise HTTPException(404, "El canal interno asociado a esta autorización ya no existe.")
+        raise HTTPException(404, "La fábrica asociada a esta autorización ya no existe.")
     db.set_setting("youtube_oauth_state", "")
     db.set_setting("youtube_oauth_state_created", "")
     credentials = publish.youtube_credentials()
