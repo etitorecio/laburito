@@ -149,7 +149,7 @@ export default function Autopilot() {
     finally { setBusy(false); }
   }
 
-  const templates = data?.templates ?? meta?.templates ?? [];
+  const templates = (data?.templates ?? meta?.templates ?? []).filter((t) => ["shorts", "listicle", "pov", "quote"].includes(t.id));
   const youtubeReady = data?.destinations?.some((d) => d.id === "youtube" && d.available) ?? false;
 
   return (
