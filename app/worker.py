@@ -211,12 +211,6 @@ def run_job(job: dict) -> None:
                 privacy=payload.get("privacy", "unlisted"),
                 on_progress=lambda pct, msg: _set_progress(job_id, pct, msg),
             )
-            if published["destination"] == "youtube" and persistence.configured():
-                try:
-                    persistence.delete_pending_video(int(project_id))
-                except Exception as exc:
-                    db.log("warn", "persistence", f"No se pudo eliminar el MP4 pendiente después de publicar: {exc}",
-                           {"project_id": project_id})
             db.execute(
                 "UPDATE jobs SET status='completado', progress=100, message=?, result_json=?, finished_at=?, updated_at=? WHERE id=?",
                 (
@@ -320,6 +314,15 @@ def _loop() -> None:
                 if persistence.configured():
                     try:
                         persistence.sync_backup()
+                        if job.get("kind") == "publish_project" and project_id is not None:
+                            current = db.query_one("SELECT status FROM jobs WHERE id=?", (job["id"],))
+                            payload = json.loads(job.get("payload_json") or "{}")
+                            if current and current.get("status") == "completado" and payload.get("destination") == "youtube":
+                                try:
+                                    persistence.delete_pending_video(int(project_id))
+                                except Exception as exc:
+                                    db.log("warn", "persistence", f"No se pudo limpiar el MP4 pendiente: {exc}",
+                                           {"project_id": project_id})
                     except Exception as exc:
                         db.log("error", "persistence", f"No se pudo respaldar después de la tarea: {exc}")
                 continue
