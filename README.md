@@ -2,7 +2,7 @@
 
 Plataforma local para **investigar nichos, gestionar canales y producir documentales y Shorts** listos para revisar y publicar. Todo funciona con software libre, sin APIs de pago: la app renderiza vídeo real con FFmpeg, usa espeak-ng como respaldo y ofrece Piper neural opcional.
 
-> Estado honesto: el guion local, la voz, los subtítulos, el render, la cola y la exportación funcionan con herramientas gratuitas. El Autopiloto descubre temas no usados mediante búsquedas en Wikipedia, guarda la fuente y los enlaces externos citados, arma escenas desde el texto recuperado y busca imágenes en Wikimedia Commons/Openverse con licencias aptas para uso comercial; si no hay red o material válido, usa tarjetas locales. Esta investigación automática es una base documental, no una verificación periodística independiente: el resultado debe revisarse antes de publicarlo. YouTube Data API v3 admite subida automática con credenciales OAuth configuradas en el servidor; TikTok no está integrado.
+> Estado honesto: el guion local, la voz, los subtítulos, el render, la cola y la exportación funcionan con herramientas gratuitas. El Autopiloto descubre temas no usados mediante búsquedas en Wikipedia, guarda la fuente y los enlaces externos citados, arma escenas desde el texto recuperado y busca imágenes en Wikimedia Commons/Openverse con licencias aptas para uso comercial; si no hay red o material válido, usa tarjetas locales. Esta investigación automática es una base documental, no una verificación periodística independiente: el resultado debe revisarse antes de publicarlo. La capa **Social Media Integration** usa integraciones oficiales por plataforma: actualmente YouTube Data API v3 con OAuth para subir Shorts; no depende de un intermediario pago. TikTok y otras redes todavía no están integradas.
 
 ## Qué hace
 
@@ -14,7 +14,7 @@ Plataforma local para **investigar nichos, gestionar canales y producir document
 - **Cola persistente**: un trabajo a la vez, reanudable tras reinicio y con caché por escena (no repite trabajo).
 - **Entrega**: ZIP con MP4, SRT, VTT, guion en Markdown, fuentes/atribuciones en CSV, miniaturas, metadatos de publicación e informe de calidad.
 - **Analítica**: importación del CSV real de YouTube Studio (no inventa métricas) y resumen con hipótesis.
-- **Autopiloto**: configura nicho, canal, formato, duración, voz, aspecto, subtítulos, transiciones, resolución, FPS, música y frecuencia. Descubre temas nuevos, evita títulos ya producidos, registra fuentes y envía cada proyecto a render y entrega/publicación según la configuración. Requiere que el proceso del servidor permanezca activo para ejecutar la programación.
+- **Autopiloto**: configura nicho, canal, formato, duración, voz, aspecto, subtítulos, transiciones, resolución, FPS, música y frecuencia. Descubre temas nuevos, evita títulos ya producidos, registra fuentes y envía cada proyecto a render y entrega/publicación según la configuración. El workflow `autopilot-wakeup.yml` despierta la app desde GitHub Actions una vez por hora; el worker interno ejecuta las reglas vencidas. Esto reduce el riesgo de que el hosting duerma, pero no reemplaza un almacenamiento persistente: AppJet debe conservar `AITUBER_DATA_DIR` entre reinicios para no perder reglas, historial ni refresh token.
 - **Calendario**: programación editorial por canal.
 - **Biblioteca**: todo lo producido o descargado, con licencia y autor.
 - **Diagnóstico**: estado real de FFmpeg, fuentes, voz, base de datos, espacio y worker.
@@ -60,7 +60,7 @@ La imagen es Alpine, compila el frontend en una etapa Node y ejecuta el servidor
 | `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` | Credenciales OAuth de tipo aplicación web. El refresh token se guarda en la base local tras conectar la cuenta. |
 | `OLLAMA_URL` | Ollama local opcional para reescribir guiones a partir de las fuentes (nunca un servicio pago). |
 
-En **Ajustes** se configuran idioma, voz, volumen de música, estilo de subtítulos, copias de seguridad y la conexión OAuth de YouTube.
+En **Ajustes** se configuran idioma, voz, volumen de música, estilo de subtítulos, copias de seguridad y **Social Media Integration · YouTube**, la conexión OAuth oficial.
 
 ### Conectar YouTube
 
@@ -69,7 +69,7 @@ En **Ajustes** se configuran idioma, voz, volumen de música, estilo de subtítu
 3. En las variables de entorno de AppJet configurá `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` y `APP_TOKEN` (o `AITUBER_TOKEN`).
 4. Abrí el [OAuth 2.0 Playground oficial](https://developers.google.com/oauthplayground). En el engranaje activá **Use your own OAuth credentials**, pegá tu Client ID y Client Secret, seleccioná flujo **Server-side**, acceso **Offline** y forzá la pantalla de consentimiento.
 5. En Step 1 solicitá `https://www.googleapis.com/auth/youtube.upload` y `https://www.googleapis.com/auth/youtube.readonly`. Autorizá y canjeá el código por tokens.
-6. Copiá el **Refresh token** y pegalo en **Ajustes → Conectar YouTube**. Laburito lo guarda en el servidor; después podés verificar el nombre del canal.
+6. Copiá el **Refresh token** y pegalo en **Ajustes → Social Media Integration · YouTube**. Laburito lo guarda en el servidor; después podés verificar el nombre del canal.
 
 Usá tus propias credenciales en OAuth Playground: su cliente de prueba revoca refresh tokens a las 24 horas. Si la pantalla de consentimiento de Google permanece en modo **Testing**, los tokens de aplicaciones externas pueden vencer a los 7 días. Para automatización continua hay que revisar el estado de publicación y la verificación que Google exija.
 
