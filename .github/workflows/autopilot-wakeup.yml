@@ -1,0 +1,33 @@
+name: Laburito social autopilot wake-up
+
+on:
+  schedule:
+    # Despierta la app una vez por hora. El worker interno comprueba
+    # next_run_at y ejecuta únicamente las reglas que ya vencieron.
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: laburito-autopilot-wakeup
+  cancel-in-progress: false
+
+jobs:
+  wake-app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Wake Laburito and verify API health
+        env:
+          LABURITO_URL: ${{ vars.LABURITO_URL || 'https://oahp6an3qw.dev.ap-jt.com' }}
+        run: |
+          set -eu
+          BASE_URL="${LABURITO_URL%/}"
+          echo "Waking Laburito at ${BASE_URL}"
+          curl --fail --show-error --silent \
+            --connect-timeout 15 --max-time 45 \
+            --retry 2 --retry-delay 10 \
+            "${BASE_URL}/api/health"
+          echo
