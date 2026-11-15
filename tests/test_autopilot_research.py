@@ -574,6 +574,16 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertTrue(all(len(scene["narration"]) >= 45 for scene in result["scenes"]))
 
 
+    def test_frutinovela_is_accepted_by_autopilot_as_vertical_short(self):
+        clean = autopilot._clean({
+            "template": "frutinovela",
+            "duration_target_sec": 90,
+            "aspect": "9:16",
+        })
+        self.assertEqual(clean["template"], "frutinovela")
+        self.assertEqual(clean["duration_target_sec"], 90)
+        self.assertEqual(clean["aspect"], "9:16")
+
     def test_frutinovela_template_builds_vertical_episode_with_cliffhanger(self):
         template = options.template("frutinovela")
         self.assertEqual(template["kind"], "short")
