@@ -232,6 +232,15 @@ export default function Autopilot() {
     finally { setBusy(false); }
   }
 
+  async function removeMusic(track: string) {
+    if (!window.confirm('¿Quitar esta pista de la biblioteca local?')) return;
+    try {
+      await api.del('/api/music/' + encodeURIComponent(track));
+      setOk('Pista quitada de la biblioteca.');
+      await load();
+    } catch (e) { setError((e as Error).message); }
+  }
+
   function chooseTemplate(id: string) {
     const selected = templates.find((t) => t.id === id);
     setForm((old) => ({
@@ -375,6 +384,12 @@ export default function Autopilot() {
                 finally { setBusy(false); e.target.value = ''; }
               }} />
               <small>{meta?.music_library.length ?? 0}/5 pistas guardadas. En modo Automática se alternan en cada video.</small>
+              {(meta?.music_library ?? []).map((track) => (
+                <div className="row center between" key={track}>
+                  <small>{track}</small>
+                  <button type="button" className="btn small ghost" onClick={() => void removeMusic(track)}>Quitar</button>
+                </div>
+              ))}
             </Field>
             <Field label={'Volumen de música: ' + Math.round(form.music_volume * 100) + '%'}>
               <input type="range" min="0" max="0.5" step="0.01" value={form.music_volume} onChange={(e) => update('music_volume', Number(e.target.value))} />
