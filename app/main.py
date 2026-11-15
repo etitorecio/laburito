@@ -275,6 +275,9 @@ def _touch_project(project_id: int) -> None:
 
 @app.get("/api/health")
 def health():
+    # El endpoint de despertar también reanima el hilo si se detuvo inesperadamente.
+    if not worker.status()["worker_alive"]:
+        worker.start()
     return {
         "ok": True,
         "app": "Laburito Shorts Autopilot",
