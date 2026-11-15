@@ -38,8 +38,6 @@ if (-not (Test-Path ".env")) {
     Copy-Item ".env.example" ".env"
 }
 
-$envText = Get-Content ".env" -Raw
-
 Write-Host "Construyendo e iniciando Laburito. La primera compilación puede tardar." -ForegroundColor Cyan
 docker compose up -d --build
 if ($LASTEXITCODE -ne 0) {
