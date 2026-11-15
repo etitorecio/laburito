@@ -344,8 +344,8 @@ export default function Autopilot() {
             <p className="muted">Elegí el aspecto visual como en un catálogo de clips. Las opciones marcadas como disponibles usan el render local actual; las demás quedan identificadas pero no se pueden activar hasta contar con un motor o clips reales.</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: 10 }}>
               {[
-                { id: 'moving_images', title: 'Moving AI Images', subtitle: 'Imágenes con paneo y zoom', preview: '🖼️', available: true, style: 'Movimiento de imágenes con paneo y zoom' },
-                { id: 'stock_images', title: 'Stock visual', subtitle: 'Imágenes con licencia', preview: '🎞️', available: true, style: 'Fotografía de archivo con licencia' },
+                { id: 'moving_images', title: 'Imágenes con movimiento', subtitle: 'Recursos de archivo con paneo y zoom; no son imágenes IA', preview: '🖼️', available: true, style: 'Movimiento de imágenes con paneo y zoom' },
+                { id: 'stock_images', title: 'Imágenes de archivo', subtitle: 'Fotografías con licencia; todavía no son clips de stock', preview: '🎞️', available: true, style: 'Fotografía de archivo con licencia' },
                 { id: 'full_motion_ai', title: 'Full Motion AI Video', subtitle: 'Clips generados por IA', preview: '🎬', available: false, style: 'Full Motion AI Video' },
                 { id: 'skeleton', title: 'Skeleton Video', subtitle: 'Animación 3D', preview: '💀', available: false, style: 'Skeleton Video' },
                 { id: 'minecraft', title: 'Minecraft gameplay', subtitle: '5 variantes de clips', preview: '⛏️', available: false, style: 'Minecraft gameplay' },
@@ -375,9 +375,7 @@ export default function Autopilot() {
                 </button>;
               })}
             </div>
-            <Field label="Descripción visual personalizada (opcional)">
-              <input value={form.visual_style} onChange={(e) => update('visual_style', e.target.value)} placeholder="Ej.: tonos fríos, alto contraste, fotografía analógica..." />
-            </Field>
+            <p className="muted">La selección de formato se conserva por separado de los ajustes de guion. La personalización libre del estilo visual se habilitará cuando tenga un campo propio y no pueda sobrescribir el formato elegido.</p>
             <Field label="Proporción de pantalla">
               <select value={form.aspect} onChange={(e) => update('aspect', e.target.value)}>
                 {(meta?.aspects ?? ['9:16','16:9','1:1']).map((a) => <option key={a} value={a}>{a}{a === '9:16' ? ' · vertical recomendado' : ''}</option>)}
