@@ -601,17 +601,27 @@ def _create_project(rule: dict) -> dict:
     project_sources = db.query("SELECT * FROM sources WHERE project_id=? ORDER BY id", (pid,))
     if template_id == "frutinovela" and rule.get("channel_id"):
         previous = db.query_one(
-            "SELECT id,title,topic FROM projects WHERE channel_id=? AND template='frutinovela' AND id<>? ORDER BY id DESC LIMIT 1",
+            "SELECT id,title,topic FROM projects "
+            "WHERE channel_id=? AND template='frutinovela' AND id<? "
+            "AND EXISTS (SELECT 1 FROM scenes WHERE scenes.project_id=projects.id) "
+            "ORDER BY id DESC LIMIT 1",
             (rule.get("channel_id"), pid),
         )
+        episode_number = int(db.scalar(
+            "SELECT COUNT(*) FROM projects WHERE channel_id=? AND template='frutinovela' AND id<? "
+            "AND EXISTS (SELECT 1 FROM scenes WHERE scenes.project_id=projects.id)",
+            (rule.get("channel_id"), pid), 0,
+        )) + 1
+        project["series_episode"] = episode_number
         if previous:
-            ending = db.query_one(
-                "SELECT narration FROM scenes WHERE project_id=? ORDER BY idx DESC LIMIT 1",
+            endings = db.query(
+                "SELECT narration FROM scenes WHERE project_id=? ORDER BY idx DESC LIMIT 2",
                 (previous["id"],),
             )
+            ending_text = " ".join(row.get("narration", "") for row in reversed(endings))
             project["series_context"] = (
-                f"{previous.get('title') or 'Episodio anterior'}: {previous.get('topic') or ''}. "
-                + (ending.get("narration") or "" if ending else "")
+                f"Episodio {episode_number}. Continuación de {previous.get('title') or 'episodio anterior'}: "
+                f"{previous.get('topic') or ''}. Últimas escenas: {ending_text}"
             )
     script = script_gen.generate_script(project, notes, project_sources)
     ollama_url = db.get_setting("ollama_url", "") or os.environ.get("OLLAMA_URL", "").strip()
