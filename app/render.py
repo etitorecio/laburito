@@ -34,17 +34,44 @@ def _style(project: dict) -> dict:
     """Estilo de subtítulos del proyecto (13 opciones, ver app/options.py)."""
     return options.caption_style(project)
 
-def _captions_enabled(project: dict) -> bool:
-    """Lee el interruptor opcional guardado por el Autopiloto; proyectos normales conservan subtítulos."""
+def _project_metadata(project: dict) -> dict:
     notes = str(project.get("notes") or "")
     marker = "[LABURITO_META]"
     if marker not in notes:
-        return True
+        return {}
     try:
         metadata = json.loads(notes.split(marker, 1)[1])
+        return metadata if isinstance(metadata, dict) else {}
     except (json.JSONDecodeError, TypeError):
-        return True
-    return bool(metadata.get("captions_enabled", True))
+        return {}
+
+
+def _captions_enabled(project: dict) -> bool:
+    """Lee el interruptor opcional guardado por el Autopiloto; proyectos normales conservan subtítulos."""
+    return bool(_project_metadata(project).get("captions_enabled", True))
+
+
+def _custom_visual_style_id(project: dict) -> str:
+    """Traduce una descripción libre a un filtro local aproximado, sin prometer generación IA."""
+    fallback = project.get("visual_style") or "automatico"
+    prompt = str(_project_metadata(project).get("visual_style_prompt") or "").lower()
+    if not prompt:
+        return fallback
+    mappings = [
+        (("cyberpunk", "neón", "neon", "futurista"), "cyberpunk"),
+        (("anime", "manga", "japonés", "japones"), "anime"),
+        (("pixel", "8-bit", "8 bit", "retro game"), "pixel_art"),
+        (("acuarela", "watercolor", "pintura al agua"), "acuarela"),
+        (("comic", "cómic", "historieta"), "comic"),
+        (("noir", "blanco y negro", "monocromo"), "noir"),
+        (("vintage", "retro", "película antigua"), "vintage"),
+        (("cinemático", "cinematic", "cine"), "cinematico"),
+        (("realista", "fotográfico", "fotografico"), "realista"),
+    ]
+    for keywords, style_id in mappings:
+        if any(keyword in prompt for keyword in keywords):
+            return style_id
+    return fallback
 
 
 def _size(project: dict) -> tuple[int, int]:
@@ -161,6 +188,9 @@ def ensure_visual(project: dict, scene: dict) -> tuple[Path, str, dict]:
     key = _h(f"{scene.get('title')}|{scene.get('visual_query')}|{width}x{height}")
     folder = _visual_dir(int(project["id"]))
     query = (scene.get("visual_query") or project.get("topic") or "").strip()
+    custom_style_prompt = str(_project_metadata(project).get("visual_style_prompt") or "").strip()
+    if custom_style_prompt:
+        query = f"{query} {custom_style_prompt}".strip()
     providers = () if os.environ.get("AITUBER_DISABLE_EXTERNAL_MEDIA", "").lower() in ("1", "true", "yes") else ("wikimedia", "openverse")
     for provider in providers:
         try:
@@ -495,7 +525,7 @@ def render_scene(
     key = _h(
         f"{narration}|{visual_signature}|{duration:.3f}|{width}x{height}"
         f"|{project.get('kind')}|{style_signature}|{transition}|{fps}|{font}"
-        f"|{project.get('visual_style') or 'automatico'}|{project.get('video_type') or 'moving_images'}"
+        f"|{project.get('visual_style') or 'automatico'}|{_project_metadata(project).get('visual_style_prompt', '')}|{project.get('video_type') or 'moving_images'}"
         f"|{scene.get('visual_query') or ''}"
     )
     seg_dir = scene_dir / key
@@ -527,7 +557,7 @@ def render_scene(
             f"crop={width}:{height}",
             "format=yuv420p",
         ]
-        filters.extend(_visual_style_filters(project.get("visual_style")))
+        filters.extend(_visual_style_filters(_custom_visual_style_id(project)))
         filters.extend(_motion_filters(transition, width, height, duration, fps))
         if cues:
             filters.append(_drawtext_chain(cues, font, width, height, style))
