@@ -217,12 +217,13 @@ class AutopilotResearchTests(unittest.TestCase):
     def test_autopilot_allows_free_source_based_youtube_publication_without_ollama(self):
         rule = {"id": 10, "auto_publish": True, "cadence_hours": 24, "destination": "youtube", "privacy": "public"}
         with patch.object(autopilot, "get_rule", return_value=rule):
-            with patch.object(autopilot, "_create_project", return_value={"project_id": 78, "script_writer": "source-extract", "evidence_sources": 1}):
-                with patch("app.publish.set_auto_publish") as set_publish:
-                    with patch("app.worker.enqueue", return_value=89):
-                        with patch.object(autopilot.db, "execute"):
-                            with patch.object(autopilot.db, "now", return_value="now"):
-                                result = autopilot.run_rule(10)
+            with patch("app.publish.youtube_account_status", return_value={"channel_title": "Test channel"}):
+                with patch.object(autopilot, "_create_project", return_value={"project_id": 78, "script_writer": "source-extract", "evidence_sources": 1}):
+                    with patch("app.publish.set_auto_publish") as set_publish:
+                        with patch("app.worker.enqueue", return_value=89):
+                            with patch.object(autopilot.db, "execute"):
+                                with patch.object(autopilot.db, "now", return_value="now"):
+                                    result = autopilot.run_rule(10)
         set_publish.assert_called_once_with(78, True, "youtube")
         self.assertIsNone(result["publish_warning"])
 
@@ -249,14 +250,15 @@ class AutopilotResearchTests(unittest.TestCase):
     def test_autopilot_holds_publication_for_unrewritten_script(self):
         rule = {"id": 9, "auto_publish": True, "cadence_hours": 24, "destination": "youtube", "privacy": "unlisted"}
         with patch.object(autopilot, "get_rule", return_value=rule):
-            with patch.object(autopilot, "_create_project", return_value={"project_id": 77, "script_writer": "source-extract"}):
-                with patch("app.publish.set_auto_publish") as set_publish:
-                    with patch("app.worker.enqueue", return_value=88):
-                        with patch.object(autopilot.db, "execute"):
-                            with patch.object(autopilot.db, "now", return_value="now"):
-                                with patch.object(autopilot, "_ts", return_value="later"):
-                                    result = autopilot.run_rule(9)
-        set_publish.assert_called_once_with(77, True, "entrega")
+            with patch("app.publish.youtube_account_status", return_value={"channel_title": "Test channel"}):
+                with patch.object(autopilot, "_create_project", return_value={"project_id": 77, "script_writer": "source-extract"}):
+                    with patch("app.publish.set_auto_publish") as set_publish:
+                        with patch("app.worker.enqueue", return_value=88):
+                            with patch.object(autopilot.db, "execute"):
+                                with patch.object(autopilot.db, "now", return_value="now"):
+                                    with patch.object(autopilot, "_ts", return_value="later"):
+                                        result = autopilot.run_rule(9)
+        set_publish.assert_not_called()
         self.assertEqual(result["project_id"], 77)
         self.assertIn("retenida", result["publish_warning"])
 
