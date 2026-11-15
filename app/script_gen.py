@@ -855,7 +855,7 @@ def rewrite_fiction_with_ollama(url: str, model: str, project: dict, script: dic
     raw = expand_with_ollama(url, model, prompt, timeout=240)
     cleaned = raw.strip()
     if cleaned.startswith(chr(96) * 3):
-        cleaned = re.sub(r"^\\x60{3}(?:json)?\\s*|\\s*\\x60{3}$", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"^\x60{3}(?:json)?\s*|\s*\x60{3}$", "", cleaned, flags=re.IGNORECASE)
     first, last = cleaned.find("{"), cleaned.rfind("}")
     if first < 0 or last <= first:
         raise RuntimeError("Ollama no devolvió un JSON reconocible para la ficción.")
