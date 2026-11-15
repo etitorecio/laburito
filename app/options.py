@@ -298,6 +298,12 @@ VIDEO_CLIP_MINIMUMS = {"stock_footage": 5, "minecraft": 1, "subway": 1}
 # Plantillas de las dos fábricas: siempre deben producir Shorts verticales.
 VERTICAL_SHORT_TEMPLATES = {"shorts", "reddit_story", "frutinovela"}
 
+
+def factory_template_for_channel_name(name: str) -> str | None:
+    """Asocia cada canal oficial a su única fábrica de Shorts."""
+    normalized = (name or "").strip().casefold()
+    return {"historias": "reddit_story", "frutinovelas": "frutinovela"}.get(normalized)
+
 VISUAL_STYLES = [
     {"id": "automatico", "label": "Automático", "description": "Sin tratamiento adicional; conserva los colores de la imagen."},
     {"id": "cinematico", "label": "Cinematográfico", "description": "Contraste suave, color profundo y viñeta."},
