@@ -16,7 +16,7 @@ Reconstrucción libre y local de la experiencia de IATuber, para **Shorts y docu
 - **Cola persistente**: un trabajo a la vez, reanudable tras reinicio y con caché por escena (no repite trabajo).
 - **Entrega**: ZIP con MP4, SRT, VTT, guion en Markdown, fuentes/atribuciones en CSV, miniaturas, metadatos de publicación e informe de calidad.
 - **Analítica**: importación del CSV real de YouTube Studio (no inventa métricas) y resumen con hipótesis.
-- **Autopiloto de Shorts**: asistente de una pantalla por paso: nicho, voz, música, apariencia, subtítulos, publicación, calendario y confirmación. Configurá una vez y dejá la PC encendida para producir y publicar según el horario. El modo automático rota las pistas locales. Antes de subir, valida el MP4 y conserva los errores en la cola. YouTube requiere OAuth oficial y está sujeto a la cuota gratuita de Google; no se puede quitar esa cuota ni garantizar publicaciones ilimitadas.
+- **Autopiloto de videos**: asistente de ocho pantallas al estilo IATuber: nicho, idioma/voz (español fijo), música, apariencia, subtítulos, destino, calendario y tipo/frecuencia de publicación. Hasta cinco pistas propias, rotación secuencial, volumen ajustable, miniaturas opcionales y referencia visual por análisis local de paleta. Configurá una vez y dejá la PC encendida para producir según el horario. Antes de subir, valida el MP4 y conserva los errores en la cola. YouTube requiere OAuth oficial y está sujeto a la cuota gratuita de Google; no se puede quitar esa cuota ni garantizar publicaciones ilimitadas.
 - **Calendario**: programación editorial por canal.
 - **Biblioteca**: todo lo producido o descargado, con licencia y autor.
 - **Diagnóstico**: estado real de FFmpeg, fuentes, voz, base de datos, espacio y worker.
