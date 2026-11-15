@@ -35,14 +35,15 @@ def configured() -> bool:
 
 def status() -> dict:
     base, key, bucket = _settings()
+    ready = configured()
     return {
-        "configured": bool(base and key),
-        "provider": "Supabase Storage" if base and key else None,
-        "bucket": bucket if base and key else None,
-        "private": True,
+        "configured": ready,
+        "provider": "Supabase Storage" if ready else None,
+        "bucket": bucket if ready else None,
+        "private": None,
         "note": (
-            "Credenciales detectadas; verificá la primera sincronización en los logs."
-            if base and key else
+            "Credenciales HTTPS detectadas; la privacidad del bucket se verifica en la primera sincronización."
+            if ready else
             "Sin almacenamiento persistente externo. En AppJet Free, los archivos del contenedor pueden perderse al reemplazarlo."
         ),
     }
