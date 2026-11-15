@@ -247,6 +247,25 @@ export default function Autopilot() {
             </select>
           </Field>
         </div>
+        <h3>2. Identidad del guion</h3>
+        <div className="grid two">
+          <Field label="Tono narrativo">
+            <select value={form.tone} onChange={(e) => setForm({ ...form, tone: e.target.value })}>
+              {['Dinámico y cercano','Misterioso y tenso','Documental y riguroso','Humorístico e irónico','Emocional y reflexivo','Enérgico y provocador'].map(x => <option key={x}>{x}</option>)}
+            </select>
+          </Field>
+          <Field label="Tipo de gancho inicial">
+            <select value={form.hook_style} onChange={(e) => setForm({ ...form, hook_style: e.target.value })}>
+              {['Dato sorprendente','Pregunta intrigante','Afirmación polémica verificable','Situación en medio de la acción','Error o mito que desmontar','Misterio sin resolver'].map(x => <option key={x}>{x}</option>)}
+            </select>
+          </Field>
+          <Field label="Cierre / llamada a la acción">
+            <select value={form.cta} onChange={(e) => setForm({ ...form, cta: e.target.value })}>
+              {['Hacé una pregunta concreta al final','Invitá a comentar una opinión','Invitá a compartir el Short','Invitá a seguir el canal','Cerrá con una reflexión, sin pedir interacción'].map(x => <option key={x}>{x}</option>)}
+            </select>
+          </Field>
+        </div>
+        <h3>3. Producción del Short</h3>
         <label className="check-row"><input type="checkbox" checked={form.auto_publish} onChange={(e) => setForm({ ...form, auto_publish: e.target.checked })} /> Procesar y entregar automáticamente al terminar (YouTube requiere conexión OAuth)</label>
         {form.auto_publish && form.destination === "youtube" && !youtubeReady && <p className="muted">Todavía no hay una cuenta de YouTube conectada. Configurala desde <a href="#/ajustes">Ajustes → Conectar YouTube</a>; mientras tanto, los videos se renderizan pero no se publican.</p>}
         {form.destination === 'youtube' && (
