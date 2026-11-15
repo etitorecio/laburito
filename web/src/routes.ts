@@ -1,7 +1,6 @@
 export type Route =
   | 'landing'
   | 'inicio'
-  | 'investigacion'
   | 'canales'
   | 'calendario'
   | 'proyectos'
@@ -17,7 +16,6 @@ export type Route =
 export const VALID_ROUTES: Route[] = [
   'landing',
   'inicio',
-  'investigacion',
   'canales',
   'calendario',
   'proyectos',
