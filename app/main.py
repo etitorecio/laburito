@@ -370,7 +370,7 @@ def diagnostics():
         "worker": worker.status(),
         "persistence": persistence.status(),
         "token_configured": bool(APP_TOKEN),
-        "note": "Todo corre localmente. No hay servicios pagos ni claves obligatorias.",
+        "note": "Render y TTS corren localmente; YouTube requiere OAuth. En AppJet Free configurá Supabase para conservar los datos entre reemplazos del contenedor.",
     }
 
 
