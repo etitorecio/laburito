@@ -76,6 +76,20 @@ class AutopilotResearchTests(unittest.TestCase):
             with self.assertRaisesRegex(publish.PublishError, "no es vertical"):
                 publish._validate_autopilot_short(project, Path("fake.mp4"))
 
+    def test_youtube_autopilot_accepts_valid_longform_video(self):
+        from pathlib import Path
+        project = {"kind": "documentary", "notes": "Autopiloto: ciencia"}
+        info = {"width": 1920, "height": 1080, "duration": 600}
+        with patch("app.media.probe_video", return_value=info):
+            self.assertEqual(publish._validate_autopilot_video(project, Path("fake.mp4")), info)
+
+    def test_youtube_autopilot_rejects_longform_over_twenty_minutes(self):
+        from pathlib import Path
+        project = {"kind": "documentary", "notes": "Autopiloto: ciencia"}
+        with patch("app.media.probe_video", return_value={"width": 1920, "height": 1080, "duration": 1201}):
+            with self.assertRaisesRegex(publish.PublishError, "límite es 20 minutos"):
+                publish._validate_autopilot_video(project, Path("fake.mp4"))
+
     def test_two_shorts_per_day_maps_to_twelve_hours(self):
         clean = autopilot._clean({"videos_per_period": 2, "period_days": 1})
         self.assertEqual(clean["cadence_minutes"], 720)
