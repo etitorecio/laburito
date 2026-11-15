@@ -520,7 +520,7 @@ def _create_project(rule: dict) -> dict:
         "visual_style": rule.get("visual_style") or "automatico",
         "video_type": rule.get("video_type") or "moving_images",
     })
-    if template_id != "frutinovela":
+    if template_id not in {"frutinovela", "reddit_story"}:
         db.execute(
             "INSERT INTO sources(project_id, title, url, author, license, accessed_at, attribution, kind, notes, created_at) "
             "VALUES(?,?,?,?,?,?,?,?,?,?)",
