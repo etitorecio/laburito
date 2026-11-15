@@ -19,6 +19,7 @@ const INITIAL = {
   voice: 'es',
   speed: 150,
   pitch: 45,
+  visual_style: 'Documental cinematográfico realista',
   cadence_hours: 24,
   videos_per_period: 1,
   period_days: 1,
@@ -144,6 +145,7 @@ export default function Autopilot() {
       voice: rule.voice,
       speed: rule.speed ?? 150,
       pitch: rule.pitch ?? 45,
+      visual_style: rule.visual_style || 'Documental cinematográfico realista',
       aspect: rule.aspect,
       caption_style: rule.caption_style,
       transition_default: rule.transition_default,
@@ -314,6 +316,14 @@ export default function Autopilot() {
               </select>
             </Field>
             {selectedTemplate && <p className="muted">{selectedTemplate.description}</p>}
+            <Field label="Estilo visual de las escenas">
+              <select value={form.visual_style} onChange={(e) => update('visual_style', e.target.value)}>
+                {['Documental cinematográfico realista','Fotografía de archivo histórica','Periodismo visual / fotográfico','Ilustración editorial','Misterio oscuro y atmosférico','Ciencia y tecnología','Minimalista e infográfico','Anime / ilustración japonesa'].map((x) => <option key={x}>{x}</option>)}
+              </select>
+            </Field>
+            <Field label="Descripción visual personalizada (opcional)">
+              <input value={form.visual_style} onChange={(e) => update('visual_style', e.target.value)} placeholder="Ej.: tonos fríos, alto contraste, fotografía analógica..." />
+            </Field>
             <Field label="Proporción de pantalla">
               <select value={form.aspect} onChange={(e) => update('aspect', e.target.value)}>
                 {(meta?.aspects ?? ['9:16','16:9','1:1']).map((a) => <option key={a} value={a}>{a}{a === '9:16' ? ' · vertical recomendado' : ''}</option>)}
@@ -339,7 +349,7 @@ export default function Autopilot() {
                 {(meta?.fps_options ?? [25,30]).map((x) => <option key={x} value={x}>{x} FPS</option>)}
               </select>
             </Field>
-            <p className="muted">Motor visual disponible: imágenes de archivo con licencia compatible, movimiento y tarjetas locales de respaldo. La generación de clips de video IA, avatares y personajes 3D todavía no está implementada; no se ofrecen como si funcionaran.</p>
+            <p className="muted">El estilo orienta la búsqueda de imágenes de archivo y las consultas visuales de cada escena. No convierte una imagen en otra ni genera imágenes IA; los clips IA, avatares y personajes 3D todavía no están implementados.</p>
           </>}
 
           {step === 5 && <>
