@@ -148,7 +148,11 @@ def _clean(data: dict) -> dict:
         else:
             clean["duration_target_sec"] = max(5, min(3600, int(data["duration_target_sec"])))
     if "voice" in data and data["voice"] is not None:
-        clean["voice"] = str(data["voice"])[:40]
+        voice = str(data["voice"]).strip()
+        spanish_voices = {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"}
+        if voice not in spanish_voices:
+            raise ValueError("Laburito genera contenido únicamente en español. Elegí una voz española.") 
+        clean["voice"] = voice
     if "speed" in data and data["speed"] is not None:
         clean["speed"] = max(80, min(300, int(data["speed"])))
     if "pitch" in data and data["pitch"] is not None:
@@ -306,6 +310,8 @@ def _create_project(rule: dict) -> dict:
     from . import script_gen, topic_engine
 
     tpl = options.template(rule.get("template"))
+    # Compatibilidad con reglas antiguas: nunca producir narración en otro idioma.
+    rule["voice"] = rule.get("voice") if rule.get("voice") in {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"} else "es"
     niche = (rule.get("niche") or "").strip()
     if not niche:
         raise ValueError("La regla necesita un nicho.")
