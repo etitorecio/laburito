@@ -499,6 +499,17 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
     rule = get_rule(rule_id)
     if not rule:
         raise ValueError("Regla inexistente")
+    # Verificar YouTube antes de consumir recursos creando y renderizando un Short.
+    if rule.get("auto_publish") and (rule.get("destination") or "entrega") == "youtube":
+        try:
+            publish.youtube_account_status()
+        except publish.PublishError as exc:
+            message = "Autopublicación pausada: YouTube no está disponible. " + str(exc)
+            db.execute(
+                "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE id=?",
+                (message[:500], db.now(), rule_id),
+            )
+            raise ValueError(message) from exc
     try:
         project_result = _create_project(rule)
         pid = int(project_result["project_id"])
@@ -524,16 +535,15 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
                 "de investigación y un guion basado en fuentes. El video queda generado para revisión."
             )
             db.log("warn", "autopilot", publish_warning, {"project_id": pid, "writer": script_writer})
-            # Si no hay evidencia suficiente, no se pierde el trabajo: se entrega localmente.
-            publish.set_auto_publish(pid, True, "entrega")
+            # No degradar silenciosamente una publicación de YouTube a una entrega local.
+            # El MP4 queda disponible en el proyecto, pero el estado informa que no se publicó.
         else:
             try:
                 publish.set_auto_publish(pid, True, destination)
             except publish.PublishError as exc:
-                publish_warning = str(exc)[:500]
-                db.log("warn", "autopilot", f"No se pudo activar la auto-subida: {exc}")
-                # Si YouTube no está conectado, conservar el video en la biblioteca local.
-                publish.set_auto_publish(pid, True, "entrega")
+                publish_warning = "Autopublicación no activada: " + str(exc)[:450]
+                db.log("error", "autopilot", f"No se pudo activar la auto-subida: {exc}")
+                # No cambiar el destino a entrega local: eso ocultaría el fallo de YouTube.
     job_id = worker.enqueue(pid, "render_project", {"privacy": rule.get("privacy") or "unlisted"})
     next_run = _next_after_run(rule, force=force)
     db.execute(
