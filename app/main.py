@@ -316,7 +316,7 @@ def _validate_video_type(video_type: str) -> None:
         raise HTTPException(400, "La generación de video IA completo no tiene un modelo local viable para este equipo.")
     if video_type == "skeleton":
         return
-    required = 5 if video_type == "stock_footage" else 1
+    required = options.VIDEO_CLIP_MINIMUMS[video_type]
     folder = db.DATA_DIR / "background_clips" / video_type
     count = len(list(folder.glob("*.mp4"))) if folder.exists() else 0
     if count < required:
