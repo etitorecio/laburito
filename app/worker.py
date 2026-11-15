@@ -94,8 +94,18 @@ def run_job(job: dict) -> None:
             # Auto-subida: si el proyecto la tiene activada, se publica al terminar.
             try:
                 auto = publish.auto_publish_settings(int(project_id))
-            except publish.PublishError:
-                auto = {"enabled": False, "destination": "entrega"}
+            except publish.PublishError as exc:
+                message = "Render terminado, pero no se pudo consultar la autopublicación: " + str(exc)
+                db.execute(
+                    "UPDATE jobs SET message=?, updated_at=? WHERE id=?",
+                    (message[:400], db.now(), job_id),
+                )
+                db.execute(
+                    "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE last_project_id=?",
+                    (message[:500], db.now(), int(project_id)),
+                )
+                db.log("error", "worker", message, {"project_id": project_id})
+                auto = {"enabled": False, "destination": "youtube"}
             blocker = _auto_publish_blocker(result)
             if auto["enabled"] and auto["destination"] == "youtube" and blocker:
                 db.execute(
@@ -107,13 +117,9 @@ def run_job(job: dict) -> None:
                     (blocker[:500], db.now(), int(project_id)),
                 )
                 db.log("warn", "worker", blocker, {"project_id": project_id})
-                # No se pierde el MP4: se entrega localmente para revisión.
-                enqueue(
-                    int(project_id),
-                    "publish_project",
-                    {"destination": "entrega", "privacy": render_payload.get("privacy", "unlisted")},
-                )
-                auto = {"enabled": False, "destination": "entrega"}
+                # No se simula una autopublicación mediante una entrega local.
+                # El MP4 permanece en el proyecto y el bloqueo queda visible.
+                auto = {"enabled": False, "destination": "youtube"}
             if auto["enabled"]:
                 publish_job = enqueue(
                     int(project_id),
