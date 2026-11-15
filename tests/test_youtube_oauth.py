@@ -1,0 +1,88 @@
+import json
+import unittest
+from unittest.mock import patch
+
+from fastapi import HTTPException
+from starlette.requests import Request
+
+from app import main, publish
+
+
+def fake_request():
+    scope = {
+        "type": "http",
+        "asgi": {"version": "3.0"},
+        "http_version": "1.1",
+        "method": "POST",
+        "scheme": "https",
+        "path": "/api/youtube/oauth/start",
+        "raw_path": b"/api/youtube/oauth/start",
+        "query_string": b"",
+        "headers": [],
+        "client": ("127.0.0.1", 12345),
+        "server": ("laburito.example", 443),
+    }
+    return Request(scope)
+
+
+class FakeResponse:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+    def read(self):
+        return json.dumps(self.payload).encode()
+
+
+class YouTubeOAuthTests(unittest.TestCase):
+    def test_start_builds_google_authorization_url_with_state_and_exact_callback(self):
+        with patch.object(main, "APP_TOKEN", "server-token"):
+            with patch.object(publish, "youtube_credentials", return_value={
+                "client_id": "client-id", "client_secret": "client-secret", "refresh_token": ""
+            }):
+                with patch.object(main.db, "set_setting") as save:
+                    result = main.youtube_oauth_start(fake_request())
+        from urllib.parse import parse_qs, urlparse
+        parsed = urlparse(result["authorization_url"])
+        params = parse_qs(parsed.query)
+        self.assertEqual(parsed.netloc, "accounts.google.com")
+        self.assertEqual(params["redirect_uri"][0], "https://laburito.example/api/youtube/callback")
+        self.assertEqual(params["response_type"][0], "code")
+        self.assertEqual(params["access_type"][0], "offline")
+        self.assertIn("youtube.upload", params["scope"][0])
+        self.assertGreaterEqual(len(params["state"][0]), 32)
+        self.assertEqual(save.call_count, 3)
+
+    def test_callback_saves_refresh_token_and_returns_to_settings(self):
+        with patch.object(main.db, "get_setting", side_effect=["expected-state", "995", "https://laburito.example/api/youtube/callback"]):
+            with patch.object(main.time, "time", return_value=1000):
+                with patch.object(publish, "youtube_credentials", return_value={
+                    "client_id": "client-id", "client_secret": "client-secret", "refresh_token": ""
+                }):
+                    with patch.object(main.urllib.request, "urlopen", return_value=FakeResponse({
+                        "access_token": "access-token", "refresh_token": "refresh-token"
+                    })):
+                        with patch.object(main.db, "set_setting") as save:
+                            with patch.object(publish, "youtube_account_status", return_value={
+                                "channel_title": "Canal de prueba"
+                            }):
+                                response = main.youtube_oauth_callback("auth-code", "expected-state", "")
+        self.assertEqual(response.status_code, 303)
+        self.assertEqual(response.headers["location"], "/#/ajustes")
+        self.assertIn(("youtube_refresh_token", "refresh-token"), [call.args for call in save.call_args_list])
+
+    def test_callback_rejects_expired_or_mismatched_state(self):
+        with patch.object(main.db, "get_setting", side_effect=["expected-state", "0", "https://laburito.example/api/youtube/callback"]):
+            with patch.object(main.time, "time", return_value=1000):
+                with self.assertRaises(HTTPException) as error:
+                    main.youtube_oauth_callback("auth-code", "wrong-state", "")
+        self.assertEqual(error.exception.status_code, 403)
+
+
+if __name__ == "__main__":
+    unittest.main()
