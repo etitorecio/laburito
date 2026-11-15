@@ -4,7 +4,7 @@ on:
   schedule:
     # Despierta la app cada 15 minutos. El worker comprueba next_run_at
     # y ejecuta únicamente las reglas que ya vencieron.
-    - cron: "*/15 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 permissions:
