@@ -415,19 +415,42 @@ def _create_project(rule: dict) -> dict:
     if not niche:
         raise ValueError("La regla necesita un nicho.")
 
-    # El historial evita que el Autopiloto repita temas ya producidos.
+    # El historial evita repetir temas documentales. La ficción no consulta fuentes
+    # reales: conserva los personajes y genera una trama episódica propia.
     previous = db.query(
         "SELECT topic FROM projects WHERE channel_id IS ? ORDER BY id DESC LIMIT 250",
         (rule.get("channel_id"),),
     )
     previous_topics = [row.get("topic", "") for row in previous]
-    research = topic_engine.research_topic(
-        niche, previous_topics,
-        content_pillars=rule.get("content_pillars") or "",
-        avoid_topics=rule.get("avoid_topics") or "",
-    )
-    topic = research["topic"]
-    title = topic
+    characters = (rule.get("content_pillars") or "").strip()
+    if template_id == "frutinovela":
+        count_row = db.query_one(
+            "SELECT COUNT(*) AS total FROM projects WHERE channel_id IS ? AND template=?",
+            (rule.get("channel_id"), template_id),
+        ) or {}
+        episode_number = int(count_row.get("total") or 0) + 1
+        characters = characters or "Manzana, Banana, Pera y Naranja"
+        episode_plots = [
+            "una herencia inesperada divide a la familia",
+            "un romance secreto sale a la luz",
+            "un mensaje anónimo revela una traición",
+            "una identidad oculta cambia todas las alianzas",
+            "una desaparición deja a todos bajo sospecha",
+        ]
+        topic = f"{niche}: {episode_plots[(episode_number - 1) % len(episode_plots)]}"
+        title = f"{niche} · Episodio {episode_number}"
+        research = {
+            "topic": topic, "url": "", "source_title": "Ficción original",
+            "trend_signals": [], "references": [], "academic_sources": [], "note_ids": [],
+        }
+    else:
+        research = topic_engine.research_topic(
+            niche, previous_topics,
+            content_pillars=rule.get("content_pillars") or "",
+            avoid_topics=rule.get("avoid_topics") or "",
+        )
+        topic = research["topic"]
+        title = topic
     duration_default = int(tpl.get("default_duration") or 30)
     duration_max = 180 if template_id in SHORT_TEMPLATE_IDS else 1200
     duration_min = 15 if template_id in SHORT_TEMPLATE_IDS else 180
@@ -440,9 +463,15 @@ def _create_project(rule: dict) -> dict:
             rule.get("channel_id"), title, topic, tpl.get("kind", "short"),
             tpl.get("aspect", "9:16"), "borrador", duration,
             rule.get("voice") or "es", int(rule.get("speed") or 150), int(rule.get("pitch") if rule.get("pitch") is not None else 45),
-            f"Autopiloto: {rule.get('name') or niche}. Fuente inicial: {research['url']}. "
-            "La fuente es introductoria y debe contrastarse antes de publicar. "
-            "[LABURITO_META]" + json.dumps({
+            (
+                f"Autopiloto: {rule.get('name') or niche}. "
+                + (
+                    f"Ficción original · personajes recurrentes: {characters}. "
+                    if template_id == "frutinovela"
+                    else f"Fuente inicial: {research['url']}. La fuente es introductoria y debe contrastarse antes de publicar. "
+                )
+            )
+            + "[LABURITO_META]" + json.dumps({
                 "title_style": rule.get("title_style") or "automatico",
                 "custom_tags": rule.get("custom_tags") or "",
                 "captions_enabled": bool(rule.get("captions_enabled", 1)),
@@ -463,23 +492,25 @@ def _create_project(rule: dict) -> dict:
         "tone": rule.get("tone") or "Dinámico y cercano",
         "hook_style": rule.get("hook_style") or "Dato sorprendente",
         "cta": rule.get("cta") or "Hacé una pregunta concreta al final",
-        "content_pillars": rule.get("content_pillars") or "",
+        "content_pillars": characters or rule.get("content_pillars") or "",
         "avoid_topics": rule.get("avoid_topics") or "",
         "visual_style": rule.get("visual_style") or "automatico",
         "video_type": rule.get("video_type") or "moving_images",
     })
-    db.execute(
-        "INSERT INTO sources(project_id, title, url, author, license, accessed_at, attribution, kind, notes, created_at) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?)",
-        (
-            pid, research.get("source_title") or topic, research["url"], "Wikipedia contributors",
-            "CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/", db.now(),
-            "Wikipedia contributors · CC BY-SA · " + research["url"],
-            "investigacion",
-            "Fuente de orientación automática; verificar los datos con fuentes independientes antes de publicar.",
-            db.now(),
-        ),
-    )
+    if template_id != "frutinovela":
+        db.execute(
+            "INSERT INTO sources(project_id, title, url, author, license, accessed_at, attribution, kind, notes, created_at) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?)",
+            (
+                pid, research.get("source_title") or topic, research["url"], "Wikipedia contributors",
+                "CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/", db.now(),
+                "Wikipedia contributors · CC BY-SA · " + research["url"],
+                "investigacion",
+                "Fuente de orientación automática; verificar los datos con fuentes independientes antes de publicar.",
+                db.now(),
+            ),
+        )
+
     trend_signals = research.get("trend_signals") or []
     if trend_signals:
         trend_titles = [item.get("title", "") for item in trend_signals if item.get("title")]
