@@ -726,9 +726,14 @@ export default function Editor({ projectId, go }: Props) {
         <div className="stack">
           <Card title="Vídeo renderizado" sub="Vista previa del último render completado.">
             {project.status === 'renderizado' ? (
-              <video controls preload="metadata" className={project.aspect === '9:16' ? 'preview vertical' : 'preview'} src={`/api/projects/${projectId}/video`} />
+              <>
+                <video controls preload="metadata" className={project.aspect === '9:16' ? 'preview vertical' : 'preview'} src={`/api/projects/${projectId}/video`} />
+                <a className="btn primary" href={`/api/projects/${projectId}/video`} download={`video-${projectId}.mp4`}>
+                  Descargar MP4 para subir manualmente
+                </a>
+              </>
             ) : (
-              <Empty>Todavía no hay vídeo. Generá el guion y pulsá Renderizar.</Empty>
+              <Empty>Todavía no hay vídeo terminado. La producción automática va a generar el guion y renderizarlo; seguí el progreso en las tareas de arriba.</Empty>
             )}
           </Card>
 
