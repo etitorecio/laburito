@@ -123,7 +123,7 @@ export default function Settings() {
                   <tr><th>Espacio libre</th><td>{diag.disk_free_mb} MB</td></tr>
                   <tr><th>Base de datos</th><td>{diag.db_size_kb} KB</td></tr>
                   <tr><th>Persistencia</th><td style={{ whiteSpace: 'normal' }}>{diag.persistence.note}</td></tr>
-                  <tr><th>Ollama (opcional)</th><td>{diag.ollama.available ? 'disponible' : 'no detectado'}</td></tr>
+                  <tr><th>IA local (Qwen)</th><td>{diag.ollama.available ? 'disponible' : 'no detectado'}</td></tr>
                   <tr><th>Cola</th><td>{diag.worker.queued} en cola · {diag.worker.running} en curso · {diag.worker.done} completadas · {diag.worker.failed} con error</td></tr>
                   <tr><th>Voz</th><td style={{ whiteSpace: 'normal' }}>{diag.tts.note}</td></tr>
                 </tbody>
@@ -214,10 +214,8 @@ export default function Settings() {
             />
           </Field>
         </div>
+        <p className="muted">La IA de escritura usa Qwen 2.5 1.5B en tu PC mediante Ollama. Docker lo descarga automáticamente la primera vez (aprox. 1 GB); no necesitás claves, tokens de IA ni créditos.</p>
         <div className="row">
-          <Field label="Ollama local (opcional y gratuito)" hint="Instalá Ollama y ejecutá ollama pull llama3.2. En Docker Desktop para Windows usá host.docker.internal; si Laburito corre directamente en la PC, usá 127.0.0.1.">
-            <input value={values.ollama_url || ''} onChange={(e) => setValues({ ...values, ollama_url: e.target.value })} placeholder="http://host.docker.internal:11434" />
-          </Field>
           <Field label="Copia de seguridad automática">
             <select value={values.auto_backup || '1'} onChange={(e) => setValues({ ...values, auto_backup: e.target.value })}>
               <option value="1">Sí, antes de cada render</option>
