@@ -216,6 +216,9 @@ class AutopilotPatch(BaseModel):
     voice: str | None = None
     speed: int | None = None
     pitch: int | None = None
+    visual_style: str | None = None
+    title_style: str | None = None
+    custom_tags: str | None = None
     aspect: str | None = None
     caption_style: str | None = None
     transition_default: str | None = None
