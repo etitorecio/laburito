@@ -332,6 +332,108 @@ async def upload_music(file: UploadFile = File(...)):
     return {"filename": filename, "music_library": sorted(p.name for p in db.MUSIC_DIR.iterdir() if p.is_file())}
 
 
+CLIP_CATEGORIES = {"stock_footage", "minecraft", "subway"}
+MAX_BACKGROUND_CLIP_BYTES = 150 * 1024 * 1024
+
+
+def _background_clip_folder(category: str) -> Path:
+    if category not in CLIP_CATEGORIES:
+        raise HTTPException(404, "Biblioteca de clips desconocida")
+    folder = db.DATA_DIR / "background_clips" / category
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder
+
+
+@app.get("/api/background-clips")
+def list_background_clips():
+    result = {}
+    for category in sorted(CLIP_CATEGORIES):
+        folder = _background_clip_folder(category)
+        result[category] = [
+            {
+                "filename": path.name,
+                "size": path.stat().st_size,
+                "url": f"/api/background-clips/{category}/{path.name}",
+            }
+            for path in sorted(folder.glob("*.mp4"))
+            if path.is_file()
+        ]
+    return result
+
+
+@app.post("/api/background-clips")
+async def upload_background_clip(
+    category: str,
+    rights_confirmed: bool = False,
+    file: UploadFile = File(...),
+):
+    if not rights_confirmed:
+        raise HTTPException(400, "Confirmá que tenés derechos o permiso para usar este clip.")
+    folder = _background_clip_folder(category)
+    original = Path(file.filename or "clip.mp4").name
+    extension = Path(original).suffix.lower()
+    if extension not in {".mp4", ".mov", ".webm", ".mkv"}:
+        raise HTTPException(400, "Usá un video MP4, MOV, WebM o MKV.")
+    content = await file.read(MAX_BACKGROUND_CLIP_BYTES + 1)
+    if not content:
+        raise HTTPException(400, "El video está vacío.")
+    if len(content) > MAX_BACKGROUND_CLIP_BYTES:
+        raise HTTPException(400, "El clip supera el límite de 150 MB.")
+    stem = "".join(ch for ch in Path(original).stem if ch.isalnum() or ch in "-_")[:48] or "clip"
+    filename = f"{stem}-{time.time_ns()}.mp4"
+    temp_dir = db.TMP_DIR / "background_uploads"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    source = temp_dir / f"{time.time_ns()}{extension}"
+    target = folder / filename
+    source.write_bytes(content)
+    try:
+        proc = media.run([
+            media.ffmpeg(), "-y", "-i", str(source),
+            "-vf", "scale='min(1280,iw)':-2",
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "24",
+            "-pix_fmt", "yuv420p", "-an", "-movflags", "+faststart", str(target),
+        ], timeout=300)
+        if proc.returncode != 0 or not target.exists() or target.stat().st_size < 1000:
+            message = (proc.stderr or b"").decode("utf-8", "ignore")[-700:]
+            raise HTTPException(400, "No se pudo convertir el clip a MP4 H.264: " + message)
+        sidecar = target.with_suffix(".json")
+        sidecar.write_text(json.dumps({
+            "original_filename": original,
+            "rights_confirmed": True,
+            "category": category,
+            "uploaded_at": db.now(),
+        }, ensure_ascii=False, indent=2), encoding="utf-8")
+        return {"filename": filename, "size": target.stat().st_size}
+    finally:
+        source.unlink(missing_ok=True)
+
+
+@app.get("/api/background-clips/{category}/{filename}")
+def get_background_clip(category: str, filename: str):
+    folder = _background_clip_folder(category)
+    safe_name = Path(filename).name
+    if safe_name != filename or not safe_name.lower().endswith(".mp4"):
+        raise HTTPException(404, "Clip inexistente")
+    target = folder / safe_name
+    if not target.exists():
+        raise HTTPException(404, "Clip inexistente")
+    return FileResponse(target, media_type="video/mp4")
+
+
+@app.delete("/api/background-clips/{category}/{filename}")
+def delete_background_clip(category: str, filename: str):
+    folder = _background_clip_folder(category)
+    safe_name = Path(filename).name
+    if safe_name != filename or not safe_name.lower().endswith(".mp4"):
+        raise HTTPException(404, "Clip inexistente")
+    target = folder / safe_name
+    if not target.exists():
+        raise HTTPException(404, "Clip inexistente")
+    target.unlink()
+    target.with_suffix(".json").unlink(missing_ok=True)
+    return {"ok": True}
+
+
 @app.get("/api/meta")
 def meta():
     tts_status = tts.status()
