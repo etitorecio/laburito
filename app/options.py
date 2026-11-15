@@ -309,7 +309,7 @@ VISUAL_STYLES = [
 VISUAL_STYLE_IDS = {item["id"] for item in VISUAL_STYLES}
 
 TEMPLATE_IDS = {t["id"] for t in TEMPLATES}
-SCRIPT_TEMPLATES = ["documentary", "short", "listicle", "pov", "explainer", "quote", "frutinovela"]
+SCRIPT_TEMPLATES = ["documentary", "short", "listicle", "pov", "explainer", "quote", "frutinovela", "reddit_story"]
 
 DEFAULT_TEMPLATE = "shorts"
 
