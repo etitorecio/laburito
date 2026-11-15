@@ -7,6 +7,9 @@ type WorkspaceChannel = { id: number; name: string; topic: string; account: Link
 
 export default function Accounts() {
   const [channels, setChannels] = useState<WorkspaceChannel[]>([]);
+  const [oauthReady, setOauthReady] = useState(false);
+  const [missingEnv, setMissingEnv] = useState<string[]>([]);
+  const [redirectUri, setRedirectUri] = useState("");
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [error, setError] = useState('');
@@ -16,8 +19,11 @@ export default function Accounts() {
     setLoading(true);
     setError('');
     try {
-      const result = await api.get<{ accounts: WorkspaceChannel[] }>('/api/youtube/accounts');
+      const result = await api.get<{ accounts: WorkspaceChannel[]; oauth_ready: boolean; missing_env: string[]; redirect_uri: string }>('/api/youtube/accounts');
       setChannels(result.accounts);
+      setOauthReady(result.oauth_ready);
+      setMissingEnv(result.missing_env || []);
+      setRedirectUri(result.redirect_uri || '');
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -28,6 +34,10 @@ export default function Accounts() {
   useEffect(() => { void load(); }, [load]);
 
   async function connect(channel: WorkspaceChannel) {
+    if (!oauthReady) {
+      setError("Faltan las credenciales OAuth de YouTube en el servidor: " + missingEnv.join(", "));
+      return;
+    }
     setBusyId(channel.id); setError(''); setOk('');
     try {
       const result = await api.post<{ authorization_url: string }>(`/api/youtube/oauth/start?channel_id=${channel.id}`, {});
@@ -55,6 +65,12 @@ export default function Accounts() {
   return (
     <div className="stack">
       <Msg error={error} ok={ok} />
+      {!loading && !oauthReady && <Card title="Falta configurar OAuth de YouTube" sub="La conexión no se habilita hasta completar estos datos en el servidor.">
+        <p>Configurá estas variables de entorno: <strong>{missingEnv.join(", ")}</strong>.</p>
+        <p>Después, en Google Cloud Console, agregá esta URL exacta a las URI de redireccionamiento autorizadas del cliente OAuth:</p>
+        <p><code>{redirectUri}</code></p>
+        <p className="muted">No pegues el secreto de Google en esta pantalla ni en el chat. Reiniciá la aplicación después de guardar las variables.</p>
+      </Card>}
       <Card title="Dos canales, dos cuentas independientes" sub="Cada fábrica conserva su propia autorización de Google. Conectar o desconectar una cuenta no cambia la otra.">
         {loading ? <Empty>Comprobando canales y conexiones…</Empty> : channels.length ? (
           <div className="stack">
@@ -73,7 +89,7 @@ export default function Accounts() {
                     <button className="btn ghost" disabled={busyId !== null} onClick={() => void disconnect(channel)}>{busyId === channel.id ? 'Desconectando…' : 'Desconectar esta cuenta'}</button>
                   </div>
                 ) : (
-                  <button className="btn primary" disabled={busyId !== null} onClick={() => void connect(channel)}>{busyId === channel.id ? 'Abriendo Google…' : `Conectar cuenta de Google para ${channel.name}`}</button>
+                  <button className="btn primary" disabled={busyId !== null || !oauthReady} onClick={() => void connect(channel)}>{busyId === channel.id ? 'Abriendo Google…' : `Conectar cuenta de Google para ${channel.name}`}</button>
                 )}
               </section>
             ))}
