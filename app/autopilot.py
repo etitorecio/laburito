@@ -504,7 +504,7 @@ def _create_project(rule: dict) -> dict:
     if ollama_url and script_gen.ollama_available(ollama_url):
         try:
             script = script_gen.rewrite_with_ollama(
-                ollama_url, "llama3.2", project, script, notes
+                ollama_url, "qwen2.5:1.5b-instruct", project, script, notes
             )
             db.log("info", "autopilot", "Guion reescrito con Ollama local", {"project_id": pid})
         except Exception as exc:
