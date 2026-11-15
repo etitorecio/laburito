@@ -1848,3 +1848,16 @@ th {
   font-size: 12px;
   margin: 2px 0 0;
 }
+
+.visual-style-track {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 2px 12px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.visual-style-track > button {
+  flex: 0 0 250px;
+  min-width: 250px;
+}
