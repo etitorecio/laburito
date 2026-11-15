@@ -50,6 +50,10 @@ def _captions_enabled(project: dict) -> bool:
     """Lee el interruptor opcional guardado por el Autopiloto; proyectos normales conservan subtítulos."""
     return bool(_project_metadata(project).get("captions_enabled", True))
 
+def _thumbnail_enabled(project: dict) -> bool:
+    """Las miniaturas están activadas por defecto y pueden desactivarse en la configuración."""
+    return bool(_project_metadata(project).get("create_thumbnail", True))
+
 
 def _custom_visual_style_id(project: dict) -> str:
     """Traduce una descripción libre a un filtro local aproximado, sin prometer generación IA."""
@@ -775,10 +779,13 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
 
     thumb_w, thumb_h = options.dimensions(project.get("aspect") or "16:9", "1080p")
     thumb = workdir / f"miniatura_{suffix}.jpg"
-    try:
-        media.make_thumbnail(final, thumb, project.get("title") or "AITuber Libre", thumb_w, thumb_h)
-    except Exception as exc:
-        warnings.append(f"No se pudo generar la miniatura: {exc}")
+    if _thumbnail_enabled(project):
+        try:
+            media.make_thumbnail(final, thumb, project.get("title") or "AITuber Libre", thumb_w, thumb_h)
+        except Exception as exc:
+            warnings.append(f"No se pudo generar la miniatura: {exc}")
+    elif thumb.exists():
+        thumb.unlink()
 
     info = media.probe_video(final)
     if not info.get("width"):
@@ -803,6 +810,7 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
         "scenes": len(results),
         "scenes_reused": sum(1 for r in results if r["reused"]),
         "subtitles": len(cues_global),
+        "thumbnail_generated": bool(Path(thumb).exists()),
         "music": bool(music),
         "warnings": warnings,
         "tts_engines": sorted({r["audio_info"].get("engine", "?") for r in results}),
