@@ -547,7 +547,7 @@ def _hash(text: str) -> str:
 
 
 def blueprint(kind: str) -> list[dict]:
-    """Blueprint narrativo por plantilla de guion (6 plantillas)."""
+    """Blueprint narrativo por plantilla de guion."""
     return BLUEPRINTS.get(kind or "", DOCUMENTARY_BLUEPRINT)
 
 
@@ -589,7 +589,7 @@ def generate_script(
     )
     beats = blueprint(script_kind)
 
-    source_notes = [] if script_kind == "frutinovela" else [
+    source_notes = [] if script_kind in {"frutinovela", "reddit_story"} else [
         note for note in notes
         if note.get("source_url") and len((note.get("claim") or "")) >= 450
     ]
@@ -717,7 +717,7 @@ def generate_script(
         "warnings": [
             (
                 "Ficción original por episodios: revisá continuidad, personajes y diálogos antes de publicar."
-                if script_kind == "frutinovela"
+                if script_kind in {"frutinovela", "reddit_story"}
                 else "Guion estructurado con extractos de una fuente de orientación; contrastar datos con fuentes independientes antes de publicar."
                 if source_note and evidence_sentences
                 else "Borrador de plantilla local sin evidencia suficiente: no publicar automáticamente."
