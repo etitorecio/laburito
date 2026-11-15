@@ -353,6 +353,8 @@ def _validate_auto_publish(clean: dict, current: dict | None = None) -> None:
 def _validate_factory_channel(data: dict) -> None:
     channel_id = data.get("channel_id")
     if not channel_id:
+        if data.get("template") in {"reddit_story", "frutinovela"}:
+            raise ValueError("Asigná la fábrica a su canal interno de Historias o Frutinovelas.")
         return
     channel = db.query_one("SELECT name FROM channels WHERE id=?", (channel_id,))
     if not channel:
