@@ -103,6 +103,7 @@ export default function Accounts() {
           <li>Volvé a esta pantalla y conectá la otra cuenta Google para Frutinovelas.</li>
           <li>En cada fábrica, la publicación se dirige a la cuenta asignada a su canal interno.</li>
         </ol>
+        <p className="muted">URI de redirección autorizada en Google Cloud: <code>{redirectUri}</code></p>
         <p className="muted">Los permisos OAuth se guardan por separado en el servidor. Nunca compartas contraseñas ni secretos de Google en el chat.</p>
       </Card>
     </div>
