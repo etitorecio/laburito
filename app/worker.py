@@ -91,6 +91,10 @@ def run_job(job: dict) -> None:
                 "UPDATE jobs SET status='completado', progress=100, message=?, result_json=?, finished_at=?, updated_at=? WHERE id=?",
                 ("Render terminado", json.dumps(result, ensure_ascii=False), db.now(), db.now(), job_id),
             )
+            db.execute(
+                "UPDATE autopilot_rules SET last_error='', updated_at=? WHERE last_project_id=?",
+                (db.now(), int(project_id)),
+            )
             # Auto-subida: si el proyecto la tiene activada, se publica al terminar.
             try:
                 auto = publish.auto_publish_settings(int(project_id))
@@ -196,7 +200,7 @@ def run_job(job: dict) -> None:
             f"Tarea {job_id} falló: {exc}" + (f" — reintento {attempt}/3" if retry else " — máximo de intentos alcanzado"),
             {"trace": traceback.format_exc()[-2000:], "attempt": attempt},
         )
-        if project_id is not None and job.get("kind") == "publish_project":
+        if project_id is not None and job.get("kind") in ("render_project", "publish_project"):
             db.execute(
                 "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE last_project_id=?",
                 (str(exc)[:500], db.now(), int(project_id)),
