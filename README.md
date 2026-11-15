@@ -58,7 +58,7 @@ docker compose up -d --build
 
 Después abrí `http://localhost:8080` en la PC. Desde el celular usá `http://IP-LOCAL-DE-LA-PC:8080`. Para detenerlo: `docker compose down`. Para volver a iniciarlo: `docker compose up -d`. No borres la carpeta `data`: contiene los proyectos, la programación, la autorización y los renders. No compartas el puerto en Internet sin HTTPS y protección adicional.
 
-La imagen final usa Debian slim (glibc, necesaria para Piper/ONNX Runtime), compila FFmpeg y el frontend en etapas separadas, y ejecuta el servidor como usuario sin privilegios. El primer build puede tardar porque compila FFmpeg; los siguientes arranques reutilizan la imagen.
+La imagen final usa Debian slim (glibc, necesaria para Piper/ONNX Runtime), instala el FFmpeg mantenido por Debian y compila el frontend en una etapa separada. El servidor corre como usuario sin privilegios y evita compilar FFmpeg desde cero.
 
 
 ## Configuración
