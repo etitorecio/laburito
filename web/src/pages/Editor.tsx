@@ -22,6 +22,12 @@ interface PublishDestination {
   note: string;
 }
 
+interface YoutubeWorkspaceChannel {
+  id: number;
+  name: string;
+  account: { channel_title: string; youtube_channel_id: string } | null;
+}
+
 interface Publication {
   id: number;
   project_id: number;
@@ -117,6 +123,7 @@ export default function Editor({ projectId, go }: Props) {
   const [results, setResults] = useState<MediaResult[]>([]);
   const [destinations, setDestinations] = useState<PublishDestination[]>([]);
   const [publications, setPublications] = useState<Publication[]>([]);
+  const [youtubeChannels, setYoutubeChannels] = useState<YoutubeWorkspaceChannel[]>([]);
   const [publishDest, setPublishDest] = useState('entrega');
   const [autoPublish, setAutoPublish] = useState(false);
   const timer = useRef<number | null>(null);
@@ -135,9 +142,11 @@ export default function Editor({ projectId, go }: Props) {
         api.get<{ destinations: PublishDestination[] }>('/api/publish/destinations'),
         api.get<{ publications: Publication[] }>(`/api/publications?project_id=${projectId}`),
         api.get<{ enabled: boolean; destination: string }>(`/api/projects/${projectId}/auto-publish`),
+        api.get<{ accounts: YoutubeWorkspaceChannel[] }>('/api/youtube/accounts'),
       ]);
       setDestinations(dest.destinations);
       setPublications(pubs.publications);
+      setYoutubeChannels(accounts.accounts);
       setAutoPublish(auto.enabled);
       setPublishDest(auto.destination || 'entrega');
     } catch (e) {
@@ -160,7 +169,13 @@ export default function Editor({ projectId, go }: Props) {
     };
   }, [project, load]);
 
+  const linkedYoutubeAccount = youtubeChannels.find((channel) => channel.id === project?.channel_id)?.account ?? null;
+
   async function publishNow() {
+    if (publishDest === 'youtube' && !linkedYoutubeAccount) {
+      setError('Conectá la cuenta de YouTube correspondiente desde Cuentas antes de publicar este proyecto.');
+      return;
+    }
     setBusy('publish');
     setError('');
     setOk('');
@@ -177,6 +192,10 @@ export default function Editor({ projectId, go }: Props) {
 
   async function toggleAutoPublish(enabled: boolean) {
     setError('');
+    if (enabled && publishDest === 'youtube' && !linkedYoutubeAccount) {
+      setError('Conectá la cuenta de YouTube correspondiente desde Cuentas antes de activar la auto-subida.');
+      return;
+    }
     try {
       const res = await api.post<{ enabled: boolean; destination: string }>(`/api/projects/${projectId}/auto-publish`, {
         enabled,
@@ -575,7 +594,7 @@ export default function Editor({ projectId, go }: Props) {
                 </option>
               ))}
             </select>
-            <button className="btn small primary" onClick={publishNow} disabled={busy === 'publish'}>
+            <button className="btn small primary" onClick={publishNow} disabled={busy === 'publish' || (publishDest === 'youtube' && !linkedYoutubeAccount)}>
               {busy === 'publish' ? 'Publicando…' : 'Publicar ahora'}
             </button>
           </>
@@ -585,6 +604,16 @@ export default function Editor({ projectId, go }: Props) {
           <input type="checkbox" checked={autoPublish} onChange={(e) => toggleAutoPublish(e.target.checked)} />
           <span>Publicar automáticamente al terminar cada render</span>
         </label>
+        {publishDest === 'youtube' && (
+          linkedYoutubeAccount ? (
+            <p className="muted">Este proyecto se publicará en <strong>{linkedYoutubeAccount.channel_title}</strong>, la cuenta vinculada a {project?.channel_name || 'su canal interno'}.</p>
+          ) : (
+            <div className="stack">
+              <p className="error-text">{project?.channel_id ? 'Todavía no hay una cuenta de YouTube conectada a este canal.' : 'Este proyecto no está asignado a Historias ni a Frutinovelas.'}</p>
+              <button className="btn small ghost" onClick={() => go('cuentas')}>Administrar cuentas de YouTube</button>
+            </div>
+          )
+        )}
         {destinations.map((d) => (
           <div key={d.id} className="meta" style={{ marginBottom: 6 }}>
             <Badge tone={d.available ? 'ok' : 'warn'}>{d.id}</Badge>
