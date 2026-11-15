@@ -267,10 +267,8 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(topic_engine._normal("Historia: del Rock!"), "historia del rock")
 
     def test_youtube_autopilot_requires_connection_before_saving_rule(self):
-        with patch.object(publish, "destinations", return_value=[
-            {"id": "youtube", "available": False, "missing_env": ["YOUTUBE_CLIENT_ID"]}
-        ]):
-            with self.assertRaisesRegex(ValueError, "conectá y verificá YouTube"):
+        with patch.object(publish, "youtube_account_status", side_effect=publish.PublishError("refresh token inválido")):
+            with self.assertRaisesRegex(ValueError, "refresh token inválido"):
                 autopilot._validate_auto_publish({"auto_publish": 1, "destination": "youtube"})
 
     def test_publish_does_not_upload_same_video_twice_on_retry(self):
