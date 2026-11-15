@@ -40,14 +40,23 @@ Desarrollo del frontend con recarga en caliente:
 cd web && npm run dev   # proxy /api -> http://127.0.0.1:8080
 ```
 
-## Docker
+## Modo local gratuito y persistente (recomendado)
 
-```bash
-docker build -t aitliber .
-docker run -p 8080:8080 -v "$PWD/data:/app/data" aitliber
+Para usar Laburito sin pagar hosting ni Supabase, ejecutalo en una PC propia. Docker conserva la base, los videos y los trabajos en la carpeta `./data`; el Autopiloto sigue funcionando mientras la PC esté encendida, conectada a Internet y sin suspensión automática. Podés abrir la interfaz desde el celular conectado a la misma red Wi-Fi usando la IP local de la PC.
+
+En Windows, con Docker Desktop instalado:
+
+```powershell
+Copy-Item .env.example .env
+notepad .env
+# Cambiá APP_TOKEN por una cadena larga y privada.
+docker compose up -d --build
 ```
 
-La imagen es Alpine, compila el frontend en una etapa Node y ejecuta el servidor como usuario sin privilegios.
+Después abrí `http://localhost:8080` en la PC. Desde el celular usá `http://IP-LOCAL-DE-LA-PC:8080`. Para detenerlo: `docker compose down`. Para volver a iniciarlo: `docker compose up -d`. No borres la carpeta `data`: contiene los proyectos, la programación, la autorización y los renders. No compartas el puerto en Internet sin HTTPS y protección adicional.
+
+La imagen es Alpine, compila FFmpeg y el frontend, y ejecuta el servidor como usuario sin privilegios. El primer build puede tardar porque compila FFmpeg; los siguientes arranques reutilizan la imagen.
+
 
 ## Configuración
 
