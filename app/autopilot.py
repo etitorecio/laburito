@@ -29,6 +29,12 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
     fps INTEGER NOT NULL DEFAULT 25,
     music TEXT NOT NULL DEFAULT 'auto',
     music_volume REAL NOT NULL DEFAULT 0.12,
+    audience TEXT NOT NULL DEFAULT 'Público general',
+    tone TEXT NOT NULL DEFAULT 'Dinámico y cercano',
+    hook_style TEXT NOT NULL DEFAULT 'Dato sorprendente',
+    cta TEXT NOT NULL DEFAULT 'Hacé una pregunta concreta al final',
+    content_pillars TEXT NOT NULL DEFAULT '',
+    avoid_topics TEXT NOT NULL DEFAULT '',
     cadence_hours INTEGER NOT NULL DEFAULT 24,
     enabled INTEGER NOT NULL DEFAULT 1,
     destination TEXT NOT NULL DEFAULT 'entrega',
@@ -43,7 +49,7 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
 """
 
 FIELDS = [
-    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "aspect",
+    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "aspect",\n    "audience", "tone", "hook_style", "cta", "content_pillars", "avoid_topics",
     "caption_style", "transition_default", "resolution", "fps", "music", "music_volume",
     "cadence_hours", "enabled", "destination", "privacy", "auto_publish", "next_run_at",
 ]
@@ -52,8 +58,18 @@ FIELDS = [
 def ensure_schema() -> None:
     db.execute(SCHEMA)
     columns = {row["name"] for row in db.query("PRAGMA table_info(autopilot_rules)")}
-    if "last_error" not in columns:
-        db.execute("ALTER TABLE autopilot_rules ADD COLUMN last_error TEXT")
+    migrations = {
+        "last_error": "TEXT",
+        "audience": "TEXT NOT NULL DEFAULT 'Público general'",
+        "tone": "TEXT NOT NULL DEFAULT 'Dinámico y cercano'",
+        "hook_style": "TEXT NOT NULL DEFAULT 'Dato sorprendente'",
+        "cta": "TEXT NOT NULL DEFAULT 'Hacé una pregunta concreta al final'",
+        "content_pillars": "TEXT NOT NULL DEFAULT ''",
+        "avoid_topics": "TEXT NOT NULL DEFAULT ''",
+    }
+    for name, definition in migrations.items():
+        if name not in columns:
+            db.execute(f"ALTER TABLE autopilot_rules ADD COLUMN {name} {definition}")
 
 
 def _ts(offset_hours: float = 0.0) -> str:
@@ -132,6 +148,12 @@ def _clean(data: dict) -> dict:
         clean["music"] = "bed:" + music if music in options.MUSIC_IDS else music
     if "music_volume" in data and data["music_volume"] is not None:
         clean["music_volume"] = max(0.0, min(1.0, float(data["music_volume"])))
+    for key, limit in {
+        "audience": 160, "tone": 120, "hook_style": 100, "cta": 180,
+        "content_pillars": 500, "avoid_topics": 500,
+    }.items():
+        if key in data and data[key] is not None:
+            clean[key] = str(data[key]).strip()[:limit]
     if "cadence_hours" in data and data["cadence_hours"] is not None:
         clean["cadence_hours"] = max(1, min(720, int(data["cadence_hours"])))
     if "destination" in data and data["destination"] is not None:
@@ -227,6 +249,14 @@ def _create_project(rule: dict) -> dict:
         ),
     )
     project = db.query_one("SELECT * FROM projects WHERE id=?", (pid,))
+    project.update({
+        "audience": rule.get("audience") or "Público general",
+        "tone": rule.get("tone") or "Dinámico y cercano",
+        "hook_style": rule.get("hook_style") or "Dato sorprendente",
+        "cta": rule.get("cta") or "Hacé una pregunta concreta al final",
+        "content_pillars": rule.get("content_pillars") or "",
+        "avoid_topics": rule.get("avoid_topics") or "",
+    })
     db.execute(
         "INSERT INTO sources(project_id, title, url, author, license, accessed_at, attribution, kind, notes, created_at) "
         "VALUES(?,?,?,?,?,?,?,?,?,?)",
