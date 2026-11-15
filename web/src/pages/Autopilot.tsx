@@ -57,6 +57,57 @@ const STEPS = [
   { title: 'Social Media Integration', subtitle: 'Conexión y publicación automática' },
 ];
 
+const PRODUCTION_STAGES = [
+  ['1', 'Programación y tema', 'El calendario activa la regla y evita repetir temas.'],
+  ['2', 'Investigación y fuentes', 'Busca material documental y registra enlaces y atribuciones.'],
+  ['3', 'Guion y gancho', 'Organiza apertura, desarrollo y cierre a partir de la evidencia disponible.'],
+  ['4', 'Voz en off', 'Genera la narración en español con el motor TTS configurado.'],
+  ['5', 'Selección visual', 'Busca imágenes por escena; los clips de gameplay y los generadores de video aún no están conectados.'],
+  ['6', 'Preparación de escenas', 'Prepara cada visual, encuadre, duración y transición con FFmpeg.'],
+  ['7', 'Subtítulos', 'Sincroniza y quema subtítulos; también exporta SRT y VTT.'],
+  ['8', 'Música y mezcla', 'Mezcla voz y música de fondo según el volumen configurado.'],
+  ['9', 'Render vertical', 'Une las escenas y genera el MP4 final en 9:16.'],
+  ['10', 'Control de calidad', 'Comprueba que el archivo exista y que ffprobe pueda leer resolución y duración.'],
+  ['11', 'Publicación', 'Encola la subida real a YouTube cuando OAuth y la evidencia estén listos.'],
+  ['12', 'Registro', 'Guarda el enlace, el ID de YouTube y el resultado de la tarea.'],
+];
+
+const VISUAL_OPTIONS = [
+  { id: 'moving_images', title: 'Moving AI Images', subtitle: 'Imágenes con movimiento; no son imágenes generadas por IA', preview: '🖼️', available: true, style: 'Movimiento de imágenes con paneo y zoom', kind: 'stock' },
+  { id: 'stock_images', title: 'Stock footage / imágenes', subtitle: 'Fotografías de archivo con licencia y movimiento', preview: '🎞️', available: true, style: 'Fotografía de archivo con licencia', kind: 'stock' },
+  { id: 'full_motion_ai', title: 'Full Motion AI Video', subtitle: 'Clips de video generados por IA', preview: '🎬', available: false, style: 'Full Motion AI Video', kind: 'ai' },
+  { id: 'skeleton', title: 'Skeleton Video', subtitle: 'Animación 3D de esqueleto', preview: '💀', available: false, style: 'Skeleton Video', kind: 'skeleton' },
+  { id: 'minecraft', title: 'Minecraft gameplay', subtitle: '5 clips de ejemplo · requiere videos con licencia o propios', preview: '⛏️', available: false, style: 'Minecraft gameplay', kind: 'minecraft' },
+  { id: 'subway', title: 'Subway Surfers gameplay', subtitle: '5 clips de ejemplo · requiere videos con licencia o propios', preview: '🏃', available: false, style: 'Subway Surfers gameplay', kind: 'subway' },
+];
+
+const THUMB_BACKGROUNDS: Record<string, string[]> = {
+  stock: [
+    'linear-gradient(135deg,#1e3a5f,#78a6c8)',
+    'linear-gradient(135deg,#4b3621,#c69b63)',
+    'linear-gradient(135deg,#253b32,#8ba88d)',
+    'linear-gradient(135deg,#3f315d,#b19acb)',
+    'linear-gradient(135deg,#293747,#9aa7b6)',
+  ],
+  minecraft: [
+    'linear-gradient(180deg,#8bc6ec 0 45%,#4d8b43 45% 70%,#79553a 70%)',
+    'linear-gradient(180deg,#b7d7e8 0 40%,#315d39 40% 68%,#72513a 68%)',
+    'linear-gradient(180deg,#6b778d 0 42%,#555b42 42% 70%,#41352c 70%)',
+    'linear-gradient(180deg,#f0c77b 0 38%,#56884a 38% 68%,#8b6240 68%)',
+    'linear-gradient(180deg,#7db3d1 0 40%,#426b42 40% 70%,#594632 70%)',
+  ],
+  subway: [
+    'linear-gradient(180deg,#54b8e8 0 40%,#f2c34b 40% 50%,#326b9e 50% 100%)',
+    'linear-gradient(180deg,#9bd7f0 0 38%,#f08a37 38% 52%,#275c88 52% 100%)',
+    'linear-gradient(180deg,#4c9cc8 0 40%,#e6bb44 40% 50%,#334d75 50% 100%)',
+    'linear-gradient(180deg,#8bd0e9 0 36%,#e36c45 36% 50%,#1d5a83 50% 100%)',
+    'linear-gradient(180deg,#63b9d9 0 40%,#e9c85a 40% 50%,#244f78 50% 100%)',
+  ],
+  ai: ['linear-gradient(135deg,#172554,#7c3aed)'],
+  skeleton: ['linear-gradient(135deg,#171717,#737373)'],
+};
+
+
 export default function Autopilot() {
   const [data, setData] = useState<Options | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -325,36 +376,42 @@ export default function Autopilot() {
               </select>
             </Field>
             {selectedTemplate && <p className="muted">{selectedTemplate.description}</p>}
-            <h4>Tipo de fondo del Short</h4>
-            <p className="muted">Elegí el aspecto visual como en un catálogo de clips. Las opciones marcadas como disponibles usan el render local actual; las demás quedan identificadas pero no se pueden activar hasta contar con un motor o clips reales.</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: 10 }}>
-              {[
-                { id: 'moving_images', title: 'Imágenes con movimiento', subtitle: 'Recursos de archivo con paneo y zoom; no son imágenes IA', preview: '🖼️', available: true, style: 'Movimiento de imágenes con paneo y zoom' },
-                { id: 'stock_images', title: 'Imágenes de archivo', subtitle: 'Fotografías con licencia; todavía no son clips de stock', preview: '🎞️', available: true, style: 'Fotografía de archivo con licencia' },
-                { id: 'full_motion_ai', title: 'Full Motion AI Video', subtitle: 'Clips generados por IA', preview: '🎬', available: false, style: 'Full Motion AI Video' },
-                { id: 'skeleton', title: 'Skeleton Video', subtitle: 'Animación 3D', preview: '💀', available: false, style: 'Skeleton Video' },
-                { id: 'minecraft', title: 'Minecraft gameplay', subtitle: '5 variantes de clips', preview: '⛏️', available: false, style: 'Minecraft gameplay' },
-                { id: 'subway', title: 'Subway Surfers gameplay', subtitle: '5 variantes de clips', preview: '🏃', available: false, style: 'Subway Surfers gameplay' },
-              ].map((item) => {
+            <h4>Formato visual y catálogo de clips</h4>
+            <p className="muted">Cada tarjeta muestra miniaturas rectangulares como referencia. Las miniaturas de Minecraft y Subway son ilustrativas: no incluyen ni descargan gameplay real. Solo se pueden activar formatos que el motor actual puede producir.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))', gap: 10 }}>
+              {VISUAL_OPTIONS.map((item) => {
                 const selected = form.visual_style === item.style;
+                const thumbs = THUMB_BACKGROUNDS[item.kind] ?? THUMB_BACKGROUNDS.stock;
+                const count = item.kind === 'minecraft' || item.kind === 'subway' ? 5 : Math.min(3, thumbs.length);
                 return <button key={item.id} type="button" disabled={!item.available}
                   onClick={() => update('visual_style', item.style)}
                   aria-pressed={selected}
                   style={{ textAlign: 'left', padding: 0, overflow: 'hidden', borderRadius: 12,
                     border: selected ? '2px solid #dc2626' : '1px solid var(--border, #d1d5db)',
-                    background: 'var(--card, #fff)', opacity: item.available ? 1 : 0.68,
+                    background: 'var(--card, #fff)', opacity: item.available ? 1 : 0.76,
                     cursor: item.available ? 'pointer' : 'not-allowed' }}>
-                  <div style={{ height: 112, display: 'grid', placeItems: 'center', fontSize: 42,
-                    background: item.id === 'minecraft' ? 'linear-gradient(135deg,#476b3a,#9b7445)' :
-                      item.id === 'subway' ? 'linear-gradient(135deg,#176b9c,#e0a13b)' :
-                      item.id === 'skeleton' ? 'linear-gradient(135deg,#343434,#9a9a9a)' :
-                      item.id === 'full_motion_ai' ? 'linear-gradient(135deg,#312e81,#7c3aed)' :
-                      'linear-gradient(135deg,#334155,#94a3b8)' }}>{item.preview}</div>
+                  <div style={{ height: 96, display: 'flex', gap: 4, padding: 6, background: '#111827', overflow: 'hidden' }}>
+                    {Array.from({ length: count }, (_, index) => (
+                      <div key={index} style={{ flex: 1, minWidth: 0, borderRadius: 5,
+                        position: 'relative', overflow: 'hidden',
+                        background: thumbs[index % thumbs.length] }}>
+                        <span style={{ position: 'absolute', left: 3, bottom: 3, color: '#fff',
+                          fontSize: 9, fontWeight: 800, textShadow: '0 1px 3px #000' }}>
+                          {count > 1 ? '0' + (index + 1) : item.preview}
+                        </span>
+                        {item.kind === 'minecraft' && <span style={{ position: 'absolute', right: 2, top: 4, fontSize: 16 }}>⛏️</span>}
+                        {item.kind === 'subway' && <span style={{ position: 'absolute', right: 2, top: 4, fontSize: 16 }}>🏃</span>}
+                        {item.kind === 'skeleton' && <span style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 30 }}>💀</span>}
+                        {item.kind === 'ai' && <span style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 30 }}>🎬</span>}
+                        {item.kind === 'stock' && <span style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 25 }}>▧</span>}
+                      </div>
+                    ))}
+                  </div>
                   <div style={{ padding: 10 }}>
                     <strong style={{ display: 'block', fontSize: 14 }}>{item.title}</strong>
                     <small className="muted">{item.subtitle}</small>
                     <small style={{ display: 'block', marginTop: 5, color: item.available ? '#15803d' : '#b45309' }}>
-                      {item.available ? (selected ? '✓ Seleccionado' : 'Disponible') : 'Próximamente · no implementado'}
+                      {item.available ? (selected ? '✓ Seleccionado' : 'Disponible') : 'No implementado todavía'}
                     </small>
                   </div>
                 </button>;
@@ -505,6 +562,17 @@ export default function Autopilot() {
               : <button className="btn primary" disabled={busy || !form.niche.trim()} onClick={() => void save()}>{busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear autopiloto'}</button>}
             {editingId && <button className="btn ghost" disabled={busy} onClick={reset}>Cancelar</button>}
           </div>
+        </div>
+      </Card>
+
+      <Card title="Flujo de producción de cada Short" sub="Orden real del trabajo: desde la regla programada hasta el registro de la publicación.">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8 }}>
+          {PRODUCTION_STAGES.map(([number, title, detail]) => (
+            <div key={number} style={{ display: 'flex', gap: 10, padding: 10, border: '1px solid var(--border, #d1d5db)', borderRadius: 10 }}>
+              <span style={{ flex: '0 0 26px', height: 26, display: 'grid', placeItems: 'center', borderRadius: 99, background: 'var(--surface, #e5e7eb)', fontWeight: 800 }}>{number}</span>
+              <div><strong style={{ fontSize: 13 }}>{title}</strong><small className="muted" style={{ display: 'block', marginTop: 3 }}>{detail}</small></div>
+            </div>
+          ))}
         </div>
       </Card>
 
