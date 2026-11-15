@@ -130,12 +130,19 @@ def _openalex_abstracts(title: str, limit: int = 4) -> list[dict]:
     return results
 
 
-def choose_topic(niche: str, previous_topics: list[str]) -> dict:
+def choose_topic(
+    niche: str,
+    previous_topics: list[str],
+    content_pillars: str = "",
+    avoid_topics: str = "",
+) -> dict:
     niche = (niche or "").strip()
     if not niche:
         raise ValueError("Configurá un nicho antes de iniciar el Autopiloto.")
     niche_key = _normal(niche)
-    search_terms = [niche, niche + " historia", niche + " casos", niche + " descubrimientos"]
+    pillars = [part.strip() for part in re.split(r"[,;\n]+", content_pillars or "") if part.strip()]
+    excluded = [_normal(part) for part in re.split(r"[,;\n]+", avoid_topics or "") if part.strip()]
+    search_terms = [niche] + [f"{niche} {pillar}" for pillar in pillars[:8]] + [niche + " historia", niche + " casos", niche + " descubrimientos"]
     candidates = []
     seen = set()
     for term in search_terms:
@@ -146,7 +153,11 @@ def choose_topic(niche: str, previous_topics: list[str]) -> dict:
         for item in data.get("query", {}).get("search", []):
             title = (item.get("title") or "").strip()
             key = _normal(title)
-            if not title or key in seen or key == niche_key or _is_duplicate(title, previous_topics):
+            if (
+                not title or key in seen or key == niche_key
+                or _is_duplicate(title, previous_topics)
+                or any(term and term in _normal(title) for term in excluded)
+            ):
                 continue
             seen.add(key)
             candidates.append(title)
@@ -176,8 +187,13 @@ def choose_topic(niche: str, previous_topics: list[str]) -> dict:
     )
 
 
-def research_topic(niche: str, previous_topics: list[str]) -> dict:
-    result = choose_topic(niche, previous_topics)
+def research_topic(
+    niche: str,
+    previous_topics: list[str],
+    content_pillars: str = "",
+    avoid_topics: str = "",
+) -> dict:
+    result = choose_topic(niche, previous_topics, content_pillars, avoid_topics)
     note_ids = []
     note_ids.append(db.execute(
         "INSERT INTO research_notes(niche, claim, evidence_level, source_url, accessed_at, methodology, created_at) "
