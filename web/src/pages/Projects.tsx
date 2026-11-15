@@ -327,9 +327,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
                   )}
                 </div>
                 <div className="row gap-8">
-                  <button className="btn small" onClick={() => go('editor', p.id)}>Abrir</button>
-                  <button className="btn small ghost" onClick={() => render(p)}>Renderizar</button>
-                  <a className="btn small ghost" href={`/api/projects/${p.id}/download`}>ZIP</a>
+                  <button className="btn small primary" onClick={() => go('editor', p.id)}>Abrir editor</button>
                   <button className="btn small danger" onClick={() => remove(p)}>Eliminar</button>
                 </div>
               </div>
