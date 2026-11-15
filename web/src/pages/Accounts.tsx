@@ -6,7 +6,7 @@ type LinkedAccount = { channel_id: number; youtube_channel_id: string; channel_t
 type ChannelAccount = { id: number; name: string; topic: string; account: LinkedAccount | null };
 
 export default function Accounts() {
-  const [channels, setFactories] = useState<ChannelAccount[]>([]);
+  const [channels, setChannels] = useState<ChannelAccount[]>([]);
   const [oauthReady, setOauthReady] = useState(false);
   const [oauthConfigLoaded, setOauthConfigLoaded] = useState(false);
   const [missingEnv, setMissingEnv] = useState<string[]>([]);
@@ -22,7 +22,7 @@ export default function Accounts() {
     setError('');
     try {
       const result = await api.get<{ accounts: ChannelAccount[]; oauth_ready: boolean; missing_env: string[]; redirect_uri: string }>('/api/youtube/accounts');
-      setFactories(result.accounts);
+      setChannels(result.accounts);
       setOauthReady(result.oauth_ready);
       setOauthConfigLoaded(true);
       setMissingEnv(result.missing_env || []);
@@ -60,7 +60,7 @@ export default function Accounts() {
     setBusyId(channel.id); setError(''); setOk('');
     try {
       await api.post(`/api/youtube/disconnect?channel_id=${channel.id}`, {});
-      setOk(`Cuenta desconectada de ${channel.name}. La otra fábrica no se modifica.`);
+      setOk(`Cuenta desconectada de ${channel.name}. Los demás canales no se modifican.`);
       await load();
     } catch (e) {
       setError((e as Error).message);
