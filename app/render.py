@@ -494,6 +494,8 @@ def _music_track(project: dict | None = None) -> Path | None:
     choice = ((project or {}).get("music") or "auto").strip()
     if choice in ("ninguna", "none", "sin_musica"):
         return None
+    if choice in options.MUSIC_IDS:
+        choice = "bed:" + choice
     if choice.startswith("bed:"):
         try:
             return media.ensure_music_bed(choice.split(":", 1)[1])
