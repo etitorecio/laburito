@@ -346,7 +346,7 @@ def _validate_auto_publish(clean: dict, current: dict | None = None) -> None:
         publish.youtube_account_status(int(channel_id))
     except publish.PublishError as exc:
         raise ValueError(
-            "Antes de activar la publicación automática, conectá y verificá YouTube en Ajustes. " + str(exc)
+            "Antes de activar la publicación automática, conectá la cuenta asignada desde Cuentas. " + str(exc)
         ) from exc
 
 
