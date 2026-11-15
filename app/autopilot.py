@@ -219,10 +219,10 @@ def _next_run_at(rule: dict, after: datetime | None = None) -> str:
     clock = str(rule.get("schedule_time") or "10:00")
     hour, minute = int(clock[:2]), int(clock[3:])
     target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-    if target <= now:
-        target += timedelta(days=1) if int(rule.get("cadence_hours") or 24) >= 24 else timedelta(hours=int(rule.get("cadence_hours") or 24))
-    elif target > now and int(rule.get("cadence_hours") or 24) < 24:
-        pass
+    interval = int(rule.get("cadence_hours") or 24)
+    step = timedelta(hours=interval) if interval < 24 else timedelta(days=max(1, interval // 24))
+    while target <= now:
+        target += step
     return target.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
