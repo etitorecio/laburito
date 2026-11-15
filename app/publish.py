@@ -586,6 +586,7 @@ def publish(project_id: int, destination: str = "entrega", calendar_id: int | No
                 "url": _g(previous, "url"),
                 "external_id": _g(previous, "external_id"),
                 "message": "Este mismo archivo ya estaba publicado. Se evitó una segunda subida.",
+                "verification": previous_meta.get("youtube_verification"),
                 "meta": previous_meta,
             }
 
