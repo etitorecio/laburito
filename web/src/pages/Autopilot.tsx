@@ -81,6 +81,12 @@ const VISUAL_OPTIONS = [
   { id: 'subway', title: 'Subway Surfers gameplay', subtitle: '5 clips de ejemplo · requiere videos con licencia o propios', preview: '🏃', available: false, style: 'Subway Surfers gameplay', kind: 'subway' },
 ];
 
+const THUMB_IMAGES: Record<string, string[]> = {
+  stock: ['/previews/stock-01.svg', '/previews/stock-02.svg', '/previews/stock-03.svg', '/previews/stock-04.svg', '/previews/stock-05.svg'],
+  minecraft: ['/previews/voxel-01.svg', '/previews/voxel-02.svg', '/previews/voxel-03.svg', '/previews/voxel-04.svg', '/previews/voxel-05.svg'],
+  subway: ['/previews/runner-01.svg', '/previews/runner-02.svg', '/previews/runner-03.svg', '/previews/runner-04.svg', '/previews/runner-05.svg'],
+};
+
 const THUMB_BACKGROUNDS: Record<string, string[]> = {
   stock: [
     'linear-gradient(135deg,#1e3a5f,#78a6c8)',
@@ -394,7 +400,8 @@ export default function Autopilot() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))', gap: 10 }}>
               {VISUAL_OPTIONS.map((item) => {
                 const selected = form.visual_style === item.style;
-                const thumbs = THUMB_BACKGROUNDS[item.kind] ?? THUMB_BACKGROUNDS.stock;
+                const imageThumbs = THUMB_IMAGES[item.kind];
+                const thumbs = imageThumbs ?? THUMB_BACKGROUNDS[item.kind] ?? THUMB_BACKGROUNDS.stock;
                 const count = item.kind === 'minecraft' || item.kind === 'subway' ? 5 : Math.min(3, thumbs.length);
                 return <button key={item.id} type="button" disabled={!item.available}
                   onClick={() => update('visual_style', item.style)}
@@ -408,7 +415,7 @@ export default function Autopilot() {
                     {Array.from({ length: count }, (_, index) => (
                       <div key={index} style={{ flex: '0 0 88px', minWidth: 88, borderRadius: 5,
                         position: 'relative', overflow: 'hidden', scrollSnapAlign: 'start',
-                        background: thumbs[index % thumbs.length] }}>
+                        background: imageThumbs ? `center / cover no-repeat url("${thumbs[index % thumbs.length]}")` : thumbs[index % thumbs.length] }}>
                         <span style={{ position: 'absolute', left: 3, bottom: 3, color: '#fff',
                           fontSize: 9, fontWeight: 800, textShadow: '0 1px 3px #000' }}>
                           {count > 1 ? '0' + (index + 1) : item.preview}
