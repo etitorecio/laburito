@@ -112,6 +112,7 @@ export default function Autopilot() {
   const [data, setData] = useState<Options | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [persistenceConfigured, setPersistenceConfigured] = useState<boolean | null>(null);
+  const [persistenceNote, setPersistenceNote] = useState('');
   const [form, setForm] = useState(INITIAL);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [step, setStep] = useState(0);
@@ -128,7 +129,8 @@ export default function Autopilot() {
       ]);
       setData(result);
       setMeta(m);
-      setPersistenceConfigured(diagnostics.persistence.configured);
+      setPersistenceConfigured(diagnostics.persistence.configured || !!diagnostics.persistence.local_persistent);
+      setPersistenceNote(diagnostics.persistence.note);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -288,7 +290,7 @@ export default function Autopilot() {
       {persistenceConfigured === false && <p className="muted" style={{ padding: 12, border: '1px solid var(--border, #d1d5db)', borderRadius: 10 }}>
         <strong>Falta persistencia externa.</strong> En AppJet Free, el contenedor puede perder la programación y el historial si se reemplaza. Configurá Supabase en Ajustes para activar el backup automático antes de depender del calendario.
       </p>}
-      {persistenceConfigured === true && <p className="muted">Credenciales de Supabase detectadas: Laburito intentará sincronizar la base cada 15 minutos y después de cada tarea.</p>}
+      {persistenceConfigured === true && <p className="muted">{persistenceNote}</p>}
       <Card title={editingId ? 'Editar autopiloto' : 'Crear autopiloto'} sub="Configurá una vez todo lo que querés producir. Después el sistema usa estas reglas en cada Short programado.">
         <div className="stack" style={{ gap: 12 }}>
           <div className="grid two">
