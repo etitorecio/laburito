@@ -470,7 +470,10 @@ def meta():
             {"id": "short", "label": "Short vertical", "aspect": "9:16"},
         ],
         "evidence_levels": ["hecho", "indicio", "estimacion"],
-        "settings": {k: db.get_setting(k) for k in db.DEFAULT_SETTINGS},
+        "settings": {
+            **{k: db.get_setting(k) for k in db.DEFAULT_SETTINGS},
+            "ollama_url": db.get_setting("ollama_url") or os.environ.get("OLLAMA_URL", ""),
+        },
     }
 
 
@@ -589,8 +592,8 @@ def diagnostics():
         "ffmpeg_version": (media.run(["ffmpeg", "-version"], timeout=20).stdout or b"").decode().split("\n")[0],
         "render": media.capabilities(),
         "ollama": {
-            "url": db.get_setting("ollama_url"),
-            "available": script_gen.ollama_available(db.get_setting("ollama_url")),
+            "url": db.get_setting("ollama_url") or os.environ.get("OLLAMA_URL", ""),
+            "available": script_gen.ollama_available(db.get_setting("ollama_url") or os.environ.get("OLLAMA_URL", "")),
             "optional": True,
         },
         "counts": {
