@@ -138,7 +138,7 @@ export default function Editor({ projectId, go }: Props) {
 
   const loadPublish = useCallback(async () => {
     try {
-      const [dest, pubs, auto] = await Promise.all([
+      const [dest, pubs, auto, accounts] = await Promise.all([
         api.get<{ destinations: PublishDestination[] }>('/api/publish/destinations'),
         api.get<{ publications: Publication[] }>(`/api/publications?project_id=${projectId}`),
         api.get<{ enabled: boolean; destination: string }>(`/api/projects/${projectId}/auto-publish`),
