@@ -105,6 +105,17 @@ def ensure_visual(project: dict, scene: dict) -> tuple[Path, str, dict]:
     """Resuelve imágenes o clips de fondo propios/autorizados."""
     width, height = _size(project)
     video_type = (project.get("video_type") or "moving_images").strip()
+    if video_type == "skeleton":
+        from . import skeleton
+        action = skeleton.action_for(scene.get("title") or "", scene.get("narration") or "")
+        clip = skeleton.ensure_clip(action)
+        return clip, "skeleton_local", {
+            "license": "Animación procedural original generada localmente",
+            "author": "Laburito",
+            "url": f"local://skeleton/{action}",
+            "title": f"Esqueleto animado · {action}",
+            "provider": "skeleton_local",
+        }
     if video_type in {"stock_footage", "minecraft", "subway"}:
         clip_dir = db.DATA_DIR / "background_clips" / video_type
         clips = sorted(clip_dir.glob("*.mp4")) if clip_dir.exists() else []
