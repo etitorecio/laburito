@@ -292,6 +292,21 @@ class AutopilotResearchTests(unittest.TestCase):
         selected = topic_engine._relevant_trends("historia", "Roma, imperio", trends)
         self.assertEqual([item["title"] for item in selected], ["Historia de Roma antigua"])
 
+    def test_google_trends_rss_parser_returns_titles_and_dates(self):
+        class FakeResponse:
+            def __enter__(self):
+                return self
+            def __exit__(self, *_args):
+                return False
+            def read(self):
+                return b'<rss><channel><item><title>Historia de Roma</title><link>https://example.org</link><pubDate>Sat, 14 Nov 2026 12:00:00 GMT</pubDate></item></channel></rss>'
+
+        with patch("app.topic_engine.urllib.request.urlopen", return_value=FakeResponse()):
+            items = topic_engine.trending_searches()
+        self.assertEqual(items[0]["title"], "Historia de Roma")
+        self.assertEqual(items[0]["url"], "https://example.org")
+        self.assertIn("2026", items[0]["published_at"])
+
     def test_topic_normalization_helps_avoid_repeats(self):
         self.assertEqual(topic_engine._normal("Historia: del Rock!"), "historia del rock")
 
