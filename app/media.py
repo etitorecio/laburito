@@ -357,6 +357,7 @@ def _get_json(url: str, timeout: int = 12) -> dict:
         return json.loads(resp.read().decode("utf-8", "ignore"))
 
 
+@lru_cache(maxsize=512)
 def search_openverse(query: str, limit: int = 12) -> list[dict]:
     params = urllib.parse.urlencode(
         {
@@ -384,6 +385,7 @@ def search_openverse(query: str, limit: int = 12) -> list[dict]:
     return out
 
 
+@lru_cache(maxsize=512)
 def search_wikimedia(query: str, limit: int = 12) -> list[dict]:
     params = urllib.parse.urlencode(
         {
@@ -422,6 +424,7 @@ def search_wikimedia(query: str, limit: int = 12) -> list[dict]:
     return out
 
 
+@lru_cache(maxsize=512)
 def search_archive(query: str, limit: int = 10) -> list[dict]:
     params = urllib.parse.urlencode(
         {
