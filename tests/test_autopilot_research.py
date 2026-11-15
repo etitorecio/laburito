@@ -590,8 +590,9 @@ class AutopilotResearchTests(unittest.TestCase):
             with patch.object(autopilot.db, "query_one", side_effect=[{"total": 0}, project]):
                 with patch.object(autopilot.db, "execute", return_value=84) as execute:
                     with patch.object(autopilot.db, "now", return_value="2026-11-15T00:00:00Z"):
-                        with patch.object(autopilot.db, "log"):
-                            with patch.object(topic_engine, "research_topic", side_effect=AssertionError("La ficción no debe investigar temas reales")):
+                        with patch.object(autopilot.db, "get_setting", return_value=""):
+                            with patch.object(autopilot.db, "log"):
+                                with patch.object(topic_engine, "research_topic", side_effect=AssertionError("La ficción no debe investigar temas reales")):
                                 result = autopilot._create_project({
                                     "template": "frutinovela",
                                     "niche": "La familia Frutal",
