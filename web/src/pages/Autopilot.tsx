@@ -288,7 +288,7 @@ export default function Autopilot() {
       {persistenceConfigured === false && <p className="muted" style={{ padding: 12, border: '1px solid var(--border, #d1d5db)', borderRadius: 10 }}>
         <strong>Falta persistencia externa.</strong> En AppJet Free, el contenedor puede perder la programación y el historial si se reemplaza. Configurá Supabase en Ajustes para activar el backup automático antes de depender del calendario.
       </p>}
-      {persistenceConfigured === true && <p className="muted">Backup externo de Supabase activo: la configuración y la cola se conservan mediante copias periódicas.</p>}
+      {persistenceConfigured === true && <p className="muted">Credenciales de Supabase detectadas: Laburito intentará sincronizar la base cada 15 minutos y después de cada tarea.</p>}
       <Card title={editingId ? 'Editar autopiloto' : 'Crear autopiloto'} sub="Configurá una vez todo lo que querés producir. Después el sistema usa estas reglas en cada Short programado.">
         <div className="stack" style={{ gap: 12 }}>
           <div className="grid two">
