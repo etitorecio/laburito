@@ -780,10 +780,6 @@ def create_project(payload: ProjectIn):
         selected_channel = db.query_one("SELECT name FROM channels WHERE id=?", (data["channel_id"],))
         if not selected_channel:
             raise HTTPException(404, "El canal interno seleccionado no existe.")
-        expected_template = options.factory_template_for_channel_name(selected_channel.get("name", ""))
-        if expected_template and data.get("template") != expected_template:
-            label = "Historias" if expected_template == "reddit_story" else "Frutinovelas"
-            raise HTTPException(400, f"El canal {label} solo admite su fábrica de Shorts correspondiente.")
     spanish_voices = {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"}
     if data.get("voice") not in spanish_voices:
         raise HTTPException(400, "Laburito genera contenido únicamente en español. Elegí una voz española.")
@@ -838,10 +834,6 @@ def patch_project(project_id: int, payload: ProjectPatch):
         selected_channel = db.query_one("SELECT name FROM channels WHERE id=?", (effective_channel_id,))
         if not selected_channel:
             raise HTTPException(404, "El canal interno seleccionado no existe.")
-        expected_template = options.factory_template_for_channel_name(selected_channel.get("name", ""))
-        if expected_template and effective_template != expected_template:
-            label = "Historias" if expected_template == "reddit_story" else "Frutinovelas"
-            raise HTTPException(400, f"El canal {label} solo admite su fábrica de Shorts correspondiente.")
     if effective_template in options.VERTICAL_SHORT_TEMPLATES:
         data["aspect"] = "9:16"
         if "duration_target_sec" in data:
