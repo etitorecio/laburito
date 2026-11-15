@@ -105,3 +105,8 @@ La prueba E2E crea un directorio de datos temporal, verifica resolución, duraci
 - El material visual externo depende de la red y de las licencias de cada repositorio; siempre se registra autor, licencia y fecha de consulta. La subida a YouTube registra el ID devuelto por la API y consulta `videos.list` para confirmar su presencia; el procesamiento de YouTube puede continuar después de que termine la tarea.\n- La persistencia externa de Supabase es opcional y requiere configurar una URL y una clave service-role en el servidor. El backup es una copia periódica de SQLite, no una base multiinstancia; ejecutá una sola instancia de worker para evitar concurrencia.
 - La música de fondo se toma de las camas libres integradas o de `data/music/` (el usuario puede aportar pistas libres).
 - La voz es sintética y local; para una voz neural local se puede instalar Piper DaveFX (España, CC0) desde Ajustes; la voz rioplatense espeak sigue disponible.
+
+
+## Validación automatizada
+
+La rama `appjet` ejecuta en GitHub Actions las pruebas unitarias del backend, el render local end-to-end con FFmpeg, el chequeo de tipos de TypeScript y el build de Vite.
