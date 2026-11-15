@@ -730,7 +730,6 @@ def set_auto_publish(project_id: int, enabled: bool, destination: str = "entrega
             raise PublishError(
                 "La autopublicación necesita Supabase o un volumen local persistente para no perder el MP4 si el servidor se reinicia."
             )
-        youtube_account_status()
     db.execute(
         "UPDATE projects SET auto_publish=?, publish_destination=?, updated_at=? WHERE id=?",
         (1 if enabled else 0, destination, db.now(), project_id),
