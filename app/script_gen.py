@@ -856,6 +856,14 @@ def expand_with_ollama(url: str, model: str, prompt: str, timeout: int = 120) ->
 
 
 
+def fiction_word_range(target_seconds: int) -> tuple[int, int]:
+    """Calcula una extensión de guion coherente con la duración del Short."""
+    seconds = max(15, min(180, int(target_seconds or 90)))
+    minimum = max(70, round(seconds * 1.9))
+    maximum = max(minimum + 20, round(seconds * 2.4))
+    return minimum, maximum
+
+
 def rewrite_fiction_with_ollama(url: str, model: str, project: dict, script: dict) -> dict:
     """Escribe ficción coherente usando solo un modelo Ollama local, sin servicios pagos."""
     scenes = script.get("scenes") or []
@@ -868,6 +876,9 @@ def rewrite_fiction_with_ollama(url: str, model: str, project: dict, script: dic
         for scene in scenes
     ]
     template_id = project.get("template") or ""
+    target_seconds = max(15, min(180, int(project.get("duration_target_sec") or 90)))
+    min_words, max_words = fiction_word_range(target_seconds)
+    target_words = f"entre {min_words} y {max_words} palabras (aproximadamente {target_seconds} segundos de voz)"
     if template_id == "frutinovela":
         brief = (
             "Es una telenovela vertical por episodios. Conservá exactamente los nombres, personalidades "
@@ -875,7 +886,7 @@ def rewrite_fiction_with_ollama(url: str, model: str, project: dict, script: dic
             "Cada escena debe avanzar la misma trama; incluí acciones concretas, diálogos breves cuando sumen "
             "y un cliffhanger nuevo al final. No reinicies la historia ni resuelvas todo de golpe."
         )
-        target_words = "entre 260 y 360 palabras"
+
     else:
         brief = (
             "Es un relato ORIGINAL con ritmo de historia narrada en comunidades tipo Reddit; no afirmes que "
@@ -883,7 +894,7 @@ def rewrite_fiction_with_ollama(url: str, model: str, project: dict, script: dic
             "persona, con detalles cotidianos concretos, tensión creciente, un giro que se prepare con pistas "
             "y una decisión final que invite a debatir."
         )
-        target_words = "entre 340 y 430 palabras para aproximadamente tres minutos de voz"
+
     prompt = (
         "Redactá un guion audiovisual en español rioplatense natural. " + brief + " "
         "Evitá frases genéricas, repeticiones, explicaciones meta y relleno. "
