@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from . import db, options
 
 CADENCE_OPTIONS = [6, 12, 24, 48, 72, 168]
+SHORT_TEMPLATE_IDS = {"shorts", "listicle", "pov", "quote"}
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS autopilot_rules(
@@ -94,6 +95,16 @@ def ensure_schema() -> None:
     for name, definition in migrations.items():
         if name not in columns:
             db.execute(f"ALTER TABLE autopilot_rules ADD COLUMN {name} {definition}")
+    # Migra reglas antiguas: el Autopiloto queda dedicado exclusivamente a Shorts.
+    placeholders = ",".join("?" for _ in SHORT_TEMPLATE_IDS)
+    db.execute(
+        f"UPDATE autopilot_rules SET template='shorts', aspect='9:16', "
+        "duration_target_sec=CASE WHEN duration_target_sec IS NULL THEN 30 "
+        "WHEN duration_target_sec<15 THEN 15 WHEN duration_target_sec>180 THEN 180 "
+        "ELSE duration_target_sec END "
+        f"WHERE template NOT IN ({placeholders}) OR aspect!='9:16'",
+        tuple(sorted(SHORT_TEMPLATE_IDS)),
+    )
 
 
 def _ts(offset_hours: float = 0.0) -> str:
@@ -138,13 +149,13 @@ def _clean(data: dict) -> dict:
     if "channel_id" in data:
         clean["channel_id"] = data["channel_id"]
     if "template" in data and data["template"] is not None:
-        if data["template"] not in options.TEMPLATE_IDS:
-            raise ValueError("Plantilla desconocida")
+        if data["template"] not in SHORT_TEMPLATE_IDS:
+            raise ValueError("El Autopiloto de Laburito produce exclusivamente Shorts.")
         clean["template"] = data["template"]
     if "duration_target_sec" in data and data["duration_target_sec"] is not None:
-        short_templates = {"shorts", "listicle", "pov", "quote", "cuadrado", "vertical_45"}
+        short_templates = SHORT_TEMPLATE_IDS
         if data.get("template", "shorts") in short_templates:
-            clean["duration_target_sec"] = max(15, min(90, int(data["duration_target_sec"])))
+            clean["duration_target_sec"] = max(15, min(180, int(data["duration_target_sec"])))
         else:
             clean["duration_target_sec"] = max(5, min(3600, int(data["duration_target_sec"])))
     if "voice" in data and data["voice"] is not None:
@@ -166,9 +177,9 @@ def _clean(data: dict) -> dict:
     if "custom_tags" in data and data["custom_tags"] is not None:
         clean["custom_tags"] = str(data["custom_tags"]).strip()[:300]
     if "aspect" in data and data["aspect"] is not None:
-        if data["aspect"] not in options.ASPECTS:
-            raise ValueError("Aspecto no soportado")
-        clean["aspect"] = data["aspect"]
+        if data["aspect"] != "9:16":
+            raise ValueError("Los Shorts del Autopiloto deben ser verticales 9:16.")
+        clean["aspect"] = "9:16"
     if "caption_style" in data and data["caption_style"] is not None:
         if data["caption_style"] not in options.CAPTION_STYLES:
             raise ValueError("Estilo de subtítulos desconocido")
@@ -325,7 +336,8 @@ def _create_project(rule: dict) -> dict:
     """Descubre un tema no usado, registra una fuente y crea el proyecto."""
     from . import script_gen, topic_engine
 
-    tpl = options.template(rule.get("template"))
+    template_id = rule.get("template") if rule.get("template") in SHORT_TEMPLATE_IDS else "shorts"
+    tpl = options.template(template_id)
     # Compatibilidad con reglas antiguas: nunca producir narración en otro idioma.
     rule["voice"] = rule.get("voice") if rule.get("voice") in {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"} else "es"
     niche = (rule.get("niche") or "").strip()
@@ -345,14 +357,14 @@ def _create_project(rule: dict) -> dict:
     )
     topic = research["topic"]
     title = topic
-    duration = int(rule.get("duration_target_sec") or tpl.get("default_duration") or 30)
+    duration = max(15, min(180, int(rule.get("duration_target_sec") or tpl.get("default_duration") or 30)))
     pid = db.execute(
         "INSERT INTO projects(channel_id, title, topic, kind, aspect, status, duration_target_sec, voice, speed, pitch, notes, "
         "template, caption_style, transition_default, resolution, fps, music, music_volume, created_at, updated_at) "
         "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (
-            rule.get("channel_id"), title, topic, tpl.get("kind", "short"),
-            rule.get("aspect") or tpl.get("aspect"), "borrador", duration,
+            rule.get("channel_id"), title, topic, "short",
+            "9:16", "borrador", duration,
             rule.get("voice") or "es", int(rule.get("speed") or 150), int(rule.get("pitch") if rule.get("pitch") is not None else 45),
             f"Autopiloto: {rule.get('name') or niche}. Fuente inicial: {research['url']}. "
             "La fuente es introductoria y debe contrastarse antes de publicar. "
