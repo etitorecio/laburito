@@ -86,24 +86,36 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     setError('');
     setOk('');
     if (!form.title.trim()) {
-      setError('El proyecto necesita un título.');
+      setError('Escribí una idea o instrucción para el video.');
       return;
     }
     setBusy(true);
+    let created: Project | null = null;
     try {
       const { captions_enabled, ...projectForm } = form;
-      const project = await api.post<Project>('/api/projects', {
+      created = await api.post<Project>('/api/projects', {
         ...projectForm,
         channel_id: form.channel_id ? Number(form.channel_id) : null,
         topic: form.topic || form.title,
         notes: (!captions_enabled || form.visual_style_prompt.trim() || !form.create_thumbnail) ? '[LABURITO_META]' + JSON.stringify({ captions_enabled, visual_style_prompt: form.visual_style_prompt.trim(), create_thumbnail: form.create_thumbnail }) : '',
       });
+      setOk('1/3 · Proyecto creado. Escribiendo el guion y preparando las escenas…');
+      await api.post('/api/projects/' + created.id + '/script?replace=true');
+      setOk('2/3 · Guion listo. Montando voz, imágenes, subtítulos y música…');
+      await api.post('/api/projects/' + created.id + '/render');
       setForm({ ...form, title: '', topic: '' });
-      setOk('Proyecto creado. Generá el guion para crear las escenas.');
+      setOk('3/3 · Producción enviada al render. Podés seguir el progreso y descargar el MP4 en el editor.');
       await load();
-      go('editor', project.id);
+      go('editor', created.id);
     } catch (e) {
-      setError((e as Error).message);
+      const message = (e as Error).message;
+      if (created) {
+        setError('El proyecto quedó guardado, pero la producción automática se detuvo: ' + message + '. Abrilo para continuar desde el paso pendiente.');
+        await load();
+        go('editor', created.id);
+      } else {
+        setError(message);
+      }
     } finally {
       setBusy(false);
     }
@@ -134,7 +146,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     <div className="stack">
       <Msg error={error} ok={ok} />
 
-      <Card title="Crear video" sub="El mismo flujo de creación: plantilla, voz, música, apariencia, subtítulos y formato. Todo se procesa localmente.">
+      <Card title="Crear video" sub="Escribí qué video querés. La fábrica genera el guion, crea las escenas y pone en marcha el render automáticamente.">
         <div className="stack" style={{ gap: 14 }}>
           <div className="row">
             <Field label="Título">
@@ -292,7 +304,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
           {meta && meta.external_templates.length > 0 && (
             <p className="muted">Los generadores externos de video IA no se incluyen: requerirían servicios con créditos. Los formatos desactivados no se presentan como disponibles.</p>
           )}
-          <button className="btn primary" onClick={create} disabled={busy || !form.title.trim()}>{busy ? 'Creando…' : 'Crear video'}</button>
+          <button className="btn primary" onClick={create} disabled={busy || !form.title.trim()}>{busy ? 'Produciendo video…' : 'Crear video completo automáticamente'}</button>
         </div>
       </Card>
 
