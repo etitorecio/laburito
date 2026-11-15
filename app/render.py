@@ -784,8 +784,10 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
             media.make_thumbnail(final, thumb, project.get("title") or "AITuber Libre", thumb_w, thumb_h)
         except Exception as exc:
             warnings.append(f"No se pudo generar la miniatura: {exc}")
-    elif thumb.exists():
-        thumb.unlink()
+    else:
+        if thumb.exists():
+            thumb.unlink()
+        db.execute("DELETE FROM assets WHERE project_id=? AND kind='miniatura'", (project_id,))
 
     info = media.probe_video(final)
     if not info.get("width"):
