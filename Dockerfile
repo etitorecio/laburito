@@ -22,7 +22,7 @@ WORKDIR /hb
 ADD https://github.com/harfbuzz/harfbuzz/releases/download/15.1.0/harfbuzz-15.1.0.tar.xz /hb/hb.tar.xz
 RUN tar -xf hb.tar.xz \
  && meson setup build harfbuzz-15.1.0 \
-      --prefix=/usr/local --buildtype=release \
+      --prefix=/usr/local --libdir=lib --buildtype=release \
       -Dglib=disabled -Dgobject=disabled -Dicu=disabled -Dcairo=disabled \
       -Ddocs=disabled -Dtests=disabled -Dintrospection=disabled \
       -Dfreetype=enabled \
@@ -30,7 +30,8 @@ RUN tar -xf hb.tar.xz \
 
 WORKDIR /src
 ADD https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz /src/ffmpeg.tar.xz
-RUN tar -xf ffmpeg.tar.xz --strip-components=1 \
+RUN export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH \
+ && tar -xf ffmpeg.tar.xz --strip-components=1 \
  && ./configure \
       --prefix=/usr/local \
       --disable-autodetect \
