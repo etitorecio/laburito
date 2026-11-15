@@ -22,6 +22,11 @@ class ShortsContractTests(unittest.TestCase):
                 self.assertLessEqual(max(template["durations"]), 180)
                 self.assertLessEqual(template["default_duration"], 180)
 
+    def test_factory_channels_have_one_matching_template_each(self):
+        self.assertEqual(options.factory_template_for_channel_name("Historias"), "reddit_story")
+        self.assertEqual(options.factory_template_for_channel_name("Frutinovelas"), "frutinovela")
+        self.assertIsNone(options.factory_template_for_channel_name("Otro canal"))
+
     def test_vertical_shorts_duration_is_clamped_to_three_minutes(self):
         self.assertEqual(options.clamp_vertical_short_duration("reddit_story", 999), 180)
         self.assertEqual(options.clamp_vertical_short_duration("frutinovela", 5), 15)
