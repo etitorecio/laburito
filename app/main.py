@@ -296,8 +296,10 @@ def _validate_video_type(video_type: str) -> None:
         raise HTTPException(400, "Tipo de video desconocido")
     if video_type == "moving_images":
         return
-    if video_type in {"full_motion_ai", "skeleton"}:
-        raise HTTPException(400, "Este tipo de video todavía no tiene un motor local conectado.")
+    if video_type == "full_motion_ai":
+        raise HTTPException(400, "La generación de video IA completo no tiene un modelo local viable para este equipo.")
+    if video_type == "skeleton":
+        return
     required = 5
     folder = db.DATA_DIR / "background_clips" / video_type
     count = len(list(folder.glob("*.mp4"))) if folder.exists() else 0
