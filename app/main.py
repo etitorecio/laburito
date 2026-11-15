@@ -1419,11 +1419,24 @@ def install_piper_voice():
 
 
 @app.get("/api/youtube/accounts")
-def youtube_accounts():
+def youtube_accounts(request: Request):
     publish.ensure_schema()
     channels = db.query("SELECT id,name,topic FROM channels ORDER BY id")
     linked = {int(row["channel_id"]): row for row in publish.youtube_accounts_status()}
-    return {"accounts": [{**channel, "account": linked.get(int(channel["id"]))} for channel in channels]}
+    credentials = publish.youtube_credentials()
+    missing_env = [
+        name for name, value in (
+            ("YOUTUBE_CLIENT_ID", credentials["client_id"]),
+            ("YOUTUBE_CLIENT_SECRET", credentials["client_secret"]),
+        ) if not value
+    ]
+    redirect_uri = os.environ.get("YOUTUBE_REDIRECT_URI", "").strip() or str(request.base_url).rstrip("/") + "/api/youtube/callback"
+    return {
+        "accounts": [{**channel, "account": linked.get(int(channel["id"]))} for channel in channels],
+        "oauth_ready": not missing_env,
+        "missing_env": missing_env,
+        "redirect_uri": redirect_uri,
+    }
 
 
 @app.post("/api/youtube/oauth/start")
