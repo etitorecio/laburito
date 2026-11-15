@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
     caption_style TEXT NOT NULL DEFAULT 'short_pop',
     captions_enabled INTEGER NOT NULL DEFAULT 1,
     transition_default TEXT NOT NULL DEFAULT 'fundido',
-    resolution TEXT NOT NULL DEFAULT '1080p',
+    resolution TEXT NOT NULL DEFAULT '720p',
     fps INTEGER NOT NULL DEFAULT 25,
     music TEXT NOT NULL DEFAULT 'auto',
     music_volume REAL NOT NULL DEFAULT 0.12,
@@ -343,6 +343,7 @@ def create_rule(data: dict) -> dict:
     clean.setdefault("aspect", selected_template.get("aspect", "9:16"))
     clean.setdefault("destination", "youtube")
     clean.setdefault("privacy", "public")
+    clean.setdefault("resolution", "720p")
     clean.setdefault("auto_publish", 1)
     _validate_auto_publish(clean)
     clean.setdefault("videos_per_period", 1)
@@ -435,7 +436,7 @@ def _create_project(rule: dict) -> dict:
             tpl["id"], rule.get("visual_style") or "automatico",
             rule.get("video_type") or "moving_images",
             rule.get("caption_style") or tpl.get("caption_style"),
-            rule.get("transition_default") or "fundido", rule.get("resolution") or "1080p",
+            rule.get("transition_default") or "fundido", rule.get("resolution") or "720p",
             int(rule.get("fps") or 25), rule.get("music") or "auto",
             float(rule.get("music_volume") if rule.get("music_volume") is not None else 0.12), db.now(), db.now(),
         ),
