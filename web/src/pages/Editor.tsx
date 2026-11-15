@@ -3,6 +3,7 @@ import { api, fmtDuration, mediaUrl, type MediaResult, type Meta, type Project, 
 import { Badge, Card, Empty, Field, Msg, Progress, statusTone } from '../ui';
 import type { Route } from '../routes';
 import CaptionStylePicker from '../components/CaptionStylePicker';
+import TransitionPicker from '../components/TransitionPicker';
 
 interface Props {
   projectId: number;
@@ -343,12 +344,13 @@ export default function Editor({ projectId, go }: Props) {
               compact
             />
           </Field>
-          <Field label="Transición">
-            <select value={project.transition_default} onChange={(e) => patchProject({ transition_default: e.target.value })}>
-              {(meta?.transitions ?? [{ id: project.transition_default, label: project.transition_default }]).map((t) => (
-                <option key={t.id} value={t.id}>{t.label}</option>
-              ))}
-            </select>
+          <Field label="Movimiento de las escenas">
+            <TransitionPicker
+              options={meta?.transitions ?? [{ id: project.transition_default, label: project.transition_default }]}
+              value={project.transition_default}
+              onChange={(value) => void patchProject({ transition_default: value })}
+              compact
+            />
           </Field>
           <Field label="Resolución">
             <select value={project.resolution} onChange={(e) => patchProject({ resolution: e.target.value })}>
