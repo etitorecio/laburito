@@ -20,6 +20,8 @@ const INITIAL = {
   speed: 150,
   pitch: 45,
   visual_style: 'Documental cinematográfico realista',
+  title_style: 'automatico',
+  custom_tags: '',
   cadence_hours: 24,
   videos_per_period: 1,
   period_days: 1,
@@ -153,6 +155,8 @@ export default function Autopilot() {
       speed: rule.speed ?? 150,
       pitch: rule.pitch ?? 45,
       visual_style: rule.visual_style || 'Documental cinematográfico realista',
+      title_style: rule.title_style || 'automatico',
+      custom_tags: rule.custom_tags || '',
       aspect: rule.aspect,
       caption_style: rule.caption_style,
       transition_default: rule.transition_default,
@@ -436,7 +440,19 @@ export default function Autopilot() {
           </>}
 
           {step === 7 && <>
-            <h3>Destino y publicación</h3>
+            <h3>Títulos, etiquetas y publicación</h3>
+            <Field label="Estilo de título automático">
+              <select value={form.title_style} onChange={(e) => update('title_style', e.target.value)}>
+                <option value="automatico">Mantener el título del tema</option>
+                <option value="pregunta">Abrir con una pregunta</option>
+                <option value="curiosidad">Curiosidad / dato que despierta interés</option>
+                <option value="directo">Título directo y descriptivo</option>
+                <option value="misterio">Misterio / intriga</option>
+              </select>
+            </Field>
+            <Field label="Etiquetas adicionales (separadas por coma)">
+              <input value={form.custom_tags} onChange={(e) => update('custom_tags', e.target.value)} placeholder="Ej.: curiosidades, historia, datos interesantes" />
+            </Field>
             <Field label="Qué hacer con cada video terminado">
               <select value={form.destination} onChange={(e) => update('destination', e.target.value)}>
                 <option value="entrega">Guardar en Laburito para revisar</option>
