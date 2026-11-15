@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from . import db, options
@@ -567,6 +567,16 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
     return {"rule_id": rule_id, "project_id": pid, "job_id": job_id, "next_run_at": next_run, "forced": force, "publish_warning": publish_warning or None}
 
 
+def _retry_at(minutes: int = 15) -> str:
+    """Reintenta fallos transitorios sin esperar al siguiente día de calendario."""
+    return (
+        (datetime.now(timezone.utc) + timedelta(minutes=max(5, min(60, int(minutes)))))
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
+
+
 def tick() -> int:
     """Dispara las reglas vencidas. Devuelve cuántas se ejecutaron."""
     ensure_schema()
@@ -584,7 +594,7 @@ def tick() -> int:
             rule = get_rule(int(row["id"])) or {}
             db.execute(
                 "UPDATE autopilot_rules SET next_run_at=?, last_error=?, updated_at=? WHERE id=?",
-                (_next_run_at(rule), str(exc)[:500], db.now(), row["id"]),
+                (_retry_at(15), str(exc)[:500], db.now(), row["id"]),
             )
             db.log("error", "autopilot", f"Regla {row['id']} falló: {exc}")
     return fired
