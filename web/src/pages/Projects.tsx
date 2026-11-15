@@ -44,9 +44,8 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     music: 'auto',
   });
 
-  const templates = (meta?.templates ?? []).filter((t) => ['reddit_story', 'frutinovela'].includes(t.id));
-  const requiredChannelName = form.template === 'frutinovela' ? 'frutinovelas' : 'historias';
-  const factoryChannel = channels.find((channel) => channel.name.toLocaleLowerCase() === requiredChannelName) ?? null;
+  const templates = meta?.templates ?? [];
+  const selectedChannel = channels.find((channel) => channel.id === Number(form.channel_id)) ?? null;
   const activeTemplate = templates.find((t) => t.id === form.template) ?? null;
   const voiceOptions = (meta?.voices ?? []).filter((v) => v.language === 'es');
 
@@ -59,7 +58,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     setForm({
       ...form,
       template: tpl.id,
-      channel_id: channels.find((c) => c.name.toLocaleLowerCase() === (tpl.id === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id.toString() ?? form.channel_id,
+      channel_id: form.channel_id || channels[0]?.id.toString() || '',
       aspect: tpl.aspect,
       caption_style: tpl.caption_style,
       duration_target_sec: tpl.default_duration,
@@ -82,7 +81,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
       setChannels(c);
       setForm((current) => current.channel_id ? current : {
         ...current,
-        channel_id: String(c.find((channel) => channel.name.toLocaleLowerCase() === (current.template === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id ?? ''),
+        channel_id: String(c[0]?.id ?? ''),
       });
       setMeta(m);
       setOllamaAvailable(diagnostics.ollama.available);
@@ -98,8 +97,8 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
   async function create() {
     setError('');
     setOk('');
-    if (!factoryChannel) {
-      setError('No se encontró el canal interno de esta fábrica. Actualizá la pantalla e intentá de nuevo.');
+    if (!selectedChannel) {
+      setError('Elegí un canal válido antes de crear el video.');
       return;
     }
     if (!form.title.trim()) {
@@ -120,7 +119,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
       const { captions_enabled, characters, input_mode, script_text, ...projectForm } = form;
       created = await api.post<Project>('/api/projects', {
         ...projectForm,
-        channel_id: factoryChannel.id,
+        channel_id: selectedChannel.id,
         topic: form.topic || form.title,
         notes: (!captions_enabled || form.visual_style_prompt.trim() || !form.create_thumbnail || characters.trim() || (input_mode === 'script' && script_text.trim())) ? '[LABURITO_META]' + JSON.stringify({ captions_enabled, visual_style_prompt: form.visual_style_prompt.trim(), create_thumbnail: form.create_thumbnail, characters: characters.trim(), script_text: input_mode === 'script' ? script_text.trim() : '' }) : '',
       });
@@ -207,10 +206,14 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
               <p className="muted">Usá siempre los mismos nombres y relaciones. El sistema recupera el final del episodio anterior para continuar la trama.</p>
             </>}
             {form.template === 'reddit_story' && <p className="muted">Historias originales en español con estructura de Reddit: gancho, contexto, escalada, giro y pregunta final. Duración predeterminada: 3 minutos.</p>}
-            <Field label="Canal de contenido" hint="La plantilla asigna automáticamente cada Short a su fábrica; la cuenta de YouTube se conecta por separado en Cuentas.">
-              <input value={factoryChannel?.name ?? "Cargando canal interno…"} readOnly />
+            <Field label="Canal de contenido" hint="Elegí en qué canal interno se guardará este proyecto. Cada canal puede vincularse a una cuenta real de YouTube desde Cuentas.">
+              <select value={form.channel_id} onChange={(e) => setForm({ ...form, channel_id: e.target.value })}>
+                <option value="">Seleccioná un canal…</option>
+                {channels.map((channel) => <option key={channel.id} value={channel.id}>{channel.name}</option>)}
+              </select>
               <div className="row" style={{ gap: 8, marginTop: 6 }}>
                 <button type="button" className="btn small ghost" onClick={() => go('cuentas')}>Vincular cuenta de YouTube</button>
+                <button type="button" className="btn small ghost" onClick={() => go('canales')}>Crear otro canal</button>
               </div>
             </Field>
             <Field label="Duración objetivo">
@@ -344,7 +347,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
           {meta && meta.external_templates.length > 0 && (
             <p className="muted">Los generadores externos de video IA no se incluyen: requerirían servicios con créditos. Los formatos desactivados no se presentan como disponibles.</p>
           )}
-          <button className="btn primary" onClick={create} disabled={busy || !factoryChannel || !form.title.trim()}>{busy ? 'Produciendo video…' : form.input_mode === 'script' ? 'Convertir guion y crear video' : 'Crear video desde la idea'}</button>
+          <button className="btn primary" onClick={create} disabled={busy || !selectedChannel || !form.title.trim()}>{busy ? 'Produciendo video…' : form.input_mode === 'script' ? 'Convertir guion y crear video' : 'Crear video desde la idea'}</button>
         </div>
       </Card>
 
