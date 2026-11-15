@@ -537,7 +537,7 @@ def generate_script(
     )
     beats = blueprint(script_kind)
 
-    source_notes = [
+    source_notes = [] if script_kind == "frutinovela" else [
         note for note in notes
         if note.get("source_url") and len((note.get("claim") or "")) >= 450
     ]
@@ -656,7 +656,13 @@ def generate_script(
         "topic": topic,
         "scenes": scenes,
         "warnings": [
-            "Guion estructurado con extractos de una fuente de orientación; contrastar datos con fuentes independientes antes de publicar." if source_note and evidence_sentences else "Borrador de plantilla local sin evidencia suficiente: no publicar automáticamente.",
+            (
+                "Ficción original por episodios: revisá continuidad, personajes y diálogos antes de publicar."
+                if script_kind == "frutinovela"
+                else "Guion estructurado con extractos de una fuente de orientación; contrastar datos con fuentes independientes antes de publicar."
+                if source_note and evidence_sentences
+                else "Borrador de plantilla local sin evidencia suficiente: no publicar automáticamente."
+            ),
         ]
         + ([f"{len(unused)} nota(s) de investigación sin usar; revisalas y sumalas como escenas."] if unused else []),
         "sources_considered": len(sources),
