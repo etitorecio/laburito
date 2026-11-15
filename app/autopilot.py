@@ -501,7 +501,7 @@ def _create_project(rule: dict) -> dict:
     project_sources = db.query("SELECT * FROM sources WHERE project_id=? ORDER BY id", (pid,))
     script = script_gen.generate_script(project, notes, project_sources)
     ollama_url = db.get_setting("ollama_url", "") or os.environ.get("OLLAMA_URL", "").strip()
-    if ollama_url and script_gen.ollama_available(ollama_url):
+    if ollama_url and script_gen.ollama_model_available(ollama_url, "qwen2.5:1.5b-instruct"):
         try:
             script = script_gen.rewrite_with_ollama(
                 ollama_url, "qwen2.5:1.5b-instruct", project, script, notes
