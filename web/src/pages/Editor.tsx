@@ -57,6 +57,31 @@ function notesWithCaptionsSetting(notes: string, enabled: boolean): string {
   return prefix + META_MARKER + JSON.stringify({ ...metadata, captions_enabled: enabled });
 }
 
+function visualStylePromptFromNotes(notes: string): string {
+  if (!notes.includes(META_MARKER)) return '';
+  try {
+    const metadata = JSON.parse(notes.split(META_MARKER, 2)[1] || '{}');
+    return typeof metadata.visual_style_prompt === 'string' ? metadata.visual_style_prompt : '';
+  } catch {
+    return '';
+  }
+}
+
+function notesWithVisualStylePrompt(notes: string, prompt: string): string {
+  const [prefix, rawMetadata] = notes.includes(META_MARKER)
+    ? notes.split(META_MARKER, 2)
+    : [notes, '{}'];
+  let metadata: Record<string, unknown> = {};
+  try {
+    metadata = JSON.parse(rawMetadata || '{}');
+  } catch {
+    metadata = {};
+  }
+  if (prompt.trim()) metadata.visual_style_prompt = prompt.trim().slice(0, 240);
+  else delete metadata.visual_style_prompt;
+  return prefix + META_MARKER + JSON.stringify(metadata);
+}
+
 export default function Editor({ projectId, go }: Props) {
   const [project, setProject] = useState<Project | null>(null);
   const [error, setError] = useState('');
@@ -286,6 +311,7 @@ export default function Editor({ projectId, go }: Props) {
   const words = scenes.reduce((acc, s) => acc + (s.narration || '').trim().split(/\s+/).filter(Boolean).length, 0);
   const quality = project.quality ?? {};
   const captionsEnabled = captionsEnabledFromNotes(project.notes || '');
+  const visualStylePrompt = visualStylePromptFromNotes(project.notes || '');
   const warnings = Array.isArray(quality.warnings) ? (quality.warnings as string[]) : [];
   const totalChars = scenes.reduce((acc, s) => acc + (s.narration || '').length, 0);
 
@@ -403,6 +429,16 @@ export default function Editor({ projectId, go }: Props) {
               onChange={(value) => void patchProject({ visual_style: value })}
               compact
             />
+            <Field label="Estilo personalizado (opcional)">
+              <textarea
+                rows={3}
+                maxLength={240}
+                value={visualStylePrompt}
+                onChange={(e) => void patchProject({ notes: notesWithVisualStylePrompt(project.notes || '', e.target.value) })}
+                placeholder="Ej.: iluminación cálida, fotografía analógica, tonos verdes y textura de película…"
+              />
+            </Field>
+            <p className="muted">La descripción guía la búsqueda de imágenes libres y algunos filtros locales; no genera imágenes IA.</p>
           </Field>
           <Field label="Movimiento de las escenas">
             <TransitionPicker
