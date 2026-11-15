@@ -399,6 +399,8 @@ def _validate_autopilot_short(project, source: Path) -> dict:
 
 def _validate_factory_short(project, source: Path) -> dict:
     """Impide publicar una fábrica como Short si el MP4 real no cumple 9:16 y 3 min."""
+    if _g(project, "kind") != "short":
+        raise PublishError("Publicación cancelada: la fábrica seleccionada debe generar un proyecto tipo Short.")
     try:
         info = media.probe_video(source)
     except Exception as exc:
@@ -419,13 +421,11 @@ def _validate_autopilot_video(project, source: Path) -> dict:
     """Valida Shorts y documentales del Autopiloto antes de subirlos."""
     is_autopilot = (_g(project, "notes") or "").startswith("Autopiloto:")
     template_id = _g(project, "template")
+    if template_id in options.VERTICAL_SHORT_TEMPLATES:
+        return _validate_factory_short(project, source)
     if not is_autopilot:
-        if template_id in {"shorts", "reddit_story", "frutinovela"}:
-            return _validate_factory_short(project, source)
         return {}
     if _g(project, "kind") == "short":
-        if template_id in options.VERTICAL_SHORT_TEMPLATES:
-            return _validate_factory_short(project, source)
         return _validate_autopilot_short(project, source)
     if _g(project, "kind") != "documentary":
         raise PublishError("Publicación cancelada: tipo de video del Autopiloto no compatible.")
