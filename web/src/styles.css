@@ -215,6 +215,13 @@ code {
 }
 
 @media (min-width: 900px) {
+  .app {
+    flex-direction: row;
+  }
+  .main {
+    flex: 1;
+    min-width: 0;
+  }
   .sidebar {
     display: flex;
   }
@@ -224,6 +231,29 @@ code {
   .content {
     padding-bottom: 24px;
   }
+}
+
+
+/* El editor ocupa toda la pantalla, como el espacio de edición de AITuber. */
+.editor-fullscreen {
+  display: block;
+  min-height: 100vh;
+}
+.editor-fullscreen .sidebar,
+.editor-fullscreen .topbar,
+.editor-fullscreen .foot,
+.editor-fullscreen .tabbar {
+  display: none !important;
+}
+.editor-fullscreen .main {
+  width: 100%;
+  min-height: 100vh;
+  padding: 0;
+}
+.editor-fullscreen .stack {
+  width: 100%;
+  max-width: none;
+  padding: 14px;
 }
 
 /* ---------- Tarjetas ---------- */
