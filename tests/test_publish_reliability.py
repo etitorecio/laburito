@@ -29,7 +29,7 @@ class PublishReliabilityTests(unittest.TestCase):
                     with patch.object(publish, "video_path", return_value=video):
                         with patch.object(publish, "_validate_autopilot_short"):
                             with patch.object(publish, "_video_fingerprint", return_value="sha256-test"):
-                                with patch.object(publish, "build_metadata", return_value={"title": "test"}):
+                                with patch.object(publish.db, "query", return_value=[]), patch.object(publish, "build_metadata", return_value={"title": "test"}):
                                     with patch.object(publish, "_youtube_upload", return_value=upload_result):
                                         with patch.object(publish.db, "execute", side_effect=lambda sql, params=(): statements.append((sql, params))):
                                             with patch.object(publish.db, "now", return_value="now"):
