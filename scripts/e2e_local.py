@@ -170,6 +170,8 @@ def main() -> int:
     print("\n== Render con clip de fondo propio")
     clip_dir = db.DATA_DIR / "background_clips" / "stock_footage"
     clip_dir.mkdir(parents=True, exist_ok=True)
+    for old_clip in clip_dir.glob("e2e-stock-sample*.mp4"):
+        old_clip.unlink()
     sample_clip = clip_dir / "e2e-stock-sample.mp4"
     sample_result = media.run([
         media.ffmpeg(), "-y", "-f", "lavfi", "-i",
@@ -179,6 +181,9 @@ def main() -> int:
     ], timeout=60)
     check(sample_result.returncode == 0 and sample_clip.exists(),
           "crear clip de fondo de prueba")
+    if sample_clip.exists():
+        for index in range(1, 5):
+            (clip_dir / f"e2e-stock-sample-{index}.mp4").write_bytes(sample_clip.read_bytes())
     if sample_clip.exists():
         test_project = {
             "id": 99001, "title": "Prueba clip de fondo", "topic": "prueba",
