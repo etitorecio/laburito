@@ -101,6 +101,15 @@ def ensure_schema() -> None:
         """
     )
     db.execute("CREATE INDEX IF NOT EXISTS idx_publicaciones_project ON publicaciones(project_id, id)")
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS youtube_accounts(
+            channel_id INTEGER PRIMARY KEY,
+            youtube_channel_id TEXT NOT NULL DEFAULT '',
+            channel_title TEXT NOT NULL DEFAULT '',
+            refresh_token TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    """)
     columns = {_g(row, "name") for row in db.query("PRAGMA table_info(projects)")}
     if "auto_publish" not in columns:
         db.execute("ALTER TABLE projects ADD COLUMN auto_publish INTEGER NOT NULL DEFAULT 0")
@@ -121,12 +130,32 @@ def subtitles(project) -> list[Path]:
     return sorted([p for p in folder.iterdir() if p.suffix.lower() in (".srt", ".vtt")])
 
 
-def youtube_credentials() -> dict:
+def youtube_credentials(channel_id: int | None = None) -> dict:
+    account = None
+    if channel_id is not None:
+        ensure_schema()
+        account = db.query_one("SELECT refresh_token FROM youtube_accounts WHERE channel_id=?", (int(channel_id),))
     return {
         "client_id": os.environ.get("YOUTUBE_CLIENT_ID", "").strip(),
         "client_secret": os.environ.get("YOUTUBE_CLIENT_SECRET", "").strip(),
-        "refresh_token": (db.get_setting("youtube_refresh_token", "") or os.environ.get("YOUTUBE_REFRESH_TOKEN") or "").strip(),
+        "refresh_token": (_g(account or {}, "refresh_token") or "").strip(),
     }
+
+
+def save_youtube_account(channel_id: int, refresh_token: str, status: dict) -> None:
+    if not db.query_one("SELECT id FROM channels WHERE id=?", (int(channel_id),)):
+        raise PublishError("El canal interno seleccionado ya no existe.")
+    ensure_schema()
+    db.execute(
+        "INSERT INTO youtube_accounts(channel_id,youtube_channel_id,channel_title,refresh_token,updated_at) VALUES(?,?,?,?,?) "
+        "ON CONFLICT(channel_id) DO UPDATE SET youtube_channel_id=excluded.youtube_channel_id,channel_title=excluded.channel_title,refresh_token=excluded.refresh_token,updated_at=excluded.updated_at",
+        (int(channel_id), status.get("channel_id", ""), status.get("channel_title", ""), refresh_token, db.now()),
+    )
+
+
+def youtube_accounts_status() -> list[dict]:
+    ensure_schema()
+    return db.query("SELECT a.channel_id,a.youtube_channel_id,a.channel_title,c.name AS workspace_name FROM youtube_accounts a LEFT JOIN channels c ON c.id=a.channel_id ORDER BY a.channel_id")
 
 
 def destinations() -> list[dict]:
@@ -282,26 +311,20 @@ def _deliver_local(project, meta: dict, report) -> dict:
     }
 
 
-def _youtube_token() -> str:
-    credentials = youtube_credentials()
-    missing = [
-        key for key, value in (("YOUTUBE_CLIENT_ID", credentials["client_id"]), ("YOUTUBE_CLIENT_SECRET", credentials["client_secret"]), ("refresh token", credentials["refresh_token"]))
-        if not value
-    ]
+def _youtube_token(channel_id: int | None = None, refresh_token_override: str | None = None) -> str:
+    credentials = youtube_credentials(channel_id) if refresh_token_override is None else {
+        "client_id": os.environ.get("YOUTUBE_CLIENT_ID", "").strip(),
+        "client_secret": os.environ.get("YOUTUBE_CLIENT_SECRET", "").strip(),
+        "refresh_token": refresh_token_override,
+    }
+    missing = [key for key, value in (("YOUTUBE_CLIENT_ID", credentials["client_id"]), ("YOUTUBE_CLIENT_SECRET", credentials["client_secret"]), ("refresh token", credentials["refresh_token"])) if not value]
     if missing:
-        raise PublishError("Falta configurar YouTube: " + ", ".join(missing) + ". Conectá la cuenta desde Ajustes y configurá las credenciales de OAuth.")
+        raise PublishError("Falta configurar YouTube para este canal: " + ", ".join(missing) + ". Conectá su cuenta desde Cuentas.")
     body = urllib.parse.urlencode({
-        "client_id": credentials["client_id"],
-        "client_secret": credentials["client_secret"],
-        "refresh_token": credentials["refresh_token"],
-        "grant_type": "refresh_token",
+        "client_id": credentials["client_id"], "client_secret": credentials["client_secret"],
+        "refresh_token": credentials["refresh_token"], "grant_type": "refresh_token",
     }).encode()
-    request = urllib.request.Request(
-        YOUTUBE_TOKEN_URL,
-        data=body,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        method="POST",
-    )
+    request = urllib.request.Request(YOUTUBE_TOKEN_URL, data=body, headers={"Content-Type": "application/x-www-form-urlencoded"}, method="POST")
     try:
         with urllib.request.urlopen(request, timeout=45) as response:
             data = json.loads(response.read().decode("utf-8", "replace"))
@@ -310,14 +333,13 @@ def _youtube_token() -> str:
         raise PublishError(f"YouTube rechazó las credenciales ({exc.code}): {detail}") from exc
     except urllib.error.URLError as exc:
         raise PublishError(f"No se pudo contactar a YouTube: {exc.reason}") from exc
-    token = data.get("access_token")
-    if not token:
-        raise PublishError("YouTube no devolvió un token de acceso; revisá la conexión OAuth.")
-    return token
+    if not data.get("access_token"):
+        raise PublishError("YouTube no devolvió un token de acceso.")
+    return data["access_token"]
 
 
-def youtube_account_status() -> dict:
-    token = _youtube_token()
+def youtube_account_status(channel_id: int | None = None, refresh_token_override: str | None = None) -> dict:
+    token = _youtube_token(channel_id, refresh_token_override)
     url = "https://www.googleapis.com/youtube/v3/channels?" + urllib.parse.urlencode({
         "part": "snippet",
         "mine": "true",
@@ -398,7 +420,7 @@ def _validate_autopilot_video(project, source: Path) -> dict:
 def _youtube_upload(project, meta: dict, privacy: str, report) -> dict:
     source = video_path(project)
     _validate_autopilot_video(project, source)
-    token = _youtube_token()
+    token = _youtube_token(int(_g(project, "channel_id") or 0) or None)
     report(40, "Credenciales de YouTube aceptadas")
     payload = {
         "snippet": {
@@ -702,9 +724,13 @@ def set_auto_publish(project_id: int, enabled: bool, destination: str = "entrega
     ensure_schema()
     if destination not in ("entrega", "youtube"):
         raise PublishError("Destino inválido: usá 'entrega' o 'youtube'.")
-    if not db.query_one("SELECT id FROM projects WHERE id=?", (project_id,)):
+    project = db.query_one("SELECT * FROM projects WHERE id=?", (project_id,))
+    if not project:
         raise PublishError(f"El proyecto {project_id} no existe.")
     if enabled and destination == "youtube":
+        if not _g(project, "channel_id"):
+            raise PublishError("Asigná este proyecto a un canal interno para elegir su cuenta de YouTube.")
+        youtube_account_status(int(_g(project, "channel_id")))
         if not persistence.durable_storage_available():
             raise PublishError(
                 "La autopublicación necesita Supabase o un volumen local persistente para no perder el MP4 si el servidor se reinicia."
