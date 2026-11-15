@@ -403,10 +403,11 @@ export default function Autopilot() {
                     border: selected ? '2px solid #dc2626' : '1px solid var(--border, #d1d5db)',
                     background: 'var(--card, #fff)', opacity: item.available ? 1 : 0.76,
                     cursor: item.available ? 'pointer' : 'not-allowed' }}>
-                  <div style={{ height: 96, display: 'flex', gap: 4, padding: 6, background: '#111827', overflow: 'hidden' }}>
+                  <div aria-label={`Previews de ${item.title}`} style={{ height: 96, display: 'flex', gap: 6, padding: 6, background: '#111827',
+                    overflowX: 'auto', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}>
                     {Array.from({ length: count }, (_, index) => (
-                      <div key={index} style={{ flex: 1, minWidth: 0, borderRadius: 5,
-                        position: 'relative', overflow: 'hidden',
+                      <div key={index} style={{ flex: '0 0 88px', minWidth: 88, borderRadius: 5,
+                        position: 'relative', overflow: 'hidden', scrollSnapAlign: 'start',
                         background: thumbs[index % thumbs.length] }}>
                         <span style={{ position: 'absolute', left: 3, bottom: 3, color: '#fff',
                           fontSize: 9, fontWeight: 800, textShadow: '0 1px 3px #000' }}>
