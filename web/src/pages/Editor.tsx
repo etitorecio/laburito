@@ -4,6 +4,8 @@ import { Badge, Card, Empty, Field, Msg, Progress, statusTone } from '../ui';
 import type { Route } from '../routes';
 import CaptionStylePicker from '../components/CaptionStylePicker';
 import TransitionPicker from '../components/TransitionPicker';
+import VisualStylePicker from '../components/VisualStylePicker';
+import VideoTypePicker from '../components/VideoTypePicker';
 
 interface Props {
   projectId: number;
@@ -341,6 +343,22 @@ export default function Editor({ projectId, go }: Props) {
               options={meta?.caption_styles ?? [{ id: project.caption_style, label: project.caption_style }]}
               value={project.caption_style}
               onChange={(value) => void patchProject({ caption_style: value })}
+              compact
+            />
+          </Field>
+          <Field label="Tipo de video">
+            <VideoTypePicker
+              options={meta?.video_types ?? []}
+              value={project.video_type || 'moving_images'}
+              onChange={(value) => void patchProject({ video_type: value })}
+              compact
+            />
+          </Field>
+          <Field label="Estilo visual">
+            <VisualStylePicker
+              options={meta?.visual_styles ?? []}
+              value={project.visual_style || 'automatico'}
+              onChange={(value) => void patchProject({ visual_style: value })}
               compact
             />
           </Field>
