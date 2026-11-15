@@ -149,6 +149,15 @@ def main() -> int:
         except Exception as exc:
             check(False, f"vista previa real del estilo {style_id}", str(exc))
 
+    print("\n== Demostraciones de movimiento")
+    for transition_id in options.TRANSITION_IDS:
+        try:
+            preview = render.transition_preview(transition_id)
+            check(preview.exists() and preview.stat().st_size > 1000,
+                  f"clip de demostración {transition_id}")
+        except Exception as exc:
+            check(False, f"clip de demostración {transition_id}", str(exc))
+
     print("\n== Persistencia")
     check(db.scalar("SELECT COUNT(*) FROM projects") == 2, "dos proyectos en SQLite")
     check(db.scalar("SELECT COUNT(*) FROM scenes") >= 6, "escenas persistidas")
