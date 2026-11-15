@@ -781,6 +781,7 @@ def create_project(payload: ProjectIn):
     resolved = options.resolve_defaults(data)
     tpl = options.template(resolved["template"])
     duration = int(data.get("duration_target_sec") or tpl["default_duration"])
+    duration = options.clamp_vertical_short_duration(resolved["template"], duration)
     pid = db.execute(
         "INSERT INTO projects(channel_id, title, topic, kind, aspect, status, duration_target_sec, voice, speed, pitch, notes, "
         "template, visual_style, video_type, caption_style, transition_default, resolution, fps, music, music_volume, created_at, updated_at) "
@@ -805,9 +806,15 @@ def get_project(project_id: int):
 
 @app.patch("/api/projects/{project_id}")
 def patch_project(project_id: int, payload: ProjectPatch):
-    if not db.query_one("SELECT id FROM projects WHERE id=?", (project_id,)):
+    current_project = db.query_one("SELECT id, template FROM projects WHERE id=?", (project_id,))
+    if not current_project:
         raise HTTPException(404, "Proyecto inexistente")
     data = payload.model_dump(exclude_none=True)
+    effective_template = data.get("template") or current_project.get("template")
+    if effective_template in options.VERTICAL_SHORT_TEMPLATES:
+        data["aspect"] = "9:16"
+        if "duration_target_sec" in data:
+            data["duration_target_sec"] = options.clamp_vertical_short_duration(effective_template, data["duration_target_sec"])
     spanish_voices = {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"}
     if "voice" in data and data["voice"] not in spanish_voices:
         raise HTTPException(400, "Laburito genera contenido únicamente en español. Elegí una voz española.")
