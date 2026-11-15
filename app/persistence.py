@@ -33,6 +33,11 @@ def configured() -> bool:
     return bool(base.startswith("https://") and key)
 
 
+def durable_storage_available() -> bool:
+    """True cuando Supabase o un volumen local persistente protegen los datos."""
+    return configured() or os.environ.get("AITUBER_LOCAL_PERSISTENT", "").strip() == "1"
+
+
 def status() -> dict:
     base, key, bucket = _settings()
     ready = configured()
