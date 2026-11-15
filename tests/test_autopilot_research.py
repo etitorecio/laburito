@@ -72,6 +72,19 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(clean["speed"], 300)
         self.assertEqual(clean["pitch"], 0)
 
+    def test_script_uses_autopilot_hook_cta_and_visual_style(self):
+        project = {
+            "id": 777, "title": "La exploración espacial", "topic": "La exploración espacial",
+            "kind": "short", "template": "shorts", "duration_target_sec": 30,
+            "hook_style": "Pregunta intrigante",
+            "cta": "Invitá a seguir el canal",
+            "visual_style": "Fotografía de archivo histórica",
+        }
+        script = script_gen.generate_script(project, [], [])
+        self.assertTrue(script["scenes"][0]["narration"].startswith("¿Qué hay detrás de La exploración espacial?"))
+        self.assertIn("Seguime para ver más historias", script["scenes"][-1]["narration"])
+        self.assertIn("Fotografía de archivo histórica", script["scenes"][0]["visual_query"])
+
     def test_autopilot_builds_script_from_only_the_current_topics_sources(self):
         extract = " ".join([
             "Este estudio describe con evidencia documentada un proceso histórico y sus consecuencias.",
