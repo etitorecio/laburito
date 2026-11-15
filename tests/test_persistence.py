@@ -1,4 +1,6 @@
 import gzip
+import io
+import urllib.error
 import sqlite3
 import tempfile
 import unittest
@@ -9,6 +11,39 @@ from app import persistence
 
 
 class PersistenceTests(unittest.TestCase):
+    def test_existing_public_bucket_is_rejected(self):
+        conflict = urllib.error.HTTPError(
+            "https://storage.example", 409, "Conflict", {}, io.BytesIO(b"already exists")
+        )
+
+        class PublicBucket:
+            def __enter__(self):
+                return self
+            def __exit__(self, *_args):
+                return False
+            def read(self):
+                return b'{"public": true}'
+
+        with patch.object(persistence, "_request", side_effect=[conflict, PublicBucket()]):
+            with self.assertRaisesRegex(RuntimeError, "es público"):
+                persistence._ensure_bucket()
+
+    def test_existing_private_bucket_is_accepted(self):
+        conflict = urllib.error.HTTPError(
+            "https://storage.example", 409, "Conflict", {}, io.BytesIO(b"already exists")
+        )
+
+        class PrivateBucket:
+            def __enter__(self):
+                return self
+            def __exit__(self, *_args):
+                return False
+            def read(self):
+                return b'{"public": false}'
+
+        with patch.object(persistence, "_request", side_effect=[conflict, PrivateBucket()]):
+            persistence._ensure_bucket()
+
     def test_status_reports_missing_external_storage(self):
         with patch.dict("os.environ", {}, clear=True):
             self.assertFalse(persistence.status()["configured"])
