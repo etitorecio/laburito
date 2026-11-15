@@ -108,7 +108,13 @@ export default function Autopilot() {
   const selectedTemplate = templates.find((t) => t.id === form.template);
 
   function update<K extends keyof typeof INITIAL>(key: K, value: (typeof INITIAL)[K]) {
-    setForm((old) => ({ ...old, [key]: value }));
+    setForm((old) => {
+      const next = { ...old, [key]: value };
+      if (key === 'video_type' && value === 'skeleton' && next.duration_target_sec > 420) {
+        next.duration_target_sec = 420;
+      }
+      return next;
+    });
   }
 
   async function save() {
@@ -249,7 +255,7 @@ export default function Autopilot() {
       ...(selected ? {
         aspect: selected.aspect,
         caption_style: selected.caption_style,
-        duration_target_sec: selected.default_duration,
+        duration_target_sec: old.video_type === 'skeleton' ? Math.min(selected.default_duration, 420) : selected.default_duration,
       } : {}),
     }));
   }
@@ -475,10 +481,19 @@ export default function Autopilot() {
 
           {step === 6 && <>
 <h3>Duración y calendario automático</h3>
-            <Field label="Duración objetivo">
+            <Field label={'Duración objetivo: ' + (form.duration_target_sec >= 60 ? Math.floor(form.duration_target_sec / 60) + ' min' : form.duration_target_sec + ' s')}>
               <select value={form.duration_target_sec} onChange={(e) => update('duration_target_sec', Number(e.target.value))}>
-                {Array.from(new Set([...(selectedTemplate?.durations ?? [15,20,30,45,60,90,120,180]), ...(form.video_type === 'skeleton' && (form.template === 'longform' || form.template === 'explainer') ? [420] : [])])).filter((x) => form.video_type !== 'skeleton' || x <= 420).sort((a, b) => a - b).map((x) => <option key={x} value={x}>{x >= 60 ? Math.floor(x / 60) + ' minuto(s)' : x + ' segundos'}</option>)}
+                {Array.from(new Set([...(selectedTemplate?.durations ?? [15,20,30,45,60,90,120,180]), ...(form.video_type === 'skeleton' && (form.template === 'longform' || form.template === 'explainer') ? [420] : []), form.duration_target_sec])).filter((x) => form.video_type !== 'skeleton' || x <= 420).sort((a, b) => a - b).map((x) => <option key={x} value={x}>{x >= 60 ? Math.floor(x / 60) + ' minuto(s)' : x + ' segundos'}</option>)}
               </select>
+              <input
+                type="range"
+                min={selectedTemplate?.kind === 'documentary' ? 180 : 15}
+                max={Math.min(Math.max(...(selectedTemplate?.durations ?? [180])), form.video_type === 'skeleton' ? 420 : 1200)}
+                step={5}
+                value={form.duration_target_sec}
+                onChange={(e) => update('duration_target_sec', Number(e.target.value))}
+              />
+              <small>Podés ajustar la duración con precisión. El tiempo final puede variar según la narración.</small>
             </Field>
             <Field label="Cantidad de videos">
               <input type="number" min="1" max="30" value={form.videos_per_period} onChange={(e) => update('videos_per_period', Math.max(1, Math.min(30, Number(e.target.value))))} />
