@@ -17,7 +17,7 @@ const INITIAL = {
   template: 'shorts',
   duration_target_sec: 30,
   voice: 'es',
-  cadence_hours: 24,
+  cadence_hours: 24,\n  audience: 'Público general',\n  tone: 'Dinámico y cercano',\n  hook_style: 'Dato sorprendente',\n  cta: 'Hacé una pregunta concreta al final',\n  content_pillars: '',\n  avoid_topics: '',
   aspect: '9:16',
   caption_style: 'short_pop',
   transition_default: 'fundido',
@@ -114,7 +114,7 @@ export default function Autopilot() {
       fps: rule.fps,
       music: rule.music,
       music_volume: rule.music_volume,
-      cadence_hours: rule.cadence_hours,
+      cadence_hours: rule.cadence_hours,\n      audience: rule.audience || 'Público general',\n      tone: rule.tone || 'Dinámico y cercano',\n      hook_style: rule.hook_style || 'Dato sorprendente',\n      cta: rule.cta || 'Hacé una pregunta concreta al final',\n      content_pillars: rule.content_pillars || '',\n      avoid_topics: rule.avoid_topics || '',
       destination: rule.destination,
       privacy: rule.privacy,
       auto_publish: rule.auto_publish,
@@ -163,7 +163,7 @@ export default function Autopilot() {
           <Field label="Nicho o temática">
             <input value={form.niche} onChange={(e) => setForm({ ...form, niche: e.target.value })} placeholder="Misterio, ciencia, fútbol, curiosidades, historias, tecnología..." />
           </Field>
-          <Field label="Canal">
+          <Field label="Público objetivo"><input value={form.audience} onChange={(e) => setForm({ ...form, audience: e.target.value })} placeholder="Ej.: jóvenes de 16 a 30 interesados en misterio" /></Field>\n          <Field label="Pilares / subtemas del canal"><input value={form.content_pillars} onChange={(e) => setForm({ ...form, content_pillars: e.target.value })} placeholder="Ej.: casos inexplicables, desapariciones, leyendas urbanas" /></Field>\n          <Field label="Temas o enfoques que debe evitar"><input value={form.avoid_topics} onChange={(e) => setForm({ ...form, avoid_topics: e.target.value })} placeholder="Ej.: política partidaria, tragedias recientes" /></Field>\n          <Field label="Canal">
             <select value={form.channel_id} onChange={(e) => setForm({ ...form, channel_id: e.target.value })}>
               <option value="">Sin canal asociado</option>
               {(data?.channels ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -260,7 +260,7 @@ export default function Autopilot() {
           {editingId && <button className="btn ghost" disabled={busy} onClick={cancelEdit}>Cancelar edición</button>}
           <button className="btn ghost" disabled={busy} onClick={() => void load()}>Actualizar</button>
         </div>
-        <p className="muted" style={{ marginTop: 12 }}>El formato recomendado es vertical 9:16, de 15 a 60 segundos. El descubrimiento usa fuentes gratuitas; la primera fuente es orientativa y no equivale a una verificación periodística completa. Revisá las fuentes antes de habilitar publicación pública automática.</p>
+        <p className="muted" style={{ marginTop: 12 }}>Configuración recomendada: vertical 9:16, 1080p, 30 FPS y 20–45 segundos. El guion se adapta al público, tono, gancho, pilares y cierre que definiste. El descubrimiento usa fuentes gratuitas; la primera fuente es orientativa y no equivale a una verificación periodística completa. Revisá las fuentes antes de habilitar publicación pública automática.</p>
       </Card>
 
       <Card title="Tus automatizaciones" sub="Podés ejecutarlas ahora, pausarlas o eliminarlas.">
