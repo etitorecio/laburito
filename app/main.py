@@ -1119,10 +1119,14 @@ def get_settings():
 
 @app.put("/api/settings")
 def put_settings(payload: SettingsIn):
+    spanish_voices = {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"}
     for key, value in payload.values.items():
-        if key in db.DEFAULT_SETTINGS and key != "default_language":
-            db.set_setting(key, value)
-    # La configuración de idioma es fija: todo el contenido sale en español.
+        if key not in db.DEFAULT_SETTINGS or key == "default_language":
+            continue
+        if key == "default_voice" and value not in spanish_voices:
+            raise HTTPException(400, "La voz predeterminada debe ser una voz española.")
+        db.set_setting(key, value)
+    # Idioma fijo: todo el contenido y toda la narración salen en español.
     db.set_setting("default_language", "es")
     return {k: db.get_setting(k) for k in db.DEFAULT_SETTINGS}
 
