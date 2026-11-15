@@ -691,7 +691,7 @@ def _music_track(project: dict | None = None) -> Path | None:
 
 def _validate_vertical_short_render(project: dict, info: dict, results: list[dict]) -> None:
     """No marca como terminado un Short de fábrica horizontal, largo o sin narración."""
-    if (project.get("template") or "") not in options.VERTICAL_SHORT_TEMPLATES:
+    if project.get("kind") != "short" or (project.get("template") or "") not in options.VERTICAL_SHORT_TEMPLATES:
         return
     width, height = int(info.get("width") or 0), int(info.get("height") or 0)
     duration = float(info.get("duration") or 0)
