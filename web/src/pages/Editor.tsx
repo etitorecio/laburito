@@ -378,7 +378,9 @@ export default function Editor({ projectId, go }: Props) {
   return (
     <div className="stack">
       <Msg error={error} ok={ok} />
-      <ProjectResearch projectId={projectId} topic={project.topic || project.title} />
+      {!['frutinovela', 'reddit_story'].includes(project.template) && (
+        <ProjectResearch projectId={projectId} topic={project.topic || project.title} />
+      )}
 
 
       <Card
