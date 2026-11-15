@@ -99,14 +99,13 @@ cd web && npm run typecheck && npm run build
 
 La prueba E2E crea un directorio de datos temporal, verifica resolución, duración, subtítulos, reutilización de escenas y contenido del ZIP, e informa cualquier aviso real del render (por ejemplo, escenas sin voz si falta espeak-ng).
 
+## Despliegue y uso real
+
+La URL `*.dev.ap-jt.com` es un endpoint de desarrollo/preview, no la URL de producción. AppJet ofrece un endpoint Edge para la rama `appjet`; la URL exacta se obtiene en Settings → Overview y debe configurarse como variable `LABURITO_URL` del repositorio para que el workflow de despertar use el destino correcto. La documentación de AppJet también aclara que su hosting está pensado para construir, previsualizar, probar y compartir, no como hosting de producción ni para datos reales de usuarios. No vender ni prometer disponibilidad profesional usando el endpoint de desarrollo.
+
 ## Limitaciones conocidas
 
 - El Autopiloto solo publica Shorts verticales 9:16 de hasta 180 segundos en YouTube. Actualmente el motor visual usa imágenes de archivo con paneo/zoom y tarjetas locales de respaldo: Full Motion AI Video, Skeleton Video y gameplay de Minecraft/Subway Surfers aparecen como opciones de referencia, pero todavía no producen clips reales. Las miniaturas del selector son ilustrativas; para gameplay hacen falta clips propios o con licencia. La portada personalizada no se puede fijar mediante la API para Shorts; se guarda localmente para uso manual. TikTok no está integrado.
 - El material visual externo depende de la red y de las licencias de cada repositorio; siempre se registra autor, licencia y fecha de consulta. La subida a YouTube registra el ID devuelto por la API y consulta `videos.list` para confirmar su presencia; el procesamiento de YouTube puede continuar después de que termine la tarea.\n- La persistencia externa de Supabase es opcional y requiere configurar una URL y una clave service-role en el servidor. El backup es una copia periódica de SQLite, no una base multiinstancia; ejecutá una sola instancia de worker para evitar concurrencia.
 - La música de fondo se toma de las camas libres integradas o de `data/music/` (el usuario puede aportar pistas libres).
 - La voz es sintética y local; para una voz neural local se puede instalar Piper DaveFX (España, CC0) desde Ajustes; la voz rioplatense espeak sigue disponible.
-
-
-## Validación automatizada
-
-La rama `appjet` ejecuta en GitHub Actions pruebas unitarias, render end-to-end con FFmpeg, síntesis de voz local, chequeo de TypeScript y build de producción.
