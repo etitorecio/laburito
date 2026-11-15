@@ -32,6 +32,13 @@ async def lifespan(app: FastAPI):
     persistence.restore_if_available()
     db.init_db()
     worker.start()
+    if not tts.status()["piper_available"]:
+        pending_voice_job = db.query_one(
+            "SELECT id FROM jobs WHERE kind='install_piper_voice' AND status IN ('en_cola','ejecutando') ORDER BY id DESC LIMIT 1"
+        )
+        if not pending_voice_job:
+            worker.enqueue(None, "install_piper_voice", {})
+            db.log("info", "tts", "Descarga automática de la voz neural española iniciada.")
     db.log("info", "app", "AITuber Libre iniciado", {"version": APP_VERSION})
     yield
     worker.stop()
