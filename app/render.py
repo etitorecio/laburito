@@ -102,8 +102,28 @@ def ensure_audio(project: dict, scene: dict) -> tuple[Path, float, dict]:
 
 
 def ensure_visual(project: dict, scene: dict) -> tuple[Path, str, dict]:
-    """Busca primero una imagen con licencia y usa una tarjeta como respaldo."""
+    """Resuelve imágenes o clips de fondo propios/autorizados."""
     width, height = _size(project)
+    video_type = (project.get("video_type") or "moving_images").strip()
+    if video_type in {"stock_footage", "minecraft", "subway"}:
+        clip_dir = db.DATA_DIR / "background_clips" / video_type
+        clips = sorted(clip_dir.glob("*.mp4")) if clip_dir.exists() else []
+        required = 5 if video_type in {"minecraft", "subway"} else 1
+        if len(clips) < required:
+            raise RuntimeError(
+                f"El formato {video_type} necesita {required} clip(s) propios o autorizados. "
+                f"Hay {len(clips)} cargados."
+            )
+        scene_index = int(scene.get("idx") or 0)
+        project_index = int(project.get("id") or 0)
+        chosen = clips[(project_index + scene_index) % len(clips)]
+        return chosen, "video_fondo", {
+            "license": "Clip propio o autorizado; derechos confirmados al cargar",
+            "author": "Biblioteca local del usuario",
+            "url": f"local://background-clips/{video_type}/{chosen.name}",
+            "title": chosen.name,
+            "provider": "biblioteca_local",
+        }
     existing = (scene.get("visual_path") or "").strip()
     if existing and Path(existing).exists():
         return Path(existing), scene.get("visual_kind") or "recurso", {
@@ -409,9 +429,15 @@ def render_scene(
         filters.extend(_motion_filters(transition, width, height, duration, fps))
         if cues:
             filters.append(_drawtext_chain(cues, font, width, height, style))
+        is_video_background = visual_path.suffix.lower() in {".mp4", ".mov", ".webm", ".mkv"}
+        input_args = (
+            ["-stream_loop", "-1", "-i", str(visual)]
+            if is_video_background
+            else ["-loop", "1", "-framerate", str(fps), "-i", str(visual)]
+        )
         _ff(
             [
-                "-loop", "1", "-framerate", str(fps), "-i", str(visual),
+                *input_args,
                 "-t", f"{duration:.2f}",
                 "-vf", ",".join(filters),
                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "25",
