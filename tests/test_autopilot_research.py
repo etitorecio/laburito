@@ -61,11 +61,16 @@ class AutopilotResearchTests(unittest.TestCase):
         updated = {**current, "enabled": True}
         with patch.object(autopilot, "ensure_schema"):
             with patch.object(autopilot, "get_rule", side_effect=[current, updated]):
-                with patch.object(autopilot, "_next_run_at", return_value="next-slot"):
+                with patch.object(autopilot, "_ts", return_value="now"):
                     with patch.object(autopilot.db, "execute") as execute:
                         autopilot.update_rule(7, {"enabled": True})
         self.assertIn("next_run_at", execute.call_args.args[0])
-        self.assertIn("next-slot", execute.call_args.args[1])
+        self.assertIn("now", execute.call_args.args[1])
+
+    def test_autopilot_voice_speed_and_pitch_are_bounded(self):
+        clean = autopilot._clean({"speed": 999, "pitch": -5})
+        self.assertEqual(clean["speed"], 300)
+        self.assertEqual(clean["pitch"], 0)
 
     def test_autopilot_builds_script_from_only_the_current_topics_sources(self):
         extract = " ".join([
