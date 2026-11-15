@@ -357,8 +357,24 @@ export default function Autopilot() {
             <Field label="Pista / ambiente musical">
               <select value={form.music} onChange={(e) => update('music', e.target.value)}>
                 <option value="auto">Automática según el contenido</option>
+                <option value="ninguna">Sin música</option>
                 {(meta?.music_beds ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+                {(meta?.music_library ?? []).map((x) => <option key={x} value={x}>{x}</option>)}
               </select>
+            </Field>
+            <Field label="Subir una pista propia (máximo 25 MB)">
+              <input type="file" accept=".mp3,.wav,.ogg,.m4a,.flac,audio/*" onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setBusy(true); setError(''); setOk('');
+                try {
+                  const result = await api.upload<{ filename: string }>('/api/music/upload', file);
+                  update('music', result.filename);
+                  setOk('Pista agregada: ' + result.filename);
+                  await load();
+                } catch (err) { setError((err as Error).message); }
+                finally { setBusy(false); e.target.value = ''; }
+              }} />
             </Field>
             <Field label={'Volumen de música: ' + Math.round(form.music_volume * 100) + '%'}>
               <input type="range" min="0" max="0.5" step="0.01" value={form.music_volume} onChange={(e) => update('music_volume', Number(e.target.value))} />
