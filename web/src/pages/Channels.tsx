@@ -18,6 +18,7 @@ export default function Channels() {
   const [form, setForm] = useState(EMPTY);
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   async function load() {
     try {
@@ -39,13 +40,36 @@ export default function Channels() {
       return;
     }
     try {
-      await api.post('/api/channels', form);
+      if (editingId !== null) {
+        await api.patch(`/api/channels/${editingId}`, form);
+        setOk('Canal actualizado. Sus proyectos y conexiones se conservaron.');
+      } else {
+        await api.post('/api/channels', form);
+        setOk('Canal creado. Ya podés asociarle proyectos y entradas de calendario.');
+      }
       setForm(EMPTY);
-      setOk('Canal creado. Ya podés asociarle proyectos y entradas de calendario.');
+      setEditingId(null);
       await load();
     } catch (e) {
       setError((e as Error).message);
     }
+  }
+
+  function edit(channel: Channel) {
+    setEditingId(channel.id);
+    setForm({
+      name: channel.name,
+      topic: channel.topic || '',
+      language: 'es',
+      audience: channel.audience || '',
+      tone: channel.tone || 'documental sobrio',
+      visual_identity: channel.visual_identity || '',
+      formats: channel.formats || 'documental,short',
+      cadence: channel.cadence || 'semanal',
+    });
+    setError('');
+    setOk(`Editando «${channel.name}».`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function remove(id: number) {
@@ -61,7 +85,7 @@ export default function Channels() {
     <div className="stack">
       <Msg error={error} ok={ok} />
 
-      <Card title="Nuevo canal" sub="Identidad, audiencia y cadencia: la base de una serie sostenible.">
+      <Card title={editingId !== null ? "Editar canal" : "Nuevo canal"} sub="Identidad, audiencia y cadencia: la base de una serie sostenible.">
         <div className="row">
           <Field label="Nombre">
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Archivo Oculto" />
@@ -92,7 +116,7 @@ export default function Channels() {
             </select>
           </Field>
         </div>
-        <button className="btn primary" onClick={create}>Crear canal</button>
+        <div className="row"><button className="btn primary" onClick={create}>{editingId !== null ? "Guardar cambios" : "Crear canal"}</button>{editingId !== null && <button className="btn ghost" onClick={() => { setEditingId(null); setForm(EMPTY); setOk(""); setError(""); }}>Cancelar edición</button>}</div>
       </Card>
 
       <Card title="Canales" sub="Cada canal agrupa proyectos, calendario y analítica.">
@@ -118,7 +142,7 @@ export default function Channels() {
                     <span>Tono: {c.tone || '—'}</span>
                   </div>
                 </div>
-                <button className="btn small danger" onClick={() => remove(c.id)}>Eliminar</button>
+                <div className="row"><button className="btn small ghost" onClick={() => edit(c)}>Editar</button><button className="btn small danger" onClick={() => remove(c.id)}>Eliminar</button></div>
               </div>
             ))}
           </div>
