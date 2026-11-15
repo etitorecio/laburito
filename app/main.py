@@ -471,7 +471,6 @@ def meta():
         ],
         "evidence_levels": ["hecho", "indicio", "estimacion"],
         "settings": {k: db.get_setting(k) for k in db.DEFAULT_SETTINGS},
-        "auth_required": False,
     }
 
 
@@ -603,7 +602,6 @@ def diagnostics():
         },
         "worker": worker.status(),
         "persistence": persistence.status(),
-        "token_configured": False,
         "note": "Render y TTS corren localmente; YouTube requiere OAuth. En AppJet Free configurá Supabase para conservar los datos entre reemplazos del contenedor.",
     }
 
