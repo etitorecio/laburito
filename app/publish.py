@@ -258,6 +258,14 @@ def _deliver_local(project, meta: dict, report) -> dict:
     shutil.copy2(source, target / source.name)
     for sub in subtitles(project):
         shutil.copy2(sub, target / sub.name)
+    thumbnails = db.query(
+        "SELECT path FROM assets WHERE project_id=? AND kind='miniatura' ORDER BY id DESC LIMIT 1",
+        (_g(project, "id"),),
+    )
+    if thumbnails:
+        thumbnail_path = Path(thumbnails[0].get("path") or "")
+        if thumbnail_path.is_file():
+            shutil.copy2(thumbnail_path, target / "miniatura.jpg")
     (target / "metadatos.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     (target / "publicacion.txt").write_text(
         meta["title"] + "\n\n" + meta["description"] + "\n", encoding="utf-8"
