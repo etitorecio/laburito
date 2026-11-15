@@ -146,6 +146,14 @@ export default function Settings() {
         )}
       </Card>
 
+      <Card title="Persistencia externa · Supabase" sub="Necesaria para que el Autopiloto conserve reglas, cola, proyectos y autorización de YouTube si AppJet reemplaza el contenedor.">
+        <div className="pill-row">
+          <Badge tone={diag?.persistence.configured ? 'ok' : 'warn'}>{diag?.persistence.configured ? 'Backup privado configurado' : 'Falta conectar almacenamiento persistente'}</Badge>
+        </div>
+        <p className="muted">AppJet Free no incluye disco virtual persistente. Cuando Supabase esté conectado, creá un proyecto gratuito y agregá en AppJet → Settings → Environment variables: <code>SUPABASE_URL</code> y <code>SUPABASE_SERVICE_ROLE_KEY</code>. Laburito crea automáticamente el bucket privado y sincroniza SQLite cada 15 minutos y después de cada tarea.</p>
+        <p className="muted">La clave service-role debe quedar como secreto del servidor; nunca la pegues en el navegador ni en el chat. La fila de diagnóstico de arriba confirma si la app detectó la conexión.</p>
+      </Card>
+
       <Card title="Acceso" sub="Protección del servidor. Para conectar YouTube, APP_TOKEN o AITUBER_TOKEN es obligatorio.">
         <div className="row">
           <Field label="Token de acceso" hint={meta?.auth_required ? 'El servidor exige token: pegalo acá.' : 'Pegalo si configuraste APP_TOKEN o AITUBER_TOKEN en el servidor.'}>
