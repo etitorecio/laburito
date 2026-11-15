@@ -309,6 +309,7 @@ def init_db() -> None:
                 conn.execute("INSERT INTO settings(key, value) VALUES(?,?)", (key, value))
         # Migración de preferencias heredadas: esta instalación trabaja solo en español.
         conn.execute("UPDATE settings SET value='es' WHERE key='default_language'")
+        conn.execute("UPDATE settings SET value='es' WHERE key='default_voice' AND value NOT IN ('es','es-ar','es-es-piper','es-mx','es-masculino','es-agudo')")
         conn.execute("UPDATE channels SET language='es' WHERE language!='es'")
         conn.execute("UPDATE projects SET voice='es' WHERE voice NOT IN ('es','es-ar','es-es-piper','es-mx','es-masculino','es-agudo')")
         conn.commit()
