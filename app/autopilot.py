@@ -444,6 +444,15 @@ def _create_project(rule: dict) -> dict:
     return {"project_id": pid, "script_writer": script.get("writer", "template"), "evidence_sources": int(script.get("evidence_sources", 0))}
 
 
+def _next_after_run(rule: dict, force: bool = False, now: str | None = None) -> str:
+    """Una ejecución manual no mueve una próxima fecha que todavía está en el futuro."""
+    current_time = now or db.now()
+    scheduled = rule.get("next_run_at")
+    if force and scheduled and str(scheduled) > current_time:
+        return str(scheduled)
+    return _next_run_at(rule)
+
+
 def run_rule(rule_id: int, force: bool = False) -> dict:
     """Ejecuta una regla ahora: crea el proyecto, escribe el guion y encola el render."""
     from . import publish, worker
@@ -483,7 +492,7 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
                 publish_warning = str(exc)[:500]
                 db.log("warn", "autopilot", f"No se pudo activar la auto-subida: {exc}")
     job_id = worker.enqueue(pid, "render_project", {"privacy": rule.get("privacy") or "unlisted"})
-    next_run = _next_run_at(rule)
+    next_run = _next_after_run(rule, force=force)
     db.execute(
         "UPDATE autopilot_rules SET last_run_at=?, last_project_id=?, next_run_at=?, last_error=?, updated_at=? WHERE id=?",
         (db.now(), pid, next_run, publish_warning, db.now(), rule_id),
