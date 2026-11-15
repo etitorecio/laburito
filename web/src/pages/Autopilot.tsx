@@ -40,9 +40,9 @@ const INITIAL = {
   fps: 25,
   music: 'auto',
   music_volume: 0.12,
-  destination: 'entrega',
-  privacy: 'unlisted',
-  auto_publish: false,
+  destination: 'youtube',
+  privacy: 'public',
+  auto_publish: true,
   enabled: true,
 };
 
@@ -318,6 +318,7 @@ export default function Autopilot() {
           
           {step === 4 && <>
             <h3>Tipo de Short y aspecto visual</h3>
+            <p className="muted">Este autopiloto solo crea Shorts verticales 9:16. No genera documentales ni videos horizontales.</p>
             <Field label="Formato narrativo">
               <select value={form.template} onChange={(e) => chooseTemplate(e.target.value)}>
                 {templates.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
@@ -422,7 +423,7 @@ export default function Autopilot() {
             <h3>Duración y calendario automático</h3>
             <Field label="Duración objetivo">
               <select value={form.duration_target_sec} onChange={(e) => update('duration_target_sec', Number(e.target.value))}>
-                {[15,20,30,45,60,90].map((x) => <option key={x} value={x}>{x} segundos</option>)}
+                {[15,20,30,45,60,90,120,180].map((x) => <option key={x} value={x}>{x} segundos</option>)}
               </select>
             </Field>
             <Field label="Cantidad de Shorts">
@@ -453,7 +454,8 @@ export default function Autopilot() {
           </>}
 
           {step === 7 && <>
-            <h3>Social Media Integration · Publicación</h3>
+            <h3>Social Media Integration · YouTube Shorts</h3>
+            <p className="muted">La publicación automática queda activada por defecto. Cada Short se renderiza, se valida como vertical de hasta 3 minutos y se sube a tu canal cuando termina. Para que funcione, la conexión OAuth de YouTube debe estar verificada en Ajustes.</p>
             <Field label="Estilo de título automático">
               <select value={form.title_style} onChange={(e) => update('title_style', e.target.value)}>
                 <option value="automatico">Mantener el título del tema</option>
@@ -492,7 +494,7 @@ export default function Autopilot() {
             <div className="card" style={{ marginTop: 12 }}>
               <strong>Resumen</strong>
               <p>{form.videos_per_period} Short(s) cada {form.period_days === 1 ? 'día' : form.period_days === 7 ? 'semana' : '30 días'}, a las {form.schedule_time} ({form.timezone}).</p>
-              <p>{form.niche || 'Sin nicho'} · {form.duration_target_sec}s · {form.aspect} · {form.resolution} · {form.destination === 'youtube' ? 'YouTube' : 'guardar para revisar'}.</p>
+              <p>{form.niche || 'Sin nicho'} · {form.duration_target_sec}s · 9:16 · {form.resolution} · {form.destination === 'youtube' && form.auto_publish ? 'Publicación automática en YouTube Shorts' : 'guardar para revisar'}.</p>
             </div>
           </>}
 
