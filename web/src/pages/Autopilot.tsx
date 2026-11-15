@@ -319,6 +319,8 @@ export default function Autopilot() {
               <VoicePicker
                 options={voiceOptions}
                 value={form.voice}
+                speed={form.speed}
+                pitch={form.pitch}
                 onChange={(value) => {
                   update('voice', value);
                   if (value === 'es-masculino') update('pitch', 30);
