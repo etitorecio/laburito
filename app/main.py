@@ -28,11 +28,30 @@ APP_VERSION = "1.1.0"
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
 
 
+def _ensure_factory_channels() -> None:
+    """Crea las dos fábricas internas si todavía no existen, sin duplicarlas."""
+    factories = (
+        ("Historias", "Historias originales estilo Reddit", "Intrigante y dinámico", "Gameplay vertical autorizado"),
+        ("Frutinovelas", "Telenovelas de frutas por episodios", "Dramático, emotivo y divertido", "Personajes frutales recurrentes"),
+    )
+    for name, topic, tone, visual_identity in factories:
+        existing = db.query_one("SELECT id FROM channels WHERE lower(trim(name))=lower(?) LIMIT 1", (name,))
+        if existing:
+            continue
+        db.execute(
+            "INSERT INTO channels(name,topic,language,audience,tone,visual_identity,formats,cadence,created_at,updated_at) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?)",
+            (name, topic, "es", "Público general", tone, visual_identity, "short", "diario", db.now(), db.now()),
+        )
+        db.log("info", "channels", f"Fábrica interna creada automáticamente: {name}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Restaurar la base antes de que init_db cree un SQLite vacío en un contenedor nuevo.
     persistence.restore_if_available()
     db.init_db()
+    _ensure_factory_channels()
     worker.start()
     if not tts.status()["piper_available"]:
         pending_voice_job = db.query_one(
