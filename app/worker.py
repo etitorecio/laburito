@@ -212,7 +212,7 @@ def run_job(job: dict) -> None:
             db.execute(
                 "UPDATE jobs SET status='completado', progress=100, message=?, result_json=?, finished_at=?, updated_at=? WHERE id=?",
                 (
-                    f"Publicado en {published['destination']}",
+                    (published.get("message") or f"Publicado en {published['destination']}")[:400],
                     json.dumps({
                         "url": published["url"],
                         "external_id": published["external_id"],
@@ -226,8 +226,14 @@ def run_job(job: dict) -> None:
                 ),
             )
             db.execute(
-                "UPDATE autopilot_rules SET last_error=CASE WHEN destination='youtube' AND ?!='youtube' THEN last_error ELSE '' END, updated_at=? WHERE last_project_id=?",
-                (published["destination"], db.now(), int(project_id)),
+                "UPDATE autopilot_rules SET last_error=CASE WHEN ?='procesamiento_fallido' THEN ? WHEN destination='youtube' AND ?!='youtube' THEN last_error ELSE '' END, updated_at=? WHERE last_project_id=?",
+                (
+                    published.get("status", "publicado"),
+                    (published.get("message") or "YouTube rechazó el procesamiento")[:500],
+                    published["destination"],
+                    db.now(),
+                    int(project_id),
+                ),
             )
         elif job["kind"] == "export_project":
             path = render.export_project(int(project_id))
