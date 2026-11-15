@@ -144,6 +144,7 @@ export default function Settings() {
           {youtubeVerified && <Badge tone="ok">YouTube: {youtubeChannel}</Badge>}
           {youtube?.missing_env.map((item) => <Badge key={item} tone="warn">{item}</Badge>)}
         </div>
+        <p className="muted"><a href="#/cuentas">Administrar cuentas conectadas →</a></p>
         <p className="muted">Aclaración: el selector «Canal de contenido» de Proyectos sirve para organizar tus series dentro de Laburito. La cuenta real de YouTube se conecta acá; al autorizarla se mostrará el nombre del canal en esta pantalla.</p>
         <p className="muted">En Google Cloud habilitá YouTube Data API v3 y creá credenciales OAuth de tipo <b>Aplicación web</b>. Agregá como URI de redirección autorizada esta dirección exacta: <code>{window.location.origin}/api/youtube/callback</code>. Si definiste YOUTUBE_REDIRECT_URI en el servidor, usá ese valor en lugar de la dirección calculada. En el archivo .env local configurá YOUTUBE_CLIENT_ID y YOUTUBE_CLIENT_SECRET. No hace falta ninguna contraseña ni token de IA para usarlo en tu red local.</p>
         <p className="muted">Después de guardar esas variables y reiniciar la app, tocá «Conectar canal con Google». Google te pedirá autorizar el canal una sola vez y Laburito guardará ese permiso en tu carpeta local. Si la pantalla de consentimiento permanece en Testing, Google puede revocar el permiso después de 7 días; para automatización continua revisá el estado de publicación de la app OAuth.</p>
