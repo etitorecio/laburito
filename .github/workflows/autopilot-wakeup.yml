@@ -2,8 +2,7 @@ name: Laburito social autopilot wake-up
 
 on:
   schedule:
-    # Despierta la app cada 15 minutos. El worker comprueba next_run_at
-    # y ejecuta únicamente las reglas que ya vencieron.
+    # GitHub ejecuta este chequeo cada cinco minutos; el worker respeta next_run_at.
     - cron: "*/5 * * * *"
   workflow_dispatch:
 
@@ -21,9 +20,13 @@ jobs:
     steps:
       - name: Wake Laburito and verify API health
         env:
-          LABURITO_URL: ${{ vars.LABURITO_URL || 'https://oahp6an3qw.dev.ap-jt.com' }}
+          LABURITO_URL: ${{ vars.LABURITO_URL }}
         run: |
           set -eu
+          if [ -z "${LABURITO_URL:-}" ]; then
+            echo "::error::Falta configurar LABURITO_URL con la URL Edge real de la rama appjet. No se usará la URL dev de preview."
+            exit 1
+          fi
           BASE_URL="${LABURITO_URL%/}"
           echo "Waking Laburito at ${BASE_URL}"
           for attempt in $(seq 1 6); do
