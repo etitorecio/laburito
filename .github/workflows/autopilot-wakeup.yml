@@ -2,9 +2,9 @@ name: Laburito social autopilot wake-up
 
 on:
   schedule:
-    # Despierta la app una vez por hora. El worker interno comprueba
-    # next_run_at y ejecuta únicamente las reglas que ya vencieron.
-    - cron: "17 * * * *"
+    # Despierta la app cada 15 minutos. El worker comprueba next_run_at
+    # y ejecuta únicamente las reglas que ya vencieron.
+    - cron: "*/15 * * * *"
   workflow_dispatch:
 
 permissions:
