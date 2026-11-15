@@ -16,7 +16,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from . import db, options
 
 CADENCE_OPTIONS = [6, 12, 24, 48, 72, 168]
-SHORT_TEMPLATE_IDS = {"shorts", "frutinovela", "listicle", "pov", "quote", "cuadrado", "vertical_45"}
+SHORT_TEMPLATE_IDS = {"shorts", "frutinovela", "reddit_story", "listicle", "pov", "quote", "cuadrado", "vertical_45"}
 LONGFORM_TEMPLATE_IDS = {"longform", "explainer"}
 AUTOPILOT_TEMPLATE_IDS = SHORT_TEMPLATE_IDS | LONGFORM_TEMPLATE_IDS
 
@@ -426,22 +426,34 @@ def _create_project(rule: dict) -> dict:
     )
     previous_topics = [row.get("topic", "") for row in previous]
     characters = (rule.get("content_pillars") or "").strip()
-    if template_id == "frutinovela":
+    if template_id in {"frutinovela", "reddit_story"}:
         count_row = db.query_one(
             "SELECT COUNT(*) AS total FROM projects WHERE channel_id IS ? AND template=?",
             (rule.get("channel_id"), template_id),
         ) or {}
         episode_number = int(count_row.get("total") or 0) + 1
-        characters = characters or "Manzana, Banana, Pera y Naranja"
-        episode_plots = [
-            "una herencia inesperada divide a la familia",
-            "un romance secreto sale a la luz",
-            "un mensaje anónimo revela una traición",
-            "una identidad oculta cambia todas las alianzas",
-            "una desaparición deja a todos bajo sospecha",
-        ]
-        topic = f"{niche}: {episode_plots[(episode_number - 1) % len(episode_plots)]}"
-        title = f"{niche} · Episodio {episode_number}"
+        if template_id == "frutinovela":
+            characters = characters or "Manzana, Banana, Pera y Naranja"
+            episode_plots = [
+                "una herencia inesperada divide a la familia",
+                "un romance secreto sale a la luz",
+                "un mensaje anónimo revela una traición",
+                "una identidad oculta cambia todas las alianzas",
+                "una desaparición deja a todos bajo sospecha",
+            ]
+            topic = f"{niche}: {episode_plots[(episode_number - 1) % len(episode_plots)]}"
+            title = f"{niche} · Episodio {episode_number}"
+        else:
+            story_plots = [
+                "descubrí que mi mejor amigo me mentía desde hacía meses",
+                "un mensaje enviado por error reveló un secreto familiar",
+                "mi compañero de trabajo se atribuyó algo que hice yo",
+                "una invitación aparentemente inocente terminó en una discusión",
+                "tomé una decisión y ahora mi familia está dividida",
+                "una promesa antigua volvió para complicarlo todo",
+            ]
+            topic = f"{niche}: {story_plots[(episode_number - 1) % len(story_plots)]}"
+            title = f"Historia Reddit · {niche} · Relato {episode_number}"
         research = {
             "topic": topic, "url": "", "source_title": "Ficción original",
             "trend_signals": [], "references": [], "academic_sources": [], "note_ids": [],
@@ -469,8 +481,12 @@ def _create_project(rule: dict) -> dict:
             (
                 f"Autopiloto: {rule.get('name') or niche}. "
                 + (
-                    f"Ficción original · personajes recurrentes: {characters}. "
-                    if template_id == "frutinovela"
+                    (
+                        f"Ficción original · personajes recurrentes: {characters}. "
+                        if template_id == "frutinovela"
+                        else "Relato original estilo Reddit. "
+                    )
+                    if template_id in {"frutinovela", "reddit_story"}
                     else f"Fuente inicial: {research['url']}. La fuente es introductoria y debe contrastarse antes de publicar. "
                 )
             )
@@ -607,7 +623,7 @@ def _create_project(rule: dict) -> dict:
         f"Proyecto automático creado con tema descubierto: {title}",
         {"id": pid, "topic": topic, "source": research["url"], "scenes": len(script["scenes"])},
     )
-    return {"project_id": pid, "script_writer": script.get("writer", "template"), "evidence_sources": int(script.get("evidence_sources", 0)), "fiction": template_id == "frutinovela"}
+    return {"project_id": pid, "script_writer": script.get("writer", "template"), "evidence_sources": int(script.get("evidence_sources", 0)), "fiction": template_id in {"frutinovela", "reddit_story"}}
 
 
 def _next_after_run(rule: dict, force: bool = False, now: str | None = None) -> str:
