@@ -308,7 +308,6 @@ export interface Meta {
   script_templates: OptionItem[];
   evidence_levels: string[];
   settings: Record<string, string>;
-  auth_required: boolean;
 }
 
 export interface Diagnostics {
@@ -327,7 +326,6 @@ export interface Diagnostics {
   counts: Record<string, number>;
   worker: { worker_alive: boolean; queued: number; running: number; done: number; failed: number; engine?: string };
   persistence: { configured: boolean; local_persistent?: boolean; provider: string | null; bucket: string | null; private: boolean | null; note: string };
-  token_configured: boolean;
   note: string;
 }
 
