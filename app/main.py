@@ -1459,10 +1459,11 @@ def youtube_oauth_start(request: Request, channel_id: int):
         raise HTTPException(404, "Canal interno inexistente.")
     redirect_uri = os.environ.get("YOUTUBE_REDIRECT_URI", "").strip() or str(request.base_url).rstrip("/") + "/api/youtube/callback"
     state = secrets.token_urlsafe(32)
-    db.set_setting("youtube_oauth_state", state)
-    db.set_setting("youtube_oauth_state_created", str(time.time()))
-    db.set_setting("youtube_oauth_redirect_uri", redirect_uri)
-    db.set_setting("youtube_oauth_channel_id", str(channel_id))
+    # Cada intento tiene su propio registro: conectar dos canales en paralelo no
+    # invalida el state del otro intento.
+    db.set_setting("youtube_oauth_attempt:" + state, json.dumps({
+        "created": time.time(), "redirect_uri": redirect_uri, "channel_id": int(channel_id)
+    }))
     params = {
         "client_id": credentials["client_id"], "redirect_uri": redirect_uri,
         "response_type": "code",
@@ -1477,21 +1478,21 @@ def youtube_oauth_start(request: Request, channel_id: int):
 def youtube_oauth_callback(code: str = "", state: str = "", error: str = ""):
     if error:
         return HTMLResponse("<h2>Conexión de YouTube cancelada</h2><p>No se autorizó el canal.</p><a href='/#/cuentas'>Volver a Cuentas</a>", status_code=400)
-    expected = db.get_setting("youtube_oauth_state", "")
-    created = db.get_setting("youtube_oauth_state_created", "")
-    redirect_uri = db.get_setting("youtube_oauth_redirect_uri", "")
-    target_channel = db.get_setting("youtube_oauth_channel_id", "")
+    attempt_key = "youtube_oauth_attempt:" + state if state else ""
+    raw_attempt = db.get_setting(attempt_key, "") if attempt_key else ""
     try:
-        age = time.time() - float(created)
-        channel_id = int(target_channel)
-    except (TypeError, ValueError):
-        age, channel_id = 999999, 0
-    if not code or not state or not expected or not hmac.compare_digest(state, expected) or age > 600:
+        attempt = json.loads(raw_attempt)
+        age = time.time() - float(attempt["created"])
+        redirect_uri = str(attempt["redirect_uri"])
+        channel_id = int(attempt["channel_id"])
+    except (TypeError, ValueError, KeyError, json.JSONDecodeError):
+        attempt, age, redirect_uri, channel_id = {}, 999999, "", 0
+    if not code or not state or not attempt or age > 600:
         raise HTTPException(403, "La autorización venció o no coincide. Volvé a iniciar la conexión desde Cuentas.")
+    # Consumir el intento antes del intercambio para impedir reutilización del callback.
+    db.set_setting(attempt_key, "")
     if not db.query_one("SELECT id FROM channels WHERE id=?", (channel_id,)):
         raise HTTPException(404, "La fábrica asociada a esta autorización ya no existe.")
-    db.set_setting("youtube_oauth_state", "")
-    db.set_setting("youtube_oauth_state_created", "")
     credentials = publish.youtube_credentials()
     body = urllib.parse.urlencode({
         "code": code, "client_id": credentials["client_id"], "client_secret": credentials["client_secret"],
