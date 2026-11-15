@@ -90,10 +90,10 @@ export default function Autopilot() {
         api.get<{ accounts: { id: number; account: { channel_title: string } | null }[] }>('/api/youtube/accounts'),
       ]);
       setData(result);
-      setForm((current) => current.channel_id ? current : {
+      setForm((current) => ({
         ...current,
         channel_id: String(result.channels.find((c) => c.name.toLocaleLowerCase() === (current.template === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id ?? ''),
-      });
+      }));
       setMeta(m);
       setOllamaAvailable(diagnostics.ollama.available);
       setYoutubeAccounts(accountData.accounts);
@@ -117,6 +117,8 @@ export default function Autopilot() {
   const linkedYoutubeAccount = youtubeAccounts.find((account) => account.id === Number(form.channel_id))?.account ?? null;
   const youtubeReady = Boolean(linkedYoutubeAccount);
   const selectedTemplate = templates.find((t) => t.id === form.template);
+  const expectedChannelName = form.template === 'frutinovela' ? 'frutinovelas' : 'historias';
+  const selectedFactoryChannel = data?.channels.find((channel) => channel.name.toLocaleLowerCase() === expectedChannelName) ?? null;
 
   function update<K extends keyof typeof INITIAL>(key: K, value: (typeof INITIAL)[K]) {
     setForm((old) => {
@@ -129,8 +131,8 @@ export default function Autopilot() {
   }
 
   async function save() {
-    if (form.auto_publish && form.destination === 'youtube' && !form.channel_id) {
-      setError('Elegí el canal interno (Historias o Frutinovelas) al que pertenece esta fábrica.');
+    if (!selectedFactoryChannel || !form.channel_id || Number(form.channel_id) !== selectedFactoryChannel.id) {
+      setError('No se encontró el canal interno correspondiente a esta fábrica. Actualizá la pantalla e intentá de nuevo.');
       return;
     }
     if (form.auto_publish && form.destination === 'youtube' && !youtubeReady) {
@@ -269,7 +271,7 @@ export default function Autopilot() {
     setForm((old) => ({
       ...old,
       template: id,
-      channel_id: String(data?.channels.find((c) => c.name.toLocaleLowerCase() === (id === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id ?? old.channel_id),
+      channel_id: String(data?.channels.find((c) => c.name.toLocaleLowerCase() === (id === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id ?? ''),
       ...(selected ? {
         aspect: selected.aspect,
         caption_style: selected.caption_style,
@@ -342,8 +344,7 @@ export default function Autopilot() {
             </Field>
             <Field label="Canal interno de Laburito">
               <select value={form.channel_id} onChange={(e) => update('channel_id', e.target.value)}>
-                <option value="">Sin canal asociado todavía</option>
-                {(data?.channels ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {(data?.channels ?? []).filter((c) => c.name.toLocaleLowerCase() === expectedChannelName).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </Field>
             <p className="muted">Elegí Historias o Frutinovelas. La cuenta de YouTube vinculada a ese canal en Cuentas será la única que reciba sus videos.</p>
@@ -618,7 +619,7 @@ export default function Autopilot() {
             <button className="btn ghost" disabled={step === 0 || busy} onClick={() => setStep((s) => Math.max(0, s - 1))}>Atrás</button>
             {step < STEPS.length - 1
               ? <button className="btn primary" disabled={busy || (step === 0 && !form.niche.trim())} onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}>Continuar</button>
-              : <button className="btn primary" disabled={busy || !form.niche.trim() || (form.video_type === 'skeleton' && form.duration_target_sec > 420)} onClick={() => void save()}>{busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear autopiloto'}</button>}
+              : <button className="btn primary" disabled={busy || !form.niche.trim() || !selectedFactoryChannel || !form.channel_id || (form.video_type === 'skeleton' && form.duration_target_sec > 420)} onClick={() => void save()}>{busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear autopiloto'}</button>}
             {editingId && <button className="btn ghost" disabled={busy} onClick={reset}>Cancelar</button>}
           </div>
         </div>
