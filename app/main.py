@@ -852,6 +852,20 @@ def generate_script(project_id: int, replace: bool = True):
                 + (ending.get("narration") or "" if ending else "")
             )
     script = script_gen.generate_script(project, notes, sources)
+    ollama_url = db.get_setting("ollama_url", "") or os.environ.get("OLLAMA_URL", "").strip()
+    if ollama_url and script_gen.ollama_model_available(ollama_url, "qwen2.5:1.5b-instruct"):
+        try:
+            if project.get("template") in {"frutinovela", "reddit_story"}:
+                script = script_gen.rewrite_fiction_with_ollama(
+                    ollama_url, "qwen2.5:1.5b-instruct", project, script
+                )
+            elif any(note.get("source_url") and len((note.get("claim") or "")) >= 300 for note in notes):
+                script = script_gen.rewrite_with_ollama(
+                    ollama_url, "qwen2.5:1.5b-instruct", project, script, notes
+                )
+            db.log("info", "script", "Guion procesado con Ollama local", {"project_id": project_id})
+        except Exception as exc:
+            db.log("warn", "script", f"Ollama no pudo reescribir el guion; se conserva el borrador local: {exc}")
     if replace:
         db.execute("DELETE FROM scenes WHERE project_id=?", (project_id,))
     base = 0 if replace else db.scalar("SELECT COALESCE(MAX(idx), -1) FROM scenes WHERE project_id=?", (project_id,), -1) + 1
