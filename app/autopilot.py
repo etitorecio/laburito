@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
     resolution TEXT NOT NULL DEFAULT '720p',
     fps INTEGER NOT NULL DEFAULT 25,
     music TEXT NOT NULL DEFAULT 'auto',
-    music_volume REAL NOT NULL DEFAULT 0.12,
+    music_volume REAL NOT NULL DEFAULT 0.3,
     audience TEXT NOT NULL DEFAULT 'Público general',
     tone TEXT NOT NULL DEFAULT 'Dinámico y cercano',
     hook_style TEXT NOT NULL DEFAULT 'Dato sorprendente',
@@ -453,7 +453,7 @@ def _create_project(rule: dict) -> dict:
             rule.get("caption_style") or tpl.get("caption_style"),
             rule.get("transition_default") or "fundido", rule.get("resolution") or "720p",
             int(rule.get("fps") or 25), rule.get("music") or "auto",
-            float(rule.get("music_volume") if rule.get("music_volume") is not None else 0.12), db.now(), db.now(),
+            float(rule.get("music_volume") if rule.get("music_volume") is not None else 0.3), db.now(), db.now(),
         ),
     )
     project = db.query_one("SELECT * FROM projects WHERE id=?", (pid,))
