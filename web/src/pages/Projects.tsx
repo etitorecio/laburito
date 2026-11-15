@@ -24,9 +24,9 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     input_mode: 'idea' as 'idea' | 'script',
     script_text: '',
     characters: '',
-    template: 'shorts',
+    template: 'reddit_story',
     channel_id: '' as string,
-    duration_target_sec: 30,
+    duration_target_sec: 180,
     voice: 'es',
     speed: 150,
     pitch: 45,
@@ -44,7 +44,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     music: 'auto',
   });
 
-  const templates = meta?.templates ?? [];
+  const templates = (meta?.templates ?? []).filter((t) => ['reddit_story', 'frutinovela'].includes(t.id));
   const activeTemplate = templates.find((t) => t.id === form.template) ?? null;
   const voiceOptions = (meta?.voices ?? []).filter((v) => v.language === 'es');
 
