@@ -106,7 +106,9 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
                     <span>{ICONS[option.id] || '🎥'}</span>
                     <small>Referencia visual · requiere clips propios o autorizados</small>
                   </div>
-                  <div className="background-clip-slots">
+                  <details className="background-clip-manager">
+                    <summary>Administrar clips · {categoryClips.length}/{required}</summary>
+                    <div className="background-clip-slots">
                   {Array.from({ length: required }, (_, index) => {
                     const clip = categoryClips[index];
                     const src = clip ? `${clip.url}` : '';
@@ -137,7 +139,8 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
                       </div>
                     );
                   })}
-                  </div>
+                    </div>
+                  </details>
                 </>
               ) : option.id === 'full_motion_ai' ? (
                 <div className="video-type-preview full_motion_ai">
