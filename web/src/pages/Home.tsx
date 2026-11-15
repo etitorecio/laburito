@@ -1,134 +1,79 @@
 import { useEffect, useState } from 'react';
-import { api, type Diagnostics, type Project } from '../api';
-import { Badge, Card, Empty, Progress, Stat, statusTone } from '../ui';
+import { api, type Diagnostics, type Project, type Channel } from '../api';
+import { Badge, Empty, Progress, statusTone } from '../ui';
 import type { Route } from '../routes';
+
+const QUICK = [
+  { icon: '✦', title: 'Crear un video', desc: 'Idea, guion, voz y montaje', route: 'proyectos' as Route, tone: 'violet' },
+  { icon: '◉', title: 'Mis canales', desc: 'Identidad y cuentas conectadas', route: 'canales' as Route, tone: 'cyan' },
+  { icon: '⌁', title: 'Autopiloto', desc: 'Programá tu producción', route: 'autopilot' as Route, tone: 'pink' },
+  { icon: '▤', title: 'Biblioteca', desc: 'Recursos y material visual', route: 'biblioteca' as Route, tone: 'blue' },
+];
 
 export default function Home({ go }: { go: (route: Route, id?: number) => void }) {
   const [diag, setDiag] = useState<Diagnostics | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [channels, setChannels] = useState<Channel[]>([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    Promise.all([api.get<Diagnostics>('/api/diagnostics'), api.get<Project[]>('/api/projects')])
-      .then(([d, p]) => {
-        setDiag(d);
-        setProjects(p);
-      })
-      .catch((e: Error) => setError(e.message));
+    Promise.all([
+      api.get<Diagnostics>('/api/diagnostics'),
+      api.get<Project[]>('/api/projects'),
+      api.get<Channel[]>('/api/channels'),
+    ]).then(([d, p, c]) => {
+      setDiag(d); setProjects(p); setChannels(c);
+    }).catch((e: Error) => setError(e.message));
   }, []);
 
   const checks = diag?.checks ?? {};
-  const ready = checks.ffmpeg && checks.tts;
-  const steps = [
-    { done: (diag?.counts.canales ?? 0) > 0, text: 'Crear un canal con identidad y cadencia', route: 'canales' as Route },
-    { done: (diag?.counts.proyectos ?? 0) > 0, text: 'Investigar el tema y vincular fuentes dentro de cada video', route: 'proyectos' as Route },
-    { done: (diag?.counts.escenas ?? 0) > 0, text: 'Crear un proyecto y generar el guion por escenas', route: 'proyectos' as Route },
-    { done: (diag?.counts.tareas ?? 0) > 0, text: 'Renderizar el MP4 y descargar el paquete de publicación', route: 'cola' as Route },
-  ];
+  const ready = Boolean(checks.ffmpeg && checks.tts);
 
   return (
-    <div className="stack">
-      <Card
-        title="AITuber Libre"
-        sub="Estudio local para investigar nichos y producir documentales y Shorts con software libre."
-        actions={<button className="btn primary" onClick={() => go('proyectos')}>Crear video</button>}
-      >
-        {error && <div className="msg error">{error}</div>}
-        <div className="pill-row" style={{ marginBottom: 12 }}>
-          <Badge tone={ready ? 'ok' : 'bad'}>{ready ? 'Motor listo' : 'Motor incompleto'}</Badge>
-          <Badge tone={checks.ffmpeg ? 'ok' : 'bad'}>FFmpeg</Badge>
-          <Badge tone={checks.tts ? 'ok' : 'bad'}>Voz local</Badge>
-          <Badge tone={checks.worker ? 'ok' : 'warn'}>Cola</Badge>
-          <Badge tone={checks.fuente_subtitulos ? 'ok' : 'warn'}>Subtítulos</Badge>
-          <Badge tone="info">Cero costes</Badge>
+    <div className="studio-home">
+      {error && <div className="msg error">{error}</div>}
+      <section className="studio-hero">
+        <div className="studio-hero-copy">
+          <span className="studio-eyebrow"><i /> TU ESTUDIO DE CREACIÓN</span>
+          <h2>De una idea a tu próximo <span>video viral.</span></h2>
+          <p>Creá Shorts y videos largos, organizá todos tus canales y producí contenido desde un solo lugar.</p>
+          <div className="studio-hero-actions">
+            <button className="studio-primary" onClick={() => go('proyectos')}>＋ Crear video</button>
+            <button className="studio-secondary" onClick={() => go('autopilot')}>Configurar autopiloto ↗</button>
+          </div>
+          <div className="studio-trust"><span>✓ Sin créditos pagos</span><span>✓ Herramientas libres</span><span>✓ Tus canales, tu control</span></div>
         </div>
-        {!ready && diag && (
-          <div className="msg">
-            Diagnóstico: {Object.entries(checks).filter(([, ok]) => !ok).map(([name]) => name).join(', ')} sin
-            verificar. Revisá Ajustes → Diagnóstico para ver el detalle.
-          </div>
-        )}
-        <div className="grid stats">
-          <Stat value={diag?.counts.canales ?? 0} label="Canales" />
-          <Stat value={diag?.counts.proyectos ?? 0} label="Videos" />
-          <Stat value={diag?.counts.escenas ?? 0} label="Escenas" />
-          <Stat value={`${diag?.disk_free_mb ?? 0} MB`} label="Disco libre" />
+        <div className="studio-showcase" aria-label="Ejemplos de formatos de video">
+          <div className="showcase-card showcase-short"><small>SHORT · 9:16</small><span className="showcase-symbol">✦</span><strong>Historias que atrapan</strong><em>00:58</em></div>
+          <div className="showcase-card showcase-doc"><small>DOCUMENTAL · 16:9</small><span className="showcase-symbol">◈</span><strong>Secretos de la historia</strong><em>12:40</em></div>
+          <div className="showcase-card showcase-series"><small>SERIE · EPISODIOS</small><span className="showcase-symbol">♡</span><strong>Frutinovela</strong><em>EP. 04</em></div>
         </div>
-      </Card>
+      </section>
 
-      <div className="grid two">
-        <Card title="Ruta de producción" sub="Del nicho al vídeo publicado, sin servicios pagos.">
-          <div className="list">
-            {steps.map((step, i) => (
-              <div className="list-item" key={step.text}>
-                <div className="grow">
-                  <h4>
-                    {step.done ? '✅' : '◻️'} {i + 1}. {step.text}
-                  </h4>
-                </div>
-                <button className="btn small ghost" onClick={() => go(step.route)}>
-                  Ir
-                </button>
-              </div>
-            ))}
-          </div>
-        </Card>
+      <section className="studio-stats">
+        <div><span>Canales</span><strong>{diag?.counts.canales ?? channels.length}</strong><small>Sin límite fijo</small></div>
+        <div><span>Videos</span><strong>{diag?.counts.proyectos ?? projects.length}</strong><small>Proyectos creados</small></div>
+        <div><span>Escenas</span><strong>{diag?.counts.escenas ?? 0}</strong><small>En tu biblioteca</small></div>
+        <div><span>Motor local</span><strong className={ready ? 'stat-ready' : 'stat-warn'}>{ready ? 'Listo' : 'Revisar'}</strong><small>{ready ? 'FFmpeg y voz disponibles' : 'Ver diagnóstico del sistema'}</small></div>
+      </section>
 
-        <Card title="Videos recientes" actions={<button className="btn small ghost" onClick={() => go('proyectos')}>Ver todos</button>}>
-          {projects.length === 0 ? (
-            <Empty>
-              Todavía no hay proyectos. Creá uno, generá el guion y renderizá tu primer documental o Short.
-            </Empty>
-          ) : (
-            <div className="list">
-              {projects.slice(0, 5).map((p) => (
-                <div className="list-item" key={p.id}>
-                  <div className="grow">
-                    <h4>{p.title}</h4>
-                    <div className="meta">
-                      <Badge tone={statusTone(p.status)}>{p.status}</Badge>
-                      <span>{p.kind === 'short' ? 'Short 9:16' : 'Documental 16:9'}</span>
-                      <span>{p.scenes_count ?? 0} escenas</span>
-                    </div>
-                    {p.job && p.job.status !== 'completado' && (
-                      <div style={{ marginTop: 6 }}>
-                        <Progress value={p.job.progress} label={p.job.message} />
-                      </div>
-                    )}
-                  </div>
-                  <button className="btn small" onClick={() => go('editor', p.id)}>
-                    Abrir
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-      </div>
-
-      <Card title="Cómo trabaja" sub="Reglas del proyecto, para que sepas qué es real y qué no.">
-        <div className="grid three">
-          <div className="stat">
-            <div className="label">Voz</div>
-            <p className="mb-0" style={{ marginTop: 6 }}>
-              Síntesis local (espeak-ng o Piper si lo instalás). No se envía texto a ningún servicio.
-            </p>
-          </div>
-          <div className="stat">
-            <div className="label">Imagen</div>
-            <p className="mb-0" style={{ marginTop: 6 }}>
-              Tarjetas generadas con FFmpeg + material con licencia descargado de Openverse, Wikimedia o
-              Internet Archive.
-            </p>
-          </div>
-          <div className="stat">
-            <div className="label">Publicación</div>
-            <p className="mb-0" style={{ marginTop: 6 }}>
-              La app prepara el paquete (MP4, subtítulos, guion, fuentes, miniatura). Subir a YouTube lo hacés vos.
-            </p>
-          </div>
+      <section className="studio-section">
+        <div className="studio-section-head"><div><span className="studio-eyebrow">EMPEZÁ A PRODUCIR</span><h3>¿Qué querés hacer hoy?</h3></div></div>
+        <div className="studio-quick-grid">
+          {QUICK.map((item) => <button className={'studio-quick '+item.tone} key={item.title} onClick={() => go(item.route)}><span className="quick-icon">{item.icon}</span><span><strong>{item.title}</strong><small>{item.desc}</small></span><b>↗</b></button>)}
         </div>
-      </Card>
+      </section>
+
+      <section className="studio-section">
+        <div className="studio-section-head"><div><span className="studio-eyebrow">TU ESPACIO</span><h3>Canales</h3><p>Administrá todos tus proyectos desde cada identidad.</p></div><button className="studio-link" onClick={() => go('canales')}>Ver todos →</button></div>
+        {channels.length ? <div className="studio-channel-grid">{channels.slice(0,4).map((c,i)=><button className="studio-channel" key={c.id} onClick={() => go('canales')}><span className={'channel-avatar c'+(i%4)}>{c.name.slice(0,1).toUpperCase()}</span><span><strong>{c.name}</strong><small>{c.topic || 'Tema por definir'}</small></span><b>{c.projects ?? 0} videos</b></button>)}</div> : <div className="studio-empty"><span>◎</span><strong>Todavía no creaste canales</strong><p>Creá Historias, Frutinovela y todos los canales que quieras.</p><button className="studio-secondary" onClick={() => go('canales')}>Crear mi primer canal</button></div>}
+      </section>
+
+      <section className="studio-section">
+        <div className="studio-section-head"><div><span className="studio-eyebrow">ACTIVIDAD RECIENTE</span><h3>Tus últimos videos</h3></div><button className="studio-link" onClick={() => go('proyectos')}>Ver proyectos →</button></div>
+        {projects.length ? <div className="studio-project-list">{projects.slice(0,5).map(p=><div className="studio-project" key={p.id}><span className="project-thumb">▶</span><div className="project-info"><strong>{p.title}</strong><small>{p.kind === 'short' ? 'Short vertical' : 'Video horizontal'} · {p.scenes_count ?? 0} escenas</small>{p.job && p.job.status !== 'completado' && <Progress value={p.job.progress} label={p.job.message}/>}</div><Badge tone={statusTone(p.status)}>{p.status}</Badge><button className="studio-open" onClick={() => go('editor',p.id)}>Abrir</button></div>)}</div> : <Empty>Todavía no hay videos. Creá tu primer proyecto para empezar.</Empty>}
+      </section>
+      <div className="studio-bottom-note"><span>✦</span> AITuber Libre · Producción local, sin créditos ni suscripciones obligatorias.</div>
     </div>
   );
 }
