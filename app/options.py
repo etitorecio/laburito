@@ -91,7 +91,7 @@ CAPTION_LABELS = {
     "documental_min": "Documental minimal (contorno)",
     "short_pop": "Short pop (grande, mayúsculas)",
     "short_min": "Short minimal (solo contorno)",
-    "karaoke": "Karaoke (palabra por palabra, amarillo)",
+    "karaoke": "Karaoke visual (texto amarillo)",
     "caja_amarilla": "Caja amarilla (texto negro)",
     "caja_roja": "Caja roja (texto blanco)",
     "banner_superior": "Banner superior",
