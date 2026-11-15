@@ -24,7 +24,6 @@ from pydantic import BaseModel
 from . import autopilot, db, media, options, persistence, publish, render, script_gen, skeleton, tts, worker
 
 APP_VERSION = "1.1.0"
-APP_TOKEN = (os.environ.get("APP_TOKEN") or os.environ.get("AITUBER_TOKEN") or "").strip()
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
 
 
@@ -43,14 +42,8 @@ app = FastAPI(title="AITuber Libre", version=APP_VERSION, lifespan=lifespan)
 
 
 @app.middleware("http")
-async def token_guard(request: Request, call_next):
-    if APP_TOKEN and request.url.path.startswith("/api") and request.url.path not in ("/api/health", "/api/youtube/callback"):
-        supplied = request.headers.get("x-app-token") or request.query_params.get("token") or ""
-        if not hmac.compare_digest(supplied, APP_TOKEN):
-            return JSONResponse({"detail": "Token de acceso requerido"}, status_code=401)
+async def persist_successful_changes(request: Request, call_next):
     response = await call_next(request)
-    # Persistir inmediatamente los cambios de configuración, calendario y OAuth.
-    # El backup periódico sigue cubriendo cambios hechos por el worker.
     if (
         request.method in {"POST", "PUT", "PATCH", "DELETE"}
         and request.url.path.startswith("/api/")
@@ -483,7 +476,7 @@ def meta():
         ],
         "evidence_levels": ["hecho", "indicio", "estimacion"],
         "settings": {k: db.get_setting(k) for k in db.DEFAULT_SETTINGS},
-        "auth_required": bool(APP_TOKEN),
+        "auth_required": False,
     }
 
 
@@ -615,7 +608,7 @@ def diagnostics():
         },
         "worker": worker.status(),
         "persistence": persistence.status(),
-        "token_configured": bool(APP_TOKEN),
+        "token_configured": False,
         "note": "Render y TTS corren localmente; YouTube requiere OAuth. En AppJet Free configurá Supabase para conservar los datos entre reemplazos del contenedor.",
     }
 
