@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getToken, type OptionItem } from '../api';
+import type { OptionItem } from '../api';
 
 interface Props {
   beds: OptionItem[];
@@ -11,9 +11,8 @@ interface Props {
 
 export default function MusicPicker({ beds, library, value, onChange, compact = false }: Props) {
   const [preview, setPreview] = useState<string | null>(null);
-  const token = getToken();
   const previewUrl = preview
-    ? `${preview.startsWith('bed:') ? `/api/music-preview/${encodeURIComponent(preview.slice(4))}` : `/api/music-file/${encodeURIComponent(preview)}`}${token ? `?token=${encodeURIComponent(token)}` : ''}`
+    ? `${preview.startsWith('bed:') ? `/api/music-preview/${encodeURIComponent(preview.slice(4))}` : `/api/music-file/${encodeURIComponent(preview)}`}`
     : '';
   const choices = [
     { id: 'auto', label: 'Automática', detail: 'Alterna las pistas cargadas o las camas locales.', icon: '🔀' },
