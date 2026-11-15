@@ -47,9 +47,9 @@ const INITIAL = {
   fps: 25,
   music: 'auto',
   music_volume: 0.12,
-  destination: 'youtube',
-  privacy: 'public',
-  auto_publish: true,
+  destination: 'entrega',
+  privacy: 'unlisted',
+  auto_publish: false,
   enabled: true,
 };
 
@@ -351,19 +351,28 @@ export default function Autopilot() {
                 compact
               />
             </Field>
-            <Field label="Subir una pista propia (máximo 25 MB)">
-              <input type="file" accept=".mp3,.wav,.ogg,.m4a,.flac,audio/*" onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
+            <Field label="Subir pistas propias (hasta 5 pistas de 25 MB cada una)">
+              <input type="file" multiple accept=".mp3,.wav,.ogg,.m4a,.flac,audio/*" disabled={busy || (meta?.music_library.length ?? 0) >= 5} onChange={async (e) => {
+                const files = Array.from(e.target.files ?? []);
+                if (!files.length) return;
+                const existing = meta?.music_library.length ?? 0;
+                const selected = files.slice(0, Math.max(0, 5 - existing));
+                if (!selected.length) { setError('Ya hay cinco pistas guardadas.'); e.target.value = ''; return; }
                 setBusy(true); setError(''); setOk('');
                 try {
-                  const result = await api.upload<{ filename: string }>('/api/music/upload', file);
-                  update('music', result.filename);
-                  setOk('Pista agregada: ' + result.filename);
+                  const added: string[] = [];
+                  for (const file of selected) {
+                    if (file.size > 25 * 1024 * 1024) throw new Error(file.name + ' supera el límite de 25 MB.');
+                    const result = await api.upload<{ filename: string }>('/api/music/upload', file);
+                    added.push(result.filename);
+                  }
+                  update('music', 'auto');
+                  setOk(added.length + ' pista(s) agregada(s). El modo automático las alternará en los próximos videos.');
                   await load();
                 } catch (err) { setError((err as Error).message); }
                 finally { setBusy(false); e.target.value = ''; }
               }} />
+              <small>{meta?.music_library.length ?? 0}/5 pistas guardadas. En modo Automática se alternan en cada video.</small>
             </Field>
             <Field label={'Volumen de música: ' + Math.round(form.music_volume * 100) + '%'}>
               <input type="range" min="0" max="0.5" step="0.01" value={form.music_volume} onChange={(e) => update('music_volume', Number(e.target.value))} />
@@ -404,8 +413,8 @@ export default function Autopilot() {
           </>}
 
           {step === 5 && <>
-<h3>Publicación automática en YouTube Shorts</h3>
-            <p className="muted">La publicación automática queda activada por defecto. Cada Short se renderiza, se valida como vertical de hasta 3 minutos y se sube a tu canal cuando termina. Para que funcione, la conexión OAuth de YouTube debe estar verificada en Ajustes.</p>
+<h3>Elegí dónde guardar o publicar tus videos</h3>
+            <p className="muted">Podés guardar cada video en tu biblioteca local sin conectar ninguna cuenta, o autorizar YouTube para publicarlo automáticamente cuando termine. La conexión se configura una sola vez en Ajustes.</p>
             <Field label="Estilo de título automático">
               <select value={form.title_style} onChange={(e) => update('title_style', e.target.value)}>
                 <option value="automatico">Mantener el título del tema</option>
@@ -418,7 +427,7 @@ export default function Autopilot() {
             <Field label="Etiquetas adicionales (separadas por coma)">
               <input value={form.custom_tags} onChange={(e) => update('custom_tags', e.target.value)} placeholder="Ej.: curiosidades, historia, datos interesantes" />
             </Field>
-            <Field label="Destino de cada Short">
+            <Field label="Destino de cada video">
               <select value={form.destination} onChange={(e) => update('destination', e.target.value)}>
                 <option value="entrega">Guardar en Laburito para revisar</option>
                 <option value="youtube">Publicar en YouTube</option>
@@ -431,10 +440,11 @@ export default function Autopilot() {
                 <option value="public">Público</option>
               </select>
             </Field>
-            <label className="check-row">
+            {form.destination === 'youtube' && <label className="check-row">
               <input type="checkbox" checked={form.auto_publish} onChange={(e) => update('auto_publish', e.target.checked)} />
               Publicar automáticamente en YouTube al terminar el render
-            </label>
+            </label>}
+            {form.destination === 'entrega' && <p className="muted">Los videos se guardarán en tu biblioteca para que puedas revisarlos y publicarlos manualmente. No requiere cuenta externa ni credenciales.</p>}
             {form.destination === 'youtube' && !youtubeReady && <p className="muted">YouTube todavía no está listo. Conectalo en <a href="#/ajustes">Ajustes → YouTube</a>. Hasta entonces, no se puede publicar.</p>}
             {form.destination === 'youtube' && destinationInfo && <p className="muted">{destinationInfo.note}{destinationInfo.missing_env.length ? ' Faltan: ' + destinationInfo.missing_env.join(', ') + '.' : ''}</p>}
 
@@ -444,7 +454,7 @@ export default function Autopilot() {
 <h3>Duración y calendario automático</h3>
             <Field label="Duración objetivo">
               <select value={form.duration_target_sec} onChange={(e) => update('duration_target_sec', Number(e.target.value))}>
-                {[15,20,30,45,60,90,120,180].map((x) => <option key={x} value={x}>{x} segundos</option>)}
+                {(form.template === 'longform' || form.template === 'explainer' ? [180,300,600,900,1200] : [15,20,30,45,60,90,120,180]).map((x) => <option key={x} value={x}>{x >= 60 ? Math.floor(x / 60) + ' minuto(s)' : x + ' segundos'}</option>)}
               </select>
             </Field>
             <Field label="Cantidad de Shorts">
