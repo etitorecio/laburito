@@ -62,7 +62,8 @@ La imagen es Alpine, compila FFmpeg y el frontend, y ejecuta el servidor como us
 
 | Variable | Uso |
 | --- | --- |
-| `AITUBER_DATA_DIR` | Carpeta de datos (SQLite, medios, renders, exportaciones). Por defecto `./data`. |\n| `AITUBER_LOCAL_PERSISTENT` | Marcador de diagnóstico para un volumen local persistente (lo configura Docker Compose). |
+| `AITUBER_DATA_DIR` | Carpeta de datos (SQLite, medios, renders, exportaciones). Por defecto `./data`. |
+| `AITUBER_LOCAL_PERSISTENT` | Marcador de diagnóstico para un volumen local persistente (lo configura Docker Compose). |
 | `PORT` | Puerto HTTP (por defecto `8080`). |
 | `APP_TOKEN` o `AITUBER_TOKEN` | Protección con token (`X-App-Token`). Recomendado para cualquier despliegue público. |
 | `PIPER_BIN`, `PIPER_MODEL` | Sobrescritura manual opcional de la instalación Piper; normalmente se instala desde Ajustes. |
