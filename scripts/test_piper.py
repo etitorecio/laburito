@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import os
+import sys
 import tempfile
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 os.environ["AITUBER_DATA_DIR"] = str(Path(tempfile.gettempdir()) / "laburito-piper-test")
 
 from app import db, tts  # noqa: E402
