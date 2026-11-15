@@ -30,6 +30,7 @@ class AutopilotResearchTests(unittest.TestCase):
             "Los investigadores compararon documentos originales con publicaciones posteriores.",
             "Los resultados modificaron la interpretación que existía sobre este fenómeno.",
             "El análisis identifica límites y preguntas que todavía requieren investigación adicional.",
+            "Nuevos documentos permitieron revisar las hipótesis y ampliar el conocimiento disponible.",
         ])
         notes = [
             {"id": 501, "source_url": "https://es.wikipedia.org/wiki/Tema", "claim": extract},
