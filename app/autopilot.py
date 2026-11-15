@@ -295,7 +295,7 @@ def _create_project(rule: dict) -> int:
         f"Proyecto automático creado con tema descubierto: {title}",
         {"id": pid, "topic": topic, "source": research["url"], "scenes": len(script["scenes"])},
     )
-    return pid
+    return {"project_id": pid, "script_writer": script.get("writer", "template")}
 
 
 def run_rule(rule_id: int, force: bool = False) -> dict:
@@ -306,7 +306,9 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
     if not rule:
         raise ValueError("Regla inexistente")
     try:
-        pid = _create_project(rule)
+        project_result = _create_project(rule)
+        pid = int(project_result["project_id"])
+        script_writer = project_result.get("script_writer", "template")
     except Exception as exc:
         db.execute(
             "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE id=?",
@@ -315,11 +317,18 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
         raise
     publish_warning = ""
     if rule.get("auto_publish"):
-        try:
-            publish.set_auto_publish(pid, True, rule.get("destination") or "entrega")
-        except publish.PublishError as exc:
-            publish_warning = str(exc)[:500]
-            db.log("warn", "autopilot", f"No se pudo activar la auto-subida: {exc}")
+        if script_writer != "ollama-local":
+            publish_warning = (
+                "Publicación automática retenida: el guion no fue reescrito por un modelo local. "
+                "Se generó el proyecto y el render, pero requiere revisión para evitar publicar un borrador."
+            )
+            db.log("warn", "autopilot", publish_warning, {"project_id": pid, "writer": script_writer})
+        else:
+            try:
+                publish.set_auto_publish(pid, True, rule.get("destination") or "entrega")
+            except publish.PublishError as exc:
+                publish_warning = str(exc)[:500]
+                db.log("warn", "autopilot", f"No se pudo activar la auto-subida: {exc}")
     job_id = worker.enqueue(pid, "render_project", {"privacy": rule.get("privacy") or "unlisted"})
     next_run = _ts(float(rule.get("cadence_hours") or 24))
     db.execute(
