@@ -360,6 +360,17 @@ def meta():
     }
 
 
+@app.get("/api/caption-preview/{style_id}")
+def caption_style_preview(style_id: str):
+    if style_id not in options.CAPTION_STYLES:
+        raise HTTPException(404, "Estilo de subtítulos inexistente")
+    try:
+        preview = render.caption_preview(style_id)
+        return FileResponse(preview, media_type="image/png", filename=f"subtitulos-{style_id}.png")
+    except Exception as exc:
+        raise HTTPException(503, f"No se pudo generar la vista previa: {exc}") from exc
+
+
 @app.get("/api/diagnostics")
 def diagnostics():
     disk = shutil.disk_usage(str(db.DATA_DIR))
