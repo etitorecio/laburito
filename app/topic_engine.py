@@ -1,8 +1,8 @@
-"""Descubrimiento temático gratuito basado en Wikipedia.
+"""Descubrimiento gratuito con señales de Google Trends y fuentes documentales.
 
-No inventa tendencias: propone temas documentados dentro del nicho y guarda
-la página consultada como fuente de contexto. Si no hay conexión o candidatos
-nuevos, falla explícitamente para evitar publicar un tema repetido.
+Las tendencias solo priorizan búsquedas relacionadas con el nicho; los temas
+publicables deben tener una fuente documental recuperable en Wikipedia y se
+complementan con resúmenes académicos de OpenAlex cuando están disponibles.
 """
 from __future__ import annotations
 
