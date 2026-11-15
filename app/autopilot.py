@@ -615,14 +615,19 @@ def _create_project(rule: dict) -> dict:
             )
     script = script_gen.generate_script(project, notes, project_sources)
     ollama_url = db.get_setting("ollama_url", "") or os.environ.get("OLLAMA_URL", "").strip()
-    if template_id not in {"frutinovela", "reddit_story"} and ollama_url and script_gen.ollama_model_available(ollama_url, "qwen2.5:1.5b-instruct"):
+    if ollama_url and script_gen.ollama_model_available(ollama_url, "qwen2.5:1.5b-instruct"):
         try:
-            script = script_gen.rewrite_with_ollama(
-                ollama_url, "qwen2.5:1.5b-instruct", project, script, notes
-            )
+            if template_id in {"frutinovela", "reddit_story"}:
+                script = script_gen.rewrite_fiction_with_ollama(
+                    ollama_url, "qwen2.5:1.5b-instruct", project, script
+                )
+            else:
+                script = script_gen.rewrite_with_ollama(
+                    ollama_url, "qwen2.5:1.5b-instruct", project, script, notes
+                )
             db.log("info", "autopilot", "Guion reescrito con Ollama local", {"project_id": pid})
         except Exception as exc:
-            db.log("warn", "autopilot", f"Ollama no pudo reescribir el guion; se conserva el borrador basado en fuentes: {exc}")
+            db.log("warn", "autopilot", f"Ollama no pudo reescribir el guion; se conserva el borrador de plantilla: {exc}")
     for scene in script["scenes"]:
         db.execute(
             "INSERT INTO scenes(project_id, idx, title, narration, visual_query, transition, status, created_at, updated_at) "
