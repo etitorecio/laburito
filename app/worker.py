@@ -65,6 +65,15 @@ def _set_progress(job_id: int, pct: int, message: str) -> None:
     )
 
 
+def _auto_publish_blocker(render_result: dict) -> str:
+    """Evita subir automáticamente un MP4 que quedó sin narración."""
+    quality = render_result.get("quality") or {}
+    engines = quality.get("tts_engines") or []
+    if "silencio" in engines:
+        return "Publicación automática retenida: el render quedó sin narración de voz. Revisá el motor TTS."
+    return ""
+
+
 def run_job(job: dict) -> None:
     import json
 
@@ -86,6 +95,18 @@ def run_job(job: dict) -> None:
             try:
                 auto = publish.auto_publish_settings(int(project_id))
             except publish.PublishError:
+                auto = {"enabled": False, "destination": "entrega"}
+            blocker = _auto_publish_blocker(result)
+            if auto["enabled"] and blocker:
+                db.execute(
+                    "UPDATE jobs SET message=?, updated_at=? WHERE id=?",
+                    (blocker[:400], db.now(), job_id),
+                )
+                db.execute(
+                    "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE last_project_id=?",
+                    (blocker[:500], db.now(), int(project_id)),
+                )
+                db.log("warn", "worker", blocker, {"project_id": project_id})
                 auto = {"enabled": False, "destination": "entrega"}
             if auto["enabled"]:
                 publish_job = enqueue(
