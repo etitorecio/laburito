@@ -515,7 +515,7 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
         destination = rule.get("destination") or "entrega"
         # No exigir Ollama: el Autopiloto debe funcionar sin instalar un
         # modelo externo. Un guion basado en extractos recuperados es publicable
-        # si cuenta con al menos dos piezas de evidencia; los borradores sin
+        # si cuenta con al menos un extracto de evidencia; los borradores sin
         # fuentes suficientes quedan retenidos para evitar publicar inventos.
         quality_ready = script_writer in ("source-extract", "ollama-local") and evidence_sources >= 1
         if destination == "youtube" and not quality_ready:
