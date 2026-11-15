@@ -179,6 +179,8 @@ def _clean(data: dict) -> dict:
         chosen_type = str(data["video_type"]).strip()
         if chosen_type not in options.VIDEO_TYPE_IDS:
             raise ValueError("Tipo de video no válido")
+        if chosen_type in {"full_motion_ai", "skeleton"}:
+            raise ValueError(f"El formato {chosen_type} todavía no está implementado.")
         required_clips = 5 if chosen_type in {"minecraft", "subway"} else 1
         if chosen_type in {"minecraft", "subway", "stock_footage"}:
             clip_dir = db.DATA_DIR / "background_clips" / chosen_type
