@@ -254,6 +254,7 @@ export interface AutopilotRule {
   pitch: number;
   visual_style: string;
   visual_style_prompt?: string;
+  create_thumbnail?: boolean;
   video_type: string;
   title_style: string;
   custom_tags: string;
