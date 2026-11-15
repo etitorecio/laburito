@@ -1,29 +1,8 @@
 // Cliente HTTP de AITuber Libre. Todo es local: misma origen, sin servicios externos.
 
-const TOKEN_KEY = 'aituber_token';
-
-export function getToken(): string {
-  try {
-    return localStorage.getItem(TOKEN_KEY) || '';
-  } catch {
-    return '';
-  }
-}
-
-export function setToken(value: string): void {
-  try {
-    if (value) localStorage.setItem(TOKEN_KEY, value);
-    else localStorage.removeItem(TOKEN_KEY);
-  } catch {
-    /* almacenamiento no disponible */
-  }
-}
-
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {};
   if (init.body && !(init.body instanceof FormData)) headers['Content-Type'] = 'application/json';
-  const token = getToken();
-  if (token) headers['X-App-Token'] = token;
   const response = await fetch(path, { ...init, headers: { ...headers, ...(init.headers as Record<string, string> | undefined) } });
   if (!response.ok) {
     let detail = `${response.status} ${response.statusText}`;
@@ -33,7 +12,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     } catch {
       /* sin cuerpo JSON */
     }
-    if (response.status === 401) throw new Error('Token de acceso requerido. Configuralo en Ajustes.');
+    if (response.status === 401) throw new Error('La solicitud no fue autorizada.');
     throw new Error(detail);
   }
   const contentType = response.headers.get('content-type') || '';
