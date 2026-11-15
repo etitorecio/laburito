@@ -64,6 +64,53 @@ def main() -> int:
     check(bool(checks.get("fuente_subtitulos")), "fuente para subtítulos", str((diag or {}).get("font")))
     print(f"  info ffmpeg: {(diag or {}).get('ffmpeg_version')}")
 
+    # Verifica las dos fábricas reales de la aplicación, no canales de YouTube ficticios.
+    status, accounts, _ = call("GET", "/api/youtube/accounts")
+    check(status == 200, "cuentas Google consultables", f"({status})")
+    factory_rows = (accounts or {}).get("accounts", []) if isinstance(accounts, dict) else []
+    factory_ids = {
+        str(row.get("name", "")).strip().lower(): row.get("id")
+        for row in factory_rows
+        if str(row.get("name", "")).strip().lower() in {"historias", "frutinovelas"}
+    }
+    check(set(factory_ids) == {"historias", "frutinovelas"}, "existen exactamente las dos fábricas", str(sorted(factory_ids)))
+    factory_projects: list[int] = []
+    if set(factory_ids) == {"historias", "frutinovelas"}:
+        for name, template, duration in (
+            ("Historias", "reddit_story", 20),
+            ("Frutinovelas", "frutinovela", 45),
+        ):
+            status, project, _ = call(
+                "POST",
+                "/api/projects",
+                {
+                    "title": f"Smoke {name}",
+                    "topic": "Una historia breve con un giro inesperado",
+                    "kind": "short",
+                    "template": template,
+                    "channel_id": factory_ids[name.lower()],
+                    "duration_target_sec": duration,
+                    "aspect": "9:16",
+                    "voice": "es",
+                    "video_type": "moving_images",
+                    "visual_style": "automatico",
+                    "music_volume": 0.12,
+                    "notes": "[LABURITO_META]" + json.dumps({"characters": "Manzana, Banana y Pera"}) if template == "frutinovela" else "",
+                },
+            )
+            check(status in (200, 201), f"proyecto {name} creado con su fábrica", f"({status})")
+            project_id = (project or {}).get("id") if isinstance(project, dict) else None
+            if not project_id:
+                continue
+            factory_projects.append(project_id)
+            check(project.get("template") == template, f"plantilla correcta para {name}", str(project.get("template")))
+            check(project.get("aspect") == "9:16", f"formato vertical para {name}", str(project.get("aspect")))
+            status, generated, _ = call("POST", f"/api/projects/{project_id}/script")
+            generated_scenes = ((generated or {}).get("project") or {}).get("scenes") or []
+            check(status == 200 and len(generated_scenes) > 0, f"guion y escenas de {name}", f"({status}, {len(generated_scenes)} escenas)")
+        for project_id in factory_projects:
+            call("DELETE", f"/api/projects/{project_id}")
+
     status, channel, _ = call(
         "POST",
         "/api/channels",
