@@ -405,6 +405,20 @@ def _create_project(rule: dict) -> dict:
             db.now(),
         ),
     )
+    trend_signals = research.get("trend_signals") or []
+    if trend_signals:
+        trend_titles = [item.get("title", "") for item in trend_signals if item.get("title")]
+        db.execute(
+            "INSERT INTO sources(project_id, title, url, author, license, accessed_at, attribution, kind, notes, created_at) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?)",
+            (
+                pid, "Señales de tendencia — Google Trends Argentina", topic_engine.TRENDS_RSS,
+                "Google Trends", "RSS público de tendencias de búsqueda; señal orientativa, no prueba de demanda comercial",
+                db.now(), "Google Trends Argentina · " + topic_engine.TRENDS_RSS,
+                "tendencia", "Términos relacionados con el nicho: " + "; ".join(trend_titles),
+                db.now(),
+            ),
+        )
     for reference_url in research.get("references", []):
         db.execute(
             "INSERT INTO sources(project_id, title, url, author, license, accessed_at, attribution, kind, notes, created_at) "
