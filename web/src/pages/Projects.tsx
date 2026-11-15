@@ -30,6 +30,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     caption_style: 'short_pop',
     captions_enabled: true,
     visual_style: 'automatico',
+    visual_style_prompt: '',
     video_type: 'moving_images',
     music_volume: 0.12,
     transition_default: 'fundido',
@@ -94,7 +95,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
         ...projectForm,
         channel_id: form.channel_id ? Number(form.channel_id) : null,
         topic: form.topic || form.title,
-        notes: captions_enabled ? '' : '[LABURITO_META]' + JSON.stringify({ captions_enabled: false }),
+        notes: (!captions_enabled || form.visual_style_prompt.trim()) ? '[LABURITO_META]' + JSON.stringify({ captions_enabled, visual_style_prompt: form.visual_style_prompt.trim() }) : '',
       });
       setForm({ ...form, title: '', topic: '' });
       setOk('Proyecto creado. Generá el guion para crear las escenas.');
@@ -236,6 +237,10 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
             <summary>Apariencia y tipo de video</summary>
             <h4>Estilo visual</h4>
             <VisualStylePicker options={meta?.visual_styles ?? []} value={form.visual_style} onChange={(value) => setForm({ ...form, visual_style: value })} />
+            <Field label="Estilo personalizado (opcional)">
+              <textarea rows={3} maxLength={240} value={form.visual_style_prompt} onChange={(e) => setForm({ ...form, visual_style_prompt: e.target.value })} placeholder="Ej.: iluminación cálida, fotografía analógica, tonos verdes y textura de película…" />
+            </Field>
+            <p className="muted">La descripción guía la búsqueda de imágenes libres y algunos filtros locales; no genera imágenes IA.</p>
             <h4>Tipo de video</h4>
             <VideoTypePicker options={meta?.video_types ?? []} value={form.video_type} onChange={(value) => setForm({ ...form, video_type: value })} />
             <div className="row">
