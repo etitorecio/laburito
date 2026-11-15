@@ -15,7 +15,7 @@ const INITIAL = {
   niche: '',
   channel_id: '',
   template: 'shorts',
-  duration_target_sec: 60,
+  duration_target_sec: 30,
   voice: 'es',
   cadence_hours: 24,
   aspect: '9:16',
@@ -155,13 +155,13 @@ export default function Autopilot() {
   return (
     <div className="stack">
       <Msg error={error} ok={ok} />
-      <Card title="Autopiloto" sub="Configurá el nicho y la frecuencia. Laburito busca temas documentados, evita repetir títulos ya usados y crea proyectos automáticamente.">
+      <Card title="Autopiloto de Shorts" sub="Autopiloto Shorts-first: elegí un nicho y una frecuencia. Laburito descubre temas, prepara videos verticales y evita repetir los que ya publicó.">
         <div className="grid two">
           <Field label="Nombre de la automatización">
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Mi canal de historias" />
+            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Mi canal de Shorts" />
           </Field>
           <Field label="Nicho o temática">
-            <input value={form.niche} onChange={(e) => setForm({ ...form, niche: e.target.value })} placeholder="Historias reales, misterio, ciencia..." />
+            <input value={form.niche} onChange={(e) => setForm({ ...form, niche: e.target.value })} placeholder="Misterio, ciencia, fútbol, curiosidades, historias, tecnología..." />
           </Field>
           <Field label="Canal">
             <select value={form.channel_id} onChange={(e) => setForm({ ...form, channel_id: e.target.value })}>
@@ -185,7 +185,7 @@ export default function Autopilot() {
               {templates.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
             </select>
           </Field>
-          <Field label="Duración objetivo (segundos)">
+          <Field label="Duración del Short (segundos)">
             <input type="number" min="5" max="3600" value={form.duration_target_sec} onChange={(e) => setForm({ ...form, duration_target_sec: Number(e.target.value) })} />
           </Field>
           <Field label="Voz (narración en español)">
@@ -260,7 +260,7 @@ export default function Autopilot() {
           {editingId && <button className="btn ghost" disabled={busy} onClick={cancelEdit}>Cancelar edición</button>}
           <button className="btn ghost" disabled={busy} onClick={() => void load()}>Actualizar</button>
         </div>
-        <p className="muted" style={{ marginTop: 12 }}>El descubrimiento usa Wikipedia en español sin claves ni pagos. La primera fuente es orientativa, no una verificación periodística completa: revisá las fuentes antes de habilitar publicación pública automática.</p>
+        <p className="muted" style={{ marginTop: 12 }}>El formato recomendado es vertical 9:16, de 15 a 60 segundos. El descubrimiento usa fuentes gratuitas; la primera fuente es orientativa y no equivale a una verificación periodística completa. Revisá las fuentes antes de habilitar publicación pública automática.</p>
       </Card>
 
       <Card title="Tus automatizaciones" sub="Podés ejecutarlas ahora, pausarlas o eliminarlas.">
