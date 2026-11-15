@@ -129,6 +129,17 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     }
   }
 
+  async function removeMusic(track: string) {
+    if (!confirm('¿Quitar esta pista de la biblioteca local?')) return;
+    try {
+      await api.del('/api/music/' + encodeURIComponent(track));
+      setOk('Pista quitada de la biblioteca.');
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
   return (
     <div className="stack">
       <Msg error={error} ok={ok} />
@@ -212,6 +223,12 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
                 finally { e.target.value = ''; }
               }} />
               <small>{meta?.music_library.length ?? 0}/5 pistas. El modo automático las alterna entre videos.</small>
+              {(meta?.music_library ?? []).map((track) => (
+                <div className="row center between" key={track}>
+                  <small>{track}</small>
+                  <button type="button" className="btn small ghost" onClick={() => void removeMusic(track)}>Quitar</button>
+                </div>
+              ))}
             </Field>
           </details>
 
