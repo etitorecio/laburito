@@ -358,13 +358,16 @@ def _validate_autopilot_short(project, source: Path) -> dict:
         raise PublishError(f"No se pudo validar el MP4 antes de publicar: {exc}") from exc
     width, height = int(info.get("width") or 0), int(info.get("height") or 0)
     duration = float(info.get("duration") or 0)
-    if not width or not height or height <= width:
-        raise PublishError("Publicación cancelada: el archivo no es vertical. Los Shorts deben renderizarse en 9:16.")
+    if not width or not height or width > height:
+        raise PublishError("Publicación cancelada: el Short debe ser vertical o cuadrado.")
     if duration <= 0 or duration > 180:
         raise PublishError(f"Publicación cancelada: duración inválida para un Short ({duration:.1f} s). El máximo es 180 segundos.")
+    aspect = _g(project, "aspect") or "9:16"
+    expected_ratios = {"9:16": 9 / 16, "4:5": 4 / 5, "1:1": 1.0}
+    expected = expected_ratios.get(aspect, 9 / 16)
     ratio = width / height
-    if abs(ratio - (9 / 16)) > 0.025:
-        raise PublishError(f"Publicación cancelada: proporción {width}x{height}; se esperaba 9:16.")
+    if abs(ratio - expected) > 0.025:
+        raise PublishError(f"Publicación cancelada: proporción {width}x{height}; se esperaba {aspect}.")
     return info
 
 
