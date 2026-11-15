@@ -109,18 +109,6 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     }
   }
 
-  async function render(project: Project) {
-    setError('');
-    setOk('');
-    try {
-      const res = await api.post<{ job_id: number }>(`/api/projects/${project.id}/render`);
-      setOk(`Render en cola (tarea #${res.job_id}). Seguí el avance en la sección Cola.`);
-      await load();
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  }
-
   async function remove(project: Project) {
     if (!confirm(`¿Eliminar «${project.title}» y sus escenas?`)) return;
     try {
