@@ -485,12 +485,16 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
                 "de investigación y un guion basado en fuentes. El video queda generado para revisión."
             )
             db.log("warn", "autopilot", publish_warning, {"project_id": pid, "writer": script_writer})
+            # Si no hay evidencia suficiente, no se pierde el trabajo: se entrega localmente.
+            publish.set_auto_publish(pid, True, "entrega")
         else:
             try:
                 publish.set_auto_publish(pid, True, destination)
             except publish.PublishError as exc:
                 publish_warning = str(exc)[:500]
                 db.log("warn", "autopilot", f"No se pudo activar la auto-subida: {exc}")
+                # Si YouTube no está conectado, conservar el video en la biblioteca local.
+                publish.set_auto_publish(pid, True, "entrega")
     job_id = worker.enqueue(pid, "render_project", {"privacy": rule.get("privacy") or "unlisted"})
     next_run = _next_after_run(rule, force=force)
     db.execute(
