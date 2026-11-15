@@ -258,7 +258,7 @@ export default function Settings() {
           </Field>
         </div>
         <div className="row">
-          <Field label="Ollama local (opcional)" hint="Instalá Ollama y ejecutá ollama pull llama3.2. En Docker Desktop para Windows usá host.docker.internal; si Laburito corre directamente en la PC, usá 127.0.0.1.">
+          <Field label="Ollama local (opcional y gratuito)" hint="Instalá Ollama y ejecutá ollama pull llama3.2. En Docker Desktop para Windows usá host.docker.internal; si Laburito corre directamente en la PC, usá 127.0.0.1.">
             <input value={values.ollama_url || ''} onChange={(e) => setValues({ ...values, ollama_url: e.target.value })} placeholder="http://host.docker.internal:11434" />
           </Field>
           <Field label="Copia de seguridad automática">
