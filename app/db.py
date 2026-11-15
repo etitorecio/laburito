@@ -208,7 +208,6 @@ DEFAULT_SETTINGS = {
     "default_template": "shorts",
     "default_resolution": "1080p",
     "default_transition": "fundido",
-    "default_visual_style": "automatico",
     "ollama_url": "",
     "auto_backup": "1",
 }
