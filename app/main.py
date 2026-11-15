@@ -7,13 +7,17 @@ import io
 import json
 import os
 import platform
+import secrets
+import urllib.error
+import urllib.parse
+import urllib.request
 import shutil
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Body, FastAPI, File, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -40,7 +44,7 @@ app = FastAPI(title="AITuber Libre", version=APP_VERSION, lifespan=lifespan)
 
 @app.middleware("http")
 async def token_guard(request: Request, call_next):
-    if APP_TOKEN and request.url.path.startswith("/api") and request.url.path not in ("/api/health",):
+    if APP_TOKEN and request.url.path.startswith("/api") and request.url.path not in ("/api/health", "/api/youtube/callback"):
         supplied = request.headers.get("x-app-token") or request.query_params.get("token") or ""
         if not hmac.compare_digest(supplied, APP_TOKEN):
             return JSONResponse({"detail": "Token de acceso requerido"}, status_code=401)
@@ -1036,6 +1040,91 @@ def install_piper_voice():
     )
     job_id = int(existing["id"]) if existing else worker.enqueue(None, "install_piper_voice", {})
     return {"installed": False, "job_id": job_id, "message": "Descarga de la voz neural agregada a la cola."}
+
+
+@app.post("/api/youtube/oauth/start")
+def youtube_oauth_start(request: Request):
+    """Inicia OAuth oficial; el estado es aleatorio, de un solo uso y vence en 10 minutos."""
+    if not APP_TOKEN:
+        raise HTTPException(403, "Configurá APP_TOKEN para proteger la conexión de YouTube.")
+    credentials = publish.youtube_credentials()
+    if not credentials["client_id"] or not credentials["client_secret"]:
+        raise HTTPException(400, "Faltan YOUTUBE_CLIENT_ID y/o YOUTUBE_CLIENT_SECRET en el servidor.")
+    redirect_uri = (
+        os.environ.get("YOUTUBE_REDIRECT_URI", "").strip()
+        or str(request.base_url).rstrip("/") + "/api/youtube/callback"
+    )
+    state = secrets.token_urlsafe(32)
+    db.set_setting("youtube_oauth_state", state)
+    db.set_setting("youtube_oauth_state_created", str(time.time()))
+    db.set_setting("youtube_oauth_redirect_uri", redirect_uri)
+    params = {
+        "client_id": credentials["client_id"],
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly",
+        "access_type": "offline",
+        "prompt": "consent",
+        "include_granted_scopes": "true",
+        "state": state,
+    }
+    return {
+        "authorization_url": "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params),
+        "redirect_uri": redirect_uri,
+    }
+
+
+@app.get("/api/youtube/callback")
+def youtube_oauth_callback(code: str = "", state: str = "", error: str = ""):
+    """Recibe el código de Google y guarda el refresh token solo en SQLite del servidor."""
+    if error:
+        return HTMLResponse(
+            "<h2>Conexión de YouTube cancelada</h2><p>No se autorizó el canal.</p><a href='/#/ajustes'>Volver a Laburito</a>",
+            status_code=400,
+        )
+    expected = db.get_setting("youtube_oauth_state", "")
+    created = db.get_setting("youtube_oauth_state_created", "")
+    redirect_uri = db.get_setting("youtube_oauth_redirect_uri", "")
+    try:
+        age = time.time() - float(created)
+    except (TypeError, ValueError):
+        age = 999999
+    if not code or not state or not expected or not hmac.compare_digest(state, expected) or age > 600:
+        raise HTTPException(403, "La autorización venció o no coincide. Volvé a iniciar la conexión de YouTube.")
+    db.set_setting("youtube_oauth_state", "")
+    db.set_setting("youtube_oauth_state_created", "")
+    credentials = publish.youtube_credentials()
+    body = urllib.parse.urlencode({
+        "code": code,
+        "client_id": credentials["client_id"],
+        "client_secret": credentials["client_secret"],
+        "redirect_uri": redirect_uri,
+        "grant_type": "authorization_code",
+    }).encode()
+    request = urllib.request.Request(
+        publish.YOUTUBE_TOKEN_URL,
+        data=body,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=45) as response:
+            token_data = json.loads(response.read().decode("utf-8", "replace"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", "replace")[:250]
+        raise HTTPException(400, f"Google rechazó la autorización ({exc.code}): {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise HTTPException(502, f"No se pudo contactar a Google: {exc.reason}") from exc
+    refresh_token = token_data.get("refresh_token")
+    if refresh_token:
+        db.set_setting("youtube_refresh_token", refresh_token)
+    elif not credentials["refresh_token"]:
+        raise HTTPException(400, "Google no devolvió un refresh token. Revocá el acceso anterior y volvé a autorizar con consentimiento.")
+    try:
+        channel = publish.youtube_account_status()
+    except publish.PublishError as exc:
+        raise HTTPException(400, f"El token se guardó, pero no se pudo verificar el canal: {exc}") from exc
+    return RedirectResponse(url="/#/ajustes", status_code=303)
 
 
 @app.get("/api/youtube/status")
