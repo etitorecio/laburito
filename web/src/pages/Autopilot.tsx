@@ -119,6 +119,10 @@ export default function Autopilot() {
   }
 
   async function save() {
+    if (form.auto_publish && form.destination === 'youtube' && !form.channel_id) {
+      setError('Elegí el canal interno (Historias o Frutinovelas) al que pertenece esta fábrica.');
+      return;
+    }
     if (form.auto_publish && form.destination === 'youtube' && !youtubeReady) {
       setError('Antes de activar la publicación automática, conectá y verificá tu canal de YouTube en Ajustes.');
       return;
@@ -330,7 +334,7 @@ export default function Autopilot() {
                 {(data?.channels ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </Field>
-            <p className="muted">Este canal organiza los proyectos y evita repetir temas. No selecciona la cuenta de YouTube: la cuenta real de publicación se conecta una sola vez en Ajustes.</p>
+            <p className="muted">Elegí Historias o Frutinovelas. La cuenta de YouTube vinculada a ese canal en Cuentas será la única que reciba sus videos.</p>
           </>}
 
           {step === 1 && <>
