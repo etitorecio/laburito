@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, type AutopilotRule, type Channel, type Meta, type TemplateOption, type Diagnostics } from '../api';
 import { Badge, Card, Empty, Field, Msg } from '../ui';
+import CaptionStylePicker from '../components/CaptionStylePicker';
 
 type Options = {
   rules: AutopilotRule[];
@@ -445,9 +446,11 @@ export default function Autopilot() {
               </select>
             </Field>
             <Field label="Estilo de subtítulos">
-              <select value={form.caption_style} onChange={(e) => update('caption_style', e.target.value)}>
-                {(meta?.caption_styles ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
-              </select>
+              <CaptionStylePicker
+                options={meta?.caption_styles ?? []}
+                value={form.caption_style}
+                onChange={(value) => update('caption_style', value)}
+              />
             </Field>
             <Field label="Movimiento y transición entre escenas">
               <select value={form.transition_default} onChange={(e) => update('transition_default', e.target.value)}>
