@@ -134,9 +134,9 @@ La opción recomendada es **Docker local en tu PC**, con la carpeta `./data` per
 
 ### Fuentes gratuitas de gameplay
 
-- Subway Surfers: el canal verificado oficial publica una captura vertical 9:16 y otra horizontal 16:9 marcadas expresamente como `FREE TO USE`. Revisar la descripción vigente antes de cada uso: [vertical](https://www.youtube.com/watch?v=QPW3XwBoQlw) · [horizontal](https://www.youtube.com/watch?v=i0M4ARe9v0Y).
+- Subway Surfers: el canal oficial publica dos videos marcados `FREE TO USE`: [vertical](https://www.youtube.com/watch?v=QPW3XwBoQlw) y [horizontal](https://www.youtube.com/watch?v=i0M4ARe9v0Y). **No asumir que esa etiqueta es una licencia comercial universal**: las [condiciones generales de SYBO](https://sybogames.com/terms-of-service/) reservan los derechos del juego y restringen la publicación/exhibición pública y los usos comerciales no autorizados. Para monetizar, conseguir permiso escrito específico de SYBO y conservarlo; si no, usar un runner genérico con licencia comercial explícita.
 - Minecraft: la opción más sólida es grabar una partida propia y cumplir las [Usage Guidelines oficiales de Mojang](https://www.minecraft.net/en-us/usage-guidelines). Como alternativa, [Orbital](https://www.youtube.com/watch?v=u7kdVe8q5zs) declara que permite monetizar su grabación y pide crédito; ese permiso cubre la grabación del creador, no reemplaza las reglas de Mojang.
-- El selector de gameplay ahora muestra estas fuentes y permite empezar con un clip, con hasta cinco por biblioteca. No se descarga material automáticamente desde YouTube ni se eluden sus restricciones.
+- El selector de gameplay muestra estas fuentes y permite empezar con un clip, con hasta cinco por biblioteca. La autorización de un creador para una grabación no sustituye las reglas del titular del juego. No se descarga material automáticamente desde YouTube ni se eluden sus restricciones.
 
 
 ## Fábricas de YouTube Shorts
