@@ -52,7 +52,7 @@ async def token_guard(request: Request, call_next):
     # Persistir inmediatamente los cambios de configuración, calendario y OAuth.
     # El backup periódico sigue cubriendo cambios hechos por el worker.
     if (
-        (request.method in {"POST", "PUT", "PATCH", "DELETE"} or request.url.path == "/api/youtube/callback")
+        request.method in {"POST", "PUT", "PATCH", "DELETE"}
         and request.url.path.startswith("/api/")
         and response.status_code < 400
         and persistence.configured()
