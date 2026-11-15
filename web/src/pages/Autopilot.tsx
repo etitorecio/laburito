@@ -250,17 +250,17 @@ export default function Autopilot() {
           <div className="muted">Paso {step + 1} de {STEPS.length}</div>
 
           {step === 0 && <>
-            <h3>Conectá el canal que va a recibir los Shorts</h3>
+            <h3>Organizá los Shorts en un canal de contenido</h3>
             <Field label="Nombre de esta automatización">
               <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="Ej.: Curiosidades diarias" />
             </Field>
-            <Field label="Canal de YouTube">
+            <Field label="Canal interno de Laburito">
               <select value={form.channel_id} onChange={(e) => update('channel_id', e.target.value)}>
                 <option value="">Sin canal asociado todavía</option>
                 {(data?.channels ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </Field>
-            <p className="muted">Podés dejarlo sin conectar y guardar los videos para revisarlos. Para publicar automáticamente, después necesitás autorizar YouTube en Ajustes.</p>
+            <p className="muted">Este canal organiza los proyectos y evita repetir temas. No selecciona la cuenta de YouTube: la cuenta real de publicación se conecta una sola vez en Ajustes.</p>
           </>}
 
           {step === 1 && <>
