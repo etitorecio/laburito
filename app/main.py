@@ -338,10 +338,31 @@ async def upload_music(file: UploadFile = File(...)):
         raise HTTPException(400, "La pista supera el límite de 25 MB.")
     stem = "".join(ch for ch in Path(original).stem if ch.isalnum() or ch in "-_")[:48] or "musica"
     db.MUSIC_DIR.mkdir(parents=True, exist_ok=True)
+    existing_tracks = [path for path in db.MUSIC_DIR.iterdir() if path.is_file()]
+    if len(existing_tracks) >= 5:
+        raise HTTPException(400, "La biblioteca admite hasta cinco pistas. Quitá una antes de agregar otra.")
     filename = f"{stem}-{time.time_ns()}{extension}"
     target = db.MUSIC_DIR / filename
     target.write_bytes(content)
     return {"filename": filename, "music_library": sorted(p.name for p in db.MUSIC_DIR.iterdir() if p.is_file())}
+
+
+@app.delete("/api/music/{filename}")
+def delete_music(filename: str):
+    """Permite reemplazar pistas propias sin borrar música usada por proyectos o reglas."""
+    safe_name = Path(filename).name
+    if safe_name != filename or safe_name in {"", ".", ".."}:
+        raise HTTPException(400, "Nombre de pista no válido.")
+    target = db.MUSIC_DIR / safe_name
+    if not target.is_file():
+        raise HTTPException(404, "No se encontró la pista.")
+    autopilot.ensure_schema()
+    project_use = db.query_one("SELECT id FROM projects WHERE music=? LIMIT 1", (safe_name,))
+    rule_use = db.query_one("SELECT id FROM autopilot_rules WHERE music=? LIMIT 1", (safe_name,))
+    if project_use or rule_use:
+        raise HTTPException(409, "La pista está asignada a un proyecto o Autopiloto. Cambiá esa selección antes de quitarla.")
+    target.unlink()
+    return {"deleted": safe_name, "music_library": sorted(p.name for p in db.MUSIC_DIR.iterdir() if p.is_file())}
 
 
 CLIP_CATEGORIES = {"stock_footage", "minecraft", "subway"}
