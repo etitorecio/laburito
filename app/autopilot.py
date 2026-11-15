@@ -350,6 +350,17 @@ def _validate_auto_publish(clean: dict, current: dict | None = None) -> None:
         ) from exc
 
 
+def _validate_factory_channel(data: dict) -> None:
+    channel_id = data.get("channel_id")
+    if not channel_id:
+        return
+    channel = db.query_one("SELECT name FROM channels WHERE id=?", (channel_id,))
+    expected = options.factory_template_for_channel_name((channel or {}).get("name", ""))
+    if expected and data.get("template") != expected:
+        label = "Historias" if expected == "reddit_story" else "Frutinovelas"
+        raise ValueError(f"El canal {label} solo admite su fábrica de Shorts correspondiente.")
+
+
 def create_rule(data: dict) -> dict:
     ensure_schema()
     clean = _clean(data)
@@ -357,6 +368,7 @@ def create_rule(data: dict) -> dict:
     clean.setdefault("template", "shorts")
     selected_template = options.template(clean.get("template", "shorts")) or options.template("shorts")
     clean.setdefault("aspect", selected_template.get("aspect", "9:16"))
+    _validate_factory_channel(clean)
     clean.setdefault("destination", "youtube")
     clean.setdefault("privacy", "public")
     clean.setdefault("resolution", "720p")
@@ -384,6 +396,7 @@ def update_rule(rule_id: int, data: dict) -> dict | None:
     if not current:
         return None
     clean = _clean({**current, **data})
+    _validate_factory_channel(clean)
     _validate_auto_publish(clean, current)
     if clean:
         if clean.get("enabled") == 1 and not current.get("enabled"):
@@ -671,6 +684,7 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
     rule = get_rule(rule_id)
     if not rule:
         raise ValueError("Regla inexistente")
+    _validate_factory_channel(rule)
     # Verificar YouTube antes de consumir recursos creando y renderizando un Short.
     if rule.get("auto_publish") and (rule.get("destination") or "entrega") == "youtube":
         try:
