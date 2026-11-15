@@ -21,7 +21,7 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
   const ready = checks.ffmpeg && checks.tts;
   const steps = [
     { done: (diag?.counts.canales ?? 0) > 0, text: 'Crear un canal con identidad y cadencia', route: 'canales' as Route },
-    { done: (diag?.counts.proyectos ?? 0) > 0, text: 'Investigar un nicho y guardar notas con fuentes', route: 'investigacion' as Route },
+    { done: (diag?.counts.proyectos ?? 0) > 0, text: 'Investigar el tema y vincular fuentes dentro de cada video', route: 'proyectos' as Route },
     { done: (diag?.counts.escenas ?? 0) > 0, text: 'Crear un proyecto y generar el guion por escenas', route: 'proyectos' as Route },
     { done: (diag?.counts.tareas ?? 0) > 0, text: 'Renderizar el MP4 y descargar el paquete de publicación', route: 'cola' as Route },
   ];
