@@ -481,15 +481,25 @@ class AutopilotResearchTests(unittest.TestCase):
             self.assertEqual(result["external_id"], "already-uploaded")
             self.assertIn("evitó una segunda subida", result["message"])
 
-    def test_youtube_credentials_prefer_server_stored_refresh_token(self):
+    def test_youtube_credentials_are_isolated_by_workspace_channel(self):
         with patch.dict(os.environ, {
             "YOUTUBE_CLIENT_ID": "client-id",
             "YOUTUBE_CLIENT_SECRET": "client-secret",
-            "YOUTUBE_REFRESH_TOKEN": "old-environment-token",
+            "YOUTUBE_REFRESH_TOKEN": "legacy-global-token",
         }):
-            with patch("app.publish.db.get_setting", return_value="legacy-global-token"):
-                credentials = publish.youtube_credentials()
-        self.assertEqual(credentials["refresh_token"], "")
+            with patch.object(publish, "ensure_schema"):
+                with patch.object(publish.db, "query_one", return_value={"refresh_token": "historias-token"}) as query:
+                    credentials = publish.youtube_credentials(channel_id=10)
+                self.assertEqual(credentials["refresh_token"], "historias-token")
+                query.assert_called_once_with("SELECT refresh_token FROM youtube_accounts WHERE channel_id=?", (10,))
+                with patch.object(publish.db, "query_one", return_value={"refresh_token": "frutinovelas-token"}):
+                    second = publish.youtube_credentials(channel_id=20)
+                self.assertEqual(second["refresh_token"], "frutinovelas-token")
+            with patch.object(publish, "ensure_schema"):
+                with patch.object(publish.db, "query_one") as query:
+                    legacy = publish.youtube_credentials()
+                query.assert_not_called()
+        self.assertEqual(legacy["refresh_token"], "")
         self.assertEqual(credentials["client_id"], "client-id")
 
     def test_youtube_account_status_uses_authorized_channel_api(self):
@@ -523,8 +533,8 @@ class AutopilotResearchTests(unittest.TestCase):
             with patch.object(publish.db, "query_one", return_value={"id": 1, "channel_id": 10}):
                 with patch.object(publish, "youtube_account_status"):
                     with patch.object(publish.persistence, "durable_storage_available", return_value=False):
-                    with self.assertRaisesRegex(publish.PublishError, "volumen local persistente"):
-                        publish.set_auto_publish(1, True, "youtube")
+                        with self.assertRaisesRegex(publish.PublishError, "volumen local persistente"):
+                            publish.set_auto_publish(1, True, "youtube")
 
     def test_ollama_rewrite_keeps_scene_structure(self):
         from unittest.mock import patch
