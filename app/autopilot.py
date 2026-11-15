@@ -491,7 +491,11 @@ def _create_project(rule: dict) -> dict:
         "audience": rule.get("audience") or "Público general",
         "tone": rule.get("tone") or "Dinámico y cercano",
         "hook_style": rule.get("hook_style") or "Dato sorprendente",
-        "cta": rule.get("cta") or "Hacé una pregunta concreta al final",
+        "cta": (
+            "En el próximo seguimos"
+            if template_id == "frutinovela" and (not rule.get("cta") or rule.get("cta") == "Hacé una pregunta concreta al final")
+            else rule.get("cta") or "Hacé una pregunta concreta al final"
+        ),
         "content_pillars": characters or rule.get("content_pillars") or "",
         "avoid_topics": rule.get("avoid_topics") or "",
         "visual_style": rule.get("visual_style") or "automatico",
