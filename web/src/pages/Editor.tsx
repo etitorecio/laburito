@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, fmtDuration, mediaUrl, type MediaResult, type Meta, type Project, type Scene } from '../api';
 import { Badge, Card, Empty, Field, Msg, Progress, statusTone } from '../ui';
 import type { Route } from '../routes';
+import CaptionStylePicker from '../components/CaptionStylePicker';
 
 interface Props {
   projectId: number;
@@ -335,11 +336,12 @@ export default function Editor({ projectId, go }: Props) {
             </select>
           </Field>
           <Field label="Subtítulos">
-            <select value={project.caption_style} onChange={(e) => patchProject({ caption_style: e.target.value })}>
-              {(meta?.caption_styles ?? [{ id: project.caption_style, label: project.caption_style }]).map((c) => (
-                <option key={c.id} value={c.id}>{c.label}</option>
-              ))}
-            </select>
+            <CaptionStylePicker
+              options={meta?.caption_styles ?? [{ id: project.caption_style, label: project.caption_style }]}
+              value={project.caption_style}
+              onChange={(value) => void patchProject({ caption_style: value })}
+              compact
+            />
           </Field>
           <Field label="Transición">
             <select value={project.transition_default} onChange={(e) => patchProject({ transition_default: e.target.value })}>
