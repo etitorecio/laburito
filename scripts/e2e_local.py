@@ -158,6 +158,49 @@ def main() -> int:
         except Exception as exc:
             check(False, f"clip de demostración {transition_id}", str(exc))
 
+    print("\n== Demostraciones de estilos visuales")
+    for style_id in options.VISUAL_STYLE_IDS:
+        try:
+            preview = render.visual_style_preview(style_id)
+            check(preview.exists() and preview.stat().st_size > 500,
+                  f"vista previa del estilo visual {style_id}")
+        except Exception as exc:
+            check(False, f"vista previa del estilo visual {style_id}", str(exc))
+
+    print("\n== Render con clip de fondo propio")
+    clip_dir = db.DATA_DIR / "background_clips" / "stock_footage"
+    clip_dir.mkdir(parents=True, exist_ok=True)
+    sample_clip = clip_dir / "e2e-stock-sample.mp4"
+    sample_result = media.run([
+        media.ffmpeg(), "-y", "-f", "lavfi", "-i",
+        "testsrc2=size=360x640:rate=20:duration=3",
+        "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+        "-an", str(sample_clip),
+    ], timeout=60)
+    check(sample_result.returncode == 0 and sample_clip.exists(),
+          "crear clip de fondo de prueba")
+    if sample_clip.exists():
+        test_project = {
+            "id": 99001, "title": "Prueba clip de fondo", "topic": "prueba",
+            "kind": "short", "aspect": "9:16", "resolution": "1080p",
+            "duration_target_sec": 15, "voice": "es", "speed": 150, "pitch": 45,
+            "video_type": "stock_footage", "visual_style": "cinematico",
+            "caption_style": "short_pop", "transition_default": "corte", "fps": 25,
+            "music": "ninguna", "music_volume": 0.12,
+        }
+        test_scene = {
+            "id": 99001, "idx": 0, "title": "Clip de prueba",
+            "narration": "Esta es una prueba de video de fondo propio.",
+            "visual_query": "prueba", "transition": "corte",
+            "visual_path": "", "audio_path": "", "audio_sec": 0,
+        }
+        try:
+            rendered = render.render_scene(test_project, test_scene, db.RENDER_DIR / "e2e-background-video")
+            check(rendered["scene_mp4"].exists() and rendered["visual_kind"] == "video_fondo",
+                  "render de escena con video de fondo propio")
+        except Exception as exc:
+            check(False, "render de escena con video de fondo propio", str(exc))
+
     print("\n== Muestra de voz española")
     voice_preview = db.DATA_DIR / "voice_previews" / "es.wav"
     try:
