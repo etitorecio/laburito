@@ -599,6 +599,20 @@ def _create_project(rule: dict) -> dict:
     else:
         notes = []
     project_sources = db.query("SELECT * FROM sources WHERE project_id=? ORDER BY id", (pid,))
+    if template_id == "frutinovela":
+        previous = db.query_one(
+            "SELECT id,title,topic FROM projects WHERE channel_id=? AND template='frutinovela' AND id<>? ORDER BY id DESC LIMIT 1",
+            (rule.get("channel_id"), pid),
+        )
+        if previous:
+            ending = db.query_one(
+                "SELECT narration FROM scenes WHERE project_id=? ORDER BY idx DESC LIMIT 1",
+                (previous["id"],),
+            )
+            project["series_context"] = (
+                f"{previous.get('title') or 'Episodio anterior'}: {previous.get('topic') or ''}. "
+                + (ending.get("narration") or "" if ending else "")
+            )
     script = script_gen.generate_script(project, notes, project_sources)
     ollama_url = db.get_setting("ollama_url", "") or os.environ.get("OLLAMA_URL", "").strip()
     if ollama_url and script_gen.ollama_model_available(ollama_url, "qwen2.5:1.5b-instruct"):
