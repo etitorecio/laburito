@@ -68,7 +68,6 @@ La imagen final usa Debian slim (glibc, necesaria para Piper/ONNX Runtime), comp
 | `AITUBER_DATA_DIR` | Carpeta de datos (SQLite, medios, renders, exportaciones). Por defecto `./data`. |
 | `AITUBER_LOCAL_PERSISTENT` | Marcador de diagnóstico para un volumen local persistente (lo configura Docker Compose). |
 | `PORT` | Puerto HTTP (por defecto `8080`). |
-| `APP_TOKEN` o `AITUBER_TOKEN` | Contraseña de acceso a la instalación (`X-App-Token`); no es una clave de IA ni consume créditos. |
 | `PIPER_BIN`, `PIPER_MODEL` | Sobrescritura manual opcional de la instalación Piper; normalmente se instala desde Ajustes. |
 | `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` | Credenciales OAuth de tipo aplicación web. El refresh token se guarda en la base local tras conectar la cuenta. |
 | `YOUTUBE_REDIRECT_URI` | URI de callback OAuth opcional; por defecto se calcula con el dominio actual. |
@@ -87,7 +86,7 @@ Para reescritura de guiones con un modelo local, instalá [Ollama](https://ollam
 1. En Google Cloud, creá un proyecto y habilitá **YouTube Data API v3**.
 2. Configurá la pantalla de consentimiento y agregá tu cuenta como usuario de prueba si la app está en Testing. Creá credenciales OAuth de tipo **Aplicación web**.
 3. En **Ajustes → Conexión de YouTube**, copiá la URI de callback que muestra Laburito y agregala como URI de redirección autorizada en Google Cloud. En AppJet será `https://TU-EDGE-URL/api/youtube/callback`; en Docker local, `http://localhost:8080/api/youtube/callback`.
-4. En el archivo `.env` local configurá `YOUTUBE_CLIENT_ID` y `YOUTUBE_CLIENT_SECRET`. `APP_TOKEN` es opcional y solo protege el acceso a la instalación. `YOUTUBE_REDIRECT_URI` es opcional si necesitás fijar manualmente la URI exacta.
+4. En el archivo `.env` local configurá `YOUTUBE_CLIENT_ID` y `YOUTUBE_CLIENT_SECRET`. El modo local no pide contraseña ni tokens de acceso; no expongas el puerto a Internet. `YOUTUBE_REDIRECT_URI` es opcional si necesitás fijar manualmente la URI exacta.
 5. Volvé a Ajustes y tocá **Conectar canal con Google**. Autorizá el canal. Laburito canjea el código y guarda el refresh token en el servidor; después comprobá el nombre del canal.
 
 Si la pantalla de consentimiento permanece en modo **Testing**, Google puede hacer vencer los refresh tokens de aplicaciones externas después de 7 días. Para automatización continua, revisá el estado de publicación de la app OAuth y los requisitos de verificación que Google indique. El OAuth Playground queda solo como alternativa manual avanzada.
@@ -127,6 +126,6 @@ La opción recomendada es **Docker local en tu PC**, con la carpeta `./data` per
 
 - El tipo "Imágenes con movimiento" usa imágenes de archivo con paneo/zoom; no es generación de imágenes IA. "Esqueleto animado" produce un personaje 2.5D procedural local, no un modelo 3D generativo. "Videos de archivo", Minecraft y Subway Surfers funcionan con cinco clips propios o autorizados cargados en sus bibliotecas locales. "Video IA de movimiento completo" permanece desactivado: los modelos abiertos de video requieren recursos de GPU/VRAM que no son realistas para una notebook con gráficos integrados.
 - El material visual externo depende de la red y de las licencias de cada repositorio; siempre se registra autor, licencia y fecha de consulta. La subida a YouTube registra el ID devuelto por la API y consulta `videos.list` para confirmar su presencia; el procesamiento de YouTube puede continuar después de que termine la tarea.\n- La persistencia de Supabase es obligatoria para autopublicar desde AppJet Free, porque no incluye disco virtual persistente. En Docker local se usa el volumen `./data` y Supabase no es necesario. El backup remoto es una copia de SQLite, no una base multiinstancia; ejecutá una sola instancia de worker para evitar concurrencia.
-- Es una instalación de un solo propietario: `APP_TOKEN` protege la instancia completa y el estado OAuth/SQLite no está aislado por usuario. No la ofrezcas como SaaS compartido ni guardes canales de varios amigos en la misma instancia. Para compartirla hoy, cada persona debe desplegar su propia copia; falta autenticación multiusuario y aislamiento de credenciales.
+- Es una instalación de un solo propietario: la instancia local no tiene autenticación multiusuario y el estado OAuth/SQLite no está aislado por usuario. No la ofrezcas como SaaS compartido ni guardes canales de varios amigos en la misma instancia. Para compartirla hoy, cada persona debe desplegar su propia copia; falta autenticación multiusuario y aislamiento de credenciales. No la expongas directamente a Internet.
 - La música de fondo se toma de las camas libres integradas o de `data/music/` (el usuario puede aportar pistas libres).
 - La voz es sintética y local; para una voz neural local se puede instalar Piper DaveFX (España, CC0) desde Ajustes; la voz rioplatense espeak sigue disponible.
