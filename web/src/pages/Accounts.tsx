@@ -17,7 +17,7 @@ export default function Accounts() {
     setLoading(true);
     setError('');
     try {
-      const result = await api.get<{ destinations: { id: string }[] & Destination[] }>('/api/publish/destinations');
+      const result = await api.get<{ destinations: ({ id: string } & Destination)[] }>('/api/publish/destinations');
       const youtube = result.destinations.find((item) => item.id === 'youtube') as (Destination & { id: string }) | undefined;
       setDestination(youtube ?? null);
       if (youtube?.available) {
