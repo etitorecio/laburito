@@ -716,8 +716,10 @@ def generate_script(
         "scenes": scenes,
         "warnings": [
             (
-                "Ficción original por episodios: revisá continuidad, personajes y diálogos antes de publicar."
-                if script_kind in {"frutinovela", "reddit_story"}
+                "Relato original estilo Reddit: revisá coherencia, tono y edición antes de publicar."
+                if script_kind == "reddit_story"
+                else "Ficción original por episodios: revisá continuidad, personajes y diálogos antes de publicar."
+                if script_kind == "frutinovela"
                 else "Guion estructurado con extractos de una fuente de orientación; contrastar datos con fuentes independientes antes de publicar."
                 if source_note and evidence_sentences
                 else "Borrador de plantilla local sin evidencia suficiente: no publicar automáticamente."
