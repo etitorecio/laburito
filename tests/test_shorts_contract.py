@@ -86,7 +86,11 @@ class ShortsContractTests(unittest.TestCase):
                     execute.assert_not_called()
 
     def test_factory_render_requires_vertical_video_under_three_minutes_and_voice(self):
-        project = {"template": "reddit_story"}
+        project = {"template": "reddit_story", "kind": "short"}
+
+    def test_documentary_render_is_not_subject_to_shorts_geometry(self):
+        project = {"template": "shorts", "kind": "documental"}
+        render._validate_vertical_short_render(project, {"width": 1920, "height": 1080, "duration": 60}, [])
         info = {"width": 720, "height": 1280, "duration": 175}
         results = [{"audio_info": {"engine": "espeak-ng"}}]
         render._validate_vertical_short_render(project, info, results)
