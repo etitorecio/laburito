@@ -550,6 +550,7 @@ export default function Autopilot() {
               </select>
             </Field>
             {selectedTemplate && <p className="muted">{selectedTemplate.description}</p>}
+            {form.template === 'frutinovela' && <p className="muted">Incluí en el nicho o en los subtemas los nombres de los personajes-fruta y sus relaciones. Cada episodio termina con un cliffhanger; revisá y editá los guiones para mantener continuidad.</p>}
             <p className="muted">Los documentales largos usan formato horizontal. Los Shorts y Reels usan formato vertical. Minecraft, Subway y stock requieren que cargues clips propios o con permiso.</p>
             <VideoTypePicker
               options={meta?.video_types ?? []}
