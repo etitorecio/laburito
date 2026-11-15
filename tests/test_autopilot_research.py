@@ -155,7 +155,8 @@ class AutopilotResearchTests(unittest.TestCase):
                         with patch.object(autopilot, "get_rule", return_value={"id": 4}):
                             with patch.object(autopilot, "_retry_at", return_value="retry-in-15"):
                                 with patch.object(autopilot.db, "execute") as execute:
-                                    fired = autopilot.tick()
+                                    with patch.object(autopilot.db, "log"):
+                                        fired = autopilot.tick()
         self.assertEqual(fired, 0)
         self.assertEqual(execute.call_args.args[1][0], "retry-in-15")
         self.assertIn("temporary network error", execute.call_args.args[1][1])
