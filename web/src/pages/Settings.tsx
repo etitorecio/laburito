@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, getToken, setToken, type Diagnostics, type Meta } from '../api';
+import { api, type Diagnostics, type Meta } from '../api';
 import { Badge, Card, Empty, Field, Msg } from '../ui';
 import CaptionStylePicker from '../components/CaptionStylePicker';
 import TransitionPicker from '../components/TransitionPicker';
@@ -9,7 +9,6 @@ export default function Settings() {
   const [diag, setDiag] = useState<Diagnostics | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
-  const [token, setTokenValue] = useState(getToken());
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
   const [youtube, setYoutube] = useState<{ available: boolean; missing_env: string[]; note: string } | null>(null);
@@ -147,17 +146,6 @@ export default function Settings() {
           <Badge tone={diag?.persistence.local_persistent ? 'ok' : 'warn'}>{diag?.persistence.local_persistent ? 'Disco local persistente activo' : 'Persistencia local por verificar'}</Badge>
         </div>
         <p className="muted">Para no depender de claves de almacenamiento en la nube, ejecutá la aplicación en tu PC con el volumen local ./data. No necesitás Supabase ni otro servicio de almacenamiento. La PC debe permanecer encendida para que el Autopiloto siga trabajando; podés controlarlo desde el celular conectado a la misma red.</p>
-      </Card>
-
-      <Card title="Seguridad local" sub="Esta contraseña protege el acceso a tu instalación; no es una clave de IA ni consume créditos.">
-        <div className="row">
-          <Field label="Contraseña de acceso" hint={meta?.auth_required ? 'El servidor exige esta contraseña.' : 'Solo hace falta si activaste la protección del servidor.'}>
-            <input type="password" value={token} onChange={(e) => setTokenValue(e.target.value)} placeholder="Contraseña" />
-          </Field>
-          <div className="field" style={{ justifyContent: 'flex-end' }}>
-            <button className="btn primary" onClick={saveToken}>Guardar contraseña</button>
-          </div>
-        </div>
       </Card>
 
       <Card title="Conexión de YouTube" sub="Integración social oficial: vinculá tu canal una sola vez mediante OAuth y Laburito podrá publicar Shorts automáticamente.">
