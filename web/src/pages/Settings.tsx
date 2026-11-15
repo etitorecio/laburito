@@ -13,6 +13,7 @@ export default function Settings() {
   const [ok, setOk] = useState('');
   const [youtube, setYoutube] = useState<{ available: boolean; missing_env: string[]; note: string } | null>(null);
   const [youtubeVerified, setYoutubeVerified] = useState(false);
+  const [youtubeChannel, setYoutubeChannel] = useState('');
   const [youtubeBusy, setYoutubeBusy] = useState(false);
   const [youtubeOAuthBusy, setYoutubeOAuthBusy] = useState(false);
 
@@ -30,11 +31,18 @@ export default function Settings() {
       setYoutube(youtubeDestination);
       if (youtubeDestination?.available) {
         setYoutubeVerified(false);
-        void api.get('/api/youtube/status')
-          .then(() => setYoutubeVerified(true))
-          .catch(() => setYoutubeVerified(false));
+        void api.get<{ channel_title: string }>('/api/youtube/status')
+          .then((status) => {
+            setYoutubeVerified(true);
+            setYoutubeChannel(status.channel_title || 'Canal conectado');
+          })
+          .catch(() => {
+            setYoutubeVerified(false);
+            setYoutubeChannel('');
+          });
       } else {
         setYoutubeVerified(false);
+        setYoutubeChannel('');
       }
     } catch (e) {
       setError((e as Error).message);
@@ -73,9 +81,11 @@ export default function Settings() {
     try {
       const result = await api.get<{ channel_title: string }>('/api/youtube/status');
       setYoutubeVerified(true);
+      setYoutubeChannel(result.channel_title);
       setOk('Conectado con el canal: ' + result.channel_title);
     } catch (e) {
       setYoutubeVerified(false);
+      setYoutubeChannel('');
       setError((e as Error).message);
     } finally {
       setYoutubeBusy(false);
@@ -131,8 +141,10 @@ export default function Settings() {
       <Card title="Conexión de YouTube" sub="Integración social oficial: vinculá tu canal una sola vez mediante OAuth y Laburito podrá publicar Shorts automáticamente.">
         <div className="pill-row">
           <Badge tone={youtube?.available ? 'ok' : 'warn'}>{youtubeVerified ? 'Canal verificado' : youtube?.available ? 'Credenciales guardadas · falta verificar' : 'Falta configurar la conexión'}</Badge>
+          {youtubeVerified && <Badge tone="ok">YouTube: {youtubeChannel}</Badge>}
           {youtube?.missing_env.map((item) => <Badge key={item} tone="warn">{item}</Badge>)}
         </div>
+        <p className="muted">Aclaración: el selector «Canal de contenido» de Proyectos sirve para organizar tus series dentro de Laburito. La cuenta real de YouTube se conecta acá; al autorizarla se mostrará el nombre del canal en esta pantalla.</p>
         <p className="muted">En Google Cloud habilitá YouTube Data API v3 y creá credenciales OAuth de tipo <b>Aplicación web</b>. Agregá como URI de redirección autorizada esta dirección exacta: <code>{window.location.origin}/api/youtube/callback</code>. Si definiste YOUTUBE_REDIRECT_URI en el servidor, usá ese valor en lugar de la dirección calculada. En el archivo .env local configurá YOUTUBE_CLIENT_ID y YOUTUBE_CLIENT_SECRET. No hace falta ninguna contraseña ni token de IA para usarlo en tu red local.</p>
         <p className="muted">Después de guardar esas variables y reiniciar la app, tocá «Conectar canal con Google». Google te pedirá autorizar el canal una sola vez y Laburito guardará ese permiso en tu carpeta local. Si la pantalla de consentimiento permanece en Testing, Google puede revocar el permiso después de 7 días; para automatización continua revisá el estado de publicación de la app OAuth.</p>
         <p className="muted">La conexión de YouTube sí requiere configurar una vez el Client ID y el Client Secret de tu aplicación OAuth de Google en el archivo .env. Son credenciales de publicación de Google, no claves ni créditos de IA: no intervienen en la escritura, voz ni render. Después solo tocás «Conectar canal» y autorizás tu cuenta; no tenés que copiar ni pegar códigos o refresh tokens. La autorización queda guardada localmente. Si la pantalla de consentimiento permanece en Testing, Google puede revocar el acceso después de 7 días.</p>
