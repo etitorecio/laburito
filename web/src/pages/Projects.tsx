@@ -177,7 +177,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
             </Field>
           </div>
 
-          <details className="advanced-settings" open>
+          <details className="advanced-settings">
             <summary>Voz y narración</summary>
             <Field label="Elegí una voz en español">
               <VoicePicker
@@ -198,7 +198,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
             </div>
           </details>
 
-          <details className="advanced-settings" open>
+          <details className="advanced-settings">
             <summary>Música de fondo</summary>
             <MusicPicker
               beds={meta?.music_beds ?? []}
@@ -234,7 +234,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
             </Field>
           </details>
 
-          <details className="advanced-settings" open>
+          <details className="advanced-settings">
             <summary>Apariencia y tipo de video</summary>
             <h4>Estilo visual</h4>
             <VisualStylePicker options={meta?.visual_styles ?? []} value={form.visual_style} onChange={(value) => setForm({ ...form, visual_style: value })} />
@@ -280,7 +280,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
             </div>
           </details>
 
-          <details className="advanced-settings" open>
+          <details className="advanced-settings">
             <summary>Subtítulos y transiciones</summary>
             <label className="check-row">
               <input type="checkbox" checked={form.captions_enabled} onChange={(e) => setForm({ ...form, captions_enabled: e.target.checked })} />
