@@ -599,7 +599,7 @@ def _create_project(rule: dict) -> dict:
     else:
         notes = []
     project_sources = db.query("SELECT * FROM sources WHERE project_id=? ORDER BY id", (pid,))
-    if template_id == "frutinovela":
+    if template_id == "frutinovela" and rule.get("channel_id"):
         previous = db.query_one(
             "SELECT id,title,topic FROM projects WHERE channel_id=? AND template='frutinovela' AND id<>? ORDER BY id DESC LIMIT 1",
             (rule.get("channel_id"), pid),
