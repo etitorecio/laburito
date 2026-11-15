@@ -973,7 +973,7 @@ def export_project(project_id: int) -> Path:
         zf.writestr(
             "README.md",
             "# Exportación de AITuber Libre\n\n"
-            "Contenido: vídeo final, subtítulos, guion, fuentes con licencia, miniaturas, metadatos e informe de calidad.\n\n"
+            f"Contenido: vídeo final, subtítulos, guion, fuentes con licencia, {'miniatura' if thumb.exists() else 'sin miniatura'}, metadatos e informe de calidad.\\n\\n"
             "Antes de publicar: verificá cada licencia en `fuentes/fuentes.csv`, revisá el guion y confirmá que las "
             "imágenes no se presenten como fotografías históricas si fueron generadas localmente.\n",
         )
