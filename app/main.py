@@ -1468,6 +1468,8 @@ def publish_project(project_id: int, payload: publish.PublishIn):
         raise HTTPException(404, f"El proyecto {project_id} no existe.")
     if payload.destination not in ("entrega", "youtube"):
         raise HTTPException(400, "Destino inválido: usá 'entrega' o 'youtube'.")
+    if not publish.video_path(project).exists():
+        raise HTTPException(400, "Todavía no hay un MP4 renderizado: ejecutá el render antes de publicar.")
     if payload.destination == "youtube":
         if not project.get("channel_id"):
             raise HTTPException(400, "Asigná el proyecto a Historias o Frutinovelas antes de publicar en YouTube.")
@@ -1475,8 +1477,6 @@ def publish_project(project_id: int, payload: publish.PublishIn):
             publish.youtube_account_status(int(project["channel_id"]))
         except publish.PublishError as exc:
             raise HTTPException(400, "La cuenta de YouTube de este canal no está conectada o no se pudo verificar: " + str(exc)) from exc
-    if not publish.video_path(project).exists():
-        raise HTTPException(400, "Todavía no hay un MP4 renderizado: ejecutá el render antes de publicar.")
     job_id = worker.enqueue(
         project_id,
         "publish_project",
