@@ -99,6 +99,10 @@ cd web && npm run typecheck && npm run build
 
 La prueba E2E crea un directorio de datos temporal, verifica resolución, duración, subtítulos, reutilización de escenas y contenido del ZIP, e informa cualquier aviso real del render (por ejemplo, escenas sin voz si falta espeak-ng).
 
+## Despliegue y uso real
+
+La URL `*.dev.ap-jt.com` es un endpoint de desarrollo/preview, no la URL de producción. AppJet ofrece un endpoint Edge para la rama `appjet`; la URL exacta se obtiene en Settings → Overview y debe configurarse como variable `LABURITO_URL` del repositorio para que el workflow de despertar use el destino correcto. La documentación de AppJet también aclara que su hosting está pensado para construir, previsualizar, probar y compartir, no como hosting de producción ni para datos reales de usuarios. No vender ni prometer disponibilidad profesional usando el endpoint de desarrollo.
+
 ## Limitaciones conocidas
 
 - El Autopiloto solo publica Shorts verticales 9:16 de hasta 180 segundos en YouTube. Actualmente el motor visual usa imágenes de archivo con paneo/zoom y tarjetas locales de respaldo: Full Motion AI Video, Skeleton Video y gameplay de Minecraft/Subway Surfers aparecen como opciones de referencia, pero todavía no producen clips reales. Las miniaturas del selector son ilustrativas; para gameplay hacen falta clips propios o con licencia. La portada personalizada no se puede fijar mediante la API para Shorts; se guarda localmente para uso manual. TikTok no está integrado.
