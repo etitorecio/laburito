@@ -615,7 +615,7 @@ def _create_project(rule: dict) -> dict:
             )
     script = script_gen.generate_script(project, notes, project_sources)
     ollama_url = db.get_setting("ollama_url", "") or os.environ.get("OLLAMA_URL", "").strip()
-    if ollama_url and script_gen.ollama_model_available(ollama_url, "qwen2.5:1.5b-instruct"):
+    if template_id not in {"frutinovela", "reddit_story"} and ollama_url and script_gen.ollama_model_available(ollama_url, "qwen2.5:1.5b-instruct"):
         try:
             script = script_gen.rewrite_with_ollama(
                 ollama_url, "qwen2.5:1.5b-instruct", project, script, notes
