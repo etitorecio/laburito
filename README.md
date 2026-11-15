@@ -79,7 +79,7 @@ En **Ajustes** se configuran voz, música, estilos visuales, subtítulos, movimi
 
 ### Guionista IA local sin coste
 
-Para reescritura de guiones con un modelo local, instalá [Ollama](https://ollama.com/download), ejecutá `ollama pull llama3.2` y guardá la URL en Ajustes → Ollama local. Con Docker Desktop para Windows usá `http://host.docker.internal:11434`; si ejecutás Laburito directamente en la PC, usá `http://127.0.0.1:11434`. Sin Ollama, el autopiloto conserva el guionista gratuito basado en fuentes.
+La instalación Docker incluye Ollama y descarga automáticamente Qwen 2.5 1.5B (Apache 2.0, aproximadamente 1 GB) para reescribir los guiones en español. No tenés que instalar ni configurar el modelo a mano. Si la descarga falla o ejecutás la app sin Docker, el autopiloto conserva el guionista gratuito basado en fuentes.
 
 ### Conectar YouTube
 
@@ -97,7 +97,7 @@ Si la pantalla de consentimiento permanece en modo **Testing**, Google puede rev
 ```
 app/
   db.py         SQLite (WAL) con esquema, migraciones, ajustes, logs y copias
-  script_gen.py guionista basado en fuentes + reescritura Ollama local opcional
+  script_gen.py guionista basado en fuentes + reescritura con Qwen local
   tts.py        espeak-ng / Piper y silencio informado
   media.py      tarjetas visuales, SRT/VTT, miniaturas, búsqueda en repositorios libres
   render.py     FFmpeg por escena con caché, concat, subtítulos, export ZIP
