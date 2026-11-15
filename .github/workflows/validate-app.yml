@@ -36,3 +36,22 @@ jobs:
       - run: python -m pip install -r requirements.txt
       - run: python -m compileall -q app tests
       - run: python -m unittest discover -s tests -v
+      - name: Install runtime media dependencies
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg espeak-ng fonts-dejavu-core
+      - name: Start the real HTTP application
+        env:
+          AITUBER_DATA_DIR: /tmp/laburito-live-smoke
+          AITUBER_DISABLE_EXTERNAL_MEDIA: "1"
+        run: |
+          mkdir -p "$AITUBER_DATA_DIR"
+          nohup uvicorn app.main:app --host 127.0.0.1 --port 8080 > /tmp/laburito-live-smoke.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8080/api/health > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/laburito-live-smoke.log
+          exit 1
+      - name: Exercise real API to MP4 delivery
+        env:
+          AITUBER_DATA_DIR: /tmp/laburito-live-smoke
+        run: python scripts/live_smoke.py http://127.0.0.1:8080
