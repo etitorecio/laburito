@@ -121,9 +121,16 @@ def ensure_audio(project: dict, scene: dict) -> tuple[Path, float, dict]:
     narration = (scene.get("narration") or "").strip()
     if not narration:
         raise ValueError(f"La escena «{scene.get('title')}» no tiene narración")
-    key = _h(f"{narration}|{project.get('voice')}|{project.get('speed')}|{project.get('pitch')}")
+    tts_status = tts.status()
+    cached_engine = (
+        "piper" if (project.get("voice") or "es") == "es-es-piper" and tts_status.get("piper_available")
+        else Path(tts_status["engine"]).name if tts_status.get("engine")
+        else "silencio"
+    )
+    engine_signature = f"{cached_engine}|{tts_status.get('piper_model') or ''}"
+    key = _h(f"{narration}|{project.get('voice')}|{project.get('speed')}|{project.get('pitch')}|{engine_signature}")
     wav = _audio_dir(int(project["id"])) / f"{key}.wav"
-    info: dict = {"cached": wav.exists()}
+    info: dict = {"cached": wav.exists(), "engine": cached_engine if wav.exists() else ""}
     if not wav.exists():
         try:
             info.update(
