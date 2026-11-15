@@ -20,6 +20,8 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
   const [form, setForm] = useState({
     title: '',
     topic: '',
+    input_mode: 'idea' as 'idea' | 'script',
+    script_text: '',
     characters: '',
     template: 'shorts',
     channel_id: '' as string,
@@ -92,24 +94,32 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     setError('');
     setOk('');
     if (!form.title.trim()) {
-      setError('Escribí una idea o instrucción para el video.');
+      setError('Escribí un título para el video.');
+      return;
+    }
+    if (form.input_mode === 'script' && !form.script_text.trim()) {
+      setError('Pegá el guion completo o cambiá a modo Idea.');
+      return;
+    }
+    if (form.script_text.length > 12000) {
+      setError('El guion no puede superar los 12.000 caracteres.');
       return;
     }
     setBusy(true);
     let created: Project | null = null;
     try {
-      const { captions_enabled, characters, ...projectForm } = form;
+      const { captions_enabled, characters, input_mode, script_text, ...projectForm } = form;
       created = await api.post<Project>('/api/projects', {
         ...projectForm,
         channel_id: form.channel_id ? Number(form.channel_id) : (channels.find((c) => c.name.toLocaleLowerCase() === (form.template === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id ?? null),
         topic: form.topic || form.title,
-        notes: (!captions_enabled || form.visual_style_prompt.trim() || !form.create_thumbnail || characters.trim()) ? '[LABURITO_META]' + JSON.stringify({ captions_enabled, visual_style_prompt: form.visual_style_prompt.trim(), create_thumbnail: form.create_thumbnail, characters: characters.trim() }) : '',
+        notes: (!captions_enabled || form.visual_style_prompt.trim() || !form.create_thumbnail || characters.trim() || (input_mode === 'script' && script_text.trim())) ? '[LABURITO_META]' + JSON.stringify({ captions_enabled, visual_style_prompt: form.visual_style_prompt.trim(), create_thumbnail: form.create_thumbnail, characters: characters.trim(), script_text: input_mode === 'script' ? script_text.trim() : '' }) : '',
       });
       setOk('1/3 · Proyecto creado. Escribiendo el guion y preparando las escenas…');
       await api.post('/api/projects/' + created.id + '/script?replace=true');
       setOk('2/3 · Guion listo. Montando voz, imágenes, subtítulos y música…');
       await api.post('/api/projects/' + created.id + '/render');
-      setForm({ ...form, title: '', topic: '' });
+      setForm({ ...form, title: '', topic: '', script_text: '' });
       setOk('3/3 · Producción enviada al render. Podés seguir el progreso y descargar el MP4 en el editor.');
       await load();
       go('editor', created.id);
@@ -152,8 +162,20 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     <div className="stack">
       <Msg error={error} ok={ok} />
 
-      <Card title="Crear video" sub="Escribí qué video querés. La fábrica genera el guion, crea las escenas y pone en marcha el render automáticamente.">
+      <Card title="Crear video" sub="Partí de una idea para generar el guion o pegá un guion propio. Después se crean escenas y se prepara el render.">
         <div className="stack" style={{ gap: 14 }}>
+          <Field label="Cómo querés crear el video">
+            <select value={form.input_mode} onChange={(e) => setForm({ ...form, input_mode: e.target.value as 'idea' | 'script' })}>
+              <option value="idea">Desde una idea: generar el guion</option>
+              <option value="script">Desde un guion propio: convertirlo en escenas</option>
+            </select>
+          </Field>
+          {form.input_mode === 'script' && (
+            <Field label="Guion completo" hint="Se conserva tu texto y se divide automáticamente en escenas para voz, visuales y render. Máximo 12.000 caracteres.">
+              <textarea rows={9} maxLength={12000} value={form.script_text} onChange={(e) => setForm({ ...form, script_text: e.target.value })} placeholder="Pegá acá el guion completo. Separá los cambios de escena con una línea en blanco." />
+              <small>{form.script_text.length.toLocaleString('es')} / 12.000 caracteres</small>
+            </Field>
+          )}
           <div className="row">
             <Field label="Título">
               <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="El último tranvía" />
@@ -316,7 +338,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
           {meta && meta.external_templates.length > 0 && (
             <p className="muted">Los generadores externos de video IA no se incluyen: requerirían servicios con créditos. Los formatos desactivados no se presentan como disponibles.</p>
           )}
-          <button className="btn primary" onClick={create} disabled={busy || !form.title.trim()}>{busy ? 'Produciendo video…' : 'Crear video completo automáticamente'}</button>
+          <button className="btn primary" onClick={create} disabled={busy || !form.title.trim()}>{busy ? 'Produciendo video…' : form.input_mode === 'script' ? 'Convertir guion y crear video' : 'Crear video desde la idea'}</button>
         </div>
       </Card>
 
