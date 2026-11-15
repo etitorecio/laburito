@@ -616,13 +616,12 @@ export default function Editor({ projectId, go }: Props) {
         }
       >
         <div className="stack" style={{ marginBottom: 12 }}>
-          <label className="field">
-            <span>Fábrica / canal de destino</span>
+          <Field label="Fábrica / canal de destino">
             <select value={project?.channel_id ? String(project.channel_id) : ''} onChange={(e) => void assignChannel(e.target.value)} disabled={busy === 'channel'}>
               <option value="">Sin canal asignado</option>
               {youtubeChannels.map((channel) => <option key={channel.id} value={channel.id}>{channel.name}</option>)}
             </select>
-          </label>
+          </Field>
           {!youtubeChannels.length && <button className="btn small ghost" onClick={() => go('cuentas')}>Crear y conectar canales en Cuentas</button>}
         </div>
         <label className="row center gap-8" style={{ marginBottom: 10 }}>
