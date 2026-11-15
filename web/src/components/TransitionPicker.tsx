@@ -1,5 +1,4 @@
 import type { OptionItem } from '../api';
-import { getToken } from '../api';
 
 interface Props {
   options: OptionItem[];
@@ -9,13 +8,12 @@ interface Props {
 }
 
 export default function TransitionPicker({ options, value, onChange, compact = false }: Props) {
-  const token = getToken();
   return (
     <div className="transition-picker" aria-label="Demostraciones de movimiento de escena">
       <div className="transition-track">
         {options.map((option) => {
           const selected = value === option.id;
-          const src = `/api/transition-preview/${encodeURIComponent(option.id)}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+          const src = `/api/transition-preview/${encodeURIComponent(option.id)}`;
           return (
             <div key={option.id} className={`transition-card ${selected ? 'selected' : ''}`}>
               <span className="transition-screen">
