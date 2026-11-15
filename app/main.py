@@ -19,7 +19,7 @@ from pydantic import BaseModel
 
 from . import autopilot, db, media, options, persistence, publish, render, script_gen, tts, worker
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 APP_TOKEN = (os.environ.get("APP_TOKEN") or os.environ.get("AITUBER_TOKEN") or "").strip()
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
 
@@ -275,7 +275,14 @@ def _touch_project(project_id: int) -> None:
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "app": "AITuber Libre", "version": APP_VERSION, "time": db.now()}
+    return {
+        "ok": True,
+        "app": "Laburito Shorts Autopilot",
+        "version": APP_VERSION,
+        "time": db.now(),
+        "worker": worker.status(),
+        "persistence": persistence.status(),
+    }
 
 
 @app.post("/api/music/upload")
