@@ -67,7 +67,8 @@ class AutopilotResearchTests(unittest.TestCase):
             with patch.object(autopilot.db, "query", side_effect=[[], notes, []]) as query:
                 with patch.object(autopilot.db, "query_one", return_value=project):
                     with patch.object(autopilot.db, "execute", return_value=999):
-                        result = autopilot._create_project(rule)
+                        with patch.object(autopilot.db, "get_setting", return_value=""):
+                            result = autopilot._create_project(rule)
         self.assertEqual(result["project_id"], 999)
         self.assertEqual(result["evidence_sources"], 2)
         self.assertEqual(result["script_writer"], "source-extract")
