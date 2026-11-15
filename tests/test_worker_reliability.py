@@ -48,6 +48,26 @@ class WorkerReliabilityTests(unittest.TestCase):
         self.assertEqual(len(job_updates), 1)
         self.assertFalse(any("status='completado'" in sql for sql, _ in statements))
 
+    def test_enqueue_deduplicates_same_pending_publication_payload(self):
+        with patch.object(worker.db, "query", return_value=[
+            {"id": 501, "payload_json": '{"destination":"youtube","privacy":"public"}'}
+        ]):
+            with patch.object(worker.db, "execute") as execute:
+                job_id = worker.enqueue(12, "publish_project", {
+                    "destination": "youtube", "privacy": "public"
+                })
+        self.assertEqual(job_id, 501)
+        execute.assert_not_called()
+
+    def test_enqueue_allows_a_different_publication_destination(self):
+        with patch.object(worker.db, "query", return_value=[
+            {"id": 502, "payload_json": '{"destination":"entrega"}'}
+        ]):
+            with patch.object(worker.db, "execute", return_value=503):
+                with patch.object(worker.db, "now", return_value="now"):
+                    job_id = worker.enqueue(12, "publish_project", {"destination": "youtube"})
+        self.assertEqual(job_id, 503)
+
     def test_transient_youtube_publish_error_is_requeued(self):
         job = {
             "id": 92, "project_id": 12, "kind": "publish_project",
