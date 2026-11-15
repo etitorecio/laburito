@@ -15,6 +15,7 @@ render (auto-subida sin intervención).
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -197,7 +198,8 @@ def build_metadata(project, scenes) -> dict:
     if not language:
         voice_id = (_g(project, "voice") or "es").strip()
         language = "es" if voice_id == "es-es-piper" else voice_id.split("-", 1)[0]
-    language = language or "es"
+    # Laburito produce exclusivamente en español, incluso al migrar proyectos antiguos.
+    language = "es"
     manual_keywords = [k.strip() for k in re.split(r"[,;]", _g(project, "keywords") or "") if k.strip()]
     custom_tags = [k.strip().lstrip("#") for k in re.split(r"[,;]", str(metadata_config.get("custom_tags") or "")) if k.strip()]
     topic_keywords = re.findall(r"[0-9A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{3,}", _g(project, "topic"))
@@ -466,6 +468,15 @@ def _youtube_upload(project, meta: dict, privacy: str, report) -> dict:
 # --------------------------------------------------------------------------- #
 # Publicación
 # --------------------------------------------------------------------------- #
+def _video_fingerprint(path: Path) -> str:
+    """Huella del MP4 para que los reintentos no suban dos veces el mismo archivo."""
+    digest = hashlib.sha256()
+    with path.open("rb") as video:
+        for chunk in iter(lambda: video.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def publish(project_id: int, destination: str = "entrega", calendar_id: int | None = None,
             privacy: str = "unlisted", on_progress=None) -> dict:
     """Publica el render del proyecto en el destino pedido y registra el intento."""
@@ -477,9 +488,36 @@ def publish(project_id: int, destination: str = "entrega", calendar_id: int | No
     source = video_path(project)
     if not source.exists():
         raise PublishError("Todavía no hay un MP4 renderizado para este proyecto: ejecutá el render y volvé a publicar.")
+    if destination == "youtube" and privacy not in ("public", "unlisted", "private"):
+        raise PublishError("Privacidad inválida para YouTube. Elegí público, oculto o privado.")
+    if destination not in ("entrega", "youtube"):
+        raise PublishError(f"Destino desconocido: {destination}. Usá 'entrega' o 'youtube'.")
+
+    fingerprint = _video_fingerprint(source)
+    previous = db.query_one(
+        "SELECT * FROM publicaciones WHERE project_id=? AND destination=? AND status='publicado' ORDER BY id DESC LIMIT 1",
+        (project_id, destination),
+    )
+    if previous:
+        try:
+            previous_meta = json.loads(_g(previous, "meta_json", "{}") or "{}")
+        except (TypeError, ValueError):
+            previous_meta = {}
+        if previous_meta.get("video_sha256") == fingerprint:
+            report(100, "Este mismo video ya estaba publicado; no se volvió a subir")
+            return {
+                "ok": True,
+                "destination": destination,
+                "status": "publicado",
+                "url": _g(previous, "url"),
+                "external_id": _g(previous, "external_id"),
+                "message": "Este mismo archivo ya estaba publicado. Se evitó una segunda subida.",
+                "meta": previous_meta,
+            }
 
     scenes = db.query("SELECT * FROM scenes WHERE project_id=? ORDER BY idx", (project_id,))
     meta = build_metadata(project, scenes)
+    meta["video_sha256"] = fingerprint
     report(15, "Metadatos generados")
 
     if destination == "entrega":
