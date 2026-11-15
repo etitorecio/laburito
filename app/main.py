@@ -1323,69 +1323,63 @@ def install_piper_voice():
     return {"installed": False, "job_id": job_id, "message": "Descarga de la voz neural agregada a la cola."}
 
 
+@app.get("/api/youtube/accounts")
+def youtube_accounts():
+    publish.ensure_schema()
+    channels = db.query("SELECT id,name,topic FROM channels ORDER BY id")
+    linked = {int(row["channel_id"]): row for row in publish.youtube_accounts_status()}
+    return {"accounts": [{**channel, "account": linked.get(int(channel["id"]))} for channel in channels]}
+
+
 @app.post("/api/youtube/oauth/start")
-def youtube_oauth_start(request: Request):
-    """Inicia OAuth oficial; el estado es aleatorio, de un solo uso y vence en 10 minutos."""
+def youtube_oauth_start(request: Request, channel_id: int):
+    """Inicia OAuth asociado a un canal interno concreto."""
     credentials = publish.youtube_credentials()
     if not credentials["client_id"] or not credentials["client_secret"]:
-        raise HTTPException(400, "Faltan YOUTUBE_CLIENT_ID y/o YOUTUBE_CLIENT_SECRET en el servidor.")
-    redirect_uri = (
-        os.environ.get("YOUTUBE_REDIRECT_URI", "").strip()
-        or str(request.base_url).rstrip("/") + "/api/youtube/callback"
-    )
+        raise HTTPException(400, "Faltan las credenciales OAuth de YouTube en el servidor.")
+    if not db.query_one("SELECT id FROM channels WHERE id=?", (channel_id,)):
+        raise HTTPException(404, "Canal interno inexistente.")
+    redirect_uri = os.environ.get("YOUTUBE_REDIRECT_URI", "").strip() or str(request.base_url).rstrip("/") + "/api/youtube/callback"
     state = secrets.token_urlsafe(32)
     db.set_setting("youtube_oauth_state", state)
     db.set_setting("youtube_oauth_state_created", str(time.time()))
     db.set_setting("youtube_oauth_redirect_uri", redirect_uri)
+    db.set_setting("youtube_oauth_channel_id", str(channel_id))
     params = {
-        "client_id": credentials["client_id"],
-        "redirect_uri": redirect_uri,
+        "client_id": credentials["client_id"], "redirect_uri": redirect_uri,
         "response_type": "code",
         "scope": "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly",
-        "access_type": "offline",
-        "prompt": "select_account consent",
-        "include_granted_scopes": "true",
-        "state": state,
+        "access_type": "offline", "prompt": "select_account consent",
+        "include_granted_scopes": "true", "state": state,
     }
-    return {
-        "authorization_url": "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params),
-        "redirect_uri": redirect_uri,
-    }
+    return {"authorization_url": "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params), "redirect_uri": redirect_uri}
 
 
 @app.get("/api/youtube/callback")
 def youtube_oauth_callback(code: str = "", state: str = "", error: str = ""):
-    """Recibe el código de Google y guarda el refresh token solo en SQLite del servidor."""
     if error:
-        return HTMLResponse(
-            "<h2>Conexión de YouTube cancelada</h2><p>No se autorizó el canal.</p><a href='/#/ajustes'>Volver a Laburito</a>",
-            status_code=400,
-        )
+        return HTMLResponse("<h2>Conexión de YouTube cancelada</h2><p>No se autorizó el canal.</p><a href='/#/cuentas'>Volver a Cuentas</a>", status_code=400)
     expected = db.get_setting("youtube_oauth_state", "")
     created = db.get_setting("youtube_oauth_state_created", "")
     redirect_uri = db.get_setting("youtube_oauth_redirect_uri", "")
+    target_channel = db.get_setting("youtube_oauth_channel_id", "")
     try:
         age = time.time() - float(created)
+        channel_id = int(target_channel)
     except (TypeError, ValueError):
-        age = 999999
+        age, channel_id = 999999, 0
     if not code or not state or not expected or not hmac.compare_digest(state, expected) or age > 600:
-        raise HTTPException(403, "La autorización venció o no coincide. Volvé a iniciar la conexión de YouTube.")
+        raise HTTPException(403, "La autorización venció o no coincide. Volvé a iniciar la conexión desde Cuentas.")
+    if not db.query_one("SELECT id FROM channels WHERE id=?", (channel_id,)):
+        raise HTTPException(404, "El canal interno asociado a esta autorización ya no existe.")
     db.set_setting("youtube_oauth_state", "")
     db.set_setting("youtube_oauth_state_created", "")
     credentials = publish.youtube_credentials()
     body = urllib.parse.urlencode({
-        "code": code,
-        "client_id": credentials["client_id"],
-        "client_secret": credentials["client_secret"],
-        "redirect_uri": redirect_uri,
-        "grant_type": "authorization_code",
+        "code": code, "client_id": credentials["client_id"], "client_secret": credentials["client_secret"],
+        "redirect_uri": redirect_uri, "grant_type": "authorization_code",
     }).encode()
-    request = urllib.request.Request(
-        publish.YOUTUBE_TOKEN_URL,
-        data=body,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        method="POST",
-    )
+    request = urllib.request.Request(publish.YOUTUBE_TOKEN_URL, data=body, headers={"Content-Type": "application/x-www-form-urlencoded"}, method="POST")
     try:
         with urllib.request.urlopen(request, timeout=45) as response:
             token_data = json.loads(response.read().decode("utf-8", "replace"))
@@ -1394,56 +1388,50 @@ def youtube_oauth_callback(code: str = "", state: str = "", error: str = ""):
         raise HTTPException(400, f"Google rechazó la autorización ({exc.code}): {detail}") from exc
     except urllib.error.URLError as exc:
         raise HTTPException(502, f"No se pudo contactar a Google: {exc.reason}") from exc
-    refresh_token = token_data.get("refresh_token")
-    if refresh_token:
-        db.set_setting("youtube_refresh_token", refresh_token)
-    elif not credentials["refresh_token"]:
-        raise HTTPException(400, "Google no devolvió un refresh token. Revocá el acceso anterior y volvé a autorizar con consentimiento.")
+    refresh_token = token_data.get("refresh_token") or publish.youtube_credentials(channel_id).get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(400, "Google no devolvió un refresh token para esta cuenta. Volvé a autorizar con consentimiento.")
     try:
-        publish.youtube_account_status()
+        account = publish.youtube_account_status(refresh_token_override=refresh_token)
+        publish.save_youtube_account(channel_id, refresh_token, account)
     except publish.PublishError as exc:
-        raise HTTPException(400, f"El token se guardó, pero no se pudo verificar el canal: {exc}") from exc
+        raise HTTPException(400, f"No se pudo verificar la cuenta autorizada: {exc}") from exc
     if persistence.configured():
         try:
             persistence.sync_backup()
         except Exception as exc:
-            raise HTTPException(503, f"YouTube quedó autorizado, pero no se pudo guardar la credencial en el respaldo persistente: {exc}") from exc
+            raise HTTPException(503, f"La cuenta quedó autorizada, pero falló la sincronización del respaldo persistente: {exc}") from exc
     return RedirectResponse(url="/#/cuentas", status_code=303)
 
 
 @app.post("/api/youtube/disconnect")
-def youtube_disconnect():
-    """Desconecta la cuenta guardada y revoca el permiso OAuth cuando Google lo permite."""
-    credentials = publish.youtube_credentials()
+def youtube_disconnect(channel_id: int):
+    credentials = publish.youtube_credentials(channel_id)
     refresh_token = credentials.get("refresh_token", "")
     if refresh_token:
-        revoke = urllib.request.Request(
-            "https://oauth2.googleapis.com/revoke",
-            data=urllib.parse.urlencode({"token": refresh_token}).encode(),
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            method="POST",
-        )
+        revoke = urllib.request.Request("https://oauth2.googleapis.com/revoke", data=urllib.parse.urlencode({"token": refresh_token}).encode(), headers={"Content-Type": "application/x-www-form-urlencoded"}, method="POST")
         try:
             with urllib.request.urlopen(revoke, timeout=20):
                 pass
         except Exception as exc:
-            # Se elimina igualmente el token local para que Laburito deje de usar esa cuenta.
             db.log("warn", "youtube", f"No se pudo confirmar la revocación remota de YouTube: {exc}")
-    db.set_setting("youtube_refresh_token", "")
+    publish.ensure_schema()
+    db.execute("DELETE FROM youtube_accounts WHERE channel_id=?", (channel_id,))
     if persistence.configured():
         try:
             persistence.sync_backup()
         except Exception as exc:
-            raise HTTPException(503, f"La cuenta se desconectó en esta instalación, pero falló la sincronización del respaldo: {exc}") from exc
+            raise HTTPException(503, f"La cuenta se desconectó localmente, pero falló la sincronización del respaldo: {exc}") from exc
     return {"ok": True, "connected": False}
 
 
 @app.get("/api/youtube/status")
-def youtube_status():
+def youtube_status(channel_id: int):
     try:
-        return publish.youtube_account_status()
+        return publish.youtube_account_status(channel_id)
     except publish.PublishError as exc:
         raise HTTPException(400, str(exc)) from exc
+
 
 @app.post("/api/projects/{project_id}/publish", status_code=202)
 def publish_project(project_id: int, payload: publish.PublishIn):
