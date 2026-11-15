@@ -615,7 +615,7 @@ def diagnostics():
         },
         "worker": worker.status(),
         "persistence": persistence.status(),
-        "note": "Render y TTS corren localmente; YouTube requiere OAuth. En AppJet Free configurá Supabase para conservar los datos entre reemplazos del contenedor.",
+        "note": "Render, voz y guiones funcionan localmente. Para conservar proyectos y archivos, ejecutá la app con el volumen ./data montado; YouTube requiere conectar la cuenta mediante OAuth.",
     }
 
 
