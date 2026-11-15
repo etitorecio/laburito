@@ -99,7 +99,7 @@ class AutopilotResearchTests(unittest.TestCase):
         from pathlib import Path
         project = {"kind": "documentary", "notes": "Autopiloto: ciencia"}
         with patch("app.media.probe_video", return_value={"width": 1920, "height": 1080, "duration": 1201}):
-            with self.assertRaisesRegex(publish.PublishError, "límite es 20 minutos"):
+            with self.assertRaisesRegex(publish.PublishError, "máximo es 20 minutos"):
                 publish._validate_autopilot_video(project, Path("fake.mp4"))
 
     def test_two_shorts_per_day_maps_to_twelve_hours(self):
