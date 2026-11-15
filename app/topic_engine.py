@@ -178,7 +178,8 @@ def choose_topic(niche: str, previous_topics: list[str]) -> dict:
 
 def research_topic(niche: str, previous_topics: list[str]) -> dict:
     result = choose_topic(niche, previous_topics)
-    db.execute(
+    note_ids = []
+    note_ids.append(db.execute(
         "INSERT INTO research_notes(niche, claim, evidence_level, source_url, accessed_at, methodology, created_at) "
         "VALUES(?,?,?,?,?,?,?)",
         (
@@ -186,10 +187,10 @@ def research_topic(niche: str, previous_topics: list[str]) -> dict:
             "Extracto de Wikipedia recuperado automáticamente; usar como orientación y contrastar con publicaciones independientes.",
             db.now(),
         ),
-    )
+    ))
     academic = _openalex_abstracts(result["title"])
     for item in academic:
-        db.execute(
+        note_ids.append(db.execute(
             "INSERT INTO research_notes(niche, claim, evidence_level, source_url, accessed_at, methodology, created_at) "
             "VALUES(?,?,?,?,?,?,?)",
             (
@@ -199,4 +200,5 @@ def research_topic(niche: str, previous_topics: list[str]) -> dict:
             ),
         )
     result["academic_sources"] = academic
+    result["note_ids"] = note_ids
     return result
