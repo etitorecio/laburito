@@ -560,6 +560,8 @@ export default function Editor({ projectId, go }: Props) {
         )}
       </Card>
 
+      <ProjectResearch projectId={projectId} topic={project.topic || project.title} />
+
       <Card
         title="Publicación y auto-subida"
         sub="El render terminado se entrega en la carpeta de publicados o se sube a YouTube sin intervención."
