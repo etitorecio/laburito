@@ -207,13 +207,9 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
               <p className="muted">Usá siempre los mismos nombres y relaciones. El sistema recupera el final del episodio anterior para continuar la trama.</p>
             </>}
             {form.template === 'reddit_story' && <p className="muted">Historias originales en español con estructura de Reddit: gancho, contexto, escalada, giro y pregunta final. Duración predeterminada: 3 minutos.</p>}
-            <Field label="Canal de contenido" hint="Agrupa proyectos y calendario; es independiente de tu cuenta de YouTube.">
-              <select value={form.channel_id} onChange={(e) => setForm({ ...form, channel_id: e.target.value })}>
-                <option value="">Sin canal de contenido</option>
-                {channels.filter((channel) => channel.name.toLocaleLowerCase() === requiredChannelName).map((channel) => <option key={channel.id} value={channel.id}>{channel.name}</option>)}
-              </select>
+            <Field label="Canal de contenido" hint="La plantilla asigna automáticamente cada Short a su fábrica; la cuenta de YouTube se conecta por separado en Cuentas.">
+              <input value={factoryChannel?.name ?? "Cargando canal interno…"} readOnly />
               <div className="row" style={{ gap: 8, marginTop: 6 }}>
-                {channels.length === 0 && <button type="button" className="btn small ghost" onClick={() => go('canales')}>Crear canal de contenido</button>}
                 <button type="button" className="btn small ghost" onClick={() => go('cuentas')}>Vincular cuenta de YouTube</button>
               </div>
             </Field>
