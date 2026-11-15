@@ -528,7 +528,7 @@ export default function Autopilot() {
               <p>{form.videos_per_period} video(s) cada {form.period_days === 1 ? 'día' : form.period_days === 7 ? 'semana' : '30 días'}, a las {form.schedule_time} ({form.timezone}).</p>
               <p>{form.duration_target_sec >= 60 ? Math.floor(form.duration_target_sec / 60) + ' min' : form.duration_target_sec + ' s'} · {form.aspect} · {form.resolution} · {form.destination === 'youtube' && form.auto_publish ? 'Publicación automática en YouTube' : 'Guardar en Laburito'}.</p>
               <p>Voz: {voiceOptions.find((v) => v.id === form.voice)?.label || form.voice} · Música: {form.music === 'auto' ? 'Automática' : form.music === 'ninguna' ? 'Sin música' : form.music}</p>
-              <p>Tipo: {meta?.video_types.find((v) => v.id === form.video_type)?.label || form.video_type} · Estilo: {meta?.visual_styles.find((v) => v.id === form.visual_style)?.label || form.visual_style} · Subtítulos: {meta?.caption_styles.find((x) => x.id === form.caption_style)?.label || form.caption_style}</p>
+              <p>Tipo: {meta?.video_types.find((v) => v.id === form.video_type)?.label || form.video_type} · Estilo: {meta?.visual_styles.find((v) => v.id === form.visual_style)?.label || form.visual_style} · Subtítulos: {form.captions_enabled ? (meta?.caption_styles.find((x) => x.id === form.caption_style)?.label || form.caption_style) : 'Desactivados'}</p>
             </div>
             <label className="check-row">
               <input type="checkbox" checked={form.enabled} onChange={(e) => update('enabled', e.target.checked)} />
