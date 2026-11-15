@@ -19,16 +19,16 @@ from . import options
 
 def script_from_text(project: dict, raw_text: str) -> dict:
     """Convierte un guion escrito por el usuario en escenas listas para renderizar."""
-    text = (raw_text or "").replace("\\r\\n", "\\n").replace("\\r", "\\n").strip()
+    text = (raw_text or "").replace("\r\n", "\n").replace("\r", "\n").strip()
     if not text:
         raise ValueError("El guion está vacío.")
     if len(text) > 12000:
         raise ValueError("El guion no puede superar los 12.000 caracteres.")
 
-    paragraphs = [part.strip() for part in re.split(r"\\n\\s*\\n", text) if part.strip()]
+    paragraphs = [part.strip() for part in re.split(r"\n\s*\n", text) if part.strip()]
     chunks: list[str] = []
     for paragraph in paragraphs:
-        sentences = [part.strip() for part in re.split(r"(?<=[.!?…])\\s+", paragraph) if part.strip()]
+        sentences = [part.strip() for part in re.split(r"(?<=[.!?…])\s+", paragraph) if part.strip()]
         if not sentences:
             sentences = [paragraph]
         current: list[str] = []
@@ -51,7 +51,7 @@ def script_from_text(project: dict, raw_text: str) -> dict:
     topic = str(project.get("topic") or project.get("title") or "video").strip()
     scenes = []
     for index, narration in enumerate(chunks):
-        words = re.findall(r"\\w+", narration, flags=re.UNICODE)
+        words = re.findall(r"\w+", narration, flags=re.UNICODE)
         title = " ".join(words[:7]).strip().capitalize() or f"Escena {index + 1}"
         scenes.append({
             "idx": index,
