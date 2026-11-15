@@ -78,7 +78,7 @@ class AutopilotResearchTests(unittest.TestCase):
             with self.assertRaisesRegex(publish.PublishError, "máximo es 180"):
                 publish._validate_autopilot_short(project, Path("fake.mp4"))
         with patch("app.media.probe_video", return_value={"width": 1920, "height": 1080, "duration": 30}):
-            with self.assertRaisesRegex(publish.PublishError, "no es vertical"):
+            with self.assertRaisesRegex(publish.PublishError, "debe ser vertical o cuadrado"):
                 publish._validate_autopilot_short(project, Path("fake.mp4"))
 
     def test_youtube_autopilot_accepts_square_shorts(self):
