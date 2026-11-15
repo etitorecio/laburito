@@ -152,6 +152,7 @@ def get_rule(rule_id: int) -> dict | None:
     if row:
         row["enabled"] = bool(row["enabled"])
         row["auto_publish"] = bool(row["auto_publish"])
+        row["captions_enabled"] = bool(row.get("captions_enabled", 1))
     return row
 
 
