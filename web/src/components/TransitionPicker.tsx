@@ -19,7 +19,13 @@ export default function TransitionPicker({ options, value, onChange, compact = f
           return (
             <div key={option.id} className={`transition-card ${selected ? 'selected' : ''}`}>
               <span className="transition-screen">
-                <video src={src} controls muted loop playsInline preload="metadata" autoPlay={selected} />
+                {selected ? (
+                  <video src={src} controls muted loop playsInline preload="auto" autoPlay />
+                ) : (
+                  <button type="button" className="transition-demo-trigger" onClick={() => onChange(option.id)}>
+                    <span>▶</span> Ver demostración
+                  </button>
+                )}
               </span>
               <button
                 type="button"
