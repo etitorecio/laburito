@@ -44,6 +44,13 @@ const INITIAL = {
   enabled: true,
 };
 
+const LANGUAGE_LABELS: Record<string, string> = {
+  es: 'Español', en: 'Inglés', pt: 'Portugués', it: 'Italiano', fr: 'Francés',
+  de: 'Alemán', ru: 'Ruso', uk: 'Ucraniano', nl: 'Neerlandés', pl: 'Polaco',
+  sv: 'Sueco', tr: 'Turco', ar: 'Árabe', hi: 'Hindi', id: 'Indonesio',
+  vi: 'Vietnamita', ja: 'Japonés', ko: 'Coreano', zh: 'Chino mandarín',
+};
+
 const STEPS = [
   { title: 'Canal', subtitle: 'Dónde va a trabajar tu autopiloto' },
   { title: 'Nicho', subtitle: 'Qué contenido tiene que descubrir' },
@@ -218,6 +225,9 @@ export default function Autopilot() {
   }
 
   const voiceOptions = meta?.voices ?? [];
+  const selectedLanguage = voiceOptions.find((v) => v.id === form.voice)?.language ?? 'es';
+  const voiceLanguages = Array.from(new Set(voiceOptions.map((v) => v.language).filter((v): v is string => !!v)));
+  const filteredVoices = voiceOptions.filter((v) => v.language === selectedLanguage);
   const destinationInfo = data?.destinations.find((d) => d.id === 'youtube');
 
   return (
@@ -293,9 +303,18 @@ export default function Autopilot() {
           {step === 3 && <>
             <h3>Idioma y voz de narración</h3>
             <p className="muted">La voz disponible determina el idioma real de la narración. Las opciones no disponibles aparecen deshabilitadas.</p>
+            <Field label="Idioma del video">
+              <select value={selectedLanguage} onChange={(e) => {
+                const nextVoice = voiceOptions.find((v) => v.language === e.target.value && v.available)
+                  ?? voiceOptions.find((v) => v.language === e.target.value);
+                if (nextVoice) update('voice', nextVoice.id);
+              }}>
+                {voiceLanguages.map((language) => <option key={language} value={language}>{LANGUAGE_LABELS[language] || language}</option>)}
+              </select>
+            </Field>
             <Field label="Voz">
               <select value={form.voice} onChange={(e) => update('voice', e.target.value)}>
-                {voiceOptions.map((v) => <option key={v.id} value={v.id} disabled={!v.available}>{v.label}{v.language ? ' · ' + v.language : ''}{v.available ? '' : ' (no disponible)'}</option>)}
+                {filteredVoices.map((v) => <option key={v.id} value={v.id} disabled={!v.available}>{v.label}{v.available ? '' : ' (no disponible)'}</option>)}
               </select>
             </Field>
             <Field label={'Velocidad de narración: ' + form.speed + ' palabras/minuto'}>
