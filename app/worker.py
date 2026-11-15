@@ -9,6 +9,7 @@ from __future__ import annotations
 import threading
 import time
 import traceback
+from pathlib import Path
 
 from . import autopilot, db, publish, render
 
@@ -74,6 +75,40 @@ def _auto_publish_blocker(render_result: dict) -> str:
     return ""
 
 
+def _validate_render_result(result: dict) -> dict:
+    """No marca un render como terminado si el MP4 final no existe o está roto."""
+    raw_path = result.get("video")
+    if not raw_path:
+        raise RuntimeError("El render no devolvió la ruta del MP4 final.")
+    video = Path(raw_path)
+    if not video.is_file() or video.stat().st_size < 1024:
+        raise RuntimeError("El render terminó sin generar un MP4 final válido.")
+    info = render.media.probe_video(video)
+    width, height = int(info.get("width") or 0), int(info.get("height") or 0)
+    duration = float(info.get("duration") or 0)
+    if width < 1 or height < 1 or duration <= 0:
+        raise RuntimeError("El MP4 final no pasó la validación de ffprobe.")
+    return {"path": str(video), "width": width, "height": height, "duration": duration}
+
+
+def _scheduled_publish_settings(project_id: int) -> dict:
+    """Recupera el destino de la regla si falla la lectura de la configuración del proyecto."""
+    row = db.query_one(
+        "SELECT auto_publish, destination, privacy FROM autopilot_rules WHERE last_project_id=? ORDER BY id DESC LIMIT 1",
+        (project_id,),
+    )
+    if not row or not bool(row.get("auto_publish")):
+        return {"enabled": False, "destination": "youtube", "privacy": "unlisted"}
+    destination = row.get("destination") or "youtube"
+    if destination not in ("youtube", "entrega"):
+        destination = "youtube"
+    return {
+        "enabled": True,
+        "destination": destination,
+        "privacy": row.get("privacy") or "unlisted",
+    }
+
+
 def run_job(job: dict) -> None:
     import json
 
@@ -87,6 +122,7 @@ def run_job(job: dict) -> None:
                 should_cancel=lambda: _is_cancelled(job_id),
                 on_progress=lambda pct, msg: _set_progress(job_id, pct, msg),
             )
+            result["validation"] = _validate_render_result(result)
             db.execute(
                 "UPDATE jobs SET status='completado', progress=100, message=?, result_json=?, finished_at=?, updated_at=? WHERE id=?",
                 ("Render terminado", json.dumps(result, ensure_ascii=False), db.now(), db.now(), job_id),
@@ -105,7 +141,14 @@ def run_job(job: dict) -> None:
                     (message[:500], db.now(), int(project_id)),
                 )
                 db.log("error", "worker", message, {"project_id": project_id})
-                auto = {"enabled": False, "destination": "youtube"}
+                # La configuración del proyecto pudo fallar transitoriamente.
+                # Recuperamos la intención desde la regla para no perder la publicación.
+                auto = _scheduled_publish_settings(int(project_id))
+                if not auto["enabled"]:
+                    db.execute(
+                        "UPDATE jobs SET message=?, updated_at=? WHERE id=?",
+                        ((message + " — no se pudo recuperar una regla activa; requiere revisión.")[:400], db.now(), job_id),
+                    )
             blocker = _auto_publish_blocker(result)
             if auto["enabled"] and auto["destination"] == "youtube" and blocker:
                 db.execute(
@@ -126,7 +169,7 @@ def run_job(job: dict) -> None:
                     "publish_project",
                     {
                         "destination": auto["destination"],
-                        "privacy": render_payload.get("privacy", "unlisted"),
+                        "privacy": render_payload.get("privacy", auto.get("privacy", "unlisted")),
                     },
                 )
                 db.log(
@@ -148,7 +191,13 @@ def run_job(job: dict) -> None:
                 "UPDATE jobs SET status='completado', progress=100, message=?, result_json=?, finished_at=?, updated_at=? WHERE id=?",
                 (
                     f"Publicado en {published['destination']}",
-                    json.dumps({"url": published["url"], "external_id": published["external_id"]}, ensure_ascii=False),
+                    json.dumps({
+                        "url": published["url"],
+                        "external_id": published["external_id"],
+                        "destination": published["destination"],
+                        "published_at": db.now(),
+                        "verification": published.get("verification", "upload_api_confirmed"),
+                    }, ensure_ascii=False),
                     db.now(),
                     db.now(),
                     job_id,
