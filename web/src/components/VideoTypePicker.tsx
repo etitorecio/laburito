@@ -136,14 +136,13 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
               ) : (
                 <div className="video-type-placeholder">
                   {option.id === 'skeleton' ? (
-                    <video
-                      src={`/api/skeleton-preview/walk`}
-                      controls muted loop playsInline preload="none"
-                    />
+                    <video src="/api/skeleton-preview/walk" controls muted loop playsInline preload="none" />
+                  ) : option.id === 'moving_images' ? (
+                    <video src="/api/transition-preview/kenburns" controls muted loop playsInline preload="none" />
                   ) : (
                     <>
                       <span>{ICONS[option.id] || '🎥'}</span>
-                      <small>{option.id === 'moving_images' ? 'Fotos de archivo con paneo y zoom' : 'No hay un modelo local conectado'}</small>
+                      <small>No hay un motor local conectado</small>
                     </>
                   )}
                 </div>
