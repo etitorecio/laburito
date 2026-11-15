@@ -61,7 +61,7 @@ const STEPS = [
   { title: 'Estilo visual', subtitle: 'Elegí el aspecto que tendrán las escenas' },
   { title: 'Subtítulos', subtitle: 'Elegí un estilo y su movimiento con vista previa' },
   { title: 'Canales', subtitle: 'Elegí si guardar los videos o publicarlos en YouTube' },
-  { title: 'Calendario', subtitle: 'Definí duración, frecuencia y horario' },
+  { title: 'Calendario', subtitle: 'Definí la duración, el horario y la zona horaria' },
   { title: 'Tipo de video y publicación', subtitle: 'Elegí el formato, la frecuencia y confirmá tu Autopiloto' },
 ];
 
@@ -552,7 +552,6 @@ export default function Autopilot() {
               </Field>
             </div>
             {form.video_type === 'skeleton' && form.duration_target_sec > 420 && <p className="muted">Skeleton admite hasta 7 minutos. Reducí la duración en el paso anterior para usar este formato.</p>}
-          </>}
             <div className="card" style={{ marginTop: 12 }}>
               <strong>{form.name || 'Nuevo Autopiloto'} · {form.niche || 'Sin nicho'}</strong>
               <p>{form.videos_per_period} video(s) cada {form.period_days === 1 ? 'día' : form.period_days === 7 ? 'semana' : '30 días'}, a las {form.schedule_time} ({form.timezone}).</p>
