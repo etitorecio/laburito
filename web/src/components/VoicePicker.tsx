@@ -8,12 +8,15 @@ interface Props {
   value: string;
   onChange: (value: string) => void;
   compact?: boolean;
+  speed?: number;
+  pitch?: number;
 }
 
-export default function VoicePicker({ options, value, onChange, compact = false }: Props) {
+export default function VoicePicker({ options, value, onChange, compact = false, speed = 150, pitch = 45 }: Props) {
   const [previewVoice, setPreviewVoice] = useState<string | null>(null);
+  const [previewVersion, setPreviewVersion] = useState(0);
   const previewUrl = previewVoice
-    ? `/api/voice-preview/${encodeURIComponent(previewVoice)}`
+    ? `/api/voice-preview/${encodeURIComponent(previewVoice)}?speed=${speed}&pitch=${pitch}`
     : '';
   return (
     <div className="voice-picker">
@@ -37,7 +40,7 @@ export default function VoicePicker({ options, value, onChange, compact = false 
                 type="button"
                 className="voice-preview-button"
                 disabled={!voice.available}
-                onClick={() => setPreviewVoice(voice.id)}
+                onClick={() => { setPreviewVoice(voice.id); setPreviewVersion((v) => v + 1); }}
               >
                 ▶ Escuchar
               </button>
@@ -48,7 +51,7 @@ export default function VoicePicker({ options, value, onChange, compact = false 
       {previewVoice && (
         <div className="voice-preview-player">
           <span>Muestra: {options.find((v) => v.id === previewVoice)?.label}</span>
-          <audio key={previewVoice} controls autoPlay preload="auto" src={previewUrl} />
+          <audio key={`${previewVoice}-${speed}-${pitch}-${previewVersion}`} controls autoPlay preload="auto" src={previewUrl} />
         </div>
       )}
       {!compact && <p className="muted caption-style-help">Las muestras se generan en tu instalación, sin enviar texto a servicios externos.</p>}
