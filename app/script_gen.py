@@ -436,7 +436,7 @@ FRUTINOVELA_BLUEPRINT = [
         "weight": 0.12,
         "purpose": "Abrir en medio del conflicto con una frase o imagen que deje una pregunta inmediata.",
         "narration": "Nadie en la familia de {characters} esperaba que {topic} terminara así. Pero esa noche, justo cuando parecía que todo estaba resuelto, alguien dijo una frase que lo cambió todo.",
-        "visual": "{topic} personajes fruta telenovela escena dramática vertical",
+        "visual": "{topic} {characters} personajes fruta telenovela escena dramática vertical",
     },
     {
         "key": "presentacion",
@@ -444,7 +444,7 @@ FRUTINOVELA_BLUEPRINT = [
         "weight": 0.16,
         "purpose": "Recordar quiénes son los personajes y qué quieren, sin explicar de más.",
         "narration": "Hasta ese momento, {characters} tenían algo que proteger. Había promesas, celos y una confianza que parecía imposible de romper. Lo que nadie veía era que dos versiones de la misma historia estaban a punto de chocar.",
-        "visual": "{topic} personajes fruta familia casa colores vivos",
+        "visual": "{topic} {characters} personajes fruta familia casa colores vivos",
     },
     {
         "key": "conflicto",
@@ -452,7 +452,7 @@ FRUTINOVELA_BLUEPRINT = [
         "weight": 0.20,
         "purpose": "Hacer avanzar el conflicto con una decisión concreta de un personaje.",
         "narration": "Entre {characters}, la discusión empezó por algo pequeño, pero terminó revelando lo que todos venían ocultando. Uno de ellos tomó una decisión a espaldas del resto. Y cuando el mensaje llegó al teléfono equivocado, ya no hubo forma de fingir que no había pasado nada.",
-        "visual": "{topic} personajes fruta discusión traición melodrama",
+        "visual": "{topic} {characters} personajes fruta discusión traición melodrama",
     },
     {
         "key": "giro",
@@ -460,7 +460,7 @@ FRUTINOVELA_BLUEPRINT = [
         "weight": 0.20,
         "purpose": "Cambiar el sentido de lo ocurrido con una revelación dramática coherente.",
         "narration": "Entonces apareció una prueba que nadie de {characters} había visto. La persona señalada no era quien había empezado todo. Alguien más había movido las piezas desde el principio, y tenía un motivo que podía destruir a toda la familia.",
-        "visual": "{topic} personaje fruta descubre secreto carta revelación",
+        "visual": "{topic} {characters} personaje fruta descubre secreto carta revelación",
     },
     {
         "key": "confrontacion",
@@ -468,7 +468,7 @@ FRUTINOVELA_BLUEPRINT = [
         "weight": 0.18,
         "purpose": "Enfrentar a los personajes y dejar una consecuencia emocional clara.",
         "narration": "Por primera vez, {characters} dejaron de bajar la mirada. Las preguntas se convirtieron en acusaciones y una sola respuesta podía cambiar para siempre la relación entre ellos. Pero antes de que alguien pudiera explicar lo que sabía, sonó el timbre.",
-        "visual": "{topic} personajes fruta enfrentamiento puerta noche",
+        "visual": "{topic} {characters} personajes fruta enfrentamiento puerta noche",
     },
     {
         "key": "cliffhanger",
@@ -476,7 +476,7 @@ FRUTINOVELA_BLUEPRINT = [
         "weight": 0.14,
         "purpose": "Cerrar con un cliffhanger concreto que invite a ver el siguiente episodio.",
         "narration": "Del otro lado de la puerta había alguien que {characters} creían que se había ido para siempre. Traía una noticia y un nombre escrito en un papel. Cuando el protagonista lo leyó, entendió que lo peor todavía no había empezado. ¿Qué va a pasar ahora? Esto no termina acá.",
-        "visual": "{topic} personaje fruta silueta puerta cliffhanger telenovela",
+        "visual": "{topic} {characters} personaje fruta silueta puerta cliffhanger telenovela",
     },
 ]
 
