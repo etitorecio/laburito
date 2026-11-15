@@ -314,6 +314,8 @@ export default function Editor({ projectId, go }: Props) {
             <VoicePicker
               options={meta?.voices ?? []}
               value={project.voice}
+              speed={project.speed}
+              pitch={project.pitch}
               onChange={(value) => void patchProject({
                 voice: value,
                 ...(value === 'es-masculino' ? { pitch: 30 } : value === 'es-agudo' ? { pitch: 65 } : { pitch: 45 }),
