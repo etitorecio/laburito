@@ -256,6 +256,7 @@ export interface AutopilotRule {
   custom_tags: string;
   aspect: string;
   caption_style: string;
+  captions_enabled?: boolean;
   transition_default: string;
   resolution: string;
   fps: number;
