@@ -674,6 +674,19 @@ def _music_track(project: dict | None = None) -> Path | None:
     return None
 
 
+def _validate_vertical_short_render(project: dict, info: dict, results: list[dict]) -> None:
+    """No marca como terminado un Short de fábrica horizontal, largo o sin narración."""
+    if (project.get("template") or "") not in options.VERTICAL_SHORT_TEMPLATES:
+        return
+    width, height = int(info.get("width") or 0), int(info.get("height") or 0)
+    duration = float(info.get("duration") or 0)
+    if not width or not height or width >= height or abs((width / height) - (9 / 16)) > 0.025:
+        raise RuntimeError("El render de esta fábrica debe ser vertical 9:16; no se guardó como terminado.")
+    if duration <= 0 or duration > 180:
+        raise RuntimeError(f"El Short quedó en {duration:.1f} segundos; el máximo permitido es 180. Acortá el guion y volvé a renderizar.")
+    if any(result.get("audio_info", {}).get("engine") == "silencio" for result in results):
+        raise RuntimeError("No se pudo generar la voz en una o más escenas. Instalá o recuperá el motor TTS antes de publicar.")
+
 def render_project(project_id: int, should_cancel=None, on_progress=None) -> dict:
     """Render completo. Devuelve artefactos, advertencias e informe de calidad."""
     project = db.query_one("SELECT * FROM projects WHERE id=?", (project_id,))
@@ -820,6 +833,7 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
     info = media.probe_video(final)
     if not info.get("width"):
         raise RuntimeError("El MP4 final no se pudo validar con ffprobe")
+    _validate_vertical_short_render(project, info, results)
     if not music and ((project.get("music") or "auto") not in ("ninguna", "none", "sin_musica")):
         warnings.append(
             "Sin música de fondo: elegí una cama en el proyecto o agregá archivos libres en data/music/."
