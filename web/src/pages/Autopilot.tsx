@@ -49,14 +49,14 @@ const INITIAL = {
 };
 
 const STEPS = [
-  { title: 'Canal', subtitle: 'Dónde va a trabajar tu autopiloto' },
-  { title: 'Nicho', subtitle: 'Qué contenido tiene que descubrir' },
-  { title: 'Guion', subtitle: 'Cómo cuenta cada historia' },
-  { title: 'Voz', subtitle: 'Idioma y narración' },
-  { title: 'Aspecto', subtitle: 'Formato y estilo visual' },
-  { title: 'Audio', subtitle: 'Música y mezcla' },
-  { title: 'Calendario', subtitle: 'Cantidad, duración y horario' },
-  { title: 'Publicación en YouTube', subtitle: 'Conexión y publicación automática' },
+  { title: 'Nicho', subtitle: 'Qué contenido va a descubrir y producir' },
+  { title: 'Voz', subtitle: 'Elegí una voz en español y su ritmo' },
+  { title: 'Música', subtitle: 'Automática, una pista o sin música' },
+  { title: 'Apariencia', subtitle: 'Elegí el tipo de video y el estilo visual' },
+  { title: 'Subtítulos', subtitle: 'Vista previa del texto y movimiento' },
+  { title: 'Publicación', subtitle: 'Dónde se guarda o publica cada Short' },
+  { title: 'Calendario', subtitle: 'Duración, frecuencia y horario' },
+  { title: 'Confirmación', subtitle: 'Revisá y activá tu Autopiloto' },
 ];
 
 const PRODUCTION_STAGES = [
@@ -167,7 +167,7 @@ export default function Autopilot() {
       return;
     }
     if (form.auto_publish && form.destination === 'youtube' && persistenceConfigured === false) {
-      setError('Para autopublicar sin perder el Short ante un reinicio, conectá Supabase o ejecutá Laburito con un volumen local persistente.');
+      setError('Para autopublicar sin perder el Short ante un reinicio, ejecutá Laburito en tu PC con un volumen local persistente.');
       return;
     }
     setBusy(true); setError(''); setOk('');
@@ -300,43 +300,22 @@ export default function Autopilot() {
     <div className="stack">
       <Msg error={error} ok={ok} />
       {persistenceConfigured === false && <p className="muted" style={{ padding: 12, border: '1px solid var(--border, #d1d5db)', borderRadius: 10 }}>
-        <strong>Falta persistencia externa.</strong> En AppJet Free, el contenedor puede perder la programación y el historial si se reemplaza. Configurá Supabase en Ajustes para activar el backup automático antes de depender del calendario.
+        <strong>Falta almacenamiento persistente.</strong> Para conservar la programación y el historial, ejecutá Laburito en tu PC con la carpeta local ./data.
       </p>}
       {persistenceConfigured === true && <p className="muted">{persistenceNote}</p>}
       <Card title={editingId ? 'Editar autopiloto' : 'Crear autopiloto'} sub="Configurá una vez todo lo que querés producir. Después el sistema usa estas reglas en cada Short programado.">
         <div className="stack" style={{ gap: 12 }}>
-          <div className="grid two">
-            {STEPS.map((item, index) => (
-              <button
-                key={item.title}
-                type="button"
-                className={'btn ' + (step === index ? 'primary' : 'ghost')}
-                onClick={() => setStep(index)}
-                style={{ textAlign: 'left', minHeight: 48, whiteSpace: 'normal' }}
-              >
-                <strong>{index + 1}. {item.title}</strong><br />
-                <small>{item.subtitle}</small>
-              </button>
-            ))}
+          <div className="autopilot-progress">
+            <div className="autopilot-progress-top">
+              <span>PASO {step + 1} DE {STEPS.length}</span>
+              <strong>{STEPS[step].title}</strong>
+            </div>
+            <div className="autopilot-progress-bar"><span style={{ width: ((step + 1) / STEPS.length * 100) + '%' }} /></div>
+            <p className="muted">{STEPS[step].subtitle}</p>
           </div>
-          <div className="muted">Paso {step + 1} de {STEPS.length}</div>
 
           {step === 0 && <>
-            <h3>Organizá los Shorts en un canal de contenido</h3>
-            <Field label="Nombre de esta automatización">
-              <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="Ej.: Curiosidades diarias" />
-            </Field>
-            <Field label="Canal interno de Laburito">
-              <select value={form.channel_id} onChange={(e) => update('channel_id', e.target.value)}>
-                <option value="">Sin canal asociado todavía</option>
-                {(data?.channels ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </Field>
-            <p className="muted">Este canal organiza los proyectos y evita repetir temas. No selecciona la cuenta de YouTube: la cuenta real de publicación se conecta una sola vez en Ajustes.</p>
-          </>}
-
-          {step === 1 && <>
-            <h3>Definí el contenido del canal</h3>
+<h3>Definí el contenido del canal</h3>
             <Field label="Nicho principal">
               <input value={form.niche} onChange={(e) => update('niche', e.target.value)} placeholder="Misterio, ciencia, fútbol, historias, tecnología..." />
             </Field>
@@ -350,10 +329,10 @@ export default function Autopilot() {
             <Field label="Temas que debe evitar">
               <textarea value={form.avoid_topics} onChange={(e) => update('avoid_topics', e.target.value)} rows={2} placeholder="Ej.: tragedias recientes, política partidaria..." />
             </Field>
-          </>}
 
-          {step === 2 && <>
-            <h3>Personalidad de los guiones</h3>
+          <details className="advanced-settings">
+            <summary>Personalizar guiones (opcional)</summary>
+<h3>Personalidad de los guiones</h3>
             <Field label="Tono narrativo">
               <select value={form.tone} onChange={(e) => update('tone', e.target.value)}>
                 {['Dinámico y cercano','Misterioso y tenso','Documental y riguroso','Humorístico e irónico','Emocional y reflexivo','Enérgico y provocador'].map((x) => <option key={x}>{x}</option>)}
@@ -369,10 +348,23 @@ export default function Autopilot() {
                 {['Hacé una pregunta concreta al final','Invitá a comentar una opinión','Invitá a compartir el Short','Invitá a seguir el canal','Cerrá con una reflexión, sin pedir interacción'].map((x) => <option key={x}>{x}</option>)}
               </select>
             </Field>
+          </details>
+
+<h3>Organizá los Shorts en un canal de contenido</h3>
+            <Field label="Nombre de esta automatización">
+              <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="Ej.: Curiosidades diarias" />
+            </Field>
+            <Field label="Canal interno de Laburito">
+              <select value={form.channel_id} onChange={(e) => update('channel_id', e.target.value)}>
+                <option value="">Sin canal asociado todavía</option>
+                {(data?.channels ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </Field>
+            <p className="muted">Este canal organiza los proyectos y evita repetir temas. No selecciona la cuenta de YouTube: la cuenta real de publicación se conecta una sola vez en Ajustes.</p>
           </>}
 
-          {step === 3 && <>
-            <h3>Voz española</h3>
+          {step === 1 && <>
+<h3>Voz española</h3>
             <p className="muted">Todos los Shorts se escriben y narran en español. Elegí únicamente la voz y el ritmo de narración.</p>
             <Field label="Voz">
               <select value={form.voice} onChange={(e) => update('voice', e.target.value)}>
@@ -387,9 +379,39 @@ export default function Autopilot() {
             </Field>
             <div className="muted">La velocidad y el tono se aplican al motor espeak-ng. Piper usa el ritmo y tono propios del modelo neural.</div>
           </>}
-          
-          {step === 4 && <>
-            <h3>Tipo de Short y aspecto visual</h3>
+
+          {step === 2 && <>
+<h3>Música de fondo y mezcla</h3>
+            <Field label="Pista / ambiente musical">
+              <select value={form.music} onChange={(e) => update('music', e.target.value)}>
+                <option value="auto">Automática según el contenido</option>
+                <option value="ninguna">Sin música</option>
+                {(meta?.music_beds ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+                {(meta?.music_library ?? []).map((x) => <option key={x} value={x}>{x}</option>)}
+              </select>
+            </Field>
+            <Field label="Subir una pista propia (máximo 25 MB)">
+              <input type="file" accept=".mp3,.wav,.ogg,.m4a,.flac,audio/*" onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setBusy(true); setError(''); setOk('');
+                try {
+                  const result = await api.upload<{ filename: string }>('/api/music/upload', file);
+                  update('music', result.filename);
+                  setOk('Pista agregada: ' + result.filename);
+                  await load();
+                } catch (err) { setError((err as Error).message); }
+                finally { setBusy(false); e.target.value = ''; }
+              }} />
+            </Field>
+            <Field label={'Volumen de música: ' + Math.round(form.music_volume * 100) + '%'}>
+              <input type="range" min="0" max="0.5" step="0.01" value={form.music_volume} onChange={(e) => update('music_volume', Number(e.target.value))} />
+            </Field>
+            <p className="muted">La música integrada se genera localmente. La carga de pistas propias y la rotación de varias canciones todavía no están conectadas al autopiloto.</p>
+          </>}
+
+          {step === 3 && <>
+<h3>Tipo de Short y aspecto visual</h3>
             <p className="muted">Este autopiloto solo crea Shorts verticales 9:16. No genera documentales ni videos horizontales.</p>
             <Field label="Formato narrativo">
               <select value={form.template} onChange={(e) => chooseTemplate(e.target.value)}>
@@ -446,6 +468,24 @@ export default function Autopilot() {
                 {(meta?.aspects ?? ['9:16','16:9','1:1']).map((a) => <option key={a} value={a}>{a}{a === '9:16' ? ' · vertical recomendado' : ''}</option>)}
               </select>
             </Field>
+
+
+            <Field label="Calidad de exportación">
+              <select value={form.resolution} onChange={(e) => update('resolution', e.target.value)}>
+                {(meta?.resolutions ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+              </select>
+            </Field>
+            <Field label="Fluidez">
+              <select value={form.fps} onChange={(e) => update('fps', Number(e.target.value))}>
+                {(meta?.fps_options ?? [25,30]).map((x) => <option key={x} value={x}>{x} FPS</option>)}
+              </select>
+            </Field>
+            <p className="muted">El estilo orienta la búsqueda de imágenes de archivo y las consultas visuales de cada escena. No convierte una imagen en otra ni genera imágenes IA; los clips IA, avatares y personajes 3D todavía no están implementados.</p>
+          </>}
+
+          {step === 4 && <>
+            <h3>Subtítulos y movimiento</h3>
+            <p className="muted">Elegí cómo se muestran los textos y cómo se mueve cada escena. Podés ver una muestra antes de seleccionar.</p>
             <Field label="Estilo de subtítulos">
               <CaptionStylePicker
                 options={meta?.caption_styles ?? []}
@@ -461,51 +501,51 @@ export default function Autopilot() {
                 compact
               />
             </Field>
-            <Field label="Calidad de exportación">
-              <select value={form.resolution} onChange={(e) => update('resolution', e.target.value)}>
-                {(meta?.resolutions ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
-              </select>
-            </Field>
-            <Field label="Fluidez">
-              <select value={form.fps} onChange={(e) => update('fps', Number(e.target.value))}>
-                {(meta?.fps_options ?? [25,30]).map((x) => <option key={x} value={x}>{x} FPS</option>)}
-              </select>
-            </Field>
-            <p className="muted">El estilo orienta la búsqueda de imágenes de archivo y las consultas visuales de cada escena. No convierte una imagen en otra ni genera imágenes IA; los clips IA, avatares y personajes 3D todavía no están implementados.</p>
           </>}
 
           {step === 5 && <>
-            <h3>Música de fondo y mezcla</h3>
-            <Field label="Pista / ambiente musical">
-              <select value={form.music} onChange={(e) => update('music', e.target.value)}>
-                <option value="auto">Automática según el contenido</option>
-                <option value="ninguna">Sin música</option>
-                {(meta?.music_beds ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
-                {(meta?.music_library ?? []).map((x) => <option key={x} value={x}>{x}</option>)}
+<h3>Publicación automática en YouTube Shorts</h3>
+            <p className="muted">La publicación automática queda activada por defecto. Cada Short se renderiza, se valida como vertical de hasta 3 minutos y se sube a tu canal cuando termina. Para que funcione, la conexión OAuth de YouTube debe estar verificada en Ajustes.</p>
+            <Field label="Estilo de título automático">
+              <select value={form.title_style} onChange={(e) => update('title_style', e.target.value)}>
+                <option value="automatico">Mantener el título del tema</option>
+                <option value="pregunta">Abrir con una pregunta</option>
+                <option value="curiosidad">Curiosidad / dato que despierta interés</option>
+                <option value="directo">Título directo y descriptivo</option>
+                <option value="misterio">Misterio / intriga</option>
               </select>
             </Field>
-            <Field label="Subir una pista propia (máximo 25 MB)">
-              <input type="file" accept=".mp3,.wav,.ogg,.m4a,.flac,audio/*" onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setBusy(true); setError(''); setOk('');
-                try {
-                  const result = await api.upload<{ filename: string }>('/api/music/upload', file);
-                  update('music', result.filename);
-                  setOk('Pista agregada: ' + result.filename);
-                  await load();
-                } catch (err) { setError((err as Error).message); }
-                finally { setBusy(false); e.target.value = ''; }
-              }} />
+            <Field label="Etiquetas adicionales (separadas por coma)">
+              <input value={form.custom_tags} onChange={(e) => update('custom_tags', e.target.value)} placeholder="Ej.: curiosidades, historia, datos interesantes" />
             </Field>
-            <Field label={'Volumen de música: ' + Math.round(form.music_volume * 100) + '%'}>
-              <input type="range" min="0" max="0.5" step="0.01" value={form.music_volume} onChange={(e) => update('music_volume', Number(e.target.value))} />
+            <Field label="Destino de cada Short">
+              <select value={form.destination} onChange={(e) => update('destination', e.target.value)}>
+                <option value="entrega">Guardar en Laburito para revisar</option>
+                <option value="youtube">Publicar en YouTube</option>
+              </select>
             </Field>
-            <p className="muted">La música integrada se genera localmente. La carga de pistas propias y la rotación de varias canciones todavía no están conectadas al autopiloto.</p>
+            <Field label="Privacidad en YouTube">
+              <select value={form.privacy} onChange={(e) => update('privacy', e.target.value)}>
+                <option value="private">Privado</option>
+                <option value="unlisted">Oculto (solo con enlace)</option>
+                <option value="public">Público</option>
+              </select>
+            </Field>
+            <label className="check-row">
+              <input type="checkbox" checked={form.auto_publish} onChange={(e) => update('auto_publish', e.target.checked)} />
+              Publicar automáticamente en YouTube al terminar el render
+            </label>
+            {form.destination === 'youtube' && !youtubeReady && <p className="muted">YouTube todavía no está listo. Conectalo en <a href="#/ajustes">Ajustes → YouTube</a>. Hasta entonces, no se puede publicar.</p>}
+            {form.destination === 'youtube' && destinationInfo && <p className="muted">{destinationInfo.note}{destinationInfo.missing_env.length ? ' Faltan: ' + destinationInfo.missing_env.join(', ') + '.' : ''}</p>}
+<div className="card" style={{ marginTop: 12 }}>
+              <strong>Resumen</strong>
+              <p>{form.videos_per_period} Short(s) cada {form.period_days === 1 ? 'día' : form.period_days === 7 ? 'semana' : '30 días'}, a las {form.schedule_time} ({form.timezone}).</p>
+              <p>{form.niche || 'Sin nicho'} · {form.duration_target_sec}s · 9:16 · {form.resolution} · {form.destination === 'youtube' && form.auto_publish ? 'Publicación automática en YouTube Shorts' : 'guardar para revisar'}.</p>
+            </div>
           </>}
 
           {step === 6 && <>
-            <h3>Duración y calendario automático</h3>
+<h3>Duración y calendario automático</h3>
             <Field label="Duración objetivo">
               <select value={form.duration_target_sec} onChange={(e) => update('duration_target_sec', Number(e.target.value))}>
                 {[15,20,30,45,60,90,120,180].map((x) => <option key={x} value={x}>{x} segundos</option>)}
@@ -539,54 +579,24 @@ export default function Autopilot() {
           </>}
 
           {step === 7 && <>
-            <h3>Publicación automática en YouTube Shorts</h3>
-            <p className="muted">La publicación automática queda activada por defecto. Cada Short se renderiza, se valida como vertical de hasta 3 minutos y se sube a tu canal cuando termina. Para que funcione, la conexión OAuth de YouTube debe estar verificada en Ajustes.</p>
-            <Field label="Estilo de título automático">
-              <select value={form.title_style} onChange={(e) => update('title_style', e.target.value)}>
-                <option value="automatico">Mantener el título del tema</option>
-                <option value="pregunta">Abrir con una pregunta</option>
-                <option value="curiosidad">Curiosidad / dato que despierta interés</option>
-                <option value="directo">Título directo y descriptivo</option>
-                <option value="misterio">Misterio / intriga</option>
-              </select>
-            </Field>
-            <Field label="Etiquetas adicionales (separadas por coma)">
-              <input value={form.custom_tags} onChange={(e) => update('custom_tags', e.target.value)} placeholder="Ej.: curiosidades, historia, datos interesantes" />
-            </Field>
-            <Field label="Destino de cada Short">
-              <select value={form.destination} onChange={(e) => update('destination', e.target.value)}>
-                <option value="entrega">Guardar en Laburito para revisar</option>
-                <option value="youtube">Publicar en YouTube</option>
-              </select>
-            </Field>
-            <Field label="Privacidad en YouTube">
-              <select value={form.privacy} onChange={(e) => update('privacy', e.target.value)}>
-                <option value="private">Privado</option>
-                <option value="unlisted">Oculto (solo con enlace)</option>
-                <option value="public">Público</option>
-              </select>
-            </Field>
-            <label className="check-row">
-              <input type="checkbox" checked={form.auto_publish} onChange={(e) => update('auto_publish', e.target.checked)} />
-              Publicar automáticamente en YouTube al terminar el render
-            </label>
-            {form.destination === 'youtube' && !youtubeReady && <p className="muted">YouTube todavía no está listo. Conectalo en <a href="#/ajustes">Ajustes → YouTube</a>. Hasta entonces, no se puede publicar.</p>}
-            {form.destination === 'youtube' && destinationInfo && <p className="muted">{destinationInfo.note}{destinationInfo.missing_env.length ? ' Faltan: ' + destinationInfo.missing_env.join(', ') + '.' : ''}</p>}
+            <h3>Revisá tu Autopiloto</h3>
+            <div className="card" style={{ marginTop: 12 }}>
+              <strong>{form.name || 'Nuevo Autopiloto'} · {form.niche || 'Sin nicho'}</strong>
+              <p>{form.videos_per_period} Short(s) cada {form.period_days === 1 ? 'día' : form.period_days === 7 ? 'semana' : '30 días'}, a las {form.schedule_time} ({form.timezone}).</p>
+              <p>{form.duration_target_sec}s · 9:16 · {form.resolution} · {form.destination === 'youtube' && form.auto_publish ? 'Publicación automática en YouTube Shorts' : 'Guardar en Laburito'}.</p>
+              <p>Voz: {voiceOptions.find((v) => v.id === form.voice)?.label || form.voice} · Música: {form.music === 'auto' ? 'Automática' : form.music === 'ninguna' ? 'Sin música' : form.music}</p>
+              <p>Visual: {VISUAL_OPTIONS.find((v) => v.style === form.visual_style)?.title || form.visual_style} · Subtítulos: {meta?.caption_styles.find((x) => x.id === form.caption_style)?.label || form.caption_style}</p>
+            </div>
             <label className="check-row">
               <input type="checkbox" checked={form.enabled} onChange={(e) => update('enabled', e.target.checked)} />
-              Activar el autopiloto al guardar
+              Activar el Autopiloto al guardar
             </label>
-            <div className="card" style={{ marginTop: 12 }}>
-              <strong>Resumen</strong>
-              <p>{form.videos_per_period} Short(s) cada {form.period_days === 1 ? 'día' : form.period_days === 7 ? 'semana' : '30 días'}, a las {form.schedule_time} ({form.timezone}).</p>
-              <p>{form.niche || 'Sin nicho'} · {form.duration_target_sec}s · 9:16 · {form.resolution} · {form.destination === 'youtube' && form.auto_publish ? 'Publicación automática en YouTube Shorts' : 'guardar para revisar'}.</p>
-            </div>
           </>}
 
           <div className="row" style={{ justifyContent: 'space-between', marginTop: 16 }}>
             <button className="btn ghost" disabled={step === 0 || busy} onClick={() => setStep((s) => Math.max(0, s - 1))}>Atrás</button>
             {step < STEPS.length - 1
-              ? <button className="btn primary" disabled={busy || (step === 1 && !form.niche.trim())} onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}>Continuar</button>
+              ? <button className="btn primary" disabled={busy || (step === 0 && !form.niche.trim())} onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}>Continuar</button>
               : <button className="btn primary" disabled={busy || !form.niche.trim()} onClick={() => void save()}>{busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear autopiloto'}</button>}
             {editingId && <button className="btn ghost" disabled={busy} onClick={reset}>Cancelar</button>}
           </div>
