@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch
 import urllib.parse
 
-from app import autopilot, publish, script_gen, topic_engine, tts, worker
+from app import autopilot, publish, render, script_gen, topic_engine, tts, worker
 
 
 class AutopilotResearchTests(unittest.TestCase):
@@ -61,6 +61,11 @@ class AutopilotResearchTests(unittest.TestCase):
     def test_skeleton_autopilot_is_limited_to_seven_minutes(self):
         with self.assertRaisesRegex(ValueError, "máxima de 7 minutos"):
             autopilot._clean({"template": "longform", "duration_target_sec": 600, "video_type": "skeleton"})
+
+    def test_autopilot_can_disable_captions_without_affecting_regular_projects(self):
+        notes = "Autopiloto: ciencia. [LABURITO_META]" + json.dumps({"captions_enabled": False})
+        self.assertFalse(render._captions_enabled({"notes": notes}))
+        self.assertTrue(render._captions_enabled({"notes": "Proyecto normal"}))
 
     def test_autopilot_short_duration_supports_youtube_three_minute_limit(self):
         self.assertEqual(autopilot._clean({"template": "shorts", "duration_target_sec": 180})["duration_target_sec"], 180)
