@@ -8,7 +8,7 @@ Reconstrucción libre y local de la experiencia de IATuber, enfocada en **Shorts
 
 - **Investigación**: nichos con demanda, competencia, riesgo de copyright y potencial de serie; notas con nivel de evidencia, fuente y fecha de consulta; búsqueda de imágenes con licencia.
 - **Canales**: identidad, tono, idioma, formatos y cadencia.
-- **Guion IA local**: Ollama descarga una vez el modelo libre Llama 3.2 (3B) y lo ejecuta en tu PC para expandir los guiones; no usa API keys, tokens de generación ni créditos. Si el modelo no está disponible, conserva el guion estructurado de respaldo.
+- **Guion IA local**: Ollama descarga una vez el modelo Qwen 2.5 1.5B (Apache 2.0, aprox. 1 GB) y lo ejecuta en tu PC para expandir los guiones; no usa API keys, tokens de generación ni créditos. Si el modelo no está disponible, conserva el guion estructurado de respaldo.
 - **Voz**: tarjetas de voces exclusivamente españolas, con muestra de audio antes de elegir. espeak-ng funciona localmente; Piper neural español se puede instalar sin claves ni pagos.
 - **Demostraciones**: los 13 estilos de subtítulos, los movimientos de escena y los 10 tratamientos visuales tienen vistas previas generadas por FFmpeg, el mismo motor del video final.
 - **Render**: FFmpeg para Shorts verticales 9:16, con subtítulos quemados, miniaturas y música de fondo opcional.
@@ -45,7 +45,7 @@ cd web && npm run dev   # proxy /api -> http://127.0.0.1:8080
 
 Para usar Laburito sin pagar hosting ni Supabase, ejecutalo en una PC propia. Docker conserva la base, los videos y los trabajos en la carpeta `./data`; el Autopiloto sigue funcionando mientras la PC esté encendida, conectada a Internet y sin suspensión automática. Podés abrir la interfaz desde el celular conectado a la misma red Wi-Fi usando la IP local de la PC.
 
-En Windows, instalá Docker Desktop y activá su inicio automático al iniciar sesión. Después, hacé doble clic en `start_windows.bat`: construye la imagen, inicia el contenedor y abre la interfaz. También imprime la dirección local para entrar desde el celular por Wi-Fi. No necesitás claves ni tokens de IA para generar videos; mantené el acceso limitado a tu red local y no expongas el puerto a Internet. La primera compilación puede tardar y el primer inicio descarga el modelo local de lenguaje (aprox. 2 GB). Después queda guardado en `./ollama` y no se vuelve a descargar.
+En Windows, instalá Docker Desktop y activá su inicio automático al iniciar sesión. Después, hacé doble clic en `start_windows.bat`: construye la imagen, inicia el contenedor y abre la interfaz. También imprime la dirección local para entrar desde el celular por Wi-Fi. No necesitás claves ni tokens de IA para generar videos; mantené el acceso limitado a tu red local y no expongas el puerto a Internet. La primera compilación puede tardar y el primer inicio descarga el modelo local de lenguaje Qwen 2.5 1.5B (aprox. 1 GB). Después queda guardado en `./ollama` y no se vuelve a descargar.
 Para que se cumpla el calendario, dejá la PC encendida y evitá que entre en suspensión; Docker Desktop y el contenedor deben permanecer activos. Si la PC se apaga, el worker recupera la programación pendiente cuando vuelve a arrancar.
 
 Si preferís hacerlo manualmente:
@@ -107,7 +107,7 @@ web/            React 19 + TypeScript + Vite (mobile-first, español)
 scripts/e2e_local.py  prueba real del pipeline completo
 ```
 
-Optimizado para equipos modestos con CPU: las imágenes con movimiento, subtítulos, estilos visuales y el esqueleto 2.5D se procesan localmente. En una notebook de 12 GB de RAM conviene usar 720p/1080p y renderizar un trabajo a la vez. El modelo Llama 3.2 3B funciona por CPU, pero la generación de guiones puede ser lenta.
+Optimizado para equipos modestos con CPU: las imágenes con movimiento, subtítulos, estilos visuales y el esqueleto 2.5D se procesan localmente. En una notebook de 12 GB de RAM conviene usar 720p/1080p y renderizar un trabajo a la vez. El modelo Qwen 2.5 1.5B funciona por CPU, pero la generación de guiones puede ser lenta.
 
 ## Pruebas
 
