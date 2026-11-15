@@ -55,7 +55,7 @@ const STEPS = [
   { title: 'Aspecto', subtitle: 'Formato y estilo visual' },
   { title: 'Audio', subtitle: 'Música y mezcla' },
   { title: 'Calendario', subtitle: 'Cantidad, duración y horario' },
-  { title: 'Social Media Integration', subtitle: 'Conexión y publicación automática' },
+  { title: 'Publicación en YouTube', subtitle: 'Conexión y publicación automática' },
 ];
 
 const PRODUCTION_STAGES = [
@@ -74,12 +74,12 @@ const PRODUCTION_STAGES = [
 ];
 
 const VISUAL_OPTIONS = [
-  { id: 'moving_images', title: 'Moving AI Images', subtitle: 'En esta versión: imágenes de archivo con paneo y zoom; no se generan con IA', preview: '🖼️', available: true, style: 'Movimiento de imágenes con paneo y zoom', kind: 'stock' },
-  { id: 'stock_images', title: 'Stock Footage', subtitle: 'Fotografías y material de archivo con licencia; el catálogo depende de las fuentes disponibles', preview: '🎞️', available: true, style: 'Fotografía de archivo con licencia', kind: 'stock' },
-  { id: 'full_motion_ai', title: 'Full Motion AI Video', subtitle: 'Clips de video generados por IA', preview: '🎬', available: false, style: 'Full Motion AI Video', kind: 'ai' },
-  { id: 'skeleton', title: 'Skeleton Video', subtitle: 'Animación 3D de esqueleto: todavía no hay motor de animación conectado', preview: '💀', available: false, style: 'Skeleton Video', kind: 'skeleton' },
-  { id: 'minecraft', title: 'Minecraft gameplay', subtitle: '5 miniaturas de preview · requiere gameplay propio o licenciado', preview: '⛏️', available: false, style: 'Minecraft gameplay', kind: 'minecraft' },
-  { id: 'subway', title: 'Subway Surfers gameplay', subtitle: '5 clips de ejemplo · requiere videos con licencia o propios', preview: '🏃', available: false, style: 'Subway Surfers gameplay', kind: 'subway' },
+  { id: 'moving_images', title: 'Imágenes con movimiento', subtitle: 'En esta versión: imágenes de archivo con paneo y zoom; no se generan con IA', preview: '🖼️', available: true, style: 'Movimiento de imágenes con paneo y zoom', kind: 'stock' },
+  { id: 'stock_images', title: 'Videos de archivo', subtitle: 'Fotografías y material de archivo con licencia; el catálogo depende de las fuentes disponibles', preview: '🎞️', available: true, style: 'Fotografía de archivo con licencia', kind: 'stock' },
+  { id: 'full_motion_ai', title: 'Video IA de movimiento completo', subtitle: 'Clips de video generados por IA', preview: '🎬', available: false, style: 'Full Motion AI Video', kind: 'ai' },
+  { id: 'skeleton', title: 'Video de esqueleto 3D', subtitle: 'Animación 3D de esqueleto: todavía no hay motor de animación conectado', preview: '💀', available: false, style: 'Skeleton Video', kind: 'skeleton' },
+  { id: 'minecraft', title: 'Gameplay de Minecraft', subtitle: '5 miniaturas de preview · requiere gameplay propio o licenciado', preview: '⛏️', available: false, style: 'Minecraft gameplay', kind: 'minecraft' },
+  { id: 'subway', title: 'Gameplay de Subway Surfers', subtitle: '5 clips de ejemplo · requiere videos con licencia o propios', preview: '🏃', available: false, style: 'Subway Surfers gameplay', kind: 'subway' },
 ];
 
 const THUMB_IMAGES: Record<string, string[]> = {
@@ -535,7 +535,7 @@ export default function Autopilot() {
           </>}
 
           {step === 7 && <>
-            <h3>Social Media Integration · YouTube Shorts</h3>
+            <h3>Publicación automática en YouTube Shorts</h3>
             <p className="muted">La publicación automática queda activada por defecto. Cada Short se renderiza, se valida como vertical de hasta 3 minutos y se sube a tu canal cuando termina. Para que funcione, la conexión OAuth de YouTube debe estar verificada en Ajustes.</p>
             <Field label="Estilo de título automático">
               <select value={form.title_style} onChange={(e) => update('title_style', e.target.value)}>
