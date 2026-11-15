@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getToken, type Meta } from '../api';
+import type { Meta } from '../api';
 
 type VoiceOption = Meta['voices'][number];
 
@@ -12,9 +12,8 @@ interface Props {
 
 export default function VoicePicker({ options, value, onChange, compact = false }: Props) {
   const [previewVoice, setPreviewVoice] = useState<string | null>(null);
-  const token = getToken();
   const previewUrl = previewVoice
-    ? `/api/voice-preview/${encodeURIComponent(previewVoice)}${token ? `?token=${encodeURIComponent(token)}` : ''}`
+    ? `/api/voice-preview/${encodeURIComponent(previewVoice)}`
     : '';
   return (
     <div className="voice-picker">
