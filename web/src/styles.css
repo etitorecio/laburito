@@ -615,6 +615,51 @@ video,
 }
 
 /* ---------- Escenas ---------- */
+.editor-timeline {
+  display: flex;
+  align-items: stretch;
+  gap: 7px;
+  overflow-x: auto;
+  padding: 6px 2px 12px;
+  scrollbar-width: thin;
+}
+.editor-timeline-item {
+  flex: 0 0 auto;
+  min-width: 112px;
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel-2);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+}
+.editor-timeline-item strong {
+  font-size: 0.78rem;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.editor-timeline-item small {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.editor-timeline-item.active {
+  border-color: var(--accent);
+  background: rgba(255, 176, 32, 0.13);
+}
+.scene.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(255, 176, 32, 0.22);
+}
 .scene {
   border: 1px solid var(--line);
   border-radius: 12px;
