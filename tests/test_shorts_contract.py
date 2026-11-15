@@ -43,9 +43,9 @@ class ShortsContractTests(unittest.TestCase):
         self.assertEqual(options.clamp_vertical_short_duration("longform", 999), 999)
 
     def test_fiction_word_targets_scale_with_short_duration(self):
-        self.assertEqual(script_gen.fiction_word_range(180), (342, 432))
-        self.assertEqual(script_gen.fiction_word_range(90), (171, 216))
-        self.assertEqual(script_gen.fiction_word_range(45), (86, 108))
+        self.assertEqual(script_gen.fiction_word_range(180), (378, 450))
+        self.assertEqual(script_gen.fiction_word_range(90), (189, 225))
+        self.assertEqual(script_gen.fiction_word_range(45), (94, 112))
 
     def test_gameplay_clip_minimums_match_the_product_contract(self):
         self.assertEqual(options.VIDEO_CLIP_MINIMUMS, {
