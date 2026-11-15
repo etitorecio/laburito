@@ -1096,6 +1096,16 @@ def list_sources(project_id: int | None = None):
     return db.query("SELECT * FROM sources ORDER BY id DESC LIMIT 200")
 
 
+
+@app.delete("/api/sources/{source_id}")
+def delete_source(source_id: int):
+    existing = db.query_one("SELECT id FROM sources WHERE id=?", (source_id,))
+    if not existing:
+        raise HTTPException(404, "Fuente inexistente")
+    db.execute("DELETE FROM sources WHERE id=?", (source_id,))
+    return {"ok": True}
+
+
 @app.post("/api/sources", status_code=201)
 def create_source(payload: SourceIn):
     sid = db.execute(
