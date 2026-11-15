@@ -15,8 +15,11 @@ import json
 import os
 import shutil
 import time
+import threading
 import zipfile
 from pathlib import Path
+
+from PIL import Image, ImageDraw, ImageFilter
 
 from . import db, media, options, tts
 
@@ -30,6 +33,49 @@ class Cancelled(Exception):
 def _style(project: dict) -> dict:
     """Estilo de subtítulos del proyecto (13 opciones, ver app/options.py)."""
     return options.caption_style(project)
+
+def _project_metadata(project: dict) -> dict:
+    notes = str(project.get("notes") or "")
+    marker = "[LABURITO_META]"
+    if marker not in notes:
+        return {}
+    try:
+        metadata = json.loads(notes.split(marker, 1)[1])
+        return metadata if isinstance(metadata, dict) else {}
+    except (json.JSONDecodeError, TypeError):
+        return {}
+
+
+def _captions_enabled(project: dict) -> bool:
+    """Lee el interruptor opcional guardado por el Autopiloto; proyectos normales conservan subtítulos."""
+    return bool(_project_metadata(project).get("captions_enabled", True))
+
+def _thumbnail_enabled(project: dict) -> bool:
+    """Las miniaturas están activadas por defecto y pueden desactivarse en la configuración."""
+    return bool(_project_metadata(project).get("create_thumbnail", True))
+
+
+def _custom_visual_style_id(project: dict) -> str:
+    """Traduce una descripción libre a un filtro local aproximado, sin prometer generación IA."""
+    fallback = project.get("visual_style") or "automatico"
+    prompt = str(_project_metadata(project).get("visual_style_prompt") or "").lower()
+    if not prompt:
+        return fallback
+    mappings = [
+        (("cyberpunk", "neón", "neon", "futurista"), "cyberpunk"),
+        (("anime", "manga", "japonés", "japones"), "anime"),
+        (("pixel", "8-bit", "8 bit", "retro game"), "pixel_art"),
+        (("acuarela", "watercolor", "pintura al agua"), "acuarela"),
+        (("comic", "cómic", "historieta"), "comic"),
+        (("noir", "blanco y negro", "monocromo"), "noir"),
+        (("vintage", "retro", "película antigua"), "vintage"),
+        (("cinemático", "cinematic", "cine"), "cinematico"),
+        (("realista", "fotográfico", "fotografico"), "realista"),
+    ]
+    for keywords, style_id in mappings:
+        if any(keyword in prompt for keyword in keywords):
+            return style_id
+    return fallback
 
 
 def _size(project: dict) -> tuple[int, int]:
@@ -102,10 +148,41 @@ def ensure_audio(project: dict, scene: dict) -> tuple[Path, float, dict]:
 
 
 def ensure_visual(project: dict, scene: dict) -> tuple[Path, str, dict]:
-    """Busca primero una imagen con licencia y usa una tarjeta como respaldo."""
+    """Resuelve imágenes o clips de fondo propios/autorizados."""
     width, height = _size(project)
+    video_type = (project.get("video_type") or "moving_images").strip()
+    if video_type == "skeleton":
+        from . import skeleton
+        action = skeleton.action_for(scene.get("title") or "", scene.get("narration") or "")
+        clip = skeleton.ensure_clip(action)
+        return clip, "skeleton_local", {
+            "license": "Animación procedural original generada localmente",
+            "author": "Laburito",
+            "url": f"local://skeleton/{action}",
+            "title": f"Esqueleto animado · {action}",
+            "provider": "skeleton_local",
+        }
+    if video_type in {"stock_footage", "minecraft", "subway"}:
+        clip_dir = db.DATA_DIR / "background_clips" / video_type
+        clips = sorted(clip_dir.glob("*.mp4")) if clip_dir.exists() else []
+        required = 5
+        if len(clips) < required:
+            raise RuntimeError(
+                f"El formato {video_type} necesita {required} clip(s) propios o autorizados. "
+                f"Hay {len(clips)} cargados."
+            )
+        scene_index = int(scene.get("idx") or 0)
+        project_index = int(project.get("id") or 0)
+        chosen = clips[(project_index + scene_index) % len(clips)]
+        return chosen, "video_fondo", {
+            "license": "Clip propio o autorizado; derechos confirmados al cargar",
+            "author": "Biblioteca local del usuario",
+            "url": f"local://background-clips/{video_type}/{chosen.name}",
+            "title": chosen.name,
+            "provider": "biblioteca_local",
+        }
     existing = (scene.get("visual_path") or "").strip()
-    if existing and Path(existing).exists():
+    if existing and Path(existing).exists() and Path(existing).suffix.lower() not in {".mp4", ".mov", ".webm", ".mkv"}:
         return Path(existing), scene.get("visual_kind") or "recurso", {
             "license": scene.get("visual_license") or "sin verificar",
             "author": scene.get("visual_author") or "desconocido",
@@ -115,6 +192,9 @@ def ensure_visual(project: dict, scene: dict) -> tuple[Path, str, dict]:
     key = _h(f"{scene.get('title')}|{scene.get('visual_query')}|{width}x{height}")
     folder = _visual_dir(int(project["id"]))
     query = (scene.get("visual_query") or project.get("topic") or "").strip()
+    custom_style_prompt = str(_project_metadata(project).get("visual_style_prompt") or "").strip()
+    if custom_style_prompt:
+        query = f"{query} {custom_style_prompt}".strip()
     providers = () if os.environ.get("AITUBER_DISABLE_EXTERNAL_MEDIA", "").lower() in ("1", "true", "yes") else ("wikimedia", "openverse")
     for provider in providers:
         try:
@@ -192,6 +272,58 @@ def _drawtext_chain(cues: list[dict], font: str, width: int, height: int, style:
     return ",".join(parts)
 
 
+_PREVIEW_LOCK = threading.Lock()
+
+
+def caption_preview(style_id: str) -> Path:
+    with _PREVIEW_LOCK:
+        return _caption_preview_unlocked(style_id)
+
+
+def _caption_preview_unlocked(style_id: str) -> Path:
+    """Genera una muestra PNG con el mismo filtro drawtext que usa el render."""
+    if style_id not in options.CAPTION_STYLES:
+        raise ValueError("Estilo de subtítulos desconocido")
+    preview_dir = db.DATA_DIR / "caption_previews"
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    output = preview_dir / f"{style_id}.png"
+    if output.exists() and output.stat().st_size > 500:
+        return output
+
+    style = options.CAPTION_STYLES[style_id]
+    font = media.font_path()
+    if not font:
+        raise RuntimeError("No hay una fuente TTF instalada para generar la demostración")
+    width, height = 480, 854
+    sample = "Esta historia cambió todo y nadie lo vio venir."
+    cues = media.caption_chunks(
+        sample, 2.0, style["max_words"], style["max_chars"], style["max_lines"]
+    )
+    cue_dir = preview_dir / f"{style_id}_cues"
+    cue_dir.mkdir(parents=True, exist_ok=True)
+    for index, cue in enumerate(cues):
+        lines = cue["lines"]
+        if style.get("uppercase"):
+            lines = [line.upper() for line in lines]
+        text_file = cue_dir / f"{index}.txt"
+        text_file.write_text("\n".join(lines), encoding="utf-8")
+        cue["file"] = str(text_file)
+
+    background = [
+        "drawbox=x=0:y=0:w=iw:h=ih:color=0x102a43:t=fill",
+        "drawbox=x=iw*0.08:y=ih*0.18:w=iw*0.84:h=ih*0.34:color=0x2563eb@0.35:t=fill",
+        "drawbox=x=iw*0.20:y=ih*0.52:w=iw*0.95:h=ih*0.26:color=0x0b132b@0.9:t=fill",
+    ]
+    background.append(_drawtext_chain(cues, font, width, height, style))
+    _ff([
+        "-f", "lavfi", "-i", f"color=c=0x0b132b:s={width}x{height}:d=2:r=1",
+        "-vf", ",".join(background), "-frames:v", "1", str(output),
+    ], timeout=60)
+    if not output.exists() or output.stat().st_size < 500:
+        raise RuntimeError("FFmpeg no pudo generar la demostración de subtítulos")
+    return output
+
+
 def _motion_filters(transition: str, width: int, height: int, duration: float, fps: int) -> list[str]:
     """Transición/movimiento real de la escena (8 opciones)."""
     kind = (transition or "corte").strip()
@@ -223,6 +355,141 @@ def _motion_filters(transition: str, width: int, height: int, duration: float, f
     return []
 
 
+def transition_preview(transition_id: str) -> Path:
+    with _PREVIEW_LOCK:
+        return _transition_preview_unlocked(transition_id)
+
+
+def _transition_preview_unlocked(transition_id: str) -> Path:
+    """Genera un clip corto que muestra el efecto real aplicado por FFmpeg."""
+    if transition_id not in options.TRANSITION_IDS:
+        raise ValueError("Movimiento de escena desconocido")
+    preview_dir = db.DATA_DIR / "transition_previews"
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    output = preview_dir / f"{transition_id}.mp4"
+    if output.exists() and output.stat().st_size > 1000:
+        return output
+
+    width, height, duration, fps = 360, 640, 3.0, 20
+    base = _visual_style_sample_base(preview_dir / "paisaje-demo.png")
+    filters = _motion_filters(transition_id, width, height, duration, fps)
+    filters.append("format=yuv420p")
+    _ff([
+        "-loop", "1", "-framerate", str(fps), "-i", str(base), "-t", str(duration),
+        "-vf", ",".join(filters), "-an", "-c:v", "libx264", "-preset", "ultrafast",
+        "-crf", "30", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(output),
+    ], timeout=90)
+    if not output.exists() or output.stat().st_size < 1000:
+        raise RuntimeError("FFmpeg no pudo generar la demostración de movimiento")
+    return output
+
+
+def _visual_style_filters(style_id: str | None) -> list[str]:
+    """Tratamientos visuales locales compartidos por render y demostraciones."""
+    filters = {
+        "automatico": [],
+        "cinematico": ["eq=contrast=1.12:saturation=1.08:brightness=-0.015", "vignette=PI/5"],
+        "realista": ["eq=contrast=1.03:saturation=1.05", "unsharp=5:5:0.4:5:5:0.0"],
+        "anime": ["eq=contrast=1.15:saturation=1.6", "unsharp=5:5:0.7:5:5:0.0"],
+        "pixel_art": ["scale=iw/8:ih/8:flags=neighbor", "scale=iw*8:ih*8:flags=neighbor"],
+        "noir": ["hue=s=0", "eq=contrast=1.35:brightness=-0.03", "vignette=PI/4"],
+        "vintage": [
+            "colorchannelmixer=.393:.769:.189:.349:.686:.168:.272:.534:.131",
+            "eq=contrast=1.05:saturation=0.85", "vignette=PI/5",
+        ],
+        "cyberpunk": [
+            "eq=contrast=1.15:saturation=1.65",
+            "colorbalance=rs=.08:gs=-.04:bs=.15",
+        ],
+        "acuarela": ["gblur=sigma=0.6", "eq=saturation=1.2:contrast=.95"],
+        "comic": ["edgedetect=low=0.1:high=0.3", "eq=contrast=1.2:saturation=1.3"],
+    }
+    return filters.get((style_id or "automatico").strip(), [])
+
+
+def visual_style_preview(style_id: str) -> Path:
+    with _PREVIEW_LOCK:
+        return _visual_style_preview_unlocked(style_id)
+
+
+def _visual_style_sample_base(path: Path) -> Path:
+    """Paisaje ilustrado original para comparar los tratamientos de color."""
+    if path.exists() and path.stat().st_size > 1000:
+        return path
+    width, height = 480, 854
+    image = Image.new("RGB", (width, height))
+    pixels = image.load()
+    stops = [
+        (0.0, (9, 24, 52)),
+        (0.48, (43, 83, 112)),
+        (0.68, (205, 129, 91)),
+        (1.0, (13, 34, 49)),
+    ]
+    for y in range(height):
+        t = y / max(1, height - 1)
+        for index in range(len(stops) - 1):
+            if stops[index][0] <= t <= stops[index + 1][0]:
+                a, ca = stops[index]
+                b, cb = stops[index + 1]
+                mix = (t - a) / (b - a)
+                color = tuple(int(ca[c] * (1 - mix) + cb[c] * mix) for c in range(3))
+                break
+        else:
+            color = stops[-1][1]
+        for x in range(width):
+            pixels[x, y] = color
+
+    glow = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    glow_draw = ImageDraw.Draw(glow)
+    glow_draw.ellipse((292, 175, 418, 301), fill=(255, 194, 125, 110))
+    glow = glow.filter(ImageFilter.GaussianBlur(34))
+    image = Image.alpha_composite(image.convert("RGBA"), glow)
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((325, 208, 385, 268), fill=(255, 219, 161, 255))
+    draw.polygon([(0, 520), (95, 350), (165, 475), (260, 320), (390, 480), (480, 375), (480, 660), (0, 660)],
+                 fill=(64, 91, 104, 255))
+    draw.polygon([(0, 610), (110, 455), (205, 585), (315, 430), (480, 600), (480, 730), (0, 730)],
+                 fill=(29, 59, 73, 255))
+    draw.polygon([(0, 680), (120, 610), (240, 690), (355, 600), (480, 680), (480, 854), (0, 854)],
+                 fill=(11, 37, 51, 255))
+    draw.polygon([(0, 725), (130, 700), (250, 738), (380, 690), (480, 725), (480, 854), (0, 854)],
+                 fill=(19, 69, 84, 255))
+    # Árboles y una silueta humana para dar escala a la escena.
+    for x, base_y, size in ((40, 715, 1.0), (85, 704, .75), (425, 720, 1.05), (455, 705, .8)):
+        draw.rectangle((x - 4, base_y - 45 * size, x + 4, base_y), fill=(7, 24, 34, 255))
+        draw.polygon([(x, base_y - 110 * size), (x - 28 * size, base_y - 38 * size),
+                      (x + 28 * size, base_y - 38 * size)], fill=(8, 29, 39, 255))
+    draw.ellipse((238, 664, 252, 678), fill=(4, 15, 23, 255))
+    draw.line((245, 678, 245, 720), fill=(4, 15, 23, 255), width=8)
+    draw.line((245, 690, 228, 708), fill=(4, 15, 23, 255), width=6)
+    draw.line((245, 690, 262, 708), fill=(4, 15, 23, 255), width=6)
+    draw.line((245, 720, 232, 748), fill=(4, 15, 23, 255), width=7)
+    draw.line((245, 720, 258, 748), fill=(4, 15, 23, 255), width=7)
+    image.convert("RGB").save(path, format="PNG", optimize=True)
+    return path
+
+
+def _visual_style_preview_unlocked(style_id: str) -> Path:
+    """Muestra PNG generado con los mismos filtros que se aplican a las escenas."""
+    if style_id not in options.VISUAL_STYLE_IDS:
+        raise ValueError("Estilo visual desconocido")
+    preview_dir = db.DATA_DIR / "visual_style_previews"
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    output = preview_dir / f"{style_id}.png"
+    if output.exists() and output.stat().st_size > 500:
+        return output
+    base = _visual_style_sample_base(preview_dir / "paisaje-demo.png")
+    filters = _visual_style_filters(style_id)
+    filters.append("format=rgb24")
+    _ff([
+        "-i", str(base), "-vf", ",".join(filters),
+        "-frames:v", "1", "-c:v", "png", str(output),
+    ], timeout=60)
+    if not output.exists() or output.stat().st_size < 500:
+        raise RuntimeError("FFmpeg no pudo generar la demostración del estilo")
+    return output
+
+
 def render_scene(
     project: dict,
     scene: dict,
@@ -250,8 +517,9 @@ def render_scene(
     except OSError:
         visual_signature = str(visual_path)
 
-    font = media.font_path()
-    if not font:
+    captions_enabled = _captions_enabled(project)
+    font = media.font_path() if captions_enabled else ""
+    if captions_enabled and not font:
         raise RuntimeError(
             "No hay ninguna fuente TTF instalada (instalá font-dejavu / fonts-dejavu). "
             "Los subtítulos necesitan una fuente del sistema."
@@ -261,6 +529,7 @@ def render_scene(
     key = _h(
         f"{narration}|{visual_signature}|{duration:.3f}|{width}x{height}"
         f"|{project.get('kind')}|{style_signature}|{transition}|{fps}|{font}"
+        f"|{project.get('visual_style') or 'automatico'}|{_project_metadata(project).get('visual_style_prompt', '')}|{project.get('video_type') or 'moving_images'}"
         f"|{scene.get('visual_query') or ''}"
     )
     seg_dir = scene_dir / key
@@ -274,7 +543,7 @@ def render_scene(
         style["max_words"],
         style["max_chars"],
         style["max_lines"],
-    )
+    ) if captions_enabled else []
     caption_dir = seg_dir / "captions"
     caption_dir.mkdir(parents=True, exist_ok=True)
     for i, cue in enumerate(cues):
@@ -292,12 +561,19 @@ def render_scene(
             f"crop={width}:{height}",
             "format=yuv420p",
         ]
+        filters.extend(_visual_style_filters(_custom_visual_style_id(project)))
         filters.extend(_motion_filters(transition, width, height, duration, fps))
         if cues:
             filters.append(_drawtext_chain(cues, font, width, height, style))
+        is_video_background = visual_path.suffix.lower() in {".mp4", ".mov", ".webm", ".mkv"}
+        input_args = (
+            ["-stream_loop", "-1", "-i", str(visual)]
+            if is_video_background
+            else ["-loop", "1", "-framerate", str(fps), "-i", str(visual)]
+        )
         _ff(
             [
-                "-loop", "1", "-framerate", str(fps), "-i", str(visual),
+                *input_args,
                 "-t", f"{duration:.2f}",
                 "-vf", ",".join(filters),
                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "25",
@@ -342,6 +618,8 @@ def _music_track(project: dict | None = None) -> Path | None:
     choice = ((project or {}).get("music") or "auto").strip()
     if choice in ("ninguna", "none", "sin_musica"):
         return None
+    if choice in options.MUSIC_IDS:
+        choice = "bed:" + choice
     if choice.startswith("bed:"):
         try:
             return media.ensure_music_bed(choice.split(":", 1)[1])
@@ -351,14 +629,18 @@ def _music_track(project: dict | None = None) -> Path | None:
         candidate = db.MUSIC_DIR / Path(choice).name
         if candidate.exists():
             return candidate
-    if db.MUSIC_DIR.exists():
-        for ext in ("*.mp3", "*.wav", "*.ogg", "*.m4a", "*.flac"):
-            files = sorted(db.MUSIC_DIR.glob(ext))
-            if files:
-                return files[0]
     if choice in ("", "auto"):
+        uploaded = []
+        if db.MUSIC_DIR.exists():
+            for ext in ("*.mp3", "*.wav", "*.ogg", "*.m4a", "*.flac"):
+                uploaded.extend(sorted(db.MUSIC_DIR.glob(ext)))
+        if uploaded:
+            project_index = int((project or {}).get("id") or 0)
+            return uploaded[project_index % len(uploaded)]
+        beds = [item["id"] for item in options.MUSIC_BEDS]
+        project_index = int((project or {}).get("id") or 0)
         try:
-            return media.ensure_music_bed("padsuave")
+            return media.ensure_music_bed(beds[project_index % len(beds)])
         except Exception:
             return None
     return None
@@ -495,12 +777,17 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
     srt.write_text(media.build_srt(cues_global), encoding="utf-8")
     vtt.write_text(media.build_vtt(cues_global), encoding="utf-8")
 
-    thumb_w, thumb_h = options.dimensions(project.get("aspect") or "16:9", "1080p")
+    thumb_w, thumb_h = options.dimensions(project.get("aspect") or "16:9", project.get("resolution") or "720p")
     thumb = workdir / f"miniatura_{suffix}.jpg"
-    try:
-        media.make_thumbnail(final, thumb, project.get("title") or "AITuber Libre", thumb_w, thumb_h)
-    except Exception as exc:
-        warnings.append(f"No se pudo generar la miniatura: {exc}")
+    if _thumbnail_enabled(project):
+        try:
+            media.make_thumbnail(final, thumb, project.get("title") or "AITuber Libre", thumb_w, thumb_h)
+        except Exception as exc:
+            warnings.append(f"No se pudo generar la miniatura: {exc}")
+    else:
+        if thumb.exists():
+            thumb.unlink()
+        db.execute("DELETE FROM assets WHERE project_id=? AND kind='miniatura'", (project_id,))
 
     info = media.probe_video(final)
     if not info.get("width"):
@@ -525,6 +812,7 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
         "scenes": len(results),
         "scenes_reused": sum(1 for r in results if r["reused"]),
         "subtitles": len(cues_global),
+        "thumbnail_generated": bool(Path(thumb).exists()),
         "music": bool(music),
         "warnings": warnings,
         "tts_engines": sorted({r["audio_info"].get("engine", "?") for r in results}),
@@ -685,7 +973,7 @@ def export_project(project_id: int) -> Path:
         zf.writestr(
             "README.md",
             "# Exportación de AITuber Libre\n\n"
-            "Contenido: vídeo final, subtítulos, guion, fuentes con licencia, miniaturas, metadatos e informe de calidad.\n\n"
+            f"Contenido: vídeo final, subtítulos, guion, fuentes con licencia, {'miniatura' if thumb.exists() else 'sin miniatura'}, metadatos e informe de calidad.\\n\\n"
             "Antes de publicar: verificá cada licencia en `fuentes/fuentes.csv`, revisá el guion y confirmá que las "
             "imágenes no se presenten como fotografías históricas si fueron generadas localmente.\n",
         )

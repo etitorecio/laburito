@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { api, type Channel, type Meta, type Project } from '../api';
 import { Badge, Card, Empty, Field, Msg, Progress, statusTone } from '../ui';
+import VoicePicker from '../components/VoicePicker';
+import MusicPicker from '../components/MusicPicker';
+import VisualStylePicker from '../components/VisualStylePicker';
+import VideoTypePicker from '../components/VideoTypePicker';
+import CaptionStylePicker from '../components/CaptionStylePicker';
+import TransitionPicker from '../components/TransitionPicker';
 import type { Route } from '../routes';
 
 export default function Projects({ go }: { go: (route: Route, id?: number) => void }) {
@@ -22,14 +28,21 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     pitch: 45,
     aspect: '9:16',
     caption_style: 'short_pop',
+    captions_enabled: true,
+    visual_style: 'automatico',
+    visual_style_prompt: '',
+    create_thumbnail: true,
+    video_type: 'moving_images',
+    music_volume: 0.3,
     transition_default: 'fundido',
-    resolution: '1080p',
+    resolution: '720p',
     fps: 25,
     music: 'auto',
   });
 
   const templates = meta?.templates ?? [];
   const activeTemplate = templates.find((t) => t.id === form.template) ?? null;
+  const voiceOptions = (meta?.voices ?? []).filter((v) => v.language === 'es');
 
   function applyTemplate(id: string) {
     const tpl = templates.find((t) => t.id === id);
@@ -78,10 +91,12 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     }
     setBusy(true);
     try {
+      const { captions_enabled, ...projectForm } = form;
       const project = await api.post<Project>('/api/projects', {
-        ...form,
+        ...projectForm,
         channel_id: form.channel_id ? Number(form.channel_id) : null,
         topic: form.topic || form.title,
+        notes: (!captions_enabled || form.visual_style_prompt.trim() || !form.create_thumbnail) ? '[LABURITO_META]' + JSON.stringify({ captions_enabled, visual_style_prompt: form.visual_style_prompt.trim(), create_thumbnail: form.create_thumbnail }) : '',
       });
       setForm({ ...form, title: '', topic: '' });
       setOk('Proyecto creado. Generá el guion para crear las escenas.');
@@ -116,112 +131,179 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     }
   }
 
+  async function removeMusic(track: string) {
+    if (!confirm('¿Quitar esta pista de la biblioteca local?')) return;
+    try {
+      await api.del('/api/music/' + encodeURIComponent(track));
+      setOk('Pista quitada de la biblioteca.');
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
   return (
     <div className="stack">
       <Msg error={error} ok={ok} />
 
-      <Card title="Nuevo proyecto" sub="Elegí plantilla, formato, resolución, voz, subtítulos, transición y música. Todo se renderiza local con FFmpeg.">
-        <div className="row">
-          <Field label="Título">
-            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="El último tranvía" />
-          </Field>
-          <Field label="Tema / pregunta">
-            <input value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })} placeholder="Qué pasó con el transporte eléctrico" />
-          </Field>
+      <Card title="Crear video" sub="El mismo flujo de creación: plantilla, voz, música, apariencia, subtítulos y formato. Todo se procesa localmente.">
+        <div className="stack" style={{ gap: 14 }}>
+          <div className="row">
+            <Field label="Título">
+              <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="El último tranvía" />
+            </Field>
+            <Field label="Tema / idea">
+              <input value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })} placeholder="Qué pasó con el transporte eléctrico" />
+            </Field>
+          </div>
+          <div className="row">
+            <Field label="Plantilla de contenido" hint={activeTemplate?.description}>
+              <select value={form.template} onChange={(e) => applyTemplate(e.target.value)}>
+                {templates.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+              </select>
+            </Field>
+            <Field label="Canal interno">
+              <select value={form.channel_id} onChange={(e) => setForm({ ...form, channel_id: e.target.value })}>
+                <option value="">Sin canal</option>
+                {channels.map((channel) => <option key={channel.id} value={channel.id}>{channel.name}</option>)}
+              </select>
+            </Field>
+            <Field label="Duración objetivo">
+              <select value={form.duration_target_sec} onChange={(e) => setForm({ ...form, duration_target_sec: Number(e.target.value) })}>
+                {(activeTemplate?.durations ?? [15,30,45,60]).map((duration) => (
+                  <option key={duration} value={duration}>{duration < 60 ? duration + ' s' : Math.round(duration / 60) + ' min'}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
+
+          <details className="advanced-settings" open>
+            <summary>Voz y narración</summary>
+            <Field label="Elegí una voz en español">
+              <VoicePicker
+                options={voiceOptions}
+                value={form.voice}
+                speed={form.speed}
+                pitch={form.pitch}
+                onChange={(value) => setForm({ ...form, voice: value })}
+              />
+            </Field>
+            <div className="row">
+              <Field label={'Velocidad: ' + form.speed + ' palabras/minuto'}>
+                <input type="range" min="80" max="300" step="5" value={form.speed} onChange={(e) => setForm({ ...form, speed: Number(e.target.value) })} />
+              </Field>
+              <Field label={'Tono: ' + form.pitch + '/99'}>
+                <input type="range" min="0" max="99" value={form.pitch} onChange={(e) => setForm({ ...form, pitch: Number(e.target.value) })} />
+              </Field>
+            </div>
+          </details>
+
+          <details className="advanced-settings" open>
+            <summary>Música de fondo</summary>
+            <MusicPicker
+              beds={meta?.music_beds ?? []}
+              library={meta?.music_library ?? []}
+              value={form.music}
+              onChange={(value) => setForm({ ...form, music: value })}
+            />
+            <Field label={'Volumen de música: ' + Math.round(form.music_volume * 100) + '%'}>
+              <input type="range" min="0" max="0.5" step="0.01" value={form.music_volume} onChange={(e) => setForm({ ...form, music_volume: Number(e.target.value) })} />
+            </Field>
+            <Field label="Agregar pistas propias (hasta 5)">
+              <input type="file" multiple accept=".mp3,.wav,.ogg,.m4a,.flac,audio/*" disabled={(meta?.music_library.length ?? 0) >= 5} onChange={async (e) => {
+                const files = Array.from(e.target.files ?? []);
+                const remaining = Math.max(0, 5 - (meta?.music_library.length ?? 0));
+                try {
+                  for (const file of files.slice(0, remaining)) {
+                    if (file.size > 25 * 1024 * 1024) throw new Error(file.name + ' supera 25 MB.');
+                    await api.upload('/api/music/upload', file);
+                  }
+                  setForm((old) => ({ ...old, music: 'auto' }));
+                  await load();
+                  setOk('Pistas agregadas a la biblioteca local.');
+                } catch (error) { setError((error as Error).message); }
+                finally { e.target.value = ''; }
+              }} />
+              <small>{meta?.music_library.length ?? 0}/5 pistas. El modo automático las alterna entre videos.</small>
+              {(meta?.music_library ?? []).map((track) => (
+                <div className="row center between" key={track}>
+                  <small>{track}</small>
+                  <button type="button" className="btn small ghost" onClick={() => void removeMusic(track)}>Quitar</button>
+                </div>
+              ))}
+            </Field>
+          </details>
+
+          <details className="advanced-settings" open>
+            <summary>Apariencia y tipo de video</summary>
+            <h4>Estilo visual</h4>
+            <VisualStylePicker options={meta?.visual_styles ?? []} value={form.visual_style} onChange={(value) => setForm({ ...form, visual_style: value })} />
+            <Field label="Estilo personalizado (opcional)">
+              <textarea rows={3} maxLength={240} value={form.visual_style_prompt} onChange={(e) => setForm({ ...form, visual_style_prompt: e.target.value })} placeholder="Ej.: iluminación cálida, fotografía analógica, tonos verdes y textura de película…" />
+            </Field>
+            <p className="muted">La descripción guía la búsqueda de imágenes libres y algunos filtros locales; no genera imágenes IA.</p>
+            <Field label="Usar una imagen como referencia (paleta local)">
+              <input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setBusy(true); setError(''); setOk('');
+                try {
+                  const result = await api.upload<{ visual_style_prompt: string; analysis: string }>('/api/visual-style/analyze', file);
+                  setForm((old) => ({ ...old, visual_style_prompt: result.visual_style_prompt }));
+                  setOk(result.analysis + ' Revisá la descripción antes de crear el video.');
+                } catch (error) { setError((error as Error).message); }
+                finally { setBusy(false); e.target.value = ''; }
+              }} />
+            </Field>
+            <label className="check-row">
+              <input type="checkbox" checked={form.create_thumbnail} onChange={(e) => setForm({ ...form, create_thumbnail: e.target.checked })} />
+              Crear miniatura automáticamente
+            </label>
+            <h4>Tipo de video</h4>
+            <VideoTypePicker options={meta?.video_types ?? []} value={form.video_type} onChange={(value) => setForm({ ...form, video_type: value })} />
+            <div className="row">
+              <Field label="Aspecto">
+                <select value={form.aspect} onChange={(e) => setForm({ ...form, aspect: e.target.value })}>
+                  {(meta?.aspects ?? ['16:9', '9:16', '1:1', '4:5']).map((aspect) => <option key={aspect} value={aspect}>{aspect}</option>)}
+                </select>
+              </Field>
+              <Field label="Resolución">
+                <select value={form.resolution} onChange={(e) => setForm({ ...form, resolution: e.target.value })}>
+                  {(meta?.resolutions ?? [{ id: '1080p', label: '1080p' }]).map((resolution) => <option key={resolution.id} value={resolution.id}>{resolution.label}</option>)}
+                </select>
+              </Field>
+              <Field label="Cuadros por segundo">
+                <select value={form.fps} onChange={(e) => setForm({ ...form, fps: Number(e.target.value) })}>
+                  {(meta?.fps_options ?? [25]).map((fps) => <option key={fps} value={fps}>{fps} fps</option>)}
+                </select>
+              </Field>
+            </div>
+          </details>
+
+          <details className="advanced-settings" open>
+            <summary>Subtítulos y transiciones</summary>
+            <label className="check-row">
+              <input type="checkbox" checked={form.captions_enabled} onChange={(e) => setForm({ ...form, captions_enabled: e.target.checked })} />
+              Agregar subtítulos al video
+            </label>
+            {form.captions_enabled ? (
+              <Field label="Estilo de subtítulos">
+                <CaptionStylePicker options={meta?.caption_styles ?? []} value={form.caption_style} onChange={(value) => setForm({ ...form, caption_style: value })} />
+              </Field>
+            ) : <p className="muted">El video se renderizará sin subtítulos.</p>}
+            <Field label="Movimiento entre escenas">
+              <TransitionPicker options={meta?.transitions ?? []} value={form.transition_default} onChange={(value) => setForm({ ...form, transition_default: value })} />
+            </Field>
+          </details>
+
+          {meta && meta.external_templates.length > 0 && (
+            <p className="muted">Los generadores externos de video IA no se incluyen: requerirían servicios con créditos. Los formatos desactivados no se presentan como disponibles.</p>
+          )}
+          <button className="btn primary" onClick={create} disabled={busy || !form.title.trim()}>{busy ? 'Creando…' : 'Crear video'}</button>
         </div>
-        <div className="row">
-          <Field label="Plantilla" hint={activeTemplate?.description}>
-            <select value={form.template} onChange={(e) => applyTemplate(e.target.value)}>
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>{t.label}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Canal">
-            <select value={form.channel_id} onChange={(e) => setForm({ ...form, channel_id: e.target.value })}>
-              <option value="">Sin canal</option>
-              {channels.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </Field>
-          <Field label="Duración objetivo">
-            <select value={form.duration_target_sec} onChange={(e) => setForm({ ...form, duration_target_sec: Number(e.target.value) })}>
-              {(activeTemplate?.durations ?? [15, 30, 45, 60]).map((d) => (
-                <option key={d} value={d}>{d < 60 ? `${d} s` : `${Math.round(d / 60)} min`}</option>
-              ))}
-              {!(activeTemplate?.durations ?? []).includes(form.duration_target_sec) ? (
-                <option value={form.duration_target_sec}>{form.duration_target_sec} s</option>
-              ) : null}
-            </select>
-          </Field>
-          <Field label="Aspecto">
-            <select value={form.aspect} onChange={(e) => setForm({ ...form, aspect: e.target.value })}>
-              {(meta?.aspects ?? ['16:9', '9:16']).map((a) => <option key={a} value={a}>{a}</option>)}
-            </select>
-          </Field>
-          <Field label="Resolución">
-            <select value={form.resolution} onChange={(e) => setForm({ ...form, resolution: e.target.value })}>
-              {(meta?.resolutions ?? [{ id: '1080p', label: '1080p' }]).map((r) => (
-                <option key={r.id} value={r.id}>{r.label}</option>
-              ))}
-            </select>
-          </Field>
-        </div>
-        <div className="row">
-          <Field label="Voz">
-            <select value={form.voice} onChange={(e) => setForm({ ...form, voice: e.target.value })}>
-              {(meta?.voices ?? [{ id: 'es', label: 'Español' }]).map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
-            </select>
-          </Field>
-          <Field label="Velocidad (palabras/min)">
-            <input type="number" min={80} max={300} value={form.speed} onChange={(e) => setForm({ ...form, speed: Number(e.target.value) })} />
-          </Field>
-          <Field label="Tono de voz">
-            <input type="number" min={0} max={99} value={form.pitch} onChange={(e) => setForm({ ...form, pitch: Number(e.target.value) })} />
-          </Field>
-        </div>
-        <div className="row">
-          <Field label="Estilo de subtítulos">
-            <select value={form.caption_style} onChange={(e) => setForm({ ...form, caption_style: e.target.value })}>
-              {(meta?.caption_styles ?? [{ id: 'documental', label: 'Documental' }]).map((c) => (
-                <option key={c.id} value={c.id}>{c.label}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Transición por defecto">
-            <select value={form.transition_default} onChange={(e) => setForm({ ...form, transition_default: e.target.value })}>
-              {(meta?.transitions ?? [{ id: 'fundido', label: 'Fundido' }]).map((t) => (
-                <option key={t.id} value={t.id}>{t.label}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Cuadros por segundo">
-            <select value={form.fps} onChange={(e) => setForm({ ...form, fps: Number(e.target.value) })}>
-              {(meta?.fps_options ?? [25]).map((f) => <option key={f} value={f}>{f} fps</option>)}
-            </select>
-          </Field>
-          <Field label="Música de fondo" hint="Las camas se generan localmente con FFmpeg, sin descargas.">
-            <select value={form.music} onChange={(e) => setForm({ ...form, music: e.target.value })}>
-              <option value="auto">Automática (biblioteca o cama)</option>
-              <option value="ninguna">Sin música</option>
-              {(meta?.music_beds ?? []).map((m) => (
-                <option key={m.id} value={`bed:${m.id}`}>Cama: {m.label}</option>
-              ))}
-              {(meta?.music_library ?? []).map((f) => (
-                <option key={f} value={f}>Biblioteca: {f}</option>
-              ))}
-            </select>
-          </Field>
-        </div>
-        {meta && meta.external_templates.length > 0 && (
-          <p className="muted" style={{ marginTop: 0 }}>
-            Plantillas que dependen de un proveedor externo de IA de vídeo (no incluidas):{' '}
-            {meta.external_templates.map((t) => t.label).join(' · ')}.
-          </p>
-        )}
-        <button className="btn primary" onClick={create} disabled={busy}>{busy ? 'Creando…' : 'Crear proyecto'}</button>
       </Card>
 
-      <Card title="Proyectos" sub="Estado real de cada producción.">
+      <Card title="Tus videos" sub="Producciones, estado y acceso al editor.">
         {projects.length === 0 ? (
           <Empty>Sin proyectos. Creá el primero y generá el guion.</Empty>
         ) : (

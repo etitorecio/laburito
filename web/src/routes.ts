@@ -33,7 +33,7 @@ export const ROUTES: { id: Route; label: string; icon: string }[] = [
   { id: 'investigacion', label: 'Investigación', icon: '🔎' },
   { id: 'canales', label: 'Canales', icon: '📺' },
   { id: 'calendario', label: 'Calendario', icon: '🗓️' },
-  { id: 'proyectos', label: 'Proyectos', icon: '🎬' },
+  { id: 'proyectos', label: 'Videos', icon: '🎬' },
   { id: 'cola', label: 'Cola', icon: '⚙️' },
   { id: 'biblioteca', label: 'Biblioteca', icon: '🖼️' },
   { id: 'analitica', label: 'Analítica', icon: '📈' },

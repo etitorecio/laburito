@@ -41,12 +41,11 @@ class FakeResponse:
 
 class YouTubeOAuthTests(unittest.TestCase):
     def test_start_builds_google_authorization_url_with_state_and_exact_callback(self):
-        with patch.object(main, "APP_TOKEN", "server-token"):
-            with patch.object(publish, "youtube_credentials", return_value={
-                "client_id": "client-id", "client_secret": "client-secret", "refresh_token": ""
-            }):
-                with patch.object(main.db, "set_setting") as save:
-                    result = main.youtube_oauth_start(fake_request())
+        with patch.object(publish, "youtube_credentials", return_value={
+            "client_id": "client-id", "client_secret": "client-secret", "refresh_token": ""
+        }):
+            with patch.object(main.db, "set_setting") as save:
+                result = main.youtube_oauth_start(fake_request())
         from urllib.parse import parse_qs, urlparse
         parsed = urlparse(result["authorization_url"])
         params = parse_qs(parsed.query)

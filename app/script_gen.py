@@ -567,8 +567,21 @@ def generate_script(
                 narration = narration.rstrip() + " " + cta_lines[cta]
         visual_query = beat["visual"].format(topic=topic)
         visual_style = (project.get("visual_style") or "").strip()
+        style_search_terms = {
+            "automatico": "Fotografía de archivo histórica",
+            "cinematico": "Fotografía de archivo histórica con iluminación cinematográfica",
+            "realista": "Fotografía de archivo realista",
+            "anime": "Ilustración estilo anime",
+            "pixel_art": "Pixel art",
+            "noir": "Fotografía en blanco y negro estilo cine noir",
+            "vintage": "Fotografía vintage sepia",
+            "cyberpunk": "Ilustración cyberpunk",
+            "acuarela": "Ilustración en acuarela",
+            "comic": "Ilustración de cómic",
+        }
         if visual_style:
-            visual_query = visual_query + " " + visual_style
+            visual_query += " " + style_search_terms.get(visual_style, visual_style)
+        # El estilo se usa como pista de búsqueda y como tratamiento local del render.
         scenes.append(
             {
                 "idx": idx,
@@ -632,6 +645,20 @@ def ollama_available(url: str) -> bool:
     try:
         with urllib.request.urlopen(url.rstrip("/") + "/api/tags", timeout=3) as resp:
             return resp.status == 200
+    except Exception:
+        return False
+
+
+def ollama_model_available(url: str, model: str) -> bool:
+    if not ollama_available(url):
+        return False
+    try:
+        with urllib.request.urlopen(url.rstrip("/") + "/api/tags", timeout=5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        return any(
+            item.get("name") == model or str(item.get("name", "")).startswith(model + ":")
+            for item in data.get("models", [])
+        )
     except Exception:
         return False
 

@@ -1,11 +1,18 @@
+import asyncio
 import json
 import os
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
+from io import BytesIO
+
+from fastapi import UploadFile
+from starlette.datastructures import Headers
+from PIL import Image
 import urllib.parse
 
-from app import autopilot, publish, script_gen, topic_engine, tts, worker
+from app import autopilot, main as main_app, options, publish, render, script_gen, topic_engine, tts, worker
 
 
 class AutopilotResearchTests(unittest.TestCase):
@@ -38,15 +45,94 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(clean["cadence_hours"], 24)
         self.assertEqual(clean["schedule_time"], "09:30")
 
-    def test_autopilot_rejects_non_short_templates_and_landscape(self):
-        with self.assertRaisesRegex(ValueError, "exclusivamente Shorts"):
-            autopilot._clean({"template": "longform"})
-        with self.assertRaisesRegex(ValueError, "verticales 9:16"):
-            autopilot._clean({"aspect": "16:9"})
+    def test_autopilot_supports_longform_and_landscape(self):
+        clean = autopilot._clean({
+            "template": "longform",
+            "duration_target_sec": 1200,
+            "aspect": "16:9",
+        })
+        self.assertEqual(clean["template"], "longform")
+        self.assertEqual(clean["duration_target_sec"], 1200)
+        self.assertEqual(clean["aspect"], "16:9")
+
+    def test_longform_autopilot_creates_documentary_project(self):
+        project = {"id": 42, "title": "Documental de prueba", "notes": ""}
+        research = {
+            "topic": "La historia del universo",
+            "url": "https://es.wikipedia.org/wiki/Universo",
+            "source_title": "Universo",
+            "trend_signals": [],
+            "references": [],
+            "academic_sources": [],
+            "note_ids": [],
+        }
+        rule = {"template": "longform", "niche": "ciencia", "duration_target_sec": 600, "voice": "es"}
+        with patch.object(topic_engine, "research_topic", return_value=research):
+            with patch.object(autopilot.db, "query", side_effect=[[], []]):
+                with patch.object(autopilot.db, "query_one", return_value=project):
+                    with patch.object(autopilot.db, "execute", return_value=42) as execute:
+                        with patch.object(autopilot.db, "get_setting", return_value=""):
+                            with patch.object(autopilot.db, "now", return_value="2026-11-15T00:00:00Z"):
+                                with patch.object(script_gen, "generate_script", return_value={"scenes": [], "writer": "template", "evidence_sources": 0}):
+                                    with patch.object(autopilot.db, "log"):
+                                        autopilot._create_project(rule)
+        inserted = execute.call_args_list[0].args[1]
+        self.assertEqual(inserted[3], "documentary")
+        self.assertEqual(inserted[4], "16:9")
+        self.assertEqual(inserted[6], 600)
+
+    def test_autopilot_longform_duration_is_bounded_to_twenty_minutes(self):
+        self.assertEqual(
+            autopilot._clean({"template": "longform", "duration_target_sec": 1800})["duration_target_sec"],
+            1200,
+        )
+
+    def test_autopilot_rejects_unsupported_aspect_ratio(self):
+        with self.assertRaisesRegex(ValueError, "Formato de video no válido"):
+            autopilot._clean({"aspect": "3:2"})
+
+    def test_skeleton_autopilot_is_limited_to_seven_minutes(self):
+        with self.assertRaisesRegex(ValueError, "máxima de 7 minutos"):
+            autopilot._clean({"template": "longform", "duration_target_sec": 600, "video_type": "skeleton"})
+
+    def test_autopilot_can_disable_captions_without_affecting_regular_projects(self):
+        notes = "Autopiloto: ciencia. [LABURITO_META]" + json.dumps({"captions_enabled": False})
+        self.assertFalse(render._captions_enabled({"notes": notes}))
+        self.assertTrue(render._captions_enabled({"notes": "Proyecto normal"}))
+
+    def test_thumbnail_generation_is_enabled_by_default_and_can_be_disabled(self):
+        self.assertTrue(render._thumbnail_enabled({"notes": ""}))
+        notes = "[LABURITO_META]" + json.dumps({"create_thumbnail": False})
+        self.assertFalse(render._thumbnail_enabled({"notes": notes}))
+
+    def test_custom_visual_prompt_selects_a_local_filter_and_search_hint(self):
+        notes = "[LABURITO_META]" + json.dumps({
+            "captions_enabled": True,
+            "visual_style_prompt": "Anime cyberpunk con luces de neón",
+        })
+        project = {"notes": notes, "visual_style": "automatico"}
+        self.assertEqual(render._custom_visual_style_id(project), "cyberpunk")
+        self.assertEqual(render._project_metadata(project)["visual_style_prompt"], "Anime cyberpunk con luces de neón")
+
+    def test_visual_reference_image_is_analyzed_locally(self):
+        buffer = BytesIO()
+        Image.new("RGB", (24, 24), (20, 45, 190)).save(buffer, format="PNG")
+        buffer.seek(0)
+        upload = UploadFile(
+            filename="referencia.png",
+            file=buffer,
+            headers=Headers({"content-type": "image/png"}),
+        )
+        result = asyncio.run(main_app.analyze_visual_style_reference(upload))
+        self.assertIn("azulada", result["visual_style_prompt"])
+        self.assertIn("localmente", result["analysis"])
 
     def test_autopilot_short_duration_supports_youtube_three_minute_limit(self):
         self.assertEqual(autopilot._clean({"template": "shorts", "duration_target_sec": 180})["duration_target_sec"], 180)
         self.assertEqual(autopilot._clean({"template": "shorts", "duration_target_sec": 240})["duration_target_sec"], 180)
+
+    def test_manual_video_defaults_to_cpu_friendly_720p(self):
+        self.assertEqual(options.resolve_defaults({"template": "shorts"})["resolution"], "720p")
 
     def test_youtube_autopilot_requires_valid_vertical_short_file(self):
         from pathlib import Path
@@ -55,8 +141,29 @@ class AutopilotResearchTests(unittest.TestCase):
             with self.assertRaisesRegex(publish.PublishError, "máximo es 180"):
                 publish._validate_autopilot_short(project, Path("fake.mp4"))
         with patch("app.media.probe_video", return_value={"width": 1920, "height": 1080, "duration": 30}):
-            with self.assertRaisesRegex(publish.PublishError, "no es vertical"):
+            with self.assertRaisesRegex(publish.PublishError, "debe ser vertical o cuadrado"):
                 publish._validate_autopilot_short(project, Path("fake.mp4"))
+
+    def test_youtube_autopilot_accepts_square_shorts(self):
+        from pathlib import Path
+        project = {"kind": "short", "aspect": "1:1", "notes": "Autopiloto: lista"}
+        info = {"width": 1080, "height": 1080, "duration": 45}
+        with patch("app.media.probe_video", return_value=info):
+            self.assertEqual(publish._validate_autopilot_short(project, Path("fake.mp4")), info)
+
+    def test_youtube_autopilot_accepts_valid_longform_video(self):
+        from pathlib import Path
+        project = {"kind": "documentary", "notes": "Autopiloto: ciencia"}
+        info = {"width": 1920, "height": 1080, "duration": 600}
+        with patch("app.media.probe_video", return_value=info):
+            self.assertEqual(publish._validate_autopilot_video(project, Path("fake.mp4")), info)
+
+    def test_youtube_autopilot_rejects_longform_over_twenty_minutes(self):
+        from pathlib import Path
+        project = {"kind": "documentary", "notes": "Autopiloto: ciencia"}
+        with patch("app.media.probe_video", return_value={"width": 1920, "height": 1080, "duration": 1201}):
+            with self.assertRaisesRegex(publish.PublishError, "máximo es 20 minutos"):
+                publish._validate_autopilot_video(project, Path("fake.mp4"))
 
     def test_two_shorts_per_day_maps_to_twelve_hours(self):
         clean = autopilot._clean({"videos_per_period": 2, "period_days": 1})
@@ -111,6 +218,20 @@ class AutopilotResearchTests(unittest.TestCase):
         clean = autopilot._clean({"speed": 999, "pitch": -5})
         self.assertEqual(clean["speed"], 300)
         self.assertEqual(clean["pitch"], 0)
+
+    def test_autopilot_accepts_music_bed_picker_identifier(self):
+        bed_id = sorted(options.MUSIC_IDS)[0]
+        self.assertEqual(autopilot._clean({"music": "bed:" + bed_id})["music"], "bed:" + bed_id)
+
+    def test_autopilot_counts_all_supported_clip_extensions(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            clip_dir = Path(temporary) / "background_clips" / "minecraft"
+            clip_dir.mkdir(parents=True)
+            for index in range(5):
+                (clip_dir / f"clip-{index}.webm").write_bytes(b"video")
+            with patch.object(autopilot.db, "DATA_DIR", Path(temporary)):
+                clean = autopilot._clean({"video_type": "minecraft"})
+            self.assertEqual(clean["video_type"], "minecraft")
 
     def test_script_uses_autopilot_hook_cta_and_visual_style(self):
         project = {

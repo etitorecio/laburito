@@ -2,6 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, fmtDuration, mediaUrl, type MediaResult, type Meta, type Project, type Scene } from '../api';
 import { Badge, Card, Empty, Field, Msg, Progress, statusTone } from '../ui';
 import type { Route } from '../routes';
+import CaptionStylePicker from '../components/CaptionStylePicker';
+import TransitionPicker from '../components/TransitionPicker';
+import VisualStylePicker from '../components/VisualStylePicker';
+import VideoTypePicker from '../components/VideoTypePicker';
+import VoicePicker from '../components/VoicePicker';
 
 interface Props {
   projectId: number;
@@ -27,12 +32,87 @@ interface Publication {
   created_at: string;
 }
 
+const META_MARKER = '[LABURITO_META]';
+
+function captionsEnabledFromNotes(notes: string): boolean {
+  if (!notes.includes(META_MARKER)) return true;
+  try {
+    const metadata = JSON.parse(notes.split(META_MARKER, 2)[1] || '{}');
+    return metadata.captions_enabled !== false;
+  } catch {
+    return true;
+  }
+}
+
+function notesWithCaptionsSetting(notes: string, enabled: boolean): string {
+  const [prefix, rawMetadata] = notes.includes(META_MARKER)
+    ? notes.split(META_MARKER, 2)
+    : [notes, '{}'];
+  let metadata: Record<string, unknown> = {};
+  try {
+    metadata = JSON.parse(rawMetadata || '{}');
+  } catch {
+    metadata = {};
+  }
+  return prefix + META_MARKER + JSON.stringify({ ...metadata, captions_enabled: enabled });
+}
+
+function visualStylePromptFromNotes(notes: string): string {
+  if (!notes.includes(META_MARKER)) return '';
+  try {
+    const metadata = JSON.parse(notes.split(META_MARKER, 2)[1] || '{}');
+    return typeof metadata.visual_style_prompt === 'string' ? metadata.visual_style_prompt : '';
+  } catch {
+    return '';
+  }
+}
+
+function notesWithVisualStylePrompt(notes: string, prompt: string): string {
+  const [prefix, rawMetadata] = notes.includes(META_MARKER)
+    ? notes.split(META_MARKER, 2)
+    : [notes, '{}'];
+  let metadata: Record<string, unknown> = {};
+  try {
+    metadata = JSON.parse(rawMetadata || '{}');
+  } catch {
+    metadata = {};
+  }
+  if (prompt.trim()) metadata.visual_style_prompt = prompt.trim().slice(0, 240);
+  else delete metadata.visual_style_prompt;
+  return prefix + META_MARKER + JSON.stringify(metadata);
+}
+
+function thumbnailEnabledFromNotes(notes: string): boolean {
+  if (!notes.includes(META_MARKER)) return true;
+  try {
+    const metadata = JSON.parse(notes.split(META_MARKER, 2)[1] || '{}');
+    return metadata.create_thumbnail !== false;
+  } catch {
+    return true;
+  }
+}
+
+function notesWithThumbnailSetting(notes: string, enabled: boolean): string {
+  const [prefix, rawMetadata] = notes.includes(META_MARKER)
+    ? notes.split(META_MARKER, 2)
+    : [notes, '{}'];
+  let metadata: Record<string, unknown> = {};
+  try {
+    metadata = JSON.parse(rawMetadata || '{}');
+  } catch {
+    metadata = {};
+  }
+  metadata.create_thumbnail = enabled;
+  return prefix + META_MARKER + JSON.stringify(metadata);
+}
+
 export default function Editor({ projectId, go }: Props) {
   const [project, setProject] = useState<Project | null>(null);
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
   const [busy, setBusy] = useState('');
   const [searchFor, setSearchFor] = useState<number | null>(null);
+  const [selectedSceneId, setSelectedSceneId] = useState<number | null>(null);
   const [results, setResults] = useState<MediaResult[]>([]);
   const [destinations, setDestinations] = useState<PublishDestination[]>([]);
   const [publications, setPublications] = useState<Publication[]>([]);
@@ -254,6 +334,9 @@ export default function Editor({ projectId, go }: Props) {
   const scenes = project.scenes ?? [];
   const words = scenes.reduce((acc, s) => acc + (s.narration || '').trim().split(/\s+/).filter(Boolean).length, 0);
   const quality = project.quality ?? {};
+  const captionsEnabled = captionsEnabledFromNotes(project.notes || '');
+  const visualStylePrompt = visualStylePromptFromNotes(project.notes || '');
+  const thumbnailEnabled = thumbnailEnabledFromNotes(project.notes || '');
   const warnings = Array.isArray(quality.warnings) ? (quality.warnings as string[]) : [];
   const totalChars = scenes.reduce((acc, s) => acc + (s.narration || '').length, 0);
 
@@ -303,17 +386,21 @@ export default function Editor({ projectId, go }: Props) {
               <option value="16:9">16:9 horizontal</option>
               <option value="9:16">9:16 vertical</option>
               <option value="1:1">1:1 cuadrado</option>
+              <option value="4:5">4:5 feed vertical</option>
             </select>
           </Field>
-          <Field label="Voz">
-            <select defaultValue={project.voice} onChange={(e) => patchProject({ voice: e.target.value })}>
-              {voices.length === 0 ? <option value={project.voice}>{project.voice}</option> : null}
-              {voices.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.label}
-                </option>
-              ))}
-            </select>
+          <Field label="Voz en español">
+            <VoicePicker
+              options={meta?.voices ?? []}
+              value={project.voice}
+              speed={project.speed}
+              pitch={project.pitch}
+              onChange={(value) => void patchProject({
+                voice: value,
+                ...(value === 'es-masculino' ? { pitch: 30 } : value === 'es-agudo' ? { pitch: 65 } : { pitch: 45 }),
+              })}
+              compact
+            />
           </Field>
         </div>
         <div className="row">
@@ -334,19 +421,78 @@ export default function Editor({ projectId, go }: Props) {
               ))}
             </select>
           </Field>
-          <Field label="Subtítulos">
-            <select value={project.caption_style} onChange={(e) => patchProject({ caption_style: e.target.value })}>
-              {(meta?.caption_styles ?? [{ id: project.caption_style, label: project.caption_style }]).map((c) => (
-                <option key={c.id} value={c.id}>{c.label}</option>
-              ))}
-            </select>
+          <label className="check-row">
+            <input
+              type="checkbox"
+              checked={captionsEnabled}
+              onChange={(e) => void patchProject({ notes: notesWithCaptionsSetting(project.notes || '', e.target.checked) })}
+            />
+            Agregar subtítulos al video
+          </label>
+          {captionsEnabled ? (
+            <Field label="Estilo de subtítulos">
+              <CaptionStylePicker
+                options={meta?.caption_styles ?? [{ id: project.caption_style, label: project.caption_style }]}
+                value={project.caption_style}
+                onChange={(value) => void patchProject({ caption_style: value })}
+                compact
+              />
+            </Field>
+          ) : <p className="muted">Los subtítulos están desactivados para este proyecto.</p>}
+          <Field label="Tipo de video">
+            <VideoTypePicker
+              options={meta?.video_types ?? []}
+              value={project.video_type || 'moving_images'}
+              onChange={(value) => void patchProject({ video_type: value })}
+              compact
+            />
           </Field>
-          <Field label="Transición">
-            <select value={project.transition_default} onChange={(e) => patchProject({ transition_default: e.target.value })}>
-              {(meta?.transitions ?? [{ id: project.transition_default, label: project.transition_default }]).map((t) => (
-                <option key={t.id} value={t.id}>{t.label}</option>
-              ))}
-            </select>
+          <Field label="Estilo visual">
+            <VisualStylePicker
+              options={meta?.visual_styles ?? []}
+              value={project.visual_style || 'automatico'}
+              onChange={(value) => void patchProject({ visual_style: value })}
+              compact
+            />
+            <Field label="Estilo personalizado (opcional)">
+              <textarea
+                rows={3}
+                maxLength={240}
+                value={visualStylePrompt}
+                onChange={(e) => void patchProject({ notes: notesWithVisualStylePrompt(project.notes || '', e.target.value) })}
+                placeholder="Ej.: iluminación cálida, fotografía analógica, tonos verdes y textura de película…"
+              />
+            </Field>
+            <p className="muted">La descripción guía la búsqueda de imágenes libres y algunos filtros locales; no genera imágenes IA.</p>
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={thumbnailEnabled}
+                onChange={(e) => void patchProject({ notes: notesWithThumbnailSetting(project.notes || '', e.target.checked) })}
+              />
+              Crear miniatura automáticamente
+            </label>
+            <Field label="Usar una imagen como referencia (paleta local)">
+              <input type="file" accept="image/jpeg,image/png,image/webp" disabled={!!busy} onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setBusy('style-reference'); setError(''); setOk('');
+                try {
+                  const result = await api.upload<{ visual_style_prompt: string; analysis: string }>('/api/visual-style/analyze', file);
+                  await patchProject({ notes: notesWithVisualStylePrompt(project.notes || '', result.visual_style_prompt) });
+                  setOk(result.analysis + ' Revisá la descripción antes de renderizar.');
+                } catch (error) { setError((error as Error).message); }
+                finally { setBusy(''); e.target.value = ''; }
+              }} />
+            </Field>
+          </Field>
+          <Field label="Movimiento de las escenas">
+            <TransitionPicker
+              options={meta?.transitions ?? [{ id: project.transition_default, label: project.transition_default }]}
+              value={project.transition_default}
+              onChange={(value) => void patchProject({ transition_default: value })}
+              compact
+            />
           </Field>
           <Field label="Resolución">
             <select value={project.resolution} onChange={(e) => patchProject({ resolution: e.target.value })}>
@@ -472,13 +618,42 @@ export default function Editor({ projectId, go }: Props) {
       </Card>
 
       <div className="grid two">
+        <Card title="Línea de tiempo" sub="Cada bloque representa una escena. La duración es estimada a partir de la narración; elegí un bloque para editarlo.">
+          {scenes.length === 0 ? <Empty>La línea de tiempo aparece cuando generás el guion.</Empty> : (
+            <div className="editor-timeline" aria-label="Línea de tiempo de escenas">
+              {scenes.map((scene, index) => {
+                const sceneWords = (scene.narration || '').trim().split(/\s+/).filter(Boolean).length;
+                const estimatedSeconds = Math.max(2, sceneWords / 2.4);
+                const totalEstimated = scenes.reduce((sum, item) => sum + Math.max(2, (item.narration || '').trim().split(/\s+/).filter(Boolean).length / 2.4), 0);
+                const width = Math.max(9, (estimatedSeconds / Math.max(1, totalEstimated)) * 100);
+                return (
+                  <button
+                    type="button"
+                    key={scene.id}
+                    className={`editor-timeline-item ${selectedSceneId === scene.id ? 'active' : ''}`}
+                    style={{ flexBasis: width + '%' }}
+                    onClick={() => {
+                      setSelectedSceneId(scene.id);
+                      document.getElementById('scene-' + scene.id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                    title={scene.title + ' · ~' + Math.round(estimatedSeconds) + ' s'}
+                  >
+                    <strong>{index + 1}. {scene.title}</strong>
+                    <small>~{Math.round(estimatedSeconds)} s</small>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+
         <Card title="Escenas" sub="Editá la narración; se guarda al salir del campo. El orden define el montaje.">
           {scenes.length === 0 ? (
             <Empty>Sin escenas. Generá el guion para crear la estructura narrativa.</Empty>
           ) : (
             <div>
               {scenes.map((scene, i) => (
-                <div className="scene" key={scene.id}>
+                <div id={`scene-${scene.id}`} className={`scene ${selectedSceneId === scene.id ? 'selected' : ''}`} key={scene.id}>
                   <div className="scene-head">
                     <div className="row center gap-8">
                       <span className="scene-index">{i + 1}</span>
@@ -506,13 +681,13 @@ export default function Editor({ projectId, go }: Props) {
                         onBlur={(e) => e.target.value !== scene.visual_query && patchScene(scene, { visual_query: e.target.value })}
                       />
                     </Field>
-                    <Field label="Transición">
-                      <select defaultValue={scene.transition} onChange={(e) => patchScene(scene, { transition: e.target.value })}>
-                        <option value="fundido">Fundido</option>
-                        <option value="corte">Corte</option>
-                        <option value="zoom">Zoom lento</option>
-                        <option value="deslizar">Deslizar</option>
-                      </select>
+                    <Field label="Movimiento de esta escena">
+                      <TransitionPicker
+                        options={meta?.transitions ?? [{ id: scene.transition, label: scene.transition }]}
+                        value={scene.transition || project.transition_default}
+                        onChange={(value) => void patchScene(scene, { transition: value })}
+                        compact
+                      />
                     </Field>
                   </div>
                   <div className="row gap-8">

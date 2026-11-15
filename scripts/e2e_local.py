@@ -24,7 +24,7 @@ WORK = Path(tempfile.mkdtemp(prefix="aitub_e2e_"))
 os.environ["AITUBER_DATA_DIR"] = str(WORK)
 os.environ.setdefault("AITUBER_MUSIC_VOLUME", "0")
 
-from app import db, media, render, script_gen  # noqa: E402
+from app import db, media, options, render, script_gen, skeleton, tts  # noqa: E402
 
 FAILURES: list[str] = []
 NOTES: list[str] = []
@@ -139,6 +139,92 @@ def main() -> int:
 
     run_case("short-vertical", "short", "9:16", 45)
     run_case("documental-horizontal", "documental", "16:9", 60)
+
+    print("\n== Demostraciones visuales de subtítulos")
+    for style_id in options.CAPTION_STYLES:
+        try:
+            preview = render.caption_preview(style_id)
+            check(preview.exists() and preview.stat().st_size > 500,
+                  f"vista previa real del estilo {style_id}")
+        except Exception as exc:
+            check(False, f"vista previa real del estilo {style_id}", str(exc))
+
+    print("\n== Demostraciones de movimiento")
+    for transition_id in options.TRANSITION_IDS:
+        try:
+            preview = render.transition_preview(transition_id)
+            check(preview.exists() and preview.stat().st_size > 1000,
+                  f"clip de demostración {transition_id}")
+        except Exception as exc:
+            check(False, f"clip de demostración {transition_id}", str(exc))
+
+    print("\n== Demostraciones de estilos visuales")
+    for style_id in options.VISUAL_STYLE_IDS:
+        try:
+            preview = render.visual_style_preview(style_id)
+            check(preview.exists() and preview.stat().st_size > 500,
+                  f"vista previa del estilo visual {style_id}")
+        except Exception as exc:
+            check(False, f"vista previa del estilo visual {style_id}", str(exc))
+
+    print("\n== Skeleton Video local")
+    try:
+        skeleton_clip = skeleton.ensure_clip("walk")
+        check(skeleton_clip.exists() and skeleton_clip.stat().st_size > 1000,
+              "generar animación procedural de esqueleto")
+    except Exception as exc:
+        check(False, "generar animación procedural de esqueleto", str(exc))
+
+    print("\n== Render con clip de fondo propio")
+    clip_dir = db.DATA_DIR / "background_clips" / "stock_footage"
+    clip_dir.mkdir(parents=True, exist_ok=True)
+    for old_clip in clip_dir.glob("e2e-stock-sample*.mp4"):
+        old_clip.unlink()
+    sample_clip = clip_dir / "e2e-stock-sample.mp4"
+    sample_result = media.run([
+        media.ffmpeg(), "-y", "-f", "lavfi", "-i",
+        "testsrc2=size=360x640:rate=20:duration=3",
+        "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+        "-an", str(sample_clip),
+    ], timeout=60)
+    check(sample_result.returncode == 0 and sample_clip.exists(),
+          "crear clip de fondo de prueba")
+    if sample_clip.exists():
+        for index in range(1, 5):
+            (clip_dir / f"e2e-stock-sample-{index}.mp4").write_bytes(sample_clip.read_bytes())
+    if sample_clip.exists():
+        test_project = {
+            "id": 99001, "title": "Prueba clip de fondo", "topic": "prueba",
+            "kind": "short", "aspect": "9:16", "resolution": "1080p",
+            "duration_target_sec": 15, "voice": "es", "speed": 150, "pitch": 45,
+            "video_type": "stock_footage", "visual_style": "cinematico",
+            "caption_style": "short_pop", "transition_default": "corte", "fps": 25,
+            "music": "ninguna", "music_volume": 0.12,
+        }
+        test_scene = {
+            "id": 99001, "idx": 0, "title": "Clip de prueba",
+            "narration": "Esta es una prueba de video de fondo propio.",
+            "visual_query": "prueba", "transition": "corte",
+            "visual_path": "", "audio_path": "", "audio_sec": 0,
+        }
+        try:
+            rendered = render.render_scene(test_project, test_scene, db.RENDER_DIR / "e2e-background-video")
+            check(rendered["scene_mp4"].exists() and rendered["visual_kind"] == "video_fondo",
+                  "render de escena con video de fondo propio")
+        except Exception as exc:
+            check(False, "render de escena con video de fondo propio", str(exc))
+
+    print("\n== Muestra de voz española")
+    voice_preview = db.DATA_DIR / "voice_previews" / "es.wav"
+    try:
+        tts.synthesize(
+            "Hola. Esta es una muestra de voz en español para tus videos.",
+            voice_preview, voice="es", speed=150, pitch=45,
+        )
+        check(voice_preview.exists() and voice_preview.stat().st_size > 1000,
+              "muestra de voz local en español")
+    except Exception as exc:
+        check(False, "muestra de voz local en español", str(exc))
 
     print("\n== Persistencia")
     check(db.scalar("SELECT COUNT(*) FROM projects") == 2, "dos proyectos en SQLite")

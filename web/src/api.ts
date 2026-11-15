@@ -1,29 +1,8 @@
 // Cliente HTTP de AITuber Libre. Todo es local: misma origen, sin servicios externos.
 
-const TOKEN_KEY = 'aituber_token';
-
-export function getToken(): string {
-  try {
-    return localStorage.getItem(TOKEN_KEY) || '';
-  } catch {
-    return '';
-  }
-}
-
-export function setToken(value: string): void {
-  try {
-    if (value) localStorage.setItem(TOKEN_KEY, value);
-    else localStorage.removeItem(TOKEN_KEY);
-  } catch {
-    /* almacenamiento no disponible */
-  }
-}
-
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {};
   if (init.body && !(init.body instanceof FormData)) headers['Content-Type'] = 'application/json';
-  const token = getToken();
-  if (token) headers['X-App-Token'] = token;
   const response = await fetch(path, { ...init, headers: { ...headers, ...(init.headers as Record<string, string> | undefined) } });
   if (!response.ok) {
     let detail = `${response.status} ${response.statusText}`;
@@ -33,7 +12,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     } catch {
       /* sin cuerpo JSON */
     }
-    if (response.status === 401) throw new Error('Token de acceso requerido. Configuralo en Ajustes.');
+    if (response.status === 401) throw new Error('La solicitud no fue autorizada.');
     throw new Error(detail);
   }
   const contentType = response.headers.get('content-type') || '';
@@ -112,7 +91,12 @@ export interface Project {
   pitch: number;
   notes: string;
   template: string;
+  visual_style: string;
+  visual_style_prompt?: string;
+  create_thumbnail?: boolean;
+  video_type: string;
   caption_style: string;
+  captions_enabled?: boolean;
   transition_default: string;
   resolution: string;
   fps: number;
@@ -269,10 +253,14 @@ export interface AutopilotRule {
   speed: number;
   pitch: number;
   visual_style: string;
+  visual_style_prompt?: string;
+  create_thumbnail?: boolean;
+  video_type: string;
   title_style: string;
   custom_tags: string;
   aspect: string;
   caption_style: string;
+  captions_enabled?: boolean;
   transition_default: string;
   resolution: string;
   fps: number;
@@ -307,20 +295,25 @@ export interface AutopilotRule {
 
 export interface Meta {
   voices: { id: string; label: string; available: boolean; gender?: string; language?: string }[];
+  video_types: (OptionItem & { description: string; available: boolean })[];
+  visual_styles: (OptionItem & { description: string })[];
   aspects: string[];
   kinds: { id: string; label: string; aspect: string }[];
   templates: TemplateOption[];
   external_templates: TemplateOption[];
   resolutions: OptionItem[];
   fps_options: number[];
-  caption_styles: OptionItem[];
+  caption_styles: (OptionItem & {
+    max_words?: number; max_chars?: number; max_lines?: number; font_ratio?: number;
+    y_from_bottom?: number; box?: boolean; box_alpha?: string; boxcolor?: string;
+    fontcolor?: string; outline?: number; uppercase?: boolean;
+  })[];
   transitions: OptionItem[];
   music_beds: OptionItem[];
   music_library: string[];
   script_templates: OptionItem[];
   evidence_levels: string[];
   settings: Record<string, string>;
-  auth_required: boolean;
 }
 
 export interface Diagnostics {
@@ -339,7 +332,6 @@ export interface Diagnostics {
   counts: Record<string, number>;
   worker: { worker_alive: boolean; queued: number; running: number; done: number; failed: number; engine?: string };
   persistence: { configured: boolean; local_persistent?: boolean; provider: string | null; bucket: string | null; private: boolean | null; note: string };
-  token_configured: boolean;
   note: string;
 }
 

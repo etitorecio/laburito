@@ -6,8 +6,8 @@ type Go = (route: Route, id?: number) => void;
 const NAV_LINKS: { label: string; target: string }[] = [
   { label: 'Funciones', target: 'funciones' },
   { label: 'Plantillas', target: 'plantillas' },
-  { label: 'Autopilot', target: 'autopilot' },
-  { label: 'Precios', target: 'precios' },
+  { label: 'Autopiloto', target: 'autopilot' },
+  { label: 'Costo cero', target: 'costo' },
   { label: 'Preguntas', target: 'faq' },
 ];
 
@@ -58,8 +58,8 @@ const TEMPLATES = [
   },
   {
     icon: '🗣️',
-    title: 'Voz en off multilingüe',
-    desc: 'Español, inglés y portugués con voces locales; cambia el idioma sin reescribir el guion.',
+    title: 'Voz en off en español',
+    desc: 'Voces locales en español, con alternativas de voz neural que funcionan sin servicios pagos.',
     tags: ['es', 'en', 'pt'],
     grad: 'linear-gradient(135deg,#4338ca,#0ea5e9)',
   },
@@ -129,8 +129,8 @@ const FEATURES = [
   },
   {
     icon: '🌐',
-    title: 'Cualquier idioma',
-    desc: 'Cambia el idioma de la narración y los subtítulos sin tocar la estructura del proyecto.',
+    title: 'Producción en español',
+    desc: 'Guiones, narración, interfaz y subtítulos en español.',
   },
   {
     icon: '🎚️',
@@ -155,51 +155,6 @@ const AUTOPILOT = [
   { title: 'Deja correr la cola', desc: 'El worker renderiza en segundo plano y te avisa cuando el MP4 está listo.' },
 ];
 
-const TESTIMONIALS = [
-  {
-    quote:
-      'Pasé de publicar un vídeo por semana a tener tres shorts listos cada mañana. La cola hace todo mientras duermo.',
-    name: 'Marina R.',
-    role: 'Canal de historia',
-    initials: 'MR',
-  },
-  {
-    quote:
-      'Lo que más me sirve es regenerar una sola escena: cambio el guion y no tengo que rehacer los doce minutos.',
-    name: 'Diego P.',
-    role: 'Documentales largos',
-    initials: 'DP',
-  },
-  {
-    quote:
-      'Tener autor y licencia guardados por recurso me ahorró un reclamo de derechos en el primer mes.',
-    name: 'Lucía G.',
-    role: 'Curiosidades y ciencia',
-    initials: 'LG',
-  },
-  {
-    quote:
-      'Exporto el ZIP con subtítulos y fuentes y lo subo tal cual. No toco un editor de vídeo.',
-    name: 'Andrés M.',
-    role: 'Shorts diarios',
-    initials: 'AM',
-  },
-  {
-    quote:
-      'Corre en mi portátil sin pagar créditos. Ese fue el motivo por el que lo elegí.',
-    name: 'Sofía T.',
-    role: 'Marca personal',
-    initials: 'ST',
-  },
-  {
-    quote:
-      'Los subtítulos quemados y la tarjeta visual quedan bien incluso en vídeos verticales de 60 segundos.',
-    name: 'Bruno C.',
-    role: 'Negocios e inversión',
-    initials: 'BC',
-  },
-];
-
 const FAQ = [
   {
     q: '¿Qué es AITuber Libre?',
@@ -211,7 +166,7 @@ const FAQ = [
   },
   {
     q: '¿Cuánto tarda en renderizar un vídeo?',
-    a: 'Un short de cinco escenas tarda unos seis minutos en una instancia de 1 vCPU. Un documental largo tarda más porque se renderiza escena por escena, y puedes cerrar la pestaña: la cola sigue trabajando.',
+    a: 'Depende de la duración, resolución y potencia de tu PC. El render se procesa escena por escena en segundo plano y la cola continúa aunque cierres la pestaña, mientras la PC siga encendida.',
   },
   {
     q: '¿Qué pasa si el render falla a la mitad?',
@@ -219,19 +174,19 @@ const FAQ = [
   },
   {
     q: '¿Puedo usar mi propia voz?',
-    a: 'Sí. La app usa espeak-ng por defecto y admite Piper: colocas el modelo y la ruta en los ajustes, y el motor más natural se usa automáticamente.',
+    a: 'Todavía no permite clonar ni cargar tu propia voz. Usa espeak-ng local y ofrece Piper como voz neural española opcional.',
   },
   {
     q: '¿De dónde salen las imágenes?',
     a: 'De fuentes con licencia clara: Wikimedia Commons, Openverse e Internet Archive. Cada recurso guarda autor, licencia y enlace, y se incluye en el informe del proyecto.',
   },
   {
-    q: '¿En qué idiomas puedo generar?',
-    a: 'Español (neutro, Argentina, España), inglés y portugués, tanto en la narración como en los subtítulos.',
+    q: '¿En qué idioma puedo generar?',
+    a: 'La aplicación está limitada intencionalmente al español, tanto en la narración como en los subtítulos y la interfaz.',
   },
   {
     q: '¿Puedo publicar en YouTube, TikTok e Instagram?',
-    a: 'Sí. Exportas MP4 en 9:16 o 16:9 con subtítulos ya quemados y el paquete incluye título, descripción, etiquetas y miniatura para cada plataforma.',
+    a: 'La integración automática disponible es YouTube mediante OAuth. Para TikTok e Instagram podés exportar el MP4 y publicarlo manualmente; no hay integración directa con esas plataformas todavía.',
   },
   {
     q: '¿Hay una API?',
@@ -239,57 +194,9 @@ const FAQ = [
   },
 ];
 
-const PLANS = [
-  {
-    name: 'Gratis',
-    monthly: 0,
-    tagline: 'Esta instancia, sin límites de créditos.',
-    features: [
-      'Canales y proyectos ilimitados',
-      'Render 1080p vertical y horizontal',
-      'Voces locales (espeak-ng)',
-      'Subtítulos SRT/VTT quemados',
-      'Biblioteca con licencia',
-      'Exportación MP4 + ZIP',
-    ],
-    cta: 'Abrir el estudio',
-    hot: true,
-  },
-  {
-    name: 'Pro',
-    monthly: 9,
-    tagline: 'Para publicar todos los días.',
-    features: [
-      'Todo lo de Gratis',
-      'Render 4K y mayor bitrate',
-      'Voces neuronales (Piper)',
-      'Música de fondo automática',
-      'Calendario con publicación programada',
-      'Prioridad en la cola',
-    ],
-    cta: 'Lista de espera',
-    hot: false,
-  },
-  {
-    name: 'Estudio',
-    monthly: 29,
-    tagline: 'Para agencias y varios canales.',
-    features: [
-      'Todo lo de Pro',
-      'Canales y equipos ilimitados',
-      'Marca blanca y plantillas propias',
-      'API y webhooks',
-      'Informes de rendimiento por canal',
-      'Soporte prioritario',
-    ],
-    cta: 'Lista de espera',
-    hot: false,
-  },
-];
-
 export default function Landing({ go }: { go: Go }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [annual, setAnnual] = useState(true);
+
 
   const scrollTo = (target: string) => {
     setMenuOpen(false);
@@ -298,11 +205,6 @@ export default function Landing({ go }: { go: Go }) {
   };
 
   const openStudio = () => go('inicio');
-
-  const price = (monthly: number) => {
-    if (monthly === 0) return '0';
-    return annual ? String(Math.round(monthly * 0.83)) : String(monthly);
-  };
 
   return (
     <div className="lp">
@@ -356,11 +258,11 @@ export default function Landing({ go }: { go: Go }) {
           <span className="lp-dot" /> Software libre · sin créditos ni suscripciones
         </span>
         <h1 className="lp-h1">
-          Crea Videos IA sin Rostro <span className="lp-grad">en Autopilot</span>
+          Crea Shorts sin rostro <span className="lp-grad">en piloto automático</span>
         </h1>
         <p className="lp-sub">
           Genera shorts y videos largos en minutos con voces locales, visuales con licencia, subtítulos
-          sincronizados y transiciones limpias. Cualquier idioma, sin habilidades técnicas.
+          sincronizados y transiciones limpias. Todo el flujo está en español.
         </p>
         <div className="lp-cta-row">
           <button className="lp-btn lp-btn-primary lp-btn-lg" onClick={openStudio}>
@@ -400,7 +302,7 @@ export default function Landing({ go }: { go: Go }) {
 
       <section className="lp-section lp-center" id="plantillas">
         <p className="lp-eyebrow">Plantillas</p>
-        <h2 className="lp-h2">Cualquier video. Cualquier idioma.</h2>
+        <h2 className="lp-h2">Un estudio completo para Shorts en español.</h2>
         <p className="lp-lead">
           Elige un formato y el estudio se encarga del resto: guion, voz, visuales, subtítulos y montaje.
         </p>
@@ -527,71 +429,19 @@ export default function Landing({ go }: { go: Go }) {
         </div>
       </section>
 
-      <section className="lp-section lp-center">
-        <p className="lp-eyebrow">Creadores</p>
-        <h2 className="lp-h2">Hecho para quien publica solo</h2>
+<section className="lp-section lp-center" id="costo">
+        <p className="lp-eyebrow">Gratis de verdad</p>
+        <h2 className="lp-h2">Sin tokens, créditos ni suscripciones</h2>
         <p className="lp-lead">
-          El estudio nació para canales sin rostro que necesitan constancia: guion, voz y montaje en el
-          mismo flujo.
+          La producción se ejecuta con herramientas locales y software libre. No hay planes Pro,
+          límites de uso de proveedores ni claves de APIs de generación. YouTube requiere únicamente
+          autorizar tu propia cuenta para publicar.
         </p>
-        <div className="lp-tst-grid">
-          {TESTIMONIALS.map((t) => (
-            <article className="lp-tst" key={t.name}>
-              <p>“{t.quote}”</p>
-              <div className="lp-who">
-                <span className="lp-avatar">{t.initials}</span>
-                <div>
-                  <div className="n">{t.name}</div>
-                  <div className="r">{t.role}</div>
-                </div>
-              </div>
-            </article>
-          ))}
+        <div className="lp-tpl-grid">
+          <article className="lp-tpl"><div className="lp-thumb">🖥️</div><h3>Procesamiento local</h3><p>FFmpeg, narración local, subtítulos y montaje en tu equipo.</p></article>
+          <article className="lp-tpl"><div className="lp-thumb">🆓</div><h3>Sin créditos</h3><p>No hay saldo, tokens comerciales, planes ni pagos por cada video.</p></article>
+          <article className="lp-tpl"><div className="lp-thumb">📱</div><h3>Control desde el celular</h3><p>Configurá, revisá y controlá la producción desde una interfaz adaptable.</p></article>
         </div>
-        <p className="lp-note">Testimonios de ejemplo mientras se publican los primeros casos reales.</p>
-      </section>
-
-      <section className="lp-section lp-center" id="precios">
-        <p className="lp-eyebrow">Precios</p>
-        <h2 className="lp-h2">Precios simples y transparentes</h2>
-        <p className="lp-lead">
-          Empieza gratis en esta instancia. Los planes de pago son referencia de las funciones que vienen.
-        </p>
-
-        <div className="lp-toggle">
-          <button className={annual ? 'on' : ''} onClick={() => setAnnual(true)}>
-            Anual −17%
-          </button>
-          <button className={!annual ? 'on' : ''} onClick={() => setAnnual(false)}>
-            Mensual
-          </button>
-        </div>
-
-        <div className="lp-plans">
-          {PLANS.map((p) => (
-            <article className={`lp-plan ${p.hot ? 'hot' : ''}`} key={p.name}>
-              <h3>{p.name}</h3>
-              <p className="lp-plan-tag">{p.tagline}</p>
-              <div className="lp-price">
-                ${price(p.monthly)} <small>/mes</small>
-              </div>
-              <ul>
-                {p.features.map((f) => (
-                  <li key={f}>{f}</li>
-                ))}
-              </ul>
-              <button
-                className={`lp-btn ${p.hot ? 'lp-btn-primary' : 'lp-btn-ghost'}`}
-                onClick={openStudio}
-              >
-                {p.cta}
-              </button>
-            </article>
-          ))}
-        </div>
-        <p className="lp-note">
-          Esta instancia es gratuita y sin créditos. Pro y Estudio aún no están disponibles.
-        </p>
       </section>
 
       <section className="lp-section" id="faq">
@@ -620,8 +470,8 @@ export default function Landing({ go }: { go: Go }) {
             <button className="lp-btn lp-btn-primary lp-btn-lg" onClick={openStudio}>
               Comienza Gratis →
             </button>
-            <button className="lp-btn lp-btn-ghost lp-btn-lg" onClick={() => scrollTo('precios')}>
-              Ver precios
+            <button className="lp-btn lp-btn-ghost lp-btn-lg" onClick={() => scrollTo('costo')}>
+              Ver cómo funciona
             </button>
           </div>
         </div>

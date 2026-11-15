@@ -18,7 +18,7 @@ function parseHash(): { route: Route; id?: number } {
   const raw = window.location.hash.replace(/^#\/?/, '');
   const [name, id] = raw.split('/');
   const valid = VALID_ROUTES.includes(name as Route);
-  const route = (valid ? name : 'landing') as Route;
+  const route = (valid ? name : 'inicio') as Route;
   const parsed = id ? Number(id) : undefined;
   return { route, id: parsed && Number.isFinite(parsed) ? parsed : undefined };
 }
@@ -68,7 +68,7 @@ export default function App() {
   const current = ROUTES.find((r) => r.id === route);
 
   return (
-    <div className="app">
+    <div className={`app ${route === 'editor' && projectId ? 'editor-fullscreen' : ''}`}>
       <aside className="sidebar">
         <div className="brand">
           <span className="dot" />
@@ -107,7 +107,7 @@ export default function App() {
           <h1>{current?.label ?? 'Inicio'}</h1>
           <div className="top-actions">
             {diag && !diag.tts.available && <span className="badge bad">sin voz</span>}
-            <button className="btn small primary" onClick={() => go('proyectos')}>Nuevo proyecto</button>
+            <button className="btn small primary" onClick={() => go('proyectos')}>Crear video</button>
           </div>
         </header>
 

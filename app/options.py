@@ -18,10 +18,11 @@ ASPECTS: dict[str, tuple[int, int]] = {
     "4:5": (1080, 1350),
 }
 
-RESOLUTIONS: dict[str, float] = {"1080p": 1.0, "1440p": 4 / 3, "2160p": 2.0}
+RESOLUTIONS: dict[str, float] = {"720p": 2 / 3, "1080p": 1.0, "1440p": 4 / 3, "2160p": 2.0}
 
 RESOLUTION_INFO = [
-    {"id": "1080p", "label": "1080p (Full HD)", "note": "Rápido. Recomendado para Shorts y Reels."},
+    {"id": "720p", "label": "720p (HD)", "note": "Más rápido para equipos modestos; recomendado para probar."},
+    {"id": "1080p", "label": "1080p (Full HD)", "note": "Recomendado para la publicación final."},
     {"id": "1440p", "label": "1440p (2K)", "note": "Intermedio. Más nitidez, ~1.8x tiempo de render."},
     {"id": "2160p", "label": "2160p (4K)", "note": "Máxima calidad. ~4x tiempo de render en 1 vCPU."},
 ]
@@ -90,7 +91,7 @@ CAPTION_LABELS = {
     "documental_min": "Documental minimal (contorno)",
     "short_pop": "Short pop (grande, mayúsculas)",
     "short_min": "Short minimal (solo contorno)",
-    "karaoke": "Karaoke (palabra por palabra, amarillo)",
+    "karaoke": "Karaoke visual (texto amarillo)",
     "caja_amarilla": "Caja amarilla (texto negro)",
     "caja_roja": "Caja roja (texto blanco)",
     "banner_superior": "Banner superior",
@@ -255,6 +256,34 @@ EXTERNAL_TEMPLATES = [
      "requires": "Render 3D con malla y animación (motor 3D externo)."},
 ]
 
+# --------------------------------------------------------------------------- #
+# Tipos de video y estilos visuales locales (sin servicios de generación)
+# --------------------------------------------------------------------------- #
+
+VIDEO_TYPES = [
+    {"id": "moving_images", "label": "Imágenes con movimiento", "description": "Fotos de archivo con paneo y zoom, procesadas localmente.", "available": True},
+    {"id": "full_motion_ai", "label": "Video IA de movimiento completo", "description": "Generación de clips IA; no hay un modelo local viable para este equipo todavía.", "available": False},
+    {"id": "skeleton", "label": "Esqueleto animado", "description": "Skeleton Video 2.5D generado localmente; sin IA ni créditos.", "available": True},
+    {"id": "stock_footage", "label": "Videos de archivo", "description": "Cinco clips reales de archivo propios o autorizados, alternados automáticamente.", "available": False},
+    {"id": "minecraft", "label": "Gameplay de Minecraft", "description": "Biblioteca de clips propios o autorizados; requiere cinco clips para rotación.", "available": False},
+    {"id": "subway", "label": "Gameplay de Subway Surfers", "description": "Biblioteca de clips propios o autorizados; requiere cinco clips para rotación.", "available": False},
+]
+VIDEO_TYPE_IDS = {item["id"] for item in VIDEO_TYPES}
+
+VISUAL_STYLES = [
+    {"id": "automatico", "label": "Automático", "description": "Sin tratamiento adicional; conserva los colores de la imagen."},
+    {"id": "cinematico", "label": "Cinematográfico", "description": "Contraste suave, color profundo y viñeta."},
+    {"id": "realista", "label": "Realista", "description": "Nitidez moderada y color natural."},
+    {"id": "anime", "label": "Color anime (filtro)", "description": "Saturación y bordes más intensos; conserva la foto, no la redibuja."},
+    {"id": "pixel_art", "label": "Pixel art", "description": "Pixelado visible por reducción y ampliación por bloques."},
+    {"id": "noir", "label": "Cine noir", "description": "Blanco y negro de alto contraste."},
+    {"id": "vintage", "label": "Vintage", "description": "Tono sepia y viñeta suave."},
+    {"id": "cyberpunk", "label": "Cyberpunk", "description": "Saturación alta y dominante fría."},
+    {"id": "acuarela", "label": "Suavizado tipo acuarela", "description": "Suavizado leve y color pastel; no convierte la foto en una pintura."},
+    {"id": "comic", "label": "Cómic (filtro)", "description": "Contraste y bordes marcados; no reemplaza una ilustración."},
+]
+VISUAL_STYLE_IDS = {item["id"] for item in VISUAL_STYLES}
+
 TEMPLATE_IDS = {t["id"] for t in TEMPLATES}
 SCRIPT_TEMPLATES = ["documentary", "short", "listicle", "pov", "explainer", "quote"]
 
@@ -283,7 +312,7 @@ def resolve_defaults(payload: dict) -> dict:
     aspect = payload.get("aspect") or tpl["aspect"]
     if aspect not in ASPECTS:
         aspect = tpl["aspect"]
-    resolution = payload.get("resolution") if payload.get("resolution") in RESOLUTIONS else "1080p"
+    resolution = payload.get("resolution") if payload.get("resolution") in RESOLUTIONS else "720p"
     caption = payload.get("caption_style") if payload.get("caption_style") in CAPTION_STYLES else tpl["caption_style"]
     transition = payload.get("transition_default")
     if transition not in TRANSITION_IDS:

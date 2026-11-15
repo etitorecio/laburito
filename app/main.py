@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import csv
-import hmac
 import io
+import hmac
 import json
 import os
 import platform
@@ -20,11 +20,11 @@ from fastapi import Body, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from PIL import Image, ImageStat
 
-from . import autopilot, db, media, options, persistence, publish, render, script_gen, tts, worker
+from . import autopilot, db, media, options, persistence, publish, render, script_gen, skeleton, tts, worker
 
 APP_VERSION = "1.1.0"
-APP_TOKEN = (os.environ.get("APP_TOKEN") or os.environ.get("AITUBER_TOKEN") or "").strip()
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
 
 
@@ -34,6 +34,13 @@ async def lifespan(app: FastAPI):
     persistence.restore_if_available()
     db.init_db()
     worker.start()
+    if not tts.status()["piper_available"]:
+        pending_voice_job = db.query_one(
+            "SELECT id FROM jobs WHERE kind='install_piper_voice' AND status IN ('en_cola','ejecutando') ORDER BY id DESC LIMIT 1"
+        )
+        if not pending_voice_job:
+            worker.enqueue(None, "install_piper_voice", {})
+            db.log("info", "tts", "Descarga automática de la voz neural española iniciada.")
     db.log("info", "app", "AITuber Libre iniciado", {"version": APP_VERSION})
     yield
     worker.stop()
@@ -43,14 +50,8 @@ app = FastAPI(title="AITuber Libre", version=APP_VERSION, lifespan=lifespan)
 
 
 @app.middleware("http")
-async def token_guard(request: Request, call_next):
-    if APP_TOKEN and request.url.path.startswith("/api") and request.url.path not in ("/api/health", "/api/youtube/callback"):
-        supplied = request.headers.get("x-app-token") or request.query_params.get("token") or ""
-        if not hmac.compare_digest(supplied, APP_TOKEN):
-            return JSONResponse({"detail": "Token de acceso requerido"}, status_code=401)
+async def persist_successful_changes(request: Request, call_next):
     response = await call_next(request)
-    # Persistir inmediatamente los cambios de configuración, calendario y OAuth.
-    # El backup periódico sigue cubriendo cambios hechos por el worker.
     if (
         request.method in {"POST", "PUT", "PATCH", "DELETE"}
         and request.url.path.startswith("/api/")
@@ -89,6 +90,8 @@ class ProjectIn(BaseModel):
     voice: str = "es"
     speed: int = 150
     pitch: int = 45
+    visual_style: str = "automatico"
+    video_type: str = "moving_images"
     aspect: str = ""
     notes: str = ""
     template: str = options.DEFAULT_TEMPLATE
@@ -109,6 +112,7 @@ class ProjectPatch(BaseModel):
     speed: int | None = None
     pitch: int | None = None
     visual_style: str | None = None
+    video_type: str | None = None
     title_style: str | None = None
     custom_tags: str | None = None
     aspect: str | None = None
@@ -183,10 +187,6 @@ class VisualIn(BaseModel):
     title: str = ""
 
 
-class YoutubeRefreshTokenIn(BaseModel):
-    refresh_token: str
-
-
 class SettingsIn(BaseModel):
     values: dict[str, str]
 
@@ -200,7 +200,8 @@ class AutopilotIn(BaseModel):
     voice: str = "es"
     speed: int = 150
     pitch: int = 45
-    visual_style: str = ""
+    visual_style: str = "automatico"
+    video_type: str = "moving_images"
     title_style: str = "automatico"
     custom_tags: str = ""
     aspect: str | None = None
@@ -237,6 +238,7 @@ class AutopilotPatch(BaseModel):
     speed: int | None = None
     pitch: int | None = None
     visual_style: str | None = None
+    video_type: str | None = None
     title_style: str | None = None
     custom_tags: str | None = None
     aspect: str | None = None
@@ -286,6 +288,22 @@ def _project_full(project_id: int) -> dict:
 def _touch_project(project_id: int) -> None:
     db.execute("UPDATE projects SET updated_at=? WHERE id=?", (db.now(), project_id))
 
+def _validate_video_type(video_type: str) -> None:
+    if video_type not in options.VIDEO_TYPE_IDS:
+        raise HTTPException(400, "Tipo de video desconocido")
+    if video_type == "moving_images":
+        return
+    if video_type == "full_motion_ai":
+        raise HTTPException(400, "La generación de video IA completo no tiene un modelo local viable para este equipo.")
+    if video_type == "skeleton":
+        return
+    required = 5
+    folder = db.DATA_DIR / "background_clips" / video_type
+    count = len(list(folder.glob("*.mp4"))) if folder.exists() else 0
+    if count < required:
+        raise HTTPException(400, f"Este formato necesita {required} clip(s) propios o autorizados. Hay {count} cargados.")
+
+
 
 # --------------------------------------------------------------------------- #
 # Salud, metadatos y diagnóstico
@@ -306,6 +324,43 @@ def health():
     }
 
 
+@app.post("/api/visual-style/analyze")
+async def analyze_visual_style_reference(file: UploadFile = File(...)):
+    """Extrae una descripción sencilla de paleta/iluminación de una imagen, sin servicios IA."""
+    if not (file.content_type or "").startswith("image/"):
+        raise HTTPException(400, "Subí una imagen JPG, PNG o WebP.")
+    raw = await file.read(8 * 1024 * 1024 + 1)
+    if len(raw) > 8 * 1024 * 1024:
+        raise HTTPException(413, "La imagen de referencia no puede superar 8 MB.")
+    try:
+        opened = Image.open(io.BytesIO(raw))
+        if opened.width * opened.height > 40_000_000:
+            raise HTTPException(413, "La imagen tiene demasiados píxeles para analizarla.")
+        image = opened.convert("RGB")
+        image.thumbnail((96, 96))
+        red, green, blue = ImageStat.Stat(image).mean[:3]
+        brightness = (red + green + blue) / 3
+        saturation = max(red, green, blue) - min(red, green, blue)
+        contrast = ImageStat.Stat(image.convert("L")).stddev[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(400, "No se pudo leer la imagen de referencia.") from exc
+
+    if blue > red * 1.12 and blue > green * 1.04:
+        palette = "paleta fría azulada"
+    elif red > blue * 1.12 and red > green * 1.05:
+        palette = "paleta cálida rojiza y dorada"
+    elif green > red * 1.08 and green > blue * 1.04:
+        palette = "paleta natural verde"
+    else:
+        palette = "paleta neutra equilibrada"
+    light = "iluminación luminosa" if brightness > 165 else "iluminación oscura" if brightness < 90 else "iluminación media"
+    contrast_text = "contraste alto" if contrast > 55 else "contraste suave" if contrast < 28 else "contraste medio"
+    color_text = "colores intensos" if saturation > 75 else "colores apagados" if saturation < 28 else "saturación moderada"
+    return {"visual_style_prompt": f"{palette}, {light}, {contrast_text}, {color_text}", "analysis": "Paleta y luz calculadas localmente; no se subió la imagen a ningún servicio externo."}
+
+
 @app.post("/api/music/upload")
 async def upload_music(file: UploadFile = File(...)):
     """Guarda una pista propia para usarla como música de fondo en los videos."""
@@ -321,10 +376,135 @@ async def upload_music(file: UploadFile = File(...)):
         raise HTTPException(400, "La pista supera el límite de 25 MB.")
     stem = "".join(ch for ch in Path(original).stem if ch.isalnum() or ch in "-_")[:48] or "musica"
     db.MUSIC_DIR.mkdir(parents=True, exist_ok=True)
+    existing_tracks = [path for path in db.MUSIC_DIR.iterdir() if path.is_file()]
+    if len(existing_tracks) >= 5:
+        raise HTTPException(400, "La biblioteca admite hasta cinco pistas. Quitá una antes de agregar otra.")
     filename = f"{stem}-{time.time_ns()}{extension}"
     target = db.MUSIC_DIR / filename
     target.write_bytes(content)
     return {"filename": filename, "music_library": sorted(p.name for p in db.MUSIC_DIR.iterdir() if p.is_file())}
+
+
+@app.delete("/api/music/{filename}")
+def delete_music(filename: str):
+    """Permite reemplazar pistas propias sin borrar música usada por proyectos o reglas."""
+    safe_name = Path(filename).name
+    if safe_name != filename or safe_name in {"", ".", ".."}:
+        raise HTTPException(400, "Nombre de pista no válido.")
+    target = db.MUSIC_DIR / safe_name
+    if not target.is_file():
+        raise HTTPException(404, "No se encontró la pista.")
+    autopilot.ensure_schema()
+    project_use = db.query_one("SELECT id FROM projects WHERE music=? LIMIT 1", (safe_name,))
+    rule_use = db.query_one("SELECT id FROM autopilot_rules WHERE music=? LIMIT 1", (safe_name,))
+    if project_use or rule_use:
+        raise HTTPException(409, "La pista está asignada a un proyecto o Autopiloto. Cambiá esa selección antes de quitarla.")
+    target.unlink()
+    return {"deleted": safe_name, "music_library": sorted(p.name for p in db.MUSIC_DIR.iterdir() if p.is_file())}
+
+
+CLIP_CATEGORIES = {"stock_footage", "minecraft", "subway"}
+MAX_BACKGROUND_CLIP_BYTES = 150 * 1024 * 1024
+
+
+def _background_clip_folder(category: str) -> Path:
+    if category not in CLIP_CATEGORIES:
+        raise HTTPException(404, "Biblioteca de clips desconocida")
+    folder = db.DATA_DIR / "background_clips" / category
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder
+
+
+@app.get("/api/background-clips")
+def list_background_clips():
+    result = {}
+    for category in sorted(CLIP_CATEGORIES):
+        folder = _background_clip_folder(category)
+        result[category] = [
+            {
+                "filename": path.name,
+                "size": path.stat().st_size,
+                "url": f"/api/background-clips/{category}/{path.name}",
+            }
+            for path in sorted(folder.glob("*.mp4"))
+            if path.is_file()
+        ]
+    return result
+
+
+@app.post("/api/background-clips")
+async def upload_background_clip(
+    category: str,
+    rights_confirmed: bool = False,
+    file: UploadFile = File(...),
+):
+    if not rights_confirmed:
+        raise HTTPException(400, "Confirmá que tenés derechos o permiso para usar este clip.")
+    folder = _background_clip_folder(category)
+    if len(list(folder.glob("*.mp4"))) >= 5:
+        raise HTTPException(400, "Esta biblioteca ya tiene cinco clips. Quitá uno antes de agregar otro.")
+    original = Path(file.filename or "clip.mp4").name
+    extension = Path(original).suffix.lower()
+    if extension not in {".mp4", ".mov", ".webm", ".mkv"}:
+        raise HTTPException(400, "Usá un video MP4, MOV, WebM o MKV.")
+    content = await file.read(MAX_BACKGROUND_CLIP_BYTES + 1)
+    if not content:
+        raise HTTPException(400, "El video está vacío.")
+    if len(content) > MAX_BACKGROUND_CLIP_BYTES:
+        raise HTTPException(400, "El clip supera el límite de 150 MB.")
+    stem = "".join(ch for ch in Path(original).stem if ch.isalnum() or ch in "-_")[:48] or "clip"
+    filename = f"{stem}-{time.time_ns()}.mp4"
+    temp_dir = db.TMP_DIR / "background_uploads"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    source = temp_dir / f"{time.time_ns()}{extension}"
+    target = folder / filename
+    source.write_bytes(content)
+    try:
+        proc = media.run([
+            media.ffmpeg(), "-y", "-i", str(source),
+            "-vf", "scale='min(1280,iw)':-2",
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "24",
+            "-pix_fmt", "yuv420p", "-an", "-movflags", "+faststart", str(target),
+        ], timeout=300)
+        if proc.returncode != 0 or not target.exists() or target.stat().st_size < 1000:
+            message = (proc.stderr or b"").decode("utf-8", "ignore")[-700:]
+            raise HTTPException(400, "No se pudo convertir el clip a MP4 H.264: " + message)
+        sidecar = target.with_suffix(".json")
+        sidecar.write_text(json.dumps({
+            "original_filename": original,
+            "rights_confirmed": True,
+            "category": category,
+            "uploaded_at": db.now(),
+        }, ensure_ascii=False, indent=2), encoding="utf-8")
+        return {"filename": filename, "size": target.stat().st_size}
+    finally:
+        source.unlink(missing_ok=True)
+
+
+@app.get("/api/background-clips/{category}/{filename}")
+def get_background_clip(category: str, filename: str):
+    folder = _background_clip_folder(category)
+    safe_name = Path(filename).name
+    if safe_name != filename or not safe_name.lower().endswith(".mp4"):
+        raise HTTPException(404, "Clip inexistente")
+    target = folder / safe_name
+    if not target.exists():
+        raise HTTPException(404, "Clip inexistente")
+    return FileResponse(target, media_type="video/mp4")
+
+
+@app.delete("/api/background-clips/{category}/{filename}")
+def delete_background_clip(category: str, filename: str):
+    folder = _background_clip_folder(category)
+    safe_name = Path(filename).name
+    if safe_name != filename or not safe_name.lower().endswith(".mp4"):
+        raise HTTPException(404, "Clip inexistente")
+    target = folder / safe_name
+    if not target.exists():
+        raise HTTPException(404, "Clip inexistente")
+    target.unlink()
+    target.with_suffix(".json").unlink(missing_ok=True)
+    return {"ok": True}
 
 
 @app.get("/api/meta")
@@ -340,8 +520,11 @@ def meta():
         "fps_options": options.FPS_OPTIONS,
         "templates": options.TEMPLATES,
         "external_templates": options.EXTERNAL_TEMPLATES,
+        "video_types": options.VIDEO_TYPES,
+        "visual_styles": options.VISUAL_STYLES,
         "caption_styles": [
-            {"id": key, "label": options.CAPTION_LABELS.get(key, key)} for key in options.CAPTION_STYLES
+            {"id": key, "label": options.CAPTION_LABELS.get(key, key), **style}
+            for key, style in options.CAPTION_STYLES.items()
         ],
         "transitions": options.TRANSITIONS,
         "music_beds": [{"id": m["id"], "label": m["label"]} for m in options.MUSIC_BEDS],
@@ -354,9 +537,102 @@ def meta():
             {"id": "short", "label": "Short vertical", "aspect": "9:16"},
         ],
         "evidence_levels": ["hecho", "indicio", "estimacion"],
-        "settings": {k: db.get_setting(k) for k in db.DEFAULT_SETTINGS},
-        "auth_required": bool(APP_TOKEN),
+        "settings": {
+            **{k: db.get_setting(k) for k in db.DEFAULT_SETTINGS},
+            "ollama_url": db.get_setting("ollama_url") or os.environ.get("OLLAMA_URL", ""),
+        },
     }
+
+
+@app.get("/api/caption-preview/{style_id}")
+def caption_style_preview(style_id: str):
+    if style_id not in options.CAPTION_STYLES:
+        raise HTTPException(404, "Estilo de subtítulos inexistente")
+    try:
+        preview = render.caption_preview(style_id)
+        return FileResponse(preview, media_type="image/png")
+    except Exception as exc:
+        raise HTTPException(503, f"No se pudo generar la vista previa: {exc}") from exc
+
+
+@app.get("/api/visual-style-preview/{style_id}")
+def visual_style_sample(style_id: str):
+    if style_id not in options.VISUAL_STYLE_IDS:
+        raise HTTPException(404, "Estilo visual inexistente")
+    try:
+        preview = render.visual_style_preview(style_id)
+        return FileResponse(preview, media_type="image/png")
+    except Exception as exc:
+        raise HTTPException(503, f"No se pudo generar la muestra visual: {exc}") from exc
+
+
+@app.get("/api/skeleton-preview/{action}")
+def skeleton_sample_preview(action: str):
+    if action not in skeleton.ACTIONS:
+        raise HTTPException(404, "Animación de esqueleto inexistente")
+    try:
+        preview = skeleton.ensure_clip(action)
+        return FileResponse(preview, media_type="video/mp4")
+    except Exception as exc:
+        raise HTTPException(503, f"No se pudo generar la muestra de esqueleto: {exc}") from exc
+
+
+@app.get("/api/music-preview/{bed_id}")
+def music_bed_preview(bed_id: str):
+    if bed_id not in options.MUSIC_IDS:
+        raise HTTPException(404, "Pista musical inexistente")
+    try:
+        preview = media.ensure_music_bed(bed_id)
+        return FileResponse(preview, media_type="audio/wav")
+    except Exception as exc:
+        raise HTTPException(503, f"No se pudo generar la muestra musical: {exc}") from exc
+
+
+@app.get("/api/music-file/{filename}")
+def uploaded_music_preview(filename: str):
+    safe_name = Path(filename).name
+    if safe_name != filename or Path(safe_name).suffix.lower() not in {".mp3", ".wav", ".ogg", ".m4a", ".flac"}:
+        raise HTTPException(404, "Pista musical inexistente")
+    target = db.MUSIC_DIR / safe_name
+    if not target.exists():
+        raise HTTPException(404, "Pista musical inexistente")
+    media_type = {
+        ".mp3": "audio/mpeg", ".wav": "audio/wav", ".ogg": "audio/ogg",
+        ".m4a": "audio/mp4", ".flac": "audio/flac",
+    }.get(target.suffix.lower(), "application/octet-stream")
+    return FileResponse(target, media_type=media_type)
+
+
+@app.get("/api/voice-preview/{voice_id}")
+def voice_sample_preview(voice_id: str, speed: int = 150, pitch: int = 45):
+    if voice_id not in tts.VOICES:
+        raise HTTPException(404, "Voz española inexistente")
+    speed = max(80, min(300, int(speed)))
+    pitch = max(0, min(99, int(pitch)))
+    preview_dir = db.DATA_DIR / "voice_previews"
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    preview = preview_dir / f"{voice_id}-{speed}-{pitch}.wav"
+    try:
+        if not preview.exists() or preview.stat().st_size < 1000:
+            tts.synthesize(
+                "Hola. Esta es una muestra de voz en español para tus videos. "
+                "Elegí la que mejor combine con el estilo de tu canal.",
+                preview, voice=voice_id, speed=speed, pitch=pitch,
+            )
+        return FileResponse(preview, media_type="audio/wav")
+    except Exception as exc:
+        raise HTTPException(503, f"No se pudo generar la muestra de voz: {exc}") from exc
+
+
+@app.get("/api/transition-preview/{transition_id}")
+def transition_effect_preview(transition_id: str):
+    if transition_id not in options.TRANSITION_IDS:
+        raise HTTPException(404, "Movimiento de escena inexistente")
+    try:
+        preview = render.transition_preview(transition_id)
+        return FileResponse(preview, media_type="video/mp4")
+    except Exception as exc:
+        raise HTTPException(503, f"No se pudo generar la demostración: {exc}") from exc
 
 
 @app.get("/api/diagnostics")
@@ -384,8 +660,9 @@ def diagnostics():
         "ffmpeg_version": (media.run(["ffmpeg", "-version"], timeout=20).stdout or b"").decode().split("\n")[0],
         "render": media.capabilities(),
         "ollama": {
-            "url": db.get_setting("ollama_url"),
-            "available": script_gen.ollama_available(db.get_setting("ollama_url")),
+            "url": db.get_setting("ollama_url") or os.environ.get("OLLAMA_URL", ""),
+            "available": script_gen.ollama_model_available(db.get_setting("ollama_url") or os.environ.get("OLLAMA_URL", ""), "qwen2.5:1.5b-instruct"),
+            "model": "qwen2.5:1.5b-instruct",
             "optional": True,
         },
         "counts": {
@@ -397,8 +674,7 @@ def diagnostics():
         },
         "worker": worker.status(),
         "persistence": persistence.status(),
-        "token_configured": bool(APP_TOKEN),
-        "note": "Render y TTS corren localmente; YouTube requiere OAuth. En AppJet Free configurá Supabase para conservar los datos entre reemplazos del contenedor.",
+        "note": "Render, voz y guiones funcionan localmente. Para conservar proyectos y archivos, ejecutá la app con el volumen ./data montado; YouTube requiere conectar la cuenta mediante OAuth.",
     }
 
 
@@ -480,17 +756,21 @@ def create_project(payload: ProjectIn):
         raise HTTPException(400, "Laburito genera contenido únicamente en español. Elegí una voz española.")
     if data.get("aspect") and data["aspect"] not in render.ASPECTS:
         raise HTTPException(400, "Formato no soportado (16:9, 9:16, 1:1 o 4:5)")
+    if data.get("visual_style") not in options.VISUAL_STYLE_IDS:
+        raise HTTPException(400, "Estilo visual desconocido")
+    _validate_video_type(data.get("video_type") or "moving_images")
     resolved = options.resolve_defaults(data)
     tpl = options.template(resolved["template"])
     duration = int(data.get("duration_target_sec") or tpl["default_duration"])
     pid = db.execute(
         "INSERT INTO projects(channel_id, title, topic, kind, aspect, status, duration_target_sec, voice, speed, pitch, notes, "
-        "template, caption_style, transition_default, resolution, fps, music, music_volume, created_at, updated_at) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "template, visual_style, video_type, caption_style, transition_default, resolution, fps, music, music_volume, created_at, updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (
             data.get("channel_id"), payload.title, payload.topic or payload.title, resolved["kind"],
             resolved["aspect"], "borrador", duration, payload.voice, payload.speed, payload.pitch,
-            payload.notes, resolved["template"], resolved["caption_style"], resolved["transition_default"],
+            payload.notes, resolved["template"], payload.visual_style, payload.video_type,
+            resolved["caption_style"], resolved["transition_default"],
             resolved["resolution"], resolved["fps"], resolved["music"], data.get("music_volume"),
             db.now(), db.now(),
         ),
@@ -518,6 +798,10 @@ def patch_project(project_id: int, payload: ProjectPatch):
         raise HTTPException(400, "Plantilla desconocida")
     if "caption_style" in data and data["caption_style"] not in options.CAPTION_STYLES:
         raise HTTPException(400, "Estilo de subtítulos desconocido")
+    if "visual_style" in data and data["visual_style"] not in options.VISUAL_STYLE_IDS:
+        raise HTTPException(400, "Estilo visual desconocido")
+    if "video_type" in data:
+        _validate_video_type(data["video_type"])
     if "transition_default" in data and data["transition_default"] not in options.TRANSITION_IDS:
         raise HTTPException(400, "Transición desconocida")
     if "resolution" in data and data["resolution"] not in options.RESOLUTIONS:
@@ -1015,21 +1299,8 @@ def publish_destinations():
     return {"destinations": publish.destinations(), "auto_publish_available": True}
 
 
-@app.post("/api/youtube/token")
-def save_youtube_refresh_token(payload: YoutubeRefreshTokenIn):
-    if not APP_TOKEN:
-        raise HTTPException(403, "Configurá APP_TOKEN para proteger las credenciales de YouTube.")
-    token = payload.refresh_token.strip()
-    if len(token) < 20 or len(token) > 4096:
-        raise HTTPException(400, "El refresh token no tiene un formato válido.")
-    db.set_setting("youtube_refresh_token", token)
-    return {"ok": True, "message": "Token de YouTube guardado en el servidor."}
-
-
 @app.post("/api/tts/piper/install", status_code=202)
 def install_piper_voice():
-    if not APP_TOKEN:
-        raise HTTPException(403, "Configurá APP_TOKEN para proteger las acciones de administración.")
     status = tts.status()
     if status["piper_available"]:
         return {"installed": True, "message": "La voz neural ya está instalada."}
@@ -1045,8 +1316,6 @@ def install_piper_voice():
 @app.post("/api/youtube/oauth/start")
 def youtube_oauth_start(request: Request):
     """Inicia OAuth oficial; el estado es aleatorio, de un solo uso y vence en 10 minutos."""
-    if not APP_TOKEN:
-        raise HTTPException(403, "Configurá APP_TOKEN para proteger la conexión de YouTube.")
     credentials = publish.youtube_credentials()
     if not credentials["client_id"] or not credentials["client_secret"]:
         raise HTTPException(400, "Faltan YOUTUBE_CLIENT_ID y/o YOUTUBE_CLIENT_SECRET en el servidor.")

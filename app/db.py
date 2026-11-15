@@ -24,7 +24,7 @@ TMP_DIR = DATA_DIR / "tmp"
 
 _WRITE_LOCK = threading.RLock()
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 _MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -193,6 +193,10 @@ _MIGRATIONS: dict[int, list[str]] = {
         "ALTER TABLE projects ADD COLUMN fps INTEGER NOT NULL DEFAULT 25",
         "ALTER TABLE projects ADD COLUMN music TEXT NOT NULL DEFAULT 'auto'",
         "ALTER TABLE projects ADD COLUMN music_volume REAL NOT NULL DEFAULT 0.12",
+    ],
+    3: [
+        "ALTER TABLE projects ADD COLUMN visual_style TEXT NOT NULL DEFAULT 'automatico'",
+        "ALTER TABLE projects ADD COLUMN video_type TEXT NOT NULL DEFAULT 'moving_images'",
     ],
 }
 

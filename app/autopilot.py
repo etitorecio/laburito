@@ -8,6 +8,7 @@ activa la auto-subida. Todo local: no intervienen servicios pagos.
 from __future__ import annotations
 
 import json
+import os
 import time
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -15,7 +16,9 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from . import db, options
 
 CADENCE_OPTIONS = [6, 12, 24, 48, 72, 168]
-SHORT_TEMPLATE_IDS = {"shorts", "listicle", "pov", "quote"}
+SHORT_TEMPLATE_IDS = {"shorts", "listicle", "pov", "quote", "cuadrado", "vertical_45"}
+LONGFORM_TEMPLATE_IDS = {"longform", "explainer"}
+AUTOPILOT_TEMPLATE_IDS = SHORT_TEMPLATE_IDS | LONGFORM_TEMPLATE_IDS
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS autopilot_rules(
@@ -28,16 +31,20 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
     voice TEXT NOT NULL DEFAULT 'es',
     speed INTEGER NOT NULL DEFAULT 150,
     pitch INTEGER NOT NULL DEFAULT 45,
-    visual_style TEXT NOT NULL DEFAULT '',
+    visual_style TEXT NOT NULL DEFAULT 'automatico',
+    visual_style_prompt TEXT NOT NULL DEFAULT '',
+    create_thumbnail INTEGER NOT NULL DEFAULT 1,
+    video_type TEXT NOT NULL DEFAULT 'moving_images',
     title_style TEXT NOT NULL DEFAULT 'automatico',
     custom_tags TEXT NOT NULL DEFAULT '',
     aspect TEXT NOT NULL DEFAULT '9:16',
     caption_style TEXT NOT NULL DEFAULT 'short_pop',
+    captions_enabled INTEGER NOT NULL DEFAULT 1,
     transition_default TEXT NOT NULL DEFAULT 'fundido',
-    resolution TEXT NOT NULL DEFAULT '1080p',
+    resolution TEXT NOT NULL DEFAULT '720p',
     fps INTEGER NOT NULL DEFAULT 25,
     music TEXT NOT NULL DEFAULT 'auto',
-    music_volume REAL NOT NULL DEFAULT 0.12,
+    music_volume REAL NOT NULL DEFAULT 0.3,
     audience TEXT NOT NULL DEFAULT 'Público general',
     tone TEXT NOT NULL DEFAULT 'Dinámico y cercano',
     hook_style TEXT NOT NULL DEFAULT 'Dato sorprendente',
@@ -63,9 +70,9 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
 """
 
 FIELDS = [
-    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "speed", "pitch", "visual_style", "title_style", "custom_tags", "aspect",
+    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "speed", "pitch", "visual_style", "visual_style_prompt", "create_thumbnail", "video_type", "title_style", "custom_tags", "aspect",
     "audience", "tone", "hook_style", "cta", "content_pillars", "avoid_topics",
-    "caption_style", "transition_default", "resolution", "fps", "music", "music_volume",
+    "caption_style", "captions_enabled", "transition_default", "resolution", "fps", "music", "music_volume",
     "cadence_hours", "cadence_minutes", "videos_per_period", "period_days", "schedule_time", "timezone", "enabled", "destination", "privacy", "auto_publish", "next_run_at",
 ]
 
@@ -77,7 +84,10 @@ def ensure_schema() -> None:
         "last_error": "TEXT",
         "speed": "INTEGER NOT NULL DEFAULT 150",
         "pitch": "INTEGER NOT NULL DEFAULT 45",
-        "visual_style": "TEXT NOT NULL DEFAULT ''",
+        "visual_style": "TEXT NOT NULL DEFAULT 'automatico'",
+        "visual_style_prompt": "TEXT NOT NULL DEFAULT ''",
+        "create_thumbnail": "INTEGER NOT NULL DEFAULT 1",
+        "video_type": "TEXT NOT NULL DEFAULT 'moving_images'",
         "title_style": "TEXT NOT NULL DEFAULT 'automatico'",
         "custom_tags": "TEXT NOT NULL DEFAULT ''",
         "videos_per_period": "INTEGER NOT NULL DEFAULT 1",
@@ -91,20 +101,31 @@ def ensure_schema() -> None:
         "cta": "TEXT NOT NULL DEFAULT 'Hacé una pregunta concreta al final'",
         "content_pillars": "TEXT NOT NULL DEFAULT ''",
         "avoid_topics": "TEXT NOT NULL DEFAULT ''",
+        "captions_enabled": "INTEGER NOT NULL DEFAULT 1",
     }
     for name, definition in migrations.items():
         if name not in columns:
             db.execute(f"ALTER TABLE autopilot_rules ADD COLUMN {name} {definition}")
-    # Migra reglas antiguas: el Autopiloto queda dedicado exclusivamente a Shorts.
-    placeholders = ",".join("?" for _ in SHORT_TEMPLATE_IDS)
+    # Normaliza IDs de camas musicales guardados por versiones anteriores.
+    for bed_id in options.MUSIC_IDS:
+        db.execute("UPDATE autopilot_rules SET music=? WHERE music=?", (f"bed:{bed_id}", bed_id))
+    # Migra plantillas desconocidas, pero conserva documentales largos y formatos válidos.
+    placeholders = ",".join("?" for _ in AUTOPILOT_TEMPLATE_IDS)
     db.execute(
         f"UPDATE autopilot_rules SET template='shorts', aspect='9:16', "
         "duration_target_sec=CASE WHEN duration_target_sec IS NULL THEN 30 "
         "WHEN duration_target_sec<15 THEN 15 WHEN duration_target_sec>180 THEN 180 "
         "ELSE duration_target_sec END "
-        f"WHERE template NOT IN ({placeholders}) OR aspect!='9:16'",
-        tuple(sorted(SHORT_TEMPLATE_IDS)),
+        f"WHERE template NOT IN ({placeholders})",
+        tuple(sorted(AUTOPILOT_TEMPLATE_IDS)),
     )
+    for template_id in AUTOPILOT_TEMPLATE_IDS:
+        template = options.template(template_id)
+        if template:
+            db.execute(
+                "UPDATE autopilot_rules SET aspect=? WHERE template=?",
+                (template.get("aspect", "9:16"), template_id),
+            )
 
 
 def _ts(offset_hours: float = 0.0) -> str:
@@ -125,6 +146,8 @@ def list_rules() -> list[dict]:
     for row in rows:
         row["enabled"] = bool(row["enabled"])
         row["auto_publish"] = bool(row["auto_publish"])
+        row["captions_enabled"] = bool(row.get("captions_enabled", 1))
+        row["create_thumbnail"] = bool(row.get("create_thumbnail", 1))
     return rows
 
 
@@ -134,6 +157,7 @@ def get_rule(rule_id: int) -> dict | None:
     if row:
         row["enabled"] = bool(row["enabled"])
         row["auto_publish"] = bool(row["auto_publish"])
+        row["captions_enabled"] = bool(row.get("captions_enabled", 1))
     return row
 
 
@@ -149,15 +173,15 @@ def _clean(data: dict) -> dict:
     if "channel_id" in data:
         clean["channel_id"] = data["channel_id"]
     if "template" in data and data["template"] is not None:
-        if data["template"] not in SHORT_TEMPLATE_IDS:
-            raise ValueError("El Autopiloto de Laburito produce exclusivamente Shorts.")
+        if data["template"] not in AUTOPILOT_TEMPLATE_IDS:
+            raise ValueError("Elegí una plantilla de video compatible.")
         clean["template"] = data["template"]
     if "duration_target_sec" in data and data["duration_target_sec"] is not None:
         short_templates = SHORT_TEMPLATE_IDS
         if data.get("template", "shorts") in short_templates:
             clean["duration_target_sec"] = max(15, min(180, int(data["duration_target_sec"])))
         else:
-            clean["duration_target_sec"] = max(5, min(3600, int(data["duration_target_sec"])))
+            clean["duration_target_sec"] = max(180, min(1200, int(data["duration_target_sec"])))
     if "voice" in data and data["voice"] is not None:
         voice = str(data["voice"]).strip()
         spanish_voices = {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"}
@@ -169,7 +193,31 @@ def _clean(data: dict) -> dict:
     if "pitch" in data and data["pitch"] is not None:
         clean["pitch"] = max(0, min(99, int(data["pitch"])))
     if "visual_style" in data and data["visual_style"] is not None:
-        clean["visual_style"] = str(data["visual_style"]).strip()[:180]
+        chosen_style = str(data["visual_style"]).strip()
+        if chosen_style not in options.VISUAL_STYLE_IDS:
+            raise ValueError("Estilo visual no válido")
+        clean["visual_style"] = chosen_style
+    if "visual_style_prompt" in data and data["visual_style_prompt"] is not None:
+        clean["visual_style_prompt"] = str(data["visual_style_prompt"]).strip()[:240]
+    if "video_type" in data and data["video_type"] is not None:
+        chosen_type = str(data["video_type"]).strip()
+        if chosen_type not in options.VIDEO_TYPE_IDS:
+            raise ValueError("Tipo de video no válido")
+        if chosen_type == "full_motion_ai":
+            raise ValueError(f"El formato {chosen_type} todavía no está implementado.")
+        required_clips = 5
+        if chosen_type in {"minecraft", "subway", "stock_footage"}:
+            clip_dir = db.DATA_DIR / "background_clips" / chosen_type
+            allowed_video_suffixes = {".mp4", ".mov", ".webm", ".mkv"}
+            clip_count = (
+                sum(1 for path in clip_dir.iterdir() if path.is_file() and path.suffix.lower() in allowed_video_suffixes)
+                if clip_dir.exists() else 0
+            )
+            if clip_count < required_clips:
+                raise ValueError(f"El formato {chosen_type} necesita {required_clips} clip(s) propios o autorizados.")
+        if chosen_type == "skeleton" and int(data.get("duration_target_sec") or 0) > 420:
+            raise ValueError("Skeleton admite una duración máxima de 7 minutos.")
+        clean["video_type"] = chosen_type
     if "title_style" in data and data["title_style"] is not None:
         if data["title_style"] not in ("automatico", "pregunta", "curiosidad", "directo", "misterio"):
             raise ValueError("Estilo de título no válido")
@@ -177,13 +225,18 @@ def _clean(data: dict) -> dict:
     if "custom_tags" in data and data["custom_tags"] is not None:
         clean["custom_tags"] = str(data["custom_tags"]).strip()[:300]
     if "aspect" in data and data["aspect"] is not None:
-        if data["aspect"] != "9:16":
-            raise ValueError("Los Shorts del Autopiloto deben ser verticales 9:16.")
-        clean["aspect"] = "9:16"
+        aspect = str(data["aspect"])
+        if aspect not in {"9:16", "16:9", "1:1", "4:5"}:
+            raise ValueError("Formato de video no válido.")
+        clean["aspect"] = aspect
     if "caption_style" in data and data["caption_style"] is not None:
         if data["caption_style"] not in options.CAPTION_STYLES:
             raise ValueError("Estilo de subtítulos desconocido")
         clean["caption_style"] = data["caption_style"]
+    if "captions_enabled" in data and data["captions_enabled"] is not None:
+        clean["captions_enabled"] = 1 if bool(data["captions_enabled"]) else 0
+    if "create_thumbnail" in data and data["create_thumbnail"] is not None:
+        clean["create_thumbnail"] = 1 if bool(data["create_thumbnail"]) else 0
     if "transition_default" in data and data["transition_default"] is not None:
         if data["transition_default"] not in options.TRANSITION_IDS:
             raise ValueError("Transición desconocida")
@@ -198,11 +251,17 @@ def _clean(data: dict) -> dict:
         clean["fps"] = int(data["fps"])
     if "music" in data and data["music"] is not None:
         music = str(data["music"]).strip()
-        if music not in ("auto", "ninguna", "none", "sin_musica") and music not in options.MUSIC_IDS:
+        if music.startswith("bed:") and music.split(":", 1)[1] in options.MUSIC_IDS:
+            clean["music"] = music
+        elif music in options.MUSIC_IDS:
+            clean["music"] = "bed:" + music
+        elif music in ("auto", "ninguna", "none", "sin_musica"):
+            clean["music"] = music
+        else:
             custom_track = db.MUSIC_DIR / music
             if custom_track.name != music or not custom_track.is_file():
                 raise ValueError("Pista musical no reconocida o archivo inexistente")
-        clean["music"] = "bed:" + music if music in options.MUSIC_IDS else music
+            clean["music"] = music
     if "music_volume" in data and data["music_volume"] is not None:
         clean["music_volume"] = max(0.0, min(1.0, float(data["music_volume"])))
     for key, limit in {
@@ -278,7 +337,7 @@ def _validate_auto_publish(clean: dict, current: dict | None = None) -> None:
     from . import persistence, publish
     if not persistence.durable_storage_available():
         raise ValueError(
-            "Antes de activar la autopublicación, configurá Supabase o ejecutá Laburito con un volumen local persistente."
+            "Antes de activar la autopublicación, ejecutá Laburito con un volumen local persistente (carpeta ./data)."
         )
     try:
         publish.youtube_account_status()
@@ -293,9 +352,12 @@ def create_rule(data: dict) -> dict:
     clean = _clean(data)
     clean.setdefault("name", clean.get("niche") or "Piloto automático")
     clean.setdefault("template", "shorts")
-    clean.setdefault("aspect", "9:16")
+    selected_template = options.template(clean.get("template", "shorts")) or options.template("shorts")
+    clean.setdefault("aspect", selected_template.get("aspect", "9:16"))
     clean.setdefault("destination", "youtube")
     clean.setdefault("privacy", "public")
+    clean.setdefault("resolution", "720p")
+    clean.setdefault("music_volume", 0.3)
     clean.setdefault("auto_publish", 1)
     _validate_auto_publish(clean)
     clean.setdefault("videos_per_period", 1)
@@ -318,7 +380,7 @@ def update_rule(rule_id: int, data: dict) -> dict | None:
     current = get_rule(rule_id)
     if not current:
         return None
-    clean = _clean(data)
+    clean = _clean({**current, **data})
     _validate_auto_publish(clean, current)
     if clean:
         if clean.get("enabled") == 1 and not current.get("enabled"):
@@ -345,7 +407,7 @@ def _create_project(rule: dict) -> dict:
     """Descubre un tema no usado, registra una fuente y crea el proyecto."""
     from . import script_gen, topic_engine
 
-    template_id = rule.get("template") if rule.get("template") in SHORT_TEMPLATE_IDS else "shorts"
+    template_id = rule.get("template") if rule.get("template") in AUTOPILOT_TEMPLATE_IDS else "shorts"
     tpl = options.template(template_id)
     # Compatibilidad con reglas antiguas: nunca producir narración en otro idioma.
     rule["voice"] = rule.get("voice") if rule.get("voice") in {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"} else "es"
@@ -366,25 +428,33 @@ def _create_project(rule: dict) -> dict:
     )
     topic = research["topic"]
     title = topic
-    duration = max(15, min(180, int(rule.get("duration_target_sec") or tpl.get("default_duration") or 30)))
+    duration_default = int(tpl.get("default_duration") or 30)
+    duration_max = 180 if template_id in SHORT_TEMPLATE_IDS else 1200
+    duration_min = 15 if template_id in SHORT_TEMPLATE_IDS else 180
+    duration = max(duration_min, min(duration_max, int(rule.get("duration_target_sec") or duration_default)))
     pid = db.execute(
         "INSERT INTO projects(channel_id, title, topic, kind, aspect, status, duration_target_sec, voice, speed, pitch, notes, "
-        "template, caption_style, transition_default, resolution, fps, music, music_volume, created_at, updated_at) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "template, visual_style, video_type, caption_style, transition_default, resolution, fps, music, music_volume, created_at, updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (
-            rule.get("channel_id"), title, topic, "short",
-            "9:16", "borrador", duration,
+            rule.get("channel_id"), title, topic, tpl.get("kind", "short"),
+            tpl.get("aspect", "9:16"), "borrador", duration,
             rule.get("voice") or "es", int(rule.get("speed") or 150), int(rule.get("pitch") if rule.get("pitch") is not None else 45),
             f"Autopiloto: {rule.get('name') or niche}. Fuente inicial: {research['url']}. "
             "La fuente es introductoria y debe contrastarse antes de publicar. "
             "[LABURITO_META]" + json.dumps({
                 "title_style": rule.get("title_style") or "automatico",
                 "custom_tags": rule.get("custom_tags") or "",
+                "captions_enabled": bool(rule.get("captions_enabled", 1)),
+                "visual_style_prompt": rule.get("visual_style_prompt") or "",
+                "create_thumbnail": bool(rule.get("create_thumbnail", 1)),
             }, ensure_ascii=False),
-            tpl["id"], rule.get("caption_style") or tpl.get("caption_style"),
-            rule.get("transition_default") or "fundido", rule.get("resolution") or "1080p",
+            tpl["id"], rule.get("visual_style") or "automatico",
+            rule.get("video_type") or "moving_images",
+            rule.get("caption_style") or tpl.get("caption_style"),
+            rule.get("transition_default") or "fundido", rule.get("resolution") or "720p",
             int(rule.get("fps") or 25), rule.get("music") or "auto",
-            float(rule.get("music_volume") if rule.get("music_volume") is not None else 0.12), db.now(), db.now(),
+            float(rule.get("music_volume") if rule.get("music_volume") is not None else 0.3), db.now(), db.now(),
         ),
     )
     project = db.query_one("SELECT * FROM projects WHERE id=?", (pid,))
@@ -395,7 +465,8 @@ def _create_project(rule: dict) -> dict:
         "cta": rule.get("cta") or "Hacé una pregunta concreta al final",
         "content_pillars": rule.get("content_pillars") or "",
         "avoid_topics": rule.get("avoid_topics") or "",
-        "visual_style": rule.get("visual_style") or "",
+        "visual_style": rule.get("visual_style") or "automatico",
+        "video_type": rule.get("video_type") or "moving_images",
     })
     db.execute(
         "INSERT INTO sources(project_id, title, url, author, license, accessed_at, attribution, kind, notes, created_at) "
@@ -475,11 +546,11 @@ def _create_project(rule: dict) -> dict:
         notes = []
     project_sources = db.query("SELECT * FROM sources WHERE project_id=? ORDER BY id", (pid,))
     script = script_gen.generate_script(project, notes, project_sources)
-    ollama_url = db.get_setting("ollama_url", "")
-    if ollama_url and script_gen.ollama_available(ollama_url):
+    ollama_url = db.get_setting("ollama_url", "") or os.environ.get("OLLAMA_URL", "").strip()
+    if ollama_url and script_gen.ollama_model_available(ollama_url, "qwen2.5:1.5b-instruct"):
         try:
             script = script_gen.rewrite_with_ollama(
-                ollama_url, "llama3.2", project, script, notes
+                ollama_url, "qwen2.5:1.5b-instruct", project, script, notes
             )
             db.log("info", "autopilot", "Guion reescrito con Ollama local", {"project_id": pid})
         except Exception as exc:
