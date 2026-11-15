@@ -107,7 +107,7 @@ export default function App() {
           <h1>{current?.label ?? 'Inicio'}</h1>
           <div className="top-actions">
             {diag && !diag.tts.available && <span className="badge bad">sin voz</span>}
-            <button className="btn small primary" onClick={() => go('proyectos')}>Nuevo proyecto</button>
+            <button className="btn small primary" onClick={() => go('proyectos')}>Crear video</button>
           </div>
         </header>
 
