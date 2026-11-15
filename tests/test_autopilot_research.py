@@ -350,7 +350,7 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(query.call_args_list[1].args[1], (501, 502))
 
     def test_autopilot_allows_free_source_based_youtube_publication_without_ollama(self):
-        rule = {"id": 10, "auto_publish": True, "cadence_hours": 24, "destination": "youtube", "privacy": "public"}
+        rule = {"id": 10, "auto_publish": True, "cadence_hours": 24, "destination": "youtube", "privacy": "public", "channel_id": 10}
         with patch.object(autopilot, "get_rule", return_value=rule):
             with patch("app.persistence.durable_storage_available", return_value=True):
                 with patch("app.publish.youtube_account_status", return_value={"channel_title": "Test channel"}):
@@ -384,7 +384,7 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(patch.custom_tags, "misterio")
 
     def test_autopilot_holds_publication_for_unrewritten_script(self):
-        rule = {"id": 9, "auto_publish": True, "cadence_hours": 24, "destination": "youtube", "privacy": "unlisted"}
+        rule = {"id": 9, "auto_publish": True, "cadence_hours": 24, "destination": "youtube", "privacy": "unlisted", "channel_id": 9}
         with patch.object(autopilot, "get_rule", return_value=rule):
             with patch("app.persistence.durable_storage_available", return_value=True):
                 with patch("app.publish.youtube_account_status", return_value={"channel_title": "Test channel"}):
