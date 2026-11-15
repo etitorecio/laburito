@@ -508,9 +508,16 @@ def generate_script(
     evidence_sentences: list[str] = []
     if source_note:
         raw = re.sub(r"\[[0-9]+\]", "", source_note.get("claim") or "")
-        evidence_sentences = [re.sub(r"\s+", " ", s).strip() for s in re.split(r"(?<=[.!?])\s+", raw) if len(s.strip()) >= 45]
+        evidence_sentences = [
+            re.sub(r"\s+", " ", sentence).strip()
+            for sentence in re.split(r"(?<=[.!?])\s+", raw)
+            if len(sentence.strip()) >= 45
+        ]
 
+    # Never fill an automatic script with generic facts unrelated to the topic.
+    # If the source has fewer facts than the template, reduce the scene count.
     if evidence_sentences:
+        beats = beats[:min(len(beats), len(evidence_sentences))]
         evidence_sentences = evidence_sentences[:max(len(beats), int(target / 10))]
 
     claims = _claims([n for n in notes if n is not source_note])
@@ -522,11 +529,12 @@ def generate_script(
     evidence_per_scene = max(1, (len(evidence_sentences) + len(beats) - 1) // len(beats))
     for idx, beat in enumerate(beats):
         narration = beat["narration"].format(topic=topic)
-        if len(evidence_sentences) >= len(beats):
+        if evidence_sentences:
             first = idx * evidence_per_scene
             factual = evidence_sentences[first:first + evidence_per_scene]
-            if factual:
-                narration = (f"Sobre {topic}: " if idx == 0 else "") + " ".join(factual)
+            narration = (f"Sobre {topic}: " if idx == 0 else "") + " ".join(factual)
+            if source_note:
+                narration += f" Fuente de orientación: {source_note.get('source_url')}."
         elif beat["key"] in ("origen", "protagonistas", "descubrimiento", "evolucion", "consecuencias", "desarrollo"):
             if claim_index < len(claims):
                 note = next((n for n in notes if (n.get("claim") or "").strip() == claims[claim_index]), None)
@@ -555,7 +563,7 @@ def generate_script(
         "topic": topic,
         "scenes": scenes,
         "warnings": [
-            "Guion local basado en texto de fuente; requiere contraste editorial antes de publicar." if source_note and len(evidence_sentences) >= len(beats) else "Borrador de plantilla local: requiere revisión humana antes de publicar.",
+            "Guion estructurado con extractos de una fuente de orientación; contrastar datos con fuentes independientes antes de publicar." if source_note and evidence_sentences else "Borrador de plantilla local sin evidencia suficiente: no publicar automáticamente.",
         ]
         + ([f"{len(unused)} nota(s) de investigación sin usar; revisalas y sumalas como escenas."] if unused else []),
         "sources_considered": len(sources),
