@@ -24,7 +24,7 @@ WORK = Path(tempfile.mkdtemp(prefix="aitub_e2e_"))
 os.environ["AITUBER_DATA_DIR"] = str(WORK)
 os.environ.setdefault("AITUBER_MUSIC_VOLUME", "0")
 
-from app import db, media, options, render, script_gen  # noqa: E402
+from app import db, media, options, render, script_gen, tts  # noqa: E402
 
 FAILURES: list[str] = []
 NOTES: list[str] = []
@@ -157,6 +157,18 @@ def main() -> int:
                   f"clip de demostración {transition_id}")
         except Exception as exc:
             check(False, f"clip de demostración {transition_id}", str(exc))
+
+    print("\n== Muestra de voz española")
+    voice_preview = db.DATA_DIR / "voice_previews" / "es.wav"
+    try:
+        tts.synthesize(
+            "Hola. Esta es una muestra de voz en español para tus videos.",
+            voice_preview, voice="es", speed=150, pitch=45,
+        )
+        check(voice_preview.exists() and voice_preview.stat().st_size > 1000,
+              "muestra de voz local en español")
+    except Exception as exc:
+        check(False, "muestra de voz local en español", str(exc))
 
     print("\n== Persistencia")
     check(db.scalar("SELECT COUNT(*) FROM projects") == 2, "dos proyectos en SQLite")
