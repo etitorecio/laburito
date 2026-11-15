@@ -63,6 +63,7 @@ export default function Editor({ projectId, go }: Props) {
   const [ok, setOk] = useState('');
   const [busy, setBusy] = useState('');
   const [searchFor, setSearchFor] = useState<number | null>(null);
+  const [selectedSceneId, setSelectedSceneId] = useState<number | null>(null);
   const [results, setResults] = useState<MediaResult[]>([]);
   const [destinations, setDestinations] = useState<PublishDestination[]>([]);
   const [publications, setPublications] = useState<Publication[]>([]);
@@ -535,13 +536,42 @@ export default function Editor({ projectId, go }: Props) {
       </Card>
 
       <div className="grid two">
+        <Card title="Línea de tiempo" sub="Cada bloque representa una escena. La duración es estimada a partir de la narración; elegí un bloque para editarlo.">
+          {scenes.length === 0 ? <Empty>La línea de tiempo aparece cuando generás el guion.</Empty> : (
+            <div className="editor-timeline" aria-label="Línea de tiempo de escenas">
+              {scenes.map((scene, index) => {
+                const sceneWords = (scene.narration || '').trim().split(/\s+/).filter(Boolean).length;
+                const estimatedSeconds = Math.max(2, sceneWords / 2.4);
+                const totalEstimated = scenes.reduce((sum, item) => sum + Math.max(2, (item.narration || '').trim().split(/\s+/).filter(Boolean).length / 2.4), 0);
+                const width = Math.max(9, (estimatedSeconds / Math.max(1, totalEstimated)) * 100);
+                return (
+                  <button
+                    type="button"
+                    key={scene.id}
+                    className={`editor-timeline-item ${selectedSceneId === scene.id ? 'active' : ''}`}
+                    style={{ flexBasis: width + '%' }}
+                    onClick={() => {
+                      setSelectedSceneId(scene.id);
+                      document.getElementById('scene-' + scene.id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                    title={scene.title + ' · ~' + Math.round(estimatedSeconds) + ' s'}
+                  >
+                    <strong>{index + 1}. {scene.title}</strong>
+                    <small>~{Math.round(estimatedSeconds)} s</small>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+
         <Card title="Escenas" sub="Editá la narración; se guarda al salir del campo. El orden define el montaje.">
           {scenes.length === 0 ? (
             <Empty>Sin escenas. Generá el guion para crear la estructura narrativa.</Empty>
           ) : (
             <div>
               {scenes.map((scene, i) => (
-                <div className="scene" key={scene.id}>
+                <div id={`scene-${scene.id}`} className={`scene ${selectedSceneId === scene.id ? 'selected' : ''}`} key={scene.id}>
                   <div className="scene-head">
                     <div className="row center gap-8">
                       <span className="scene-index">{i + 1}</span>
