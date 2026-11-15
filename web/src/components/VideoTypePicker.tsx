@@ -31,6 +31,7 @@ const CLIP_SOURCES: Record<string, { label: string; url: string; detail: string 
   ],
   minecraft: [
     { label: 'Minecraft Parkour · Orbital (creador)', url: 'https://www.youtube.com/watch?v=u7kdVe8q5zs', detail: 'El creador declara permiso para monetizar y pide crédito. Es permiso del autor de la grabación, no una licencia de Mojang.' },
+    { label: 'Minecraft Parkour · Addy (Vimeo)', url: 'https://vimeo.com/1005854698', detail: 'El creador declara que permite descargar y reutilizar sus grabaciones y pide crédito; usá solo una opción de descarga habilitada por él. No reemplaza las reglas de Mojang.' },
     { label: 'Reglas oficiales de videos y monetización de Minecraft', url: 'https://www.minecraft.net/en-us/usage-guidelines', detail: 'Mojang permite monetizar videos de gameplay si agregás contenido propio suficiente y respetás sus condiciones.' },
   ],
 };
