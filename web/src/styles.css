@@ -2496,3 +2496,10 @@ th {
   font-size: 12px;
 }
 .music-preview-player audio { width: 100%; }
+
+
+/* Fuentes de gameplay con permiso de reutilización */
+.clip-source-list{display:grid;gap:8px;padding:12px;margin:10px 0;border:1px solid var(--border,#ddd);border-radius:10px;background:var(--surface-2,rgba(127,127,127,.06))}
+.clip-source-list>div{display:grid;gap:3px}
+.clip-source-list a{font-weight:600;text-decoration:underline}
+.clip-source-list small{display:block;line-height:1.45;opacity:.82}
