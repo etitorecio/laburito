@@ -1426,8 +1426,13 @@ def youtube_disconnect(channel_id: int):
 
 
 @app.get("/api/youtube/status")
-def youtube_status(channel_id: int):
+def youtube_status(channel_id: int | None = None):
     try:
+        if channel_id is None:
+            linked = publish.youtube_accounts_status()
+            if not linked:
+                raise publish.PublishError("Todavía no hay cuentas de YouTube conectadas.")
+            channel_id = int(linked[0]["channel_id"])
         return publish.youtube_account_status(channel_id)
     except publish.PublishError as exc:
         raise HTTPException(400, str(exc)) from exc
