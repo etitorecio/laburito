@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch
 import urllib.parse
 
-from app import autopilot, publish, script_gen, topic_engine, tts
+from app import autopilot, publish, script_gen, topic_engine, tts, worker
 
 
 class AutopilotResearchTests(unittest.TestCase):
@@ -52,6 +52,14 @@ class AutopilotResearchTests(unittest.TestCase):
         }
         after = datetime(2026, 11, 14, 9, 0, tzinfo=ZoneInfo("America/Argentina/Buenos_Aires"))
         self.assertEqual(autopilot._next_run_at(rule, after), "2026-11-14T13:00:00Z")
+
+    def test_autopilot_blocks_auto_publish_when_render_has_silence(self):
+        self.assertIn("sin narración", worker._auto_publish_blocker({
+            "quality": {"tts_engines": ["silencio"]},
+        }))
+        self.assertEqual(worker._auto_publish_blocker({
+            "quality": {"tts_engines": ["espeak-ng"]},
+        }), "")
 
     def test_manual_generation_does_not_move_future_schedule(self):
         rule = {"next_run_at": "2026-11-16T13:00:00Z"}
