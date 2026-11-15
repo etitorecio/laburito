@@ -620,11 +620,16 @@ class AutopilotResearchTests(unittest.TestCase):
                 "kind": "short",
                 "template": "frutinovela",
                 "duration_target_sec": 90,
-            }
+            },
+            [{"source_url": "https://example.org/fact", "claim": "Dato documental que no debe reemplazar la ficción. " * 40}],
+            [],
         )
+        narration = " ".join(scene["narration"] for scene in result["scenes"])
         self.assertGreaterEqual(len(result["scenes"]), 5)
         self.assertIn("Continuará", result["scenes"][-1]["title"])
         self.assertIn("Esto no termina acá", result["scenes"][-1]["narration"])
+        self.assertNotIn("Dato documental", narration)
+        self.assertIn("Ficción original", result["warnings"][0])
 
 
 if __name__ == "__main__":
