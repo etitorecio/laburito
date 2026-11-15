@@ -71,10 +71,13 @@ class YouTubeOAuthTests(unittest.TestCase):
                             with patch.object(publish, "youtube_account_status", return_value={
                                 "channel_title": "Canal de prueba"
                             }):
-                                response = main.youtube_oauth_callback("auth-code", "expected-state", "")
+                                with patch.object(main.persistence, "configured", return_value=True):
+                                    with patch.object(main.persistence, "sync_backup", return_value=True) as backup:
+                                        response = main.youtube_oauth_callback("auth-code", "expected-state", "")
         self.assertEqual(response.status_code, 303)
         self.assertEqual(response.headers["location"], "/#/ajustes")
         self.assertIn(("youtube_refresh_token", "refresh-token"), [call.args for call in save.call_args_list])
+        backup.assert_called_once_with()
 
     def test_callback_rejects_expired_or_mismatched_state(self):
         with patch.object(main.db, "get_setting", side_effect=["expected-state", "0", "https://laburito.example/api/youtube/callback"]):
