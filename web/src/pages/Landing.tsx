@@ -43,6 +43,13 @@ const TEMPLATES = [
     grad: 'linear-gradient(135deg,#312e81,#7c3aed)',
   },
   {
+    icon: '🍓',
+    title: 'Frutinovelas por episodios',
+    desc: 'Historias originales en vertical, con drama, traiciones, giros y finales abiertos para continuar la serie.',
+    tags: ['9:16', 'Series', 'Cliffhanger'],
+    grad: 'linear-gradient(135deg,#9f1239,#f97316)',
+  },
+  {
     icon: '🎬',
     title: 'Documental largo',
     desc: 'Episodios de 8 a 20 minutos divididos en escenas, con notas de investigación y fuentes citadas.',
