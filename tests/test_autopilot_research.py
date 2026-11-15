@@ -20,7 +20,7 @@ class AutopilotResearchTests(unittest.TestCase):
             "content_pillars": "Espacio, física, curiosidades",
             "avoid_topics": "Desinformación médica",
         })
-        self.assertEqual(clean["duration_target_sec"], 90)
+        self.assertEqual(clean["duration_target_sec"], 180)
         self.assertEqual(clean["audience"], "Jóvenes interesados en ciencia")
         self.assertEqual(clean["hook_style"], "Pregunta intrigante")
         self.assertEqual(clean["content_pillars"], "Espacio, física, curiosidades")
@@ -37,6 +37,26 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(clean["cadence_minutes"], 1440)
         self.assertEqual(clean["cadence_hours"], 24)
         self.assertEqual(clean["schedule_time"], "09:30")
+
+    def test_autopilot_rejects_non_short_templates_and_landscape(self):
+        with self.assertRaisesRegex(ValueError, "exclusivamente Shorts"):
+            autopilot._clean({"template": "longform"})
+        with self.assertRaisesRegex(ValueError, "verticales 9:16"):
+            autopilot._clean({"aspect": "16:9"})
+
+    def test_autopilot_short_duration_supports_youtube_three_minute_limit(self):
+        self.assertEqual(autopilot._clean({"template": "shorts", "duration_target_sec": 180})["duration_target_sec"], 180)
+        self.assertEqual(autopilot._clean({"template": "shorts", "duration_target_sec": 240})["duration_target_sec"], 180)
+
+    def test_youtube_autopilot_requires_valid_vertical_short_file(self):
+        from pathlib import Path
+        project = {"kind": "short", "notes": "Autopiloto: diario"}
+        with patch("app.media.probe_video", return_value={"width": 1080, "height": 1920, "duration": 180.1}):
+            with self.assertRaisesRegex(publish.PublishError, "máximo es 180"):
+                publish._validate_autopilot_short(project, Path("fake.mp4"))
+        with patch("app.media.probe_video", return_value={"width": 1920, "height": 1080, "duration": 30}):
+            with self.assertRaisesRegex(publish.PublishError, "no es vertical"):
+                publish._validate_autopilot_short(project, Path("fake.mp4"))
 
     def test_two_shorts_per_day_maps_to_twelve_hours(self):
         clean = autopilot._clean({"videos_per_period": 2, "period_days": 1})
