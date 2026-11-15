@@ -1450,19 +1450,20 @@ def youtube_accounts(request: Request):
 
 
 @app.post("/api/youtube/oauth/start")
-def youtube_oauth_start(request: Request, channel_id: int):
-    """Inicia OAuth y asocia la cuenta real autorizada a la fábrica seleccionada."""
+def youtube_oauth_start(request: Request, channel_id: int | None = None):
+    """Inicia OAuth para un espacio existente o para importar directamente un canal real."""
     credentials = publish.youtube_credentials()
     if not credentials["client_id"] or not credentials["client_secret"]:
         raise HTTPException(400, "Faltan las credenciales OAuth de YouTube en el servidor.")
-    if not db.query_one("SELECT id FROM channels WHERE id=?", (channel_id,)):
-        raise HTTPException(404, "Canal interno inexistente.")
+    if channel_id is not None and not db.query_one("SELECT id FROM channels WHERE id=?", (channel_id,)):
+        raise HTTPException(404, "El espacio de trabajo seleccionado no existe.")
     redirect_uri = os.environ.get("YOUTUBE_REDIRECT_URI", "").strip() or str(request.base_url).rstrip("/") + "/api/youtube/callback"
     state = secrets.token_urlsafe(32)
     # Cada intento tiene su propio registro: conectar dos canales en paralelo no
-    # invalida el state del otro intento.
+    # invalida el state del otro intento. Sin channel_id, el callback crea el espacio
+    # desde el nombre e ID que devuelve la API oficial de YouTube.
     db.set_setting("youtube_oauth_attempt:" + state, json.dumps({
-        "created": time.time(), "redirect_uri": redirect_uri, "channel_id": int(channel_id)
+        "created": time.time(), "redirect_uri": redirect_uri, "channel_id": int(channel_id) if channel_id is not None else None
     }))
     params = {
         "client_id": credentials["client_id"], "redirect_uri": redirect_uri,
@@ -1484,15 +1485,15 @@ def youtube_oauth_callback(code: str = "", state: str = "", error: str = ""):
         attempt = json.loads(raw_attempt)
         age = time.time() - float(attempt["created"])
         redirect_uri = str(attempt["redirect_uri"])
-        channel_id = int(attempt["channel_id"])
+        channel_id = int(attempt["channel_id"]) if attempt.get("channel_id") is not None else None
     except (TypeError, ValueError, KeyError, json.JSONDecodeError):
-        attempt, age, redirect_uri, channel_id = {}, 999999, "", 0
+        attempt, age, redirect_uri, channel_id = {}, 999999, "", None
     if not code or not state or not attempt or age > 600:
         raise HTTPException(403, "La autorización venció o no coincide. Volvé a iniciar la conexión desde Cuentas.")
     # Consumir el intento antes del intercambio para impedir reutilización del callback.
     db.set_setting(attempt_key, "")
-    if not db.query_one("SELECT id FROM channels WHERE id=?", (channel_id,)):
-        raise HTTPException(404, "La fábrica asociada a esta autorización ya no existe.")
+    if channel_id is not None and not db.query_one("SELECT id FROM channels WHERE id=?", (channel_id,)):
+        raise HTTPException(404, "El espacio de trabajo asociado a esta autorización ya no existe.")
     credentials = publish.youtube_credentials()
     body = urllib.parse.urlencode({
         "code": code, "client_id": credentials["client_id"], "client_secret": credentials["client_secret"],
@@ -1512,6 +1513,26 @@ def youtube_oauth_callback(code: str = "", state: str = "", error: str = ""):
         raise HTTPException(400, "Google no devolvió un refresh token para esta cuenta. Volvé a autorizar con consentimiento.")
     try:
         account = publish.youtube_account_status(refresh_token_override=refresh_token)
+        if channel_id is None:
+            # Importar el canal real autorizado. No inventamos un canal de YouTube:
+            # el nombre y el ID provienen de channels.list(mine=true).
+            existing = db.query_one(
+                "SELECT channel_id FROM youtube_accounts WHERE youtube_channel_id=?",
+                (account["channel_id"],),
+            )
+            if existing:
+                channel_id = int(existing["channel_id"])
+            else:
+                now = db.now()
+                channel_name = (account.get("channel_title") or "Canal de YouTube").strip()[:100]
+                duplicate_name = db.query_one("SELECT id FROM channels WHERE lower(name)=lower(?)", (channel_name,))
+                if duplicate_name:
+                    channel_name = f"{channel_name} · YouTube"
+                channel_id = db.execute(
+                    "INSERT INTO channels(name,topic,language,audience,tone,visual_identity,formats,cadence,created_at,updated_at) "
+                    "VALUES(?,?,?,?,?,?,?,?,?,?)",
+                    (channel_name, "", "es", "", "", "", "short,documental", "semanal", now, now),
+                )
         publish.save_youtube_account(channel_id, refresh_token, account)
     except publish.PublishError as exc:
         raise HTTPException(400, f"No se pudo verificar la cuenta autorizada: {exc}") from exc
