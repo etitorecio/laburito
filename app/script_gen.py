@@ -638,9 +638,12 @@ def expand_with_ollama(url: str, model: str, prompt: str, timeout: int = 120) ->
 
 def rewrite_with_ollama(url: str, model: str, project: dict, script: dict, notes: list[dict]) -> dict:
     """Reescribe el guion con un modelo Ollama local, usando solo la evidencia recuperada."""
-    source = next((n for n in notes if n.get("source_url") and n.get("claim")), None)
-    if not source:
-        raise RuntimeError("No hay una fuente documental para redactar el guion.")
+    source_notes = [
+        note for note in notes
+        if note.get("source_url") and len((note.get("claim") or "")) >= 300
+    ][:5]
+    if not source_notes:
+        raise RuntimeError("No hay fuentes documentales suficientes para redactar el guion.")
     scenes = script.get("scenes") or []
     outline = [
         {
@@ -661,8 +664,11 @@ def rewrite_with_ollama(url: str, model: str, project: dict, script: dict, notes
         f"Tema: {project.get('topic') or project.get('title')}\n"
         f"Duración total objetivo: {project.get('duration_target_sec')} segundos\n"
         f"Esquema: {json.dumps(outline, ensure_ascii=False)}\n"
-        f"Material de referencia: {source.get('claim', '')[:12000]}\n"
-        f"Fuente: {source.get('source_url', '')}"
+        "Material de referencia (cada bloque incluye su fuente; contrastá coincidencias y discrepancias):\n"
+        + "\n\n".join(
+            f"FUENTE: {note.get('source_url', '')}\nCONTENIDO: {(note.get('claim') or '')[:5000]}"
+            for note in source_notes
+        )
     )
     raw = expand_with_ollama(url, model, prompt, timeout=240)
     cleaned = raw.strip()
@@ -692,4 +698,5 @@ def rewrite_with_ollama(url: str, model: str, project: dict, script: dict, notes
             "Guion reescrito con un modelo Ollama local; contrastá cada afirmación con las fuentes antes de publicar.",
         ],
         "writer": "ollama-local",
+        "evidence_sources": len(source_notes),
     }
