@@ -77,12 +77,15 @@ class AutopilotResearchTests(unittest.TestCase):
             "id": 777, "title": "La exploración espacial", "topic": "La exploración espacial",
             "kind": "short", "template": "shorts", "duration_target_sec": 30,
             "hook_style": "Pregunta intrigante",
+            "tone": "Documental y riguroso",
             "cta": "Invitá a seguir el canal",
             "visual_style": "Fotografía de archivo histórica",
         }
         script = script_gen.generate_script(project, [], [])
         self.assertTrue(script["scenes"][0]["narration"].startswith("¿Qué hay detrás de La exploración espacial?"))
+        self.assertIn("Vamos a los datos:", script["scenes"][0]["narration"])
         self.assertIn("Seguime para ver más historias", script["scenes"][-1]["narration"])
+        self.assertNotIn("Guardá este vídeo", script["scenes"][-1]["narration"])
         self.assertIn("Fotografía de archivo histórica", script["scenes"][0]["visual_query"])
 
     def test_topic_research_uses_content_pillars_and_excludes_avoided_topics(self):
