@@ -1438,7 +1438,7 @@ def install_piper_voice():
 @app.get("/api/youtube/accounts")
 def youtube_accounts(request: Request):
     publish.ensure_schema()
-    channels = db.query("SELECT id,name,topic FROM channels ORDER BY id")
+    channels = db.query("SELECT id,name,topic FROM channels WHERE lower(trim(name)) IN ('historias', 'frutinovelas') ORDER BY CASE lower(trim(name)) WHEN 'historias' THEN 0 ELSE 1 END")
     linked = {int(row["channel_id"]): row for row in publish.youtube_accounts_status()}
     credentials = publish.youtube_credentials()
     missing_env = [
