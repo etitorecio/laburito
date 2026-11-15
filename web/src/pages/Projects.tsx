@@ -33,7 +33,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     video_type: 'moving_images',
     music_volume: 0.12,
     transition_default: 'fundido',
-    resolution: '1080p',
+    resolution: '720p',
     fps: 25,
     music: 'auto',
   });
