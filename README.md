@@ -130,3 +130,10 @@ La opción recomendada es **Docker local en tu PC**, con la carpeta `./data` per
 - Es una instalación de un solo propietario: la instancia local no tiene autenticación multiusuario y el estado OAuth/SQLite no está aislado por usuario. No la ofrezcas como SaaS compartido ni guardes canales de varios amigos en la misma instancia. Para compartirla hoy, cada persona debe desplegar su propia copia; falta autenticación multiusuario y aislamiento de credenciales. No la expongas directamente a Internet.
 - La música de fondo se toma de las camas libres integradas o de `data/music/` (el usuario puede aportar pistas libres).
 - La voz es sintética y local; Piper DaveFX (España, CC0) se descarga automáticamente en el primer inicio; la voz rioplatense espeak sigue disponible.
+
+
+### Fuentes gratuitas de gameplay
+
+- Subway Surfers: el canal verificado oficial publica una captura vertical 9:16 y otra horizontal 16:9 marcadas expresamente como `FREE TO USE`. Revisar la descripción vigente antes de cada uso: [vertical](https://www.youtube.com/watch?v=QPW3XwBoQlw) · [horizontal](https://www.youtube.com/watch?v=i0M4ARe9v0Y).
+- Minecraft: la opción más sólida es grabar una partida propia y cumplir las [Usage Guidelines oficiales de Mojang](https://www.minecraft.net/en-us/usage-guidelines). Como alternativa, [Orbital](https://www.youtube.com/watch?v=u7kdVe8q5zs) declara que permite monetizar su grabación y pide crédito; ese permiso cubre la grabación del creador, no reemplaza las reglas de Mojang.
+- El selector de gameplay ahora muestra estas fuentes y permite empezar con un clip, con hasta cinco por biblioteca. No se descarga material automáticamente desde YouTube ni se eluden sus restricciones.
