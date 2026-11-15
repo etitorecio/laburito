@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, type Diagnostics, type Meta } from './api';
 import { ROUTES, VALID_ROUTES, type Route } from './routes';
 import Home from './pages/Home';
-import Research from './pages/Research';
 import Channels from './pages/Channels';
 import Calendar from './pages/Calendar';
 import Projects from './pages/Projects';
@@ -121,7 +120,6 @@ export default function App() {
         )}
 
         {route === 'inicio' && <Home go={go} />}
-        {route === 'investigacion' && <Research />}
         {route === 'canales' && <Channels />}
         {route === 'calendario' && <Calendar go={go} />}
         {route === 'proyectos' && <Projects go={go} />}
@@ -140,7 +138,7 @@ export default function App() {
       </main>
 
       <nav className="tabbar">
-        {ROUTES.filter((r) => ['inicio', 'investigacion', 'proyectos', 'autopilot', 'cola', 'cuentas'].includes(r.id)).map((r) => (
+        {ROUTES.filter((r) => ['inicio', 'proyectos', 'autopilot', 'cola', 'cuentas'].includes(r.id)).map((r) => (
           <button key={r.id} className={`tab ${route === r.id ? 'active' : ''}`} onClick={() => go(r.id)}>
             <span aria-hidden>{r.icon}</span>
             <small>{r.label}</small>
