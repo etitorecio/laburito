@@ -147,62 +147,43 @@ SHORT_BLUEPRINT = [
         "key": "hook",
         "title": "Hook (0-3 s)",
         "weight": 0.16,
-        "purpose": "Detener el scroll con una afirmación concreta y verificable.",
-        "narration": (
-            "Un pedal de guitarra puede costar menos que una pizza y cambiar por completo una canción. "
-            "Te muestro cómo {topic} pasó de un experimento de taller a un sonido que reconocés en dos segundos."
-        ),
-        "visual": "{topic} pedal primer plano vertical",
+        "purpose": "Abrir con el dato, pregunta o contradicción más sorprendente que esté respaldada por las fuentes.",
+        "narration": "Hay un detalle de {topic} que cambia cómo se entiende el tema. En este short vamos directo a lo importante.",
+        "visual": "{topic} imagen principal vertical primer plano",
     },
     {
-        "key": "idea",
-        "title": "Idea central",
-        "weight": 0.26,
-        "purpose": "Una sola idea, explicada sin rodeos.",
-        "narration": (
-            "La clave de {topic} no es la tecnología: es el error controlado. "
-            "Al forzar el circuito aparece una distorsión que los músicos decidieron no corregir. "
-            "Lo que la ingeniería llamaba falla, la música lo llamó estilo."
-        ),
-        "visual": "{topic} circuito distorsión",
+        "key": "contexto",
+        "title": "Contexto mínimo",
+        "weight": 0.16,
+        "purpose": "Dar solo el contexto imprescindible para comprender el dato inicial.",
+        "narration": "Para entenderlo, primero hay que ubicar qué pasó y por qué importa.",
+        "visual": "{topic} contexto visual vertical",
     },
     {
         "key": "desarrollo",
-        "title": "Desarrollo breve",
-        "weight": 0.28,
-        "purpose": "Dos o tres datos concretos que sostienen la idea.",
-        "narration": (
-            "Los primeros modelos se armaban a mano, con componentes que cambiaban según lo que hubiera disponible. "
-            "Por eso dos unidades iguales sonaban distinto. "
-            "Cuando la producción se estandarizó, el sonido se volvió previsible y empezó la búsqueda de las versiones originales. "
-            "Hoy un coleccionista paga más por una unidad vieja que por un modelo nuevo, y no es solo por moda."
-        ),
-        "visual": "{topic} componentes manual taller",
+        "title": "Desarrollo",
+        "weight": 0.30,
+        "purpose": "Explicar el mecanismo, los hechos o la secuencia con información concreta y atribuible.",
+        "narration": "La clave está en los hechos: qué ocurrió, qué lo explica y qué evidencia tenemos.",
+        "visual": "{topic} detalle evidencia explicación vertical",
     },
     {
         "key": "giro",
-        "title": "Giro",
-        "weight": 0.15,
-        "purpose": "Aportar el dato que reordena la historia.",
-        "narration": (
-            "El giro es este: el invento más famoso de {topic} muchas veces no fue el primero, sino el que se fabricó más rápido. "
-            "La historia del sonido también se escribe con logística."
-        ),
-        "visual": "{topic} fabricación serie caja",
+        "title": "Dato que cambia la perspectiva",
+        "weight": 0.20,
+        "purpose": "Revelar el dato más inesperado disponible, sin exagerar ni inventar un giro.",
+        "narration": "Y hay un dato más que cambia la perspectiva sobre {topic}.",
+        "visual": "{topic} detalle inesperado comparación vertical",
     },
     {
         "key": "cierre",
-        "title": "Cierre",
-        "weight": 0.15,
-        "purpose": "Invitar a comentar o compartir con una pregunta concreta.",
-        "narration": (
-            "Guardá este video si te gusta la historia de la música. "
-            "¿Cuál es el sonido que reconocerías en dos segundos? Te leo en los comentarios."
-        ),
-        "visual": "{topic} guitarra cierre",
+        "title": "Cierre y conversación",
+        "weight": 0.18,
+        "purpose": "Cerrar con una conclusión breve y una pregunta específica que invite a comentar.",
+        "narration": "Esa es la parte importante de {topic}. ¿Qué aspecto te gustaría que investiguemos después?",
+        "visual": "{topic} conclusión visual vertical",
     },
 ]
-
 
 
 LISTICLE_BLUEPRINT = [
@@ -494,13 +475,13 @@ def generate_script(
     notes = notes or []
     sources = sources or []
     topic = (project.get("topic") or project.get("title") or "el tema").strip()
-    kind = project.get("kind") or "documentary"
+    kind = project.get("kind") or "short"
     tpl = options.template(project.get("template"))
     script_kind = tpl.get("script") or kind
     target = int(
         project.get("duration_target_sec")
         or tpl.get("default_duration")
-        or (600 if kind == "documentary" else 40)
+        or (30 if kind == "short" else 600)
     )
     beats = blueprint(script_kind)
 
@@ -563,7 +544,7 @@ def generate_script(
 
     unused = [n for n in notes if n is not source_note and (n.get("claim") or "").strip() not in claims[:claim_index]]
     return {
-        "title": project.get("title") or f"Documental: {topic}",
+        "title": project.get("title") or f"Short: {topic}",
         "kind": kind,
         "topic": topic,
         "scenes": scenes,
