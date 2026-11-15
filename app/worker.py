@@ -209,9 +209,11 @@ def run_job(job: dict) -> None:
                 privacy=payload.get("privacy", "unlisted"),
                 on_progress=lambda pct, msg: _set_progress(job_id, pct, msg),
             )
+            final_job_status = "error" if published.get("status") == "procesamiento_fallido" else "completado"
             db.execute(
-                "UPDATE jobs SET status='completado', progress=100, message=?, result_json=?, finished_at=?, updated_at=? WHERE id=?",
+                "UPDATE jobs SET status=?, progress=100, message=?, result_json=?, finished_at=?, updated_at=? WHERE id=?",
                 (
+                    final_job_status,
                     (published.get("message") or f"Publicado en {published['destination']}")[:400],
                     json.dumps({
                         "url": published["url"],
