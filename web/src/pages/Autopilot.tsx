@@ -155,7 +155,7 @@ export default function Autopilot() {
   return (
     <div className="stack">
       <Msg error={error} ok={ok} />
-      <Card title="Autopiloto de Shorts" sub="Autopiloto Shorts-first: elegí un nicho y una frecuencia. Laburito descubre temas, prepara videos verticales y evita repetir los que ya publicó.">
+      <Card title="Autopiloto de Shorts" sub="Configurá una vez el canal, el público, la identidad editorial y la producción. Después el piloto descubre temas, crea Shorts verticales y los entrega según tu frecuencia.">
         <div className="grid two">
           <Field label="Nombre de la automatización">
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Mi canal de Shorts" />
@@ -163,7 +163,10 @@ export default function Autopilot() {
           <Field label="Nicho o temática">
             <input value={form.niche} onChange={(e) => setForm({ ...form, niche: e.target.value })} placeholder="Misterio, ciencia, fútbol, curiosidades, historias, tecnología..." />
           </Field>
-          <Field label="Público objetivo"><input value={form.audience} onChange={(e) => setForm({ ...form, audience: e.target.value })} placeholder="Ej.: jóvenes de 16 a 30 interesados en misterio" /></Field>\n          <Field label="Pilares / subtemas del canal"><input value={form.content_pillars} onChange={(e) => setForm({ ...form, content_pillars: e.target.value })} placeholder="Ej.: casos inexplicables, desapariciones, leyendas urbanas" /></Field>\n          <Field label="Temas o enfoques que debe evitar"><input value={form.avoid_topics} onChange={(e) => setForm({ ...form, avoid_topics: e.target.value })} placeholder="Ej.: política partidaria, tragedias recientes" /></Field>\n          <Field label="Canal">
+          <Field label="Público objetivo"><input value={form.audience} onChange={(e) => setForm({ ...form, audience: e.target.value })} placeholder="Ej.: jóvenes de 16 a 30 interesados en misterio" /></Field>
+          <Field label="Pilares / subtemas del canal"><input value={form.content_pillars} onChange={(e) => setForm({ ...form, content_pillars: e.target.value })} placeholder="Ej.: casos inexplicables, desapariciones, leyendas urbanas" /></Field>
+          <Field label="Temas o enfoques que debe evitar"><input value={form.avoid_topics} onChange={(e) => setForm({ ...form, avoid_topics: e.target.value })} placeholder="Ej.: política partidaria, tragedias recientes" /></Field>
+          <Field label="Canal">
             <select value={form.channel_id} onChange={(e) => setForm({ ...form, channel_id: e.target.value })}>
               <option value="">Sin canal asociado</option>
               {(data?.channels ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
