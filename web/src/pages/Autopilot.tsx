@@ -119,7 +119,7 @@ export default function Autopilot() {
       niche: rule.niche,
       channel_id: rule.channel_id ? String(rule.channel_id) : '',
       template: rule.template,
-      duration_target_sec: rule.duration_target_sec ?? 60,
+      duration_target_sec: rule.duration_target_sec ?? 30,
       voice: rule.voice,
       aspect: rule.aspect,
       caption_style: rule.caption_style,
