@@ -202,9 +202,9 @@ class AutopilotIn(BaseModel):
     content_pillars: str = ""
     avoid_topics: str = ""
     enabled: bool = True
-    destination: str = "entrega"
-    privacy: str = "unlisted"
-    auto_publish: bool = False
+    destination: str = "youtube"
+    privacy: str = "public"
+    auto_publish: bool = True
 
 
 class AutopilotPatch(BaseModel):
