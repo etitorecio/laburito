@@ -188,8 +188,9 @@ def build_metadata(project, scenes) -> dict:
             hook = text
             break
     language = _g(project, "language")
-    if _g(project, "notes").startswith("Autopiloto:"):
-        language = "es"
+    if (_g(project, "notes") or "").startswith("Autopiloto:"):
+        voice_id = (_g(project, "voice") or "es").strip()
+        language = "es" if voice_id == "es-es-piper" else voice_id.split("-", 1)[0]
     elif not language and _g(project, "channel_id"):
         channel = db.query_one("SELECT language FROM channels WHERE id=?", (_g(project, "channel_id"),))
         language = _g(channel or {}, "language")
