@@ -110,7 +110,8 @@ class AutopilotResearchTests(unittest.TestCase):
         narration = " ".join(scene["narration"] for scene in result["scenes"])
         self.assertIn("La fuente describe", narration)
         self.assertIn("Las consecuencias todavía se estudian", narration)
-        self.assertIn("Guion local basado en texto de fuente", result["warnings"][0])
+        self.assertIn("extractos de una fuente de orientación", result["warnings"][0])
+        self.assertTrue(all(len(scene["narration"]) >= 45 for scene in result["scenes"]))
 
 
 if __name__ == "__main__":
