@@ -27,6 +27,32 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(clean["avoid_topics"], "Desinformación médica")
 
 
+    def test_short_quantity_maps_to_exact_interval(self):
+        clean = autopilot._clean({
+            "videos_per_period": 1,
+            "period_days": 1,
+            "schedule_time": "09:30",
+            "timezone": "America/Argentina/Buenos_Aires",
+        })
+        self.assertEqual(clean["cadence_minutes"], 1440)
+        self.assertEqual(clean["cadence_hours"], 24)
+        self.assertEqual(clean["schedule_time"], "09:30")
+
+    def test_two_shorts_per_day_maps_to_twelve_hours(self):
+        clean = autopilot._clean({"videos_per_period": 2, "period_days": 1})
+        self.assertEqual(clean["cadence_minutes"], 720)
+
+    def test_next_run_respects_argentina_local_time(self):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        rule = {
+            "schedule_time": "10:00",
+            "timezone": "America/Argentina/Buenos_Aires",
+            "cadence_minutes": 1440,
+        }
+        after = datetime(2026, 11, 14, 9, 0, tzinfo=ZoneInfo("America/Argentina/Buenos_Aires"))
+        self.assertEqual(autopilot._next_run_at(rule, after), "2026-11-14T13:00:00Z")
+
     def test_piper_cli_is_installed_by_backend_requirements(self):
         self.assertTrue(tts.piper_path())
         self.assertEqual(tts.VOICES["es-es-piper"]["language"], "es")
@@ -35,11 +61,11 @@ class AutopilotResearchTests(unittest.TestCase):
         updated = {**current, "enabled": True}
         with patch.object(autopilot, "ensure_schema"):
             with patch.object(autopilot, "get_rule", side_effect=[current, updated]):
-                with patch.object(autopilot, "_ts", return_value="now"):
+                with patch.object(autopilot, "_next_run_at", return_value="next-slot"):
                     with patch.object(autopilot.db, "execute") as execute:
                         autopilot.update_rule(7, {"enabled": True})
         self.assertIn("next_run_at", execute.call_args.args[0])
-        self.assertIn("now", execute.call_args.args[1])
+        self.assertIn("next-slot", execute.call_args.args[1])
 
     def test_autopilot_builds_script_from_only_the_current_topics_sources(self):
         extract = " ".join([
