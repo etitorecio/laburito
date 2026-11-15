@@ -21,7 +21,7 @@ const ICONS: Record<string, string> = {
   subway: '🏃',
 };
 
-const REQUIRED: Record<string, number> = { stock_footage: 1, minecraft: 5, subway: 5 };
+const REQUIRED: Record<string, number> = { stock_footage: 5, minecraft: 5, subway: 5 };
 
 export default function VideoTypePicker({ options, value, onChange, compact = false }: Props) {
   const [clips, setClips] = useState<ClipLibraries>({});
