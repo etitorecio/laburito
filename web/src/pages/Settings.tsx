@@ -150,7 +150,7 @@ export default function Settings() {
         <div className="pill-row">
           <Badge tone={diag?.persistence.configured ? 'ok' : 'warn'}>{diag?.persistence.configured ? 'Supabase configurado · verificar primer backup' : 'Falta conectar almacenamiento persistente'}</Badge>
         </div>
-        <p className="muted">AppJet Free no incluye disco virtual persistente. Cuando Supabase esté conectado, creá un proyecto gratuito y agregá en AppJet → Settings → Environment variables: <code>SUPABASE_URL</code> y <code>SUPABASE_SERVICE_ROLE_KEY</code>. Laburito crea automáticamente el bucket privado, sincroniza SQLite cada 15 minutos y después de cada tarea, y conserva el MP4 pendiente hasta que YouTube lo recibe.</p>
+        <p className="muted">AppJet Free no incluye disco virtual persistente. Cuando Supabase esté conectado, creá un proyecto gratuito y agregá en AppJet → Settings → Environment variables: <code>SUPABASE_URL</code> y <code>SUPABASE_SERVICE_ROLE_KEY</code>. Laburito crea automáticamente el bucket privado, sincroniza SQLite después de cada cambio de configuración y cada tarea (además de una copia periódica cada 15 minutos), y conserva el MP4 pendiente hasta que YouTube lo recibe.</p>
         <p className="muted">La clave service-role debe quedar como secreto del servidor; nunca la pegues en el navegador ni en el chat. La fila de diagnóstico de arriba confirma si la app detectó la conexión.</p>
         <p className="muted">La URL actual `*.dev.ap-jt.com` es de preview. Para usar el endpoint Edge de la rama `appjet`, copiá la URL exacta desde AppJet → Settings → Overview y guardala como variable `LABURITO_URL` en GitHub. El hosting de AppJet está orientado a preview y pruebas, no a producción con usuarios reales.</p>
       </Card>
