@@ -62,8 +62,7 @@ const STEPS = [
   { title: 'Subtítulos', subtitle: 'Elegí un estilo y su movimiento con vista previa' },
   { title: 'Canales', subtitle: 'Elegí si guardar los videos o publicarlos en YouTube' },
   { title: 'Calendario', subtitle: 'Definí duración, frecuencia y horario' },
-  { title: 'Tipo de video', subtitle: 'Elegí Shorts, documental largo y formato visual' },
-  { title: 'Confirmación', subtitle: 'Revisá y activá tu Autopiloto' },
+  { title: 'Tipo de video y publicación', subtitle: 'Elegí el formato, la frecuencia y confirmá tu Autopiloto' },
 ];
 
 export default function Autopilot() {
@@ -496,16 +495,6 @@ export default function Autopilot() {
               <small>Podés ajustar la duración con precisión. El tiempo final puede variar según la narración.</small>
             </Field>
             {form.video_type === 'skeleton' && <p className="muted">Skeleton admite hasta 7 minutos. Si habías elegido una duración mayor, se ajustó automáticamente a ese límite.</p>}
-            <Field label="Cantidad de videos">
-              <input type="number" min="1" max="30" value={form.videos_per_period} onChange={(e) => update('videos_per_period', Math.max(1, Math.min(30, Number(e.target.value))))} />
-            </Field>
-            <Field label="Por período">
-              <select value={form.period_days} onChange={(e) => update('period_days', Number(e.target.value))}>
-                <option value={1}>Cada día</option>
-                <option value={7}>Cada semana</option>
-                <option value={30}>Cada 30 días</option>
-              </select>
-            </Field>
             <Field label="Hora de producción/publicación">
               <input type="time" value={form.schedule_time} onChange={(e) => update('schedule_time', e.target.value)} />
             </Field>
@@ -520,11 +509,11 @@ export default function Autopilot() {
                 <option value="UTC">UTC</option>
               </select>
             </Field>
-            <p className="muted">Ejemplo: 1 Short por día, a las 10:00 de Argentina. El horario configura cuándo se inicia la producción programada; la publicación ocurre al terminar si activás la publicación automática.</p>
+            <p className="muted">El horario configura cuándo comienza la producción. Si activás la publicación automática, el video se publica cuando termina el render.</p>
           </>}
 
           {step === 7 && <>
-            <h3>Elegí el tipo y formato de video</h3>
+            <h3>Elegí el tipo de video y la frecuencia</h3>
             <Field label="Plantilla de contenido">
               <select value={form.template} onChange={(e) => chooseTemplate(e.target.value)}>
                 {templates.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
@@ -539,6 +528,18 @@ export default function Autopilot() {
               compact
             />
             <div className="row">
+              <Field label="Videos por período">
+                <input type="number" min="1" max="30" value={form.videos_per_period} onChange={(e) => update('videos_per_period', Math.max(1, Math.min(30, Number(e.target.value))))} />
+              </Field>
+              <Field label="Frecuencia">
+                <select value={form.period_days} onChange={(e) => update('period_days', Number(e.target.value))}>
+                  <option value={1}>Cada día</option>
+                  <option value={7}>Cada semana</option>
+                  <option value={30}>Cada 30 días</option>
+                </select>
+              </Field>
+            </div>
+            <div className="row">
               <Field label="Calidad de exportación">
                 <select value={form.resolution} onChange={(e) => update('resolution', e.target.value)}>
                   {(meta?.resolutions ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
@@ -552,8 +553,6 @@ export default function Autopilot() {
             </div>
             {form.video_type === 'skeleton' && form.duration_target_sec > 420 && <p className="muted">Skeleton admite hasta 7 minutos. Reducí la duración en el paso anterior para usar este formato.</p>}
           </>}
-          {step === 8 && <>
-            <h3>Revisá tu Autopiloto</h3>
             <div className="card" style={{ marginTop: 12 }}>
               <strong>{form.name || 'Nuevo Autopiloto'} · {form.niche || 'Sin nicho'}</strong>
               <p>{form.videos_per_period} video(s) cada {form.period_days === 1 ? 'día' : form.period_days === 7 ? 'semana' : '30 días'}, a las {form.schedule_time} ({form.timezone}).</p>
