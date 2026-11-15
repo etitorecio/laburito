@@ -155,7 +155,7 @@ export default function Settings() {
         </div>
       </Card>
 
-      <Card title="Conectar YouTube" sub="Vinculá tu canal una sola vez para que el Autopiloto pueda subir videos automáticamente.">
+      <Card title="Social Media Integration · YouTube" sub="Integración social oficial: vinculá tu canal una sola vez mediante OAuth y Laburito podrá publicar Shorts automáticamente.">
         <div className="pill-row">
           <Badge tone={youtube?.available ? 'ok' : 'warn'}>{youtubeVerified ? 'Canal verificado' : youtube?.available ? 'Credenciales guardadas · falta verificar' : 'Falta configurar la conexión'}</Badge>
           {youtube?.missing_env.map((item) => <Badge key={item} tone="warn">{item}</Badge>)}
