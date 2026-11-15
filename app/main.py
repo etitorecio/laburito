@@ -829,6 +829,20 @@ def generate_script(project_id: int, replace: bool = True):
         raise HTTPException(404, "Proyecto inexistente")
     notes = db.query("SELECT * FROM research_notes ORDER BY id DESC")
     sources = db.query("SELECT * FROM sources WHERE project_id=?", (project_id,))
+    if project.get("template") == "frutinovela" and project.get("channel_id"):
+        previous = db.query_one(
+            "SELECT id,title,topic FROM projects WHERE channel_id=? AND template='frutinovela' AND id<>? ORDER BY id DESC LIMIT 1",
+            (project["channel_id"], project_id),
+        )
+        if previous:
+            ending = db.query_one(
+                "SELECT narration FROM scenes WHERE project_id=? ORDER BY idx DESC LIMIT 1",
+                (previous["id"],),
+            )
+            project["series_context"] = (
+                f"{previous.get('title') or 'Episodio anterior'}: {previous.get('topic') or ''}. "
+                + (ending.get("narration") or "" if ending else "")
+            )
     script = script_gen.generate_script(project, notes, sources)
     if replace:
         db.execute("DELETE FROM scenes WHERE project_id=?", (project_id,))
