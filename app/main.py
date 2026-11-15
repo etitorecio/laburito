@@ -550,10 +550,6 @@ def voice_sample_preview(voice_id: str, speed: int = 150, pitch: int = 45):
         raise HTTPException(404, "Voz española inexistente")
     speed = max(80, min(300, int(speed)))
     pitch = max(0, min(99, int(pitch)))
-    if voice_id == "es-masculino" and pitch == 45:
-        pitch = 30
-    elif voice_id == "es-agudo" and pitch == 45:
-        pitch = 65
     preview_dir = db.DATA_DIR / "voice_previews"
     preview_dir.mkdir(parents=True, exist_ok=True)
     preview = preview_dir / f"{voice_id}-{speed}-{pitch}.wav"
