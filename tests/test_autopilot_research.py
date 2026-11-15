@@ -120,6 +120,33 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertIn("id IN", query.call_args_list[1].args[0])
         self.assertEqual(query.call_args_list[1].args[1], (501, 502))
 
+    def test_autopilot_allows_free_source_based_youtube_publication_without_ollama(self):
+        rule = {"id": 10, "auto_publish": True, "cadence_hours": 24, "destination": "youtube", "privacy": "public"}
+        with patch.object(autopilot, "get_rule", return_value=rule):
+            with patch.object(autopilot, "_create_project", return_value={"project_id": 78, "script_writer": "source-extract", "evidence_sources": 2}):
+                with patch("app.publish.set_auto_publish") as set_publish:
+                    with patch("app.worker.enqueue", return_value=89):
+                        with patch.object(autopilot.db, "execute"):
+                            with patch.object(autopilot.db, "now", return_value="now"):
+                                result = autopilot.run_rule(10)
+        set_publish.assert_called_once_with(78, True, "youtube")
+        self.assertIsNone(result["publish_warning"])
+
+    def test_api_accepts_complete_autopilot_schedule_and_editorial_settings(self):
+        from app.main import AutopilotIn, AutopilotPatch
+        create = AutopilotIn(
+            niche="ciencia", videos_per_period=1, period_days=1,
+            schedule_time="09:30", timezone="America/Argentina/Buenos_Aires",
+            audience="Jóvenes", tone="Ágil", hook_style="Pregunta",
+            cta="Comentá", content_pillars="Espacio", avoid_topics="Rumores",
+        )
+        self.assertEqual(create.videos_per_period, 1)
+        self.assertEqual(create.schedule_time, "09:30")
+        self.assertEqual(create.content_pillars, "Espacio")
+        patch = AutopilotPatch(videos_per_period=2, period_days=1, schedule_time="12:00")
+        self.assertEqual(patch.videos_per_period, 2)
+        self.assertEqual(patch.schedule_time, "12:00")
+
     def test_autopilot_holds_publication_for_unrewritten_script(self):
         rule = {"id": 9, "auto_publish": True, "cadence_hours": 24, "destination": "youtube", "privacy": "unlisted"}
         with patch.object(autopilot, "get_rule", return_value=rule):
