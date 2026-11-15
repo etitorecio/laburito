@@ -190,7 +190,7 @@ export default function Autopilot() {
             </select>
           </Field>
           <Field label="Duración del Short (segundos)">
-            <input type="number" min="5" max="3600" value={form.duration_target_sec} onChange={(e) => setForm({ ...form, duration_target_sec: Number(e.target.value) })} />
+            <input type="number" min="15" max="90" value={form.duration_target_sec} onChange={(e) => setForm({ ...form, duration_target_sec: Number(e.target.value) })} />
           </Field>
           <Field label="Voz (narración en español)">
             <select value={form.voice} onChange={(e) => setForm({ ...form, voice: e.target.value })}>
@@ -231,7 +231,7 @@ export default function Autopilot() {
           <Field label="Volumen de música (0 a 1)">
             <input type="number" min="0" max="1" step="0.01" value={form.music_volume} onChange={(e) => setForm({ ...form, music_volume: Number(e.target.value) })} />
           </Field>
-          <Field label="Frecuencia">
+          <Field label="Frecuencia de producción">
             <select value={form.cadence_hours} onChange={(e) => setForm({ ...form, cadence_hours: Number(e.target.value) })}>
               {[6, 12, 24, 48, 72, 168].map((h) => <option key={h} value={h}>{h < 24 ? `Cada ${h} horas` : h === 24 ? 'Diariamente' : h === 168 ? 'Semanalmente' : `Cada ${h / 24} días`}</option>)}
             </select>
@@ -267,7 +267,7 @@ export default function Autopilot() {
           </Field>
         </div>
         <h3>3. Producción del Short</h3>
-        <label className="check-row"><input type="checkbox" checked={form.auto_publish} onChange={(e) => setForm({ ...form, auto_publish: e.target.checked })} /> Procesar y entregar automáticamente al terminar (YouTube requiere conexión OAuth)</label>
+        <label className="check-row"><input type="checkbox" checked={form.auto_publish} onChange={(e) => setForm({ ...form, auto_publish: e.target.checked })} /> Publicar automáticamente al terminar (YouTube requiere OAuth; si no, guardar la entrega)</label>
         {form.auto_publish && form.destination === "youtube" && !youtubeReady && <p className="muted">Todavía no hay una cuenta de YouTube conectada. Configurala desde <a href="#/ajustes">Ajustes → Conectar YouTube</a>; mientras tanto, los videos se renderizan pero no se publican.</p>}
         {form.destination === 'youtube' && (
           <p className="muted">
