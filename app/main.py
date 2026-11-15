@@ -371,6 +371,17 @@ def caption_style_preview(style_id: str):
         raise HTTPException(503, f"No se pudo generar la vista previa: {exc}") from exc
 
 
+@app.get("/api/transition-preview/{transition_id}")
+def transition_effect_preview(transition_id: str):
+    if transition_id not in options.TRANSITION_IDS:
+        raise HTTPException(404, "Movimiento de escena inexistente")
+    try:
+        preview = render.transition_preview(transition_id)
+        return FileResponse(preview, media_type="video/mp4")
+    except Exception as exc:
+        raise HTTPException(503, f"No se pudo generar la demostración: {exc}") from exc
+
+
 @app.get("/api/diagnostics")
 def diagnostics():
     disk = shutil.disk_usage(str(db.DATA_DIR))
