@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from app import autopilot, options
+from app import autopilot, options, script_gen
 
 
 class ShortsContractTests(unittest.TestCase):
@@ -41,6 +41,11 @@ class ShortsContractTests(unittest.TestCase):
         self.assertEqual(options.clamp_vertical_short_duration("reddit_story", 999), 180)
         self.assertEqual(options.clamp_vertical_short_duration("frutinovela", 5), 15)
         self.assertEqual(options.clamp_vertical_short_duration("longform", 999), 999)
+
+    def test_fiction_word_targets_scale_with_short_duration(self):
+        self.assertEqual(script_gen.fiction_word_range(180), (342, 432))
+        self.assertEqual(script_gen.fiction_word_range(90), (171, 216))
+        self.assertEqual(script_gen.fiction_word_range(45), (86, 108))
 
     def test_gameplay_clip_minimums_match_the_product_contract(self):
         self.assertEqual(options.VIDEO_CLIP_MINIMUMS, {
