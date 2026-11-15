@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch
 import urllib.parse
 
-from app import autopilot, publish, render, script_gen, topic_engine, tts, worker
+from app import autopilot, options, publish, render, script_gen, topic_engine, tts, worker
 
 
 class AutopilotResearchTests(unittest.TestCase):
@@ -155,6 +155,10 @@ class AutopilotResearchTests(unittest.TestCase):
         clean = autopilot._clean({"speed": 999, "pitch": -5})
         self.assertEqual(clean["speed"], 300)
         self.assertEqual(clean["pitch"], 0)
+
+    def test_autopilot_accepts_music_bed_picker_identifier(self):
+        bed_id = sorted(options.MUSIC_IDS)[0]
+        self.assertEqual(autopilot._clean({"music": "bed:" + bed_id})["music"], "bed:" + bed_id)
 
     def test_script_uses_autopilot_hook_cta_and_visual_style(self):
         project = {
