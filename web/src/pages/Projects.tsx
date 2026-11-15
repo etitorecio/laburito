@@ -53,6 +53,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     setForm({
       ...form,
       template: tpl.id,
+      channel_id: channels.find((c) => c.name.toLocaleLowerCase() === (tpl.id === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id.toString() ?? form.channel_id,
       aspect: tpl.aspect,
       caption_style: tpl.caption_style,
       duration_target_sec: tpl.default_duration,
