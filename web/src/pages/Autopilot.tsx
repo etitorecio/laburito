@@ -3,6 +3,7 @@ import { api, type AutopilotRule, type Channel, type Meta, type TemplateOption, 
 import { Badge, Card, Empty, Field, Msg } from '../ui';
 import CaptionStylePicker from '../components/CaptionStylePicker';
 import TransitionPicker from '../components/TransitionPicker';
+import VoicePicker from '../components/VoicePicker';
 
 type Options = {
   rules: AutopilotRule[];
@@ -366,10 +367,13 @@ export default function Autopilot() {
           {step === 1 && <>
 <h3>Voz española</h3>
             <p className="muted">Todos los Shorts se escriben y narran en español. Elegí únicamente la voz y el ritmo de narración.</p>
-            <Field label="Voz">
-              <select value={form.voice} onChange={(e) => update('voice', e.target.value)}>
-                {voiceOptions.map((v) => <option key={v.id} value={v.id} disabled={!v.available}>{v.label}{v.available ? '' : ' (no disponible)'}</option>)}
-              </select>
+            <Field label="Elegí una voz en español">
+              <VoicePicker
+                options={voiceOptions}
+                value={form.voice}
+                onChange={(value) => update('voice', value)}
+                compact
+              />
             </Field>
             <Field label={'Velocidad de narración: ' + form.speed + ' palabras/minuto'}>
               <input type="range" min="80" max="300" step="5" value={form.speed} onChange={(e) => update('speed', Number(e.target.value))} />
