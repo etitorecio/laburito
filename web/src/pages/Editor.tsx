@@ -82,6 +82,30 @@ function notesWithVisualStylePrompt(notes: string, prompt: string): string {
   return prefix + META_MARKER + JSON.stringify(metadata);
 }
 
+function thumbnailEnabledFromNotes(notes: string): boolean {
+  if (!notes.includes(META_MARKER)) return true;
+  try {
+    const metadata = JSON.parse(notes.split(META_MARKER, 2)[1] || '{}');
+    return metadata.create_thumbnail !== false;
+  } catch {
+    return true;
+  }
+}
+
+function notesWithThumbnailSetting(notes: string, enabled: boolean): string {
+  const [prefix, rawMetadata] = notes.includes(META_MARKER)
+    ? notes.split(META_MARKER, 2)
+    : [notes, '{}'];
+  let metadata: Record<string, unknown> = {};
+  try {
+    metadata = JSON.parse(rawMetadata || '{}');
+  } catch {
+    metadata = {};
+  }
+  metadata.create_thumbnail = enabled;
+  return prefix + META_MARKER + JSON.stringify(metadata);
+}
+
 export default function Editor({ projectId, go }: Props) {
   const [project, setProject] = useState<Project | null>(null);
   const [error, setError] = useState('');
@@ -312,6 +336,7 @@ export default function Editor({ projectId, go }: Props) {
   const quality = project.quality ?? {};
   const captionsEnabled = captionsEnabledFromNotes(project.notes || '');
   const visualStylePrompt = visualStylePromptFromNotes(project.notes || '');
+  const thumbnailEnabled = thumbnailEnabledFromNotes(project.notes || '');
   const warnings = Array.isArray(quality.warnings) ? (quality.warnings as string[]) : [];
   const totalChars = scenes.reduce((acc, s) => acc + (s.narration || '').length, 0);
 
@@ -439,6 +464,14 @@ export default function Editor({ projectId, go }: Props) {
               />
             </Field>
             <p className="muted">La descripción guía la búsqueda de imágenes libres y algunos filtros locales; no genera imágenes IA.</p>
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={thumbnailEnabled}
+                onChange={(e) => void patchProject({ notes: notesWithThumbnailSetting(project.notes || '', e.target.checked) })}
+              />
+              Crear miniatura automáticamente
+            </label>
             <Field label="Usar una imagen como referencia (paleta local)">
               <input type="file" accept="image/jpeg,image/png,image/webp" disabled={!!busy} onChange={async (e) => {
                 const file = e.target.files?.[0];
