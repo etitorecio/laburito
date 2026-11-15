@@ -2335,6 +2335,19 @@ th {
 }
 .video-type-placeholder span { font-size: 42px; }
 .video-type-placeholder small { font-size: 11px; }
+.background-clip-manager {
+  margin-top: 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel-2);
+}
+.background-clip-manager summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+.background-clip-manager[open] summary { margin-bottom: 10px; }
 .background-clip-slots {
   display: grid;
   grid-template-columns: repeat(2,minmax(0,1fr));
