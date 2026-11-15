@@ -70,6 +70,7 @@ const STEPS = [
 export default function Autopilot() {
   const [data, setData] = useState<Options | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
+  const [ollamaAvailable, setOllamaAvailable] = useState<boolean | null>(null);
   const [youtubeAccounts, setYoutubeAccounts] = useState<{ id: number; account: { channel_title: string } | null }[]>([]);
   const [persistenceConfigured, setPersistenceConfigured] = useState<boolean | null>(null);
   const [persistenceNote, setPersistenceNote] = useState('');
@@ -94,6 +95,7 @@ export default function Autopilot() {
         channel_id: String(result.channels.find((c) => c.name.toLocaleLowerCase() === (current.template === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id ?? ''),
       });
       setMeta(m);
+      setOllamaAvailable(diagnostics.ollama.available);
       setYoutubeAccounts(accountData.accounts);
       setPersistenceConfigured(diagnostics.persistence.configured || !!diagnostics.persistence.local_persistent);
       setPersistenceNote(diagnostics.persistence.note);
@@ -282,6 +284,7 @@ export default function Autopilot() {
   return (
     <div className="stack">
       <Msg error={error} ok={ok} />
+      {ollamaAvailable === false && <p className="muted">No hay un modelo Ollama conectado en esta instancia. El Autopiloto puede crear videos con guiones estructurados de respaldo, pero para narraciones originales generadas localmente necesitás conectar Ollama desde Ajustes.</p>}
       {persistenceConfigured === false && <p className="muted" style={{ padding: 12, border: '1px solid var(--border, #d1d5db)', borderRadius: 10 }}>
         <strong>Falta almacenamiento persistente.</strong> Para conservar la programación y el historial, ejecutá Laburito en tu PC con la carpeta local ./data.
       </p>}
