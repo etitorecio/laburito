@@ -641,7 +641,8 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
         project_result = _create_project(rule)
         pid = int(project_result["project_id"])
         script_writer = project_result.get("script_writer", "template")
-        evidence_sources = int(project_result.get("evidence_sources", 0))\n        fiction = bool(project_result.get("fiction", False))
+        evidence_sources = int(project_result.get("evidence_sources", 0))
+        fiction = bool(project_result.get("fiction", False))
     except Exception as exc:
         db.execute(
             "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE id=?",
