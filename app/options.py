@@ -157,6 +157,18 @@ TEMPLATES = [
         "available": True,
     },
     {
+        "id": "frutinovela",
+        "label": "Frutinovela por episodios",
+        "description": "Ficción vertical melodramática con personajes recurrentes, conflicto, giro y cliffhanger para continuar la serie.",
+        "kind": "short",
+        "aspect": "9:16",
+        "script": "frutinovela",
+        "caption_style": "short_pop",
+        "durations": [45, 60, 90, 120, 180],
+        "default_duration": 90,
+        "available": True,
+    },
+    {
         "id": "longform",
         "label": "Documental largo (hasta 20 min)",
         "description": "Formato horizontal con capítulos narrativos y subtítulos documentales.",
@@ -285,7 +297,7 @@ VISUAL_STYLES = [
 VISUAL_STYLE_IDS = {item["id"] for item in VISUAL_STYLES}
 
 TEMPLATE_IDS = {t["id"] for t in TEMPLATES}
-SCRIPT_TEMPLATES = ["documentary", "short", "listicle", "pov", "explainer", "quote"]
+SCRIPT_TEMPLATES = ["documentary", "short", "listicle", "pov", "explainer", "quote", "frutinovela"]
 
 DEFAULT_TEMPLATE = "shorts"
 
