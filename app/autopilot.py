@@ -251,6 +251,20 @@ def _create_project(rule: dict) -> dict:
                 db.now(),
             ),
         )
+    for academic in research.get("academic_sources", []):
+        db.execute(
+            "INSERT INTO sources(project_id, title, url, author, license, accessed_at, attribution, kind, notes, created_at) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?)",
+            (
+                pid, academic.get("title") or "Resumen académico",
+                academic.get("url") or "", academic.get("author") or "Autores de la publicación",
+                "Resumen bibliográfico; consultar licencia del texto completo",
+                db.now(), f"{academic.get('author', 'Autores')} · {academic.get('title', '')} · {academic.get('url', '')}",
+                "investigacion",
+                "Resumen recuperado desde OpenAlex; no equivale al texto completo. Verificar publicación original.",
+                db.now(),
+            ),
+        )
     if rule.get("voice") == "es-es-piper":
         from . import tts
         if tts.status().get("piper_available"):
@@ -295,7 +309,7 @@ def _create_project(rule: dict) -> dict:
         f"Proyecto automático creado con tema descubierto: {title}",
         {"id": pid, "topic": topic, "source": research["url"], "scenes": len(script["scenes"])},
     )
-    return {"project_id": pid, "script_writer": script.get("writer", "template")}
+    return {"project_id": pid, "script_writer": script.get("writer", "template"), "evidence_sources": int(script.get("evidence_sources", 0))}
 
 
 def run_rule(rule_id: int, force: bool = False) -> dict:
@@ -309,6 +323,7 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
         project_result = _create_project(rule)
         pid = int(project_result["project_id"])
         script_writer = project_result.get("script_writer", "template")
+        evidence_sources = int(project_result.get("evidence_sources", 0))
     except Exception as exc:
         db.execute(
             "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE id=?",
@@ -317,10 +332,11 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
         raise
     publish_warning = ""
     if rule.get("auto_publish"):
-        if script_writer != "ollama-local":
+        if script_writer != "ollama-local" or evidence_sources < 2:
             publish_warning = (
-                "Publicación automática retenida: el guion no fue reescrito por un modelo local. "
-                "Se generó el proyecto y el render, pero requiere revisión para evitar publicar un borrador."
+                "Publicación automática retenida: se requiere un guion reescrito con Ollama local "
+                "y al menos dos fuentes con extractos recuperados. Se generó el proyecto y el render, "
+                "pero requiere revisión para evitar publicar un borrador sin contraste suficiente."
             )
             db.log("warn", "autopilot", publish_warning, {"project_id": pid, "writer": script_writer})
         else:
