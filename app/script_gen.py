@@ -528,6 +528,31 @@ def generate_script(
                     narration += f" Dato de contexto: {claims[claim_index].rstrip('.')}{_attribution(note)}."
                     claim_index += 1
         duration = max(3.0, round(target * beat["weight"], 2))
+        hook_style = (project.get("hook_style") or "Dato sorprendente").strip()
+        if idx == 0:
+            hook_prefixes = {
+                "Pregunta intrigante": f"¿Qué hay detrás de {topic}? ",
+                "Dato sorprendente": f"Hay un detalle de {topic} que vale la pena conocer: ",
+                "Situación en medio de la acción": f"Todo parece normal, hasta que aparece un detalle clave en {topic}. ",
+                "Error o mito que desmontar": f"Hay una idea sobre {topic} que conviene revisar. ",
+                "Misterio sin resolver": f"Hay una pregunta sobre {topic} que todavía merece atención. ",
+                "Afirmación polémica verificable": f"Sobre {topic}, la explicación más repetida no siempre alcanza. ",
+            }
+            narration = hook_prefixes.get(hook_style, "") + narration
+        if idx == len(beats) - 1:
+            cta = (project.get("cta") or "").strip()
+            cta_lines = {
+                "Hacé una pregunta concreta al final": "¿Qué parte te sorprendió más? Te leo en los comentarios.",
+                "Invitá a comentar una opinión": "¿Vos qué opinás? Dejá tu punto de vista en los comentarios.",
+                "Invitá a compartir el Short": "Compartilo con alguien a quien le pueda interesar.",
+                "Invitá a seguir el canal": "Seguime para ver más historias como esta.",
+            }
+            if cta in cta_lines:
+                narration = narration.rstrip() + " " + cta_lines[cta]
+        visual_query = beat["visual"].format(topic=topic)
+        visual_style = (project.get("visual_style") or "").strip()
+        if visual_style:
+            visual_query = visual_query + " " + visual_style
         scenes.append(
             {
                 "idx": idx,
@@ -535,7 +560,7 @@ def generate_script(
                 "beat": beat["key"],
                 "purpose": beat["purpose"],
                 "narration": narration,
-                "visual_query": beat["visual"].format(topic=topic),
+                "visual_query": visual_query,
                 "duration_target_sec": duration,
                 "transition": "fundido" if beat["key"] in ("apertura", "cierre") else "corte",
                 "status": "borrador",
