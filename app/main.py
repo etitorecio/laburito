@@ -378,6 +378,17 @@ def caption_style_preview(style_id: str):
         raise HTTPException(503, f"No se pudo generar la vista previa: {exc}") from exc
 
 
+@app.get("/api/visual-style-preview/{style_id}")
+def visual_style_sample(style_id: str):
+    if style_id not in options.VISUAL_STYLE_IDS:
+        raise HTTPException(404, "Estilo visual inexistente")
+    try:
+        preview = render.visual_style_preview(style_id)
+        return FileResponse(preview, media_type="image/png")
+    except Exception as exc:
+        raise HTTPException(503, f"No se pudo generar la muestra visual: {exc}") from exc
+
+
 @app.get("/api/voice-preview/{voice_id}")
 def voice_sample_preview(voice_id: str):
     if voice_id not in tts.VOICES:
