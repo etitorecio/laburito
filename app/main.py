@@ -805,7 +805,8 @@ def create_project(payload: ProjectIn):
             resolved["aspect"], "borrador", duration, payload.voice, payload.speed, payload.pitch,
             payload.notes, resolved["template"], payload.visual_style, payload.video_type,
             resolved["caption_style"], resolved["transition_default"],
-            resolved["resolution"], resolved["fps"], resolved["music"], data.get("music_volume"),
+            resolved["resolution"], resolved["fps"], resolved["music"],
+            float(data["music_volume"]) if data.get("music_volume") is not None else 0.12,
             db.now(), db.now(),
         ),
     )
