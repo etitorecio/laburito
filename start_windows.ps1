@@ -47,7 +47,7 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ""
 Write-Host "Laburito está iniciando en http://localhost:8080" -ForegroundColor Green
-Write-Host "No necesitás claves ni tokens de IA. Si querés proteger el acceso local, podés definir APP_TOKEN en .env."
+Write-Host "No necesitás claves ni tokens de IA para generar videos. YouTube requiere autorizar tu cuenta con Google."
 Write-Host "Para publicar en YouTube: configurá YOUTUBE_CLIENT_ID y YOUTUBE_CLIENT_SECRET en .env y reiniciá con docker compose up -d."
 Write-Host "No borres la carpeta data: conserva la programación, los videos y la autorización."
 $lan = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
