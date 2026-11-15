@@ -156,6 +156,7 @@ export default function Autopilot() {
     <div className="stack">
       <Msg error={error} ok={ok} />
       <Card title="Autopiloto de Shorts" sub="Configurá una vez el canal, el público, la identidad editorial y la producción. Después el piloto descubre temas, crea Shorts verticales y los entrega según tu frecuencia.">
+        <h3>1. Canal y estrategia</h3>
         <div className="grid two">
           <Field label="Nombre de la automatización">
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Mi canal de Shorts" />
