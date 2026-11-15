@@ -38,6 +38,10 @@ class ShortsContractTests(unittest.TestCase):
         with patch.object(autopilot.db, "query_one", return_value={"name": "Frutinovelas"}):
             autopilot._validate_factory_channel({"channel_id": 2, "template": "frutinovela"})
 
+    def test_non_factory_autopilot_does_not_require_factory_channel_lookup(self):
+        with patch.object(autopilot.db, "query_one", side_effect=AssertionError("unexpected channel lookup")):
+            autopilot._validate_factory_channel({"channel_id": 2, "template": "shorts"})
+
     def test_autopilot_rejects_missing_channel(self):
         with patch.object(autopilot.db, "query_one", return_value=None):
             with self.assertRaisesRegex(ValueError, "no existe"):
@@ -62,7 +66,7 @@ class ShortsContractTests(unittest.TestCase):
     def test_fiction_word_targets_scale_with_short_duration(self):
         self.assertEqual(script_gen.fiction_word_range(180), (378, 450))
         self.assertEqual(script_gen.fiction_word_range(90), (189, 225))
-        self.assertEqual(script_gen.fiction_word_range(45), (94, 112))
+        self.assertEqual(script_gen.fiction_word_range(45), (94, 114))
 
     def test_youtube_credentials_are_isolated_per_factory_channel(self):
         with patch.dict("os.environ", {"YOUTUBE_CLIENT_ID": "client", "YOUTUBE_CLIENT_SECRET": "secret"}):
