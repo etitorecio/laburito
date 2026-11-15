@@ -159,7 +159,7 @@ TEMPLATES = [
     {
         "id": "reddit_story",
         "label": "Historias estilo Reddit",
-        "description": "Relato original en español con gancho, contexto, tensión creciente, giro y cierre para comentarios.",
+        "description": "Short de YouTube vertical 9:16, hasta 3 minutos: relato original en español con gancho, tensión creciente, giro y pregunta para comentarios.",
         "kind": "short",
         "aspect": "9:16",
         "script": "reddit_story",
@@ -171,7 +171,7 @@ TEMPLATES = [
     {
         "id": "frutinovela",
         "label": "Frutinovela por episodios",
-        "description": "Ficción vertical melodramática con personajes recurrentes, conflicto, giro y cliffhanger para continuar la serie.",
+        "description": "Shorts de YouTube verticales 9:16, hasta 3 minutos: ficción melodramática con personajes recurrentes, conflicto, giro y cliffhanger.",
         "kind": "short",
         "aspect": "9:16",
         "script": "frutinovela",
