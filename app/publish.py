@@ -194,6 +194,9 @@ def build_metadata(project, scenes) -> dict:
     elif not language and _g(project, "channel_id"):
         channel = db.query_one("SELECT language FROM channels WHERE id=?", (_g(project, "channel_id"),))
         language = _g(channel or {}, "language")
+    if not language:
+        voice_id = (_g(project, "voice") or "es").strip()
+        language = "es" if voice_id == "es-es-piper" else voice_id.split("-", 1)[0]
     language = language or "es"
     manual_keywords = [k.strip() for k in re.split(r"[,;]", _g(project, "keywords") or "") if k.strip()]
     custom_tags = [k.strip().lstrip("#") for k in re.split(r"[,;]", str(metadata_config.get("custom_tags") or "")) if k.strip()]
