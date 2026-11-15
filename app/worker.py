@@ -164,6 +164,14 @@ def run_job(job: dict) -> None:
                 # El MP4 permanece en el proyecto y el bloqueo queda visible.
                 auto = {"enabled": False, "destination": "youtube"}
             if auto["enabled"]:
+                if auto["destination"] == "youtube" and persistence.configured():
+                    try:
+                        persistence.sync_pending_video(int(project_id), result["video"])
+                    except Exception as exc:
+                        # La subida seguirá mientras el archivo local exista; el error
+                        # queda visible y la copia remota se puede volver a intentar.
+                        db.log("error", "persistence", f"No se pudo respaldar el MP4 antes de YouTube: {exc}",
+                               {"project_id": project_id})
                 publish_job = enqueue(
                     int(project_id),
                     "publish_project",
@@ -180,6 +188,7 @@ def run_job(job: dict) -> None:
                 )
         elif job["kind"] == "publish_project":
             payload = json.loads(job.get("payload_json") or "{}")
+            persistence.restore_pending_video(int(project_id))
             published = publish.publish(
                 int(project_id),
                 destination=payload.get("destination", "entrega"),
@@ -187,6 +196,12 @@ def run_job(job: dict) -> None:
                 privacy=payload.get("privacy", "unlisted"),
                 on_progress=lambda pct, msg: _set_progress(job_id, pct, msg),
             )
+            if published["destination"] == "youtube" and persistence.configured():
+                try:
+                    persistence.delete_pending_video(int(project_id))
+                except Exception as exc:
+                    db.log("warn", "persistence", f"No se pudo eliminar el MP4 pendiente después de publicar: {exc}",
+                           {"project_id": project_id})
             db.execute(
                 "UPDATE jobs SET status='completado', progress=100, message=?, result_json=?, finished_at=?, updated_at=? WHERE id=?",
                 (
