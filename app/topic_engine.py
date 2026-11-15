@@ -79,6 +79,57 @@ def _is_duplicate(candidate: str, previous_topics: list[str]) -> bool:
     return False
 
 
+def _openalex_abstracts(title: str, limit: int = 4) -> list[dict]:
+    """Recupera resúmenes académicos abiertos de OpenAlex, sin API key."""
+    params = urllib.parse.urlencode({
+        "search": title,
+        "per-page": limit,
+        "select": "id,doi,title,publication_year,type,abstract_inverted_index,authorships,primary_location",
+    })
+    request = urllib.request.Request(
+        "https://api.openalex.org/works?" + params,
+        headers={"User-Agent": UA},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=18) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception:
+        return []
+
+    results = []
+    for work in payload.get("results", []):
+        index = work.get("abstract_inverted_index") or {}
+        if not index:
+            continue
+        words = []
+        for word, positions in index.items():
+            for position in positions:
+                words.append((int(position), word))
+        abstract = " ".join(word for _, word in sorted(words))
+        abstract = re.sub(r"\s+", " ", abstract).strip()
+        if len(abstract) < 450:
+            continue
+        authors = []
+        for item in (work.get("authorships") or [])[:3]:
+            name = ((item.get("author") or {}).get("display_name") or "").strip()
+            if name:
+                authors.append(name)
+        doi = work.get("doi") or ""
+        location = work.get("primary_location") or {}
+        landing = ((location.get("landing_page") or {}).get("url") or "").strip()
+        url = doi or landing or work.get("id") or ""
+        results.append({
+            "title": (work.get("title") or "Publicación académica")[:240],
+            "url": url,
+            "abstract": abstract[:10000],
+            "author": ", ".join(authors) or "Autores de la publicación",
+            "year": work.get("publication_year"),
+            "provider": "OpenAlex",
+            "license": "Resumen bibliográfico de OpenAlex; consultar la publicación original",
+        })
+    return results
+
+
 def choose_topic(niche: str, previous_topics: list[str]) -> dict:
     niche = (niche or "").strip()
     if not niche:
@@ -131,9 +182,21 @@ def research_topic(niche: str, previous_topics: list[str]) -> dict:
         "INSERT INTO research_notes(niche, claim, evidence_level, source_url, accessed_at, methodology, created_at) "
         "VALUES(?,?,?,?,?,?,?)",
         (
-            niche, result["summary"], "indicio", result["url"], db.now(),
-            "Extracto del artículo de Wikipedia recuperado automáticamente. Es una fuente secundaria de orientación; requiere contraste con fuentes primarias antes de publicar.",
+            niche, result["summary"], "orientación", result["url"], db.now(),
+            "Extracto de Wikipedia recuperado automáticamente; usar como orientación y contrastar con publicaciones independientes.",
             db.now(),
         ),
     )
+    academic = _openalex_abstracts(result["title"])
+    for item in academic:
+        db.execute(
+            "INSERT INTO research_notes(niche, claim, evidence_level, source_url, accessed_at, methodology, created_at) "
+            "VALUES(?,?,?,?,?,?,?)",
+            (
+                niche, item["abstract"], "resumen académico", item["url"], db.now(),
+                "Resumen bibliográfico recuperado de OpenAlex. No equivale al texto completo; comprobar alcance y metodología en la publicación original.",
+                db.now(),
+            ),
+        )
+    result["academic_sources"] = academic
     return result
