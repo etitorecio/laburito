@@ -49,7 +49,8 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
 """
 
 FIELDS = [
-    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "aspect",\n    "audience", "tone", "hook_style", "cta", "content_pillars", "avoid_topics",
+    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "aspect",
+    "audience", "tone", "hook_style", "cta", "content_pillars", "avoid_topics",
     "caption_style", "transition_default", "resolution", "fps", "music", "music_volume",
     "cadence_hours", "enabled", "destination", "privacy", "auto_publish", "next_run_at",
 ]
