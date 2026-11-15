@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 import struct
 import subprocess
@@ -19,6 +20,8 @@ import urllib.request
 import zlib
 from functools import lru_cache
 from pathlib import Path
+
+from PIL import Image, ImageDraw, ImageFont
 
 _CARD_ERROR = ""
 
@@ -242,6 +245,139 @@ def make_card(out_png: Path, title: str, subtitle: str, width: int, height: int,
 
     if not out_png.exists():
         raise RuntimeError(f"No se pudo generar la tarjeta visual: {_CARD_ERROR}")
+    return out_png
+
+
+def make_fruit_card(
+    out_png: Path,
+    title: str,
+    cast_text: str,
+    width: int,
+    height: int,
+) -> Path:
+    """Ilustración procedural original con el mismo elenco frutal en cada escena."""
+    out_png = Path(out_png)
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+    image = Image.new("RGB", (width, height), (250, 241, 226))
+    draw = ImageDraw.Draw(image)
+
+    scale = max(0.5, min(width / 720, height / 1280))
+    def font(size: int):
+        path = font_path()
+        try:
+            return ImageFont.truetype(path, max(10, int(size * scale))) if path else ImageFont.load_default()
+        except Exception:
+            return ImageFont.load_default()
+
+    title_font = font(42)
+    name_font = font(27)
+    role_font = font(19)
+    small_font = font(18)
+
+    # Fondo tipo telenovela, dibujado localmente y sin recursos externos.
+    draw.rounded_rectangle(
+        (int(width * .035), int(height * .025), int(width * .965), int(height * .975)),
+        radius=int(32 * scale), fill=(255, 250, 241), outline=(226, 173, 119), width=max(2, int(4 * scale)),
+    )
+    title_text = (title or "Un secreto entre frutas").strip()[:72]
+    title_box = draw.textbbox((0, 0), title_text, font=title_font)
+    draw.text(((width - (title_box[2] - title_box[0])) / 2, height * .075), title_text, font=title_font, fill=(75, 45, 58))
+
+    raw_cast = [part.strip() for part in re.split(r"[,;\n]+", cast_text or "") if part.strip()]
+    cast = []
+    for part in raw_cast:
+        name = re.sub(r"\s*\([^)]*\)", "", part).strip()
+        role_match = re.search(r"\(([^)]*)\)", part)
+        role = role_match.group(1).strip() if role_match else ""
+        if name and all(item["name"].casefold() != name.casefold() for item in cast):
+            cast.append({"name": name[:24], "role": role[:28]})
+        if len(cast) >= 4:
+            break
+    if not cast:
+        cast = [
+            {"name": "Manzana", "role": "protagonista"},
+            {"name": "Banana", "role": "pareja"},
+            {"name": "Pera", "role": "rival"},
+        ]
+
+    styles = [
+        ("manzana", (213, 65, 75)),
+        ("banana", (248, 202, 58)),
+        ("pera", (137, 190, 105)),
+        ("naranja", (243, 145, 55)),
+        ("frutilla", (224, 67, 92)),
+        ("uva", (135, 95, 170)),
+        ("limon", (237, 214, 75)),
+        ("durazno", (241, 153, 127)),
+        ("kiwi", (128, 166, 92)),
+        ("mango", (241, 164, 54)),
+        ("cereza", (174, 48, 67)),
+        ("anana", (222, 178, 65)),
+        ("piña", (222, 178, 65)),
+        ("sandia", (95, 166, 104)),
+        ("palta", (116, 157, 94)),
+    ]
+    count = len(cast)
+    center_y = int(height * .47)
+    spacing = width / (count + 1)
+    radius = int(min(width * .13, height * .115))
+    for index, character in enumerate(cast):
+        name = character["name"]
+        lowered = name.casefold()
+        color = next((value for key, value in styles if key in lowered), (231, 119, 91))
+        cx = int(spacing * (index + 1))
+        cy = center_y
+        # Sombra y cuerpo de fruta.
+        draw.ellipse((cx - radius * .82, cy + radius * .72, cx + radius * .82, cy + radius * .96), fill=(222, 207, 187))
+        if "pera" in lowered:
+            body = [
+                (cx, cy - radius), (cx + radius * .55, cy - radius * .35),
+                (cx + radius * .75, cy + radius * .45), (cx + radius * .45, cy + radius * .9),
+                (cx - radius * .45, cy + radius * .9), (cx - radius * .75, cy + radius * .45),
+                (cx - radius * .55, cy - radius * .35),
+            ]
+            draw.polygon(body, fill=color, outline=(110, 88, 69))
+        elif "banana" in lowered:
+            body = [
+                (cx - radius * .8, cy - radius * .45), (cx - radius * .35, cy - radius * .82),
+                (cx + radius * .55, cy - radius * .52), (cx + radius * .8, cy + radius * .35),
+                (cx + radius * .25, cy + radius * .78), (cx - radius * .35, cy + radius * .35),
+            ]
+            draw.polygon(body, fill=color, outline=(130, 99, 44))
+        elif "frutilla" in lowered or "fresa" in lowered:
+            body = [
+                (cx - radius * .7, cy - radius * .35), (cx - radius * .35, cy - radius * .8),
+                (cx + radius * .35, cy - radius * .8), (cx + radius * .7, cy - radius * .35),
+                (cx + radius * .45, cy + radius * .5), (cx, cy + radius),
+                (cx - radius * .45, cy + radius * .5),
+            ]
+            draw.polygon(body, fill=color, outline=(130, 65, 65))
+        else:
+            draw.ellipse((cx - radius * .72, cy - radius * .85, cx + radius * .72, cy + radius * .85), fill=color, outline=(110, 78, 66), width=max(2, int(3 * scale)))
+        # Tallo y hoja.
+        draw.line((cx, cy - radius * .78, cx + radius * .08, cy - radius * 1.08), fill=(91, 105, 62), width=max(3, int(6 * scale)))
+        draw.ellipse((cx + radius * .02, cy - radius * 1.12, cx + radius * .52, cy - radius * .82), fill=(91, 157, 91), outline=(66, 113, 70))
+        # Rostro sencillo y expresivo.
+        eye_y = cy - radius * .08
+        eye_dx = radius * .25
+        eye_r = max(3, int(radius * .075))
+        for eye_x in (cx - eye_dx, cx + eye_dx):
+            draw.ellipse((eye_x - eye_r, eye_y - eye_r, eye_x + eye_r, eye_y + eye_r), fill=(54, 44, 48))
+            draw.ellipse((eye_x - eye_r * .35, eye_y - eye_r * .55, eye_x, eye_y - eye_r * .1), fill=(255, 255, 255))
+        mouth_box = (cx - radius * .2, cy + radius * .02, cx + radius * .2, cy + radius * .34)
+        draw.arc(mouth_box, start=10, end=170, fill=(92, 42, 53), width=max(2, int(4 * scale)))
+
+        name_box = draw.textbbox((0, 0), name, font=name_font)
+        draw.text((cx - (name_box[2] - name_box[0]) / 2, cy + radius * 1.12), name, font=name_font, fill=(75, 45, 58))
+        if character["role"]:
+            role = character["role"]
+            role_box = draw.textbbox((0, 0), role, font=role_font)
+            draw.text((cx - (role_box[2] - role_box[0]) / 2, cy + radius * 1.12 + name_box[3] + 8), role, font=role_font, fill=(123, 91, 89))
+
+    footer = "FRUTINOVELA  ·  HISTORIA ORIGINAL"
+    footer_box = draw.textbbox((0, 0), footer, font=small_font)
+    draw.text(((width - (footer_box[2] - footer_box[0])) / 2, height * .89), footer, font=small_font, fill=(150, 103, 91))
+    image.save(out_png, format="PNG", optimize=True)
     return out_png
 
 
