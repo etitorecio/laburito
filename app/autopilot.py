@@ -287,13 +287,13 @@ def _validate_auto_publish(clean: dict, current: dict | None = None) -> None:
 def create_rule(data: dict) -> dict:
     ensure_schema()
     clean = _clean(data)
-    _validate_auto_publish(clean)
     clean.setdefault("name", clean.get("niche") or "Piloto automático")
     clean.setdefault("template", "shorts")
     clean.setdefault("aspect", "9:16")
     clean.setdefault("destination", "youtube")
     clean.setdefault("privacy", "public")
     clean.setdefault("auto_publish", 1)
+    _validate_auto_publish(clean)
     clean.setdefault("videos_per_period", 1)
     clean.setdefault("period_days", 1)
     clean.setdefault("schedule_time", "10:00")
@@ -520,7 +520,7 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
         quality_ready = script_writer in ("source-extract", "ollama-local") and evidence_sources >= 1
         if destination == "youtube" and not quality_ready:
             publish_warning = (
-                "Publicación automática en YouTube retenida: hacen falta al menos un extracto "
+                "Publicación automática en YouTube retenida: hace falta al menos un extracto "
                 "de investigación y un guion basado en fuentes. El video queda generado para revisión."
             )
             db.log("warn", "autopilot", publish_warning, {"project_id": pid, "writer": script_writer})
