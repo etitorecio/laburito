@@ -171,10 +171,21 @@ def _clean(data: dict) -> dict:
     if "pitch" in data and data["pitch"] is not None:
         clean["pitch"] = max(0, min(99, int(data["pitch"])))
     if "visual_style" in data and data["visual_style"] is not None:
-        clean["visual_style"] = str(data["visual_style"]).strip()[:180]
+        chosen_style = str(data["visual_style"]).strip()
+        if chosen_style not in options.VISUAL_STYLE_IDS:
+            raise ValueError("Estilo visual no válido")
+        clean["visual_style"] = chosen_style
     if "video_type" in data and data["video_type"] is not None:
-        chosen = str(data["video_type"]).strip()
-        clean["video_type"] = chosen if chosen in options.VIDEO_TYPE_IDS else "moving_images"
+        chosen_type = str(data["video_type"]).strip()
+        if chosen_type not in options.VIDEO_TYPE_IDS:
+            raise ValueError("Tipo de video no válido")
+        required_clips = 5 if chosen_type in {"minecraft", "subway"} else 1
+        if chosen_type in {"minecraft", "subway", "stock_footage"}:
+            clip_dir = db.DATA_DIR / "background_clips" / chosen_type
+            clip_count = len(list(clip_dir.glob("*.mp4"))) if clip_dir.exists() else 0
+            if clip_count < required_clips:
+                raise ValueError(f"El formato {chosen_type} necesita {required_clips} clip(s) propios o autorizados.")
+        clean["video_type"] = chosen_type
     if "title_style" in data and data["title_style"] is not None:
         if data["title_style"] not in ("automatico", "pregunta", "curiosidad", "directo", "misterio"):
             raise ValueError("Estilo de título no válido")
