@@ -166,7 +166,7 @@ const FAQ = [
   },
   {
     q: '¿Cuánto tarda en renderizar un vídeo?',
-    a: 'Un short de cinco escenas tarda unos seis minutos en una instancia de 1 vCPU. Un documental largo tarda más porque se renderiza escena por escena, y puedes cerrar la pestaña: la cola sigue trabajando.',
+    a: 'Depende de la duración, resolución y potencia de tu PC. El render se procesa escena por escena en segundo plano y la cola continúa aunque cierres la pestaña, mientras la PC siga encendida.',
   },
   {
     q: '¿Qué pasa si el render falla a la mitad?',
@@ -174,7 +174,7 @@ const FAQ = [
   },
   {
     q: '¿Puedo usar mi propia voz?',
-    a: 'Sí. La app usa espeak-ng por defecto y admite Piper: colocas el modelo y la ruta en los ajustes, y el motor más natural se usa automáticamente.',
+    a: 'Todavía no permite clonar ni cargar tu propia voz. Usa espeak-ng local y ofrece Piper como voz neural española opcional.',
   },
   {
     q: '¿De dónde salen las imágenes?',
@@ -186,7 +186,7 @@ const FAQ = [
   },
   {
     q: '¿Puedo publicar en YouTube, TikTok e Instagram?',
-    a: 'Sí. Exportas MP4 en 9:16 o 16:9 con subtítulos ya quemados y el paquete incluye título, descripción, etiquetas y miniatura para cada plataforma.',
+    a: 'La integración automática disponible es YouTube mediante OAuth. Para TikTok e Instagram podés exportar el MP4 y publicarlo manualmente; no hay integración directa con esas plataformas todavía.',
   },
   {
     q: '¿Hay una API?',
