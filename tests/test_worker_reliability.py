@@ -100,6 +100,30 @@ class WorkerReliabilityTests(unittest.TestCase):
                     job_id = worker.enqueue(12, "publish_project", {"destination": "youtube"})
         self.assertEqual(job_id, 503)
 
+    def test_youtube_processing_rejection_marks_job_failed_without_retry(self):
+        job = {
+            "id": 94, "project_id": 12, "kind": "publish_project",
+            "payload_json": '{"destination":"youtube","privacy":"public"}',
+            "attempts": 1,
+        }
+        statements = []
+        with patch.object(publish, "publish", return_value={
+            "destination": "youtube",
+            "status": "procesamiento_fallido",
+            "url": "https://youtu.be/rejected123",
+            "external_id": "rejected123",
+            "message": "YouTube rechazó el procesamiento",
+        }):
+            with patch.object(worker.persistence, "restore_pending_video"):
+                with patch.object(worker.db, "execute", side_effect=lambda sql, params=(): statements.append((sql, params))):
+                    with patch.object(worker.db, "now", return_value="now"):
+                        with patch.object(worker.db, "log"):
+                            worker.run_job(job)
+        update = next((params for sql, params in statements if "UPDATE jobs SET status=?" in sql), None)
+        self.assertIsNotNone(update)
+        self.assertEqual(update[0], "error")
+        self.assertIn("YouTube rechazó", update[1])
+
     def test_transient_youtube_publish_error_is_requeued(self):
         job = {
             "id": 92, "project_id": 12, "kind": "publish_project",
