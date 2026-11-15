@@ -340,7 +340,10 @@ def _validate_auto_publish(clean: dict, current: dict | None = None) -> None:
             "Antes de activar la autopublicación, ejecutá Laburito con un volumen local persistente (carpeta ./data)."
         )
     try:
-        publish.youtube_account_status()
+        channel_id = merged.get("channel_id")
+        if not channel_id:
+            raise ValueError("Asigná esta regla a un canal interno para conectar su cuenta de YouTube.")
+        publish.youtube_account_status(int(channel_id))
     except publish.PublishError as exc:
         raise ValueError(
             "Antes de activar la publicación automática, conectá y verificá YouTube en Ajustes. " + str(exc)
