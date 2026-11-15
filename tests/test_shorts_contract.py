@@ -29,10 +29,11 @@ class ShortsContractTests(unittest.TestCase):
         self.assertEqual(options.factory_template_for_channel_name("Frutinovelas"), "frutinovela")
         self.assertIsNone(options.factory_template_for_channel_name("Otro canal"))
 
-    def test_autopilot_rejects_crossed_factory_channel(self):
-        with patch.object(autopilot.db, "query_one", return_value={"name": "Historias"}):
-            with self.assertRaisesRegex(ValueError, "solo admite su fábrica"):
-                autopilot._validate_factory_channel({"channel_id": 1, "template": "frutinovela"})
+    def test_autopilot_allows_any_factory_template_on_any_channel(self):
+        for channel_name in ("Historias", "Frutinovelas", "Mi canal nuevo"):
+            with self.subTest(channel=channel_name):
+                with patch.object(autopilot.db, "query_one", return_value={"name": channel_name}):
+                    autopilot._validate_factory_channel({"channel_id": 1, "template": "frutinovela"})
 
     def test_autopilot_accepts_matching_factory_channel(self):
         with patch.object(autopilot.db, "query_one", return_value={"name": "Frutinovelas"}):
