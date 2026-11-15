@@ -172,7 +172,7 @@ def _clean(data: dict) -> dict:
         clean["fps"] = int(data["fps"])
     if "music" in data and data["music"] is not None:
         music = str(data["music"]).strip()
-        if music != "auto" and music not in options.MUSIC_IDS:
+        if music not in ("auto", "ninguna", "none", "sin_musica") and music not in options.MUSIC_IDS:
             custom_track = db.MUSIC_DIR / music
             if custom_track.name != music or not custom_track.is_file():
                 raise ValueError("Pista musical no reconocida o archivo inexistente")
