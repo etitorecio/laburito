@@ -101,7 +101,12 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
               </div>
 
               {required > 0 ? (
-                <div className="background-clip-slots">
+                <>
+                  <div className={`video-type-preview ${option.id}`}>
+                    <span>{ICONS[option.id] || '🎥'}</span>
+                    <small>Referencia visual · requiere clips propios o autorizados</small>
+                  </div>
+                  <div className="background-clip-slots">
                   {Array.from({ length: required }, (_, index) => {
                     const clip = categoryClips[index];
                     const src = clip ? `${clip.url}` : '';
@@ -132,6 +137,12 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
                       </div>
                     );
                   })}
+                  </div>
+                </>
+              ) : option.id === 'full_motion_ai' ? (
+                <div className="video-type-preview full_motion_ai">
+                  <span>🎬</span>
+                  <small>No disponible sin un motor local viable o servicio con créditos</small>
                 </div>
               ) : (
                 <div className="video-type-placeholder">
