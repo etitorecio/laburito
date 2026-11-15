@@ -189,6 +189,27 @@ def ensure_visual(project: dict, scene: dict) -> tuple[Path, str, dict]:
             "url": scene.get("visual_url") or "",
         }
 
+    if project.get("template") == "frutinovela":
+        metadata = _project_metadata(project)
+        cast = str(metadata.get("characters") or project.get("content_pillars") or "")
+        fruit_key = _h(f"frutinovela|{scene.get('title')}|{cast}|{width}x{height}")
+        fruit_card = _visual_dir(int(project["id"])) / f"frutinovela_{fruit_key}.png"
+        if not fruit_card.exists():
+            media.make_fruit_card(
+                fruit_card,
+                scene.get("title") or project.get("title") or "Un secreto inesperado",
+                cast,
+                width,
+                height,
+            )
+        return fruit_card, "frutinovela_local", {
+            "license": "Ilustración procedural original generada localmente",
+            "author": "Laburito",
+            "url": f"local://frutinovela/{fruit_key}",
+            "title": scene.get("title") or "Escena de Frutinovela",
+            "provider": "frutinovela_local",
+        }
+
     key = _h(f"{scene.get('title')}|{scene.get('visual_query')}|{width}x{height}")
     folder = _visual_dir(int(project["id"]))
     query = (scene.get("visual_query") or project.get("topic") or "").strip()
