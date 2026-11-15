@@ -26,26 +26,6 @@ VOICES = {
     "es-mx": {"engine_voice": "es-419", "label": "Español latinoamericano", "gender": "neutro", "language": "es"},
     "es-masculino": {"engine_voice": "es", "label": "Español grave (masculino)", "gender": "masculino", "language": "es"},
     "es-agudo": {"engine_voice": "es", "label": "Español agudo (femenino)", "gender": "femenino", "language": "es"},
-    "en": {"engine_voice": "en-us", "label": "Inglés (EE. UU.)", "gender": "neutro", "language": "en"},
-    "en-gb": {"engine_voice": "en-gb", "label": "Inglés (Reino Unido)", "gender": "neutro", "language": "en"},
-    "pt": {"engine_voice": "pt-br", "label": "Portugués (Brasil)", "gender": "neutro", "language": "pt"},
-    "pt-pt": {"engine_voice": "pt", "label": "Portugués (Portugal)", "gender": "neutro", "language": "pt"},
-    "it": {"engine_voice": "it", "label": "Italiano", "gender": "neutro", "language": "it"},
-    "fr": {"engine_voice": "fr-fr", "label": "Francés", "gender": "neutro", "language": "fr"},
-    "de": {"engine_voice": "de", "label": "Alemán", "gender": "neutro", "language": "de"},
-    "ru": {"engine_voice": "ru", "label": "Ruso", "gender": "neutro", "language": "ru"},
-    "uk": {"engine_voice": "uk", "label": "Ucraniano", "gender": "neutro", "language": "uk"},
-    "nl": {"engine_voice": "nl", "label": "Neerlandés", "gender": "neutro", "language": "nl"},
-    "pl": {"engine_voice": "pl", "label": "Polaco", "gender": "neutro", "language": "pl"},
-    "sv": {"engine_voice": "sv", "label": "Sueco", "gender": "neutro", "language": "sv"},
-    "tr": {"engine_voice": "tr", "label": "Turco", "gender": "neutro", "language": "tr"},
-    "ar": {"engine_voice": "ar", "label": "Árabe", "gender": "neutro", "language": "ar"},
-    "hi": {"engine_voice": "hi", "label": "Hindi", "gender": "neutro", "language": "hi"},
-    "id": {"engine_voice": "id", "label": "Indonesio", "gender": "neutro", "language": "id"},
-    "vi": {"engine_voice": "vi", "label": "Vietnamita", "gender": "neutro", "language": "vi"},
-    "ja": {"engine_voice": "ja", "label": "Japonés", "gender": "neutro", "language": "ja"},
-    "ko": {"engine_voice": "ko", "label": "Coreano", "gender": "neutro", "language": "ko"},
-    "zh": {"engine_voice": "cmn", "label": "Chino mandarín", "gender": "neutro", "language": "zh"},
 }
 
 SPEED_RANGE = (80, 300)
@@ -130,7 +110,10 @@ def synthesize(text: str, out_path: Path, voice: str = "es", speed: int = 150, p
             "sudo apt install espeak-ng · Alpine: apk add espeak-ng)."
         )
 
-    engine_voice = VOICES.get(voice, {}).get("engine_voice", voice or "es")
+    # Laburito produce exclusivamente en español. Las reglas/proyectos antiguos
+    # que guardaban una voz de otro idioma vuelven a la voz española por defecto.
+    voice = voice if voice in VOICES else "es"
+    engine_voice = VOICES[voice]["engine_voice"]
     cmd = [
         engine,
         "-v", engine_voice,
