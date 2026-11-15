@@ -44,12 +44,13 @@ cd web && npm run dev   # proxy /api -> http://127.0.0.1:8080
 
 Para usar Laburito sin pagar hosting ni Supabase, ejecutalo en una PC propia. Docker conserva la base, los videos y los trabajos en la carpeta `./data`; el Autopiloto sigue funcionando mientras la PC esté encendida, conectada a Internet y sin suspensión automática. Podés abrir la interfaz desde el celular conectado a la misma red Wi-Fi usando la IP local de la PC.
 
-En Windows, con Docker Desktop instalado y configurado para iniciarse al iniciar sesión:
+En Windows, instalá Docker Desktop y activá su inicio automático al iniciar sesión. Después, hacé doble clic en `start_windows.bat`: crea un `APP_TOKEN` aleatorio si hace falta, construye la imagen, inicia el contenedor y abre la interfaz. También imprime la dirección local para entrar desde el celular por Wi-Fi. La primera compilación puede tardar.
+
+Si preferís hacerlo manualmente:
 
 ```powershell
 Copy-Item .env.example .env
 notepad .env
-# Cambiá APP_TOKEN por una cadena larga y privada.
 docker compose up -d --build
 ```
 
