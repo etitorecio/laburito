@@ -98,12 +98,12 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     setBusy(true);
     let created: Project | null = null;
     try {
-      const { captions_enabled, ...projectForm } = form;
+      const { captions_enabled, characters, ...projectForm } = form;
       created = await api.post<Project>('/api/projects', {
         ...projectForm,
         channel_id: form.channel_id ? Number(form.channel_id) : (channels.find((c) => c.name.toLocaleLowerCase() === (form.template === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id ?? null),
         topic: form.topic || form.title,
-        notes: (!captions_enabled || form.visual_style_prompt.trim() || !form.create_thumbnail || form.characters.trim()) ? '[LABURITO_META]' + JSON.stringify({ captions_enabled, visual_style_prompt: form.visual_style_prompt.trim(), create_thumbnail: form.create_thumbnail, characters: form.characters.trim() }) : '',
+        notes: (!captions_enabled || form.visual_style_prompt.trim() || !form.create_thumbnail || characters.trim()) ? '[LABURITO_META]' + JSON.stringify({ captions_enabled, visual_style_prompt: form.visual_style_prompt.trim(), create_thumbnail: form.create_thumbnail, characters: characters.trim() }) : '',
       });
       setOk('1/3 · Proyecto creado. Escribiendo el guion y preparando las escenas…');
       await api.post('/api/projects/' + created.id + '/script?replace=true');
