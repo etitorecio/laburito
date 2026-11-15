@@ -36,15 +36,19 @@ def configured() -> bool:
 def status() -> dict:
     base, key, bucket = _settings()
     ready = configured()
+    local_persistent = os.environ.get("AITUBER_LOCAL_PERSISTENT", "").strip() == "1"
     return {
         "configured": ready,
-        "provider": "Supabase Storage" if ready else None,
+        "local_persistent": local_persistent,
+        "provider": "Supabase Storage" if ready else ("Volumen local" if local_persistent else None),
         "bucket": bucket if ready else None,
         "private": None,
         "note": (
             "Credenciales HTTPS detectadas; la privacidad del bucket se verifica en la primera sincronización."
             if ready else
-            "Sin almacenamiento persistente externo. En AppJet Free, los archivos del contenedor pueden perderse al reemplazarlo."
+            "Los datos se conservan en el volumen local ./data."
+            if local_persistent else
+            "Sin almacenamiento persistente externo. En contenedores efímeros, los archivos pueden perderse al reemplazarlos."
         ),
     }
 
