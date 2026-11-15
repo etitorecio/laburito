@@ -87,6 +87,10 @@ export default function Autopilot() {
         api.get<Diagnostics>('/api/diagnostics'),
       ]);
       setData(result);
+      setForm((current) => current.channel_id ? current : {
+        ...current,
+        channel_id: String(result.channels.find((c) => c.name.toLocaleLowerCase() === (current.template === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id ?? ''),
+      });
       setMeta(m);
       setPersistenceConfigured(diagnostics.persistence.configured || !!diagnostics.persistence.local_persistent);
       setPersistenceNote(diagnostics.persistence.note);
@@ -259,6 +263,7 @@ export default function Autopilot() {
     setForm((old) => ({
       ...old,
       template: id,
+      channel_id: String(data?.channels.find((c) => c.name.toLocaleLowerCase() === (id === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id ?? old.channel_id),
       ...(selected ? {
         aspect: selected.aspect,
         caption_style: selected.caption_style,
