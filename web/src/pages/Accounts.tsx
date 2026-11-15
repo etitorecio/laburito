@@ -8,6 +8,7 @@ type WorkspaceChannel = { id: number; name: string; topic: string; account: Link
 export default function Accounts() {
   const [channels, setChannels] = useState<WorkspaceChannel[]>([]);
   const [oauthReady, setOauthReady] = useState(false);
+  const [oauthConfigLoaded, setOauthConfigLoaded] = useState(false);
   const [missingEnv, setMissingEnv] = useState<string[]>([]);
   const [redirectUri, setRedirectUri] = useState("");
   const [loading, setLoading] = useState(true);
@@ -22,6 +23,7 @@ export default function Accounts() {
       const result = await api.get<{ accounts: WorkspaceChannel[]; oauth_ready: boolean; missing_env: string[]; redirect_uri: string }>('/api/youtube/accounts');
       setChannels(result.accounts);
       setOauthReady(result.oauth_ready);
+      setOauthConfigLoaded(true);
       setMissingEnv(result.missing_env || []);
       setRedirectUri(result.redirect_uri || '');
     } catch (e) {
@@ -34,6 +36,10 @@ export default function Accounts() {
   useEffect(() => { void load(); }, [load]);
 
   async function connect(channel: WorkspaceChannel) {
+    if (!oauthConfigLoaded) {
+      setError("No se pudo comprobar la configuración OAuth del servidor. Actualizá la pantalla e intentá de nuevo.");
+      return;
+    }
     if (!oauthReady) {
       setError("Faltan las credenciales OAuth de YouTube en el servidor: " + missingEnv.join(", "));
       return;
@@ -65,7 +71,7 @@ export default function Accounts() {
   return (
     <div className="stack">
       <Msg error={error} ok={ok} />
-      {!loading && !oauthReady && <Card title="Falta configurar OAuth de YouTube" sub="La conexión no se habilita hasta completar estos datos en el servidor.">
+      {!loading && oauthConfigLoaded && !oauthReady && <Card title="Falta configurar OAuth de YouTube" sub="La conexión no se habilita hasta completar estos datos en el servidor.">
         <p>Configurá estas variables de entorno: <strong>{missingEnv.join(", ")}</strong>.</p>
         <p>Después, en Google Cloud Console, agregá esta URL exacta a las URI de redireccionamiento autorizadas del cliente OAuth:</p>
         <p><code>{redirectUri}</code></p>
@@ -89,7 +95,7 @@ export default function Accounts() {
                     <button className="btn ghost" disabled={busyId !== null} onClick={() => void disconnect(channel)}>{busyId === channel.id ? 'Desconectando…' : 'Desconectar esta cuenta'}</button>
                   </div>
                 ) : (
-                  <button className="btn primary" disabled={busyId !== null || !oauthReady} onClick={() => void connect(channel)}>{busyId === channel.id ? 'Abriendo Google…' : `Conectar cuenta de Google para ${channel.name}`}</button>
+                  <button className="btn primary" disabled={busyId !== null || !oauthConfigLoaded || !oauthReady} onClick={() => void connect(channel)}>{busyId === channel.id ? 'Abriendo Google…' : `Conectar cuenta de Google para ${channel.name}`}</button>
                 )}
               </section>
             ))}
