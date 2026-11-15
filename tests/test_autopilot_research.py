@@ -283,6 +283,15 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertTrue(topic_engine._is_duplicate("Historia de la radio", ["La historia de la radio"]))
         self.assertFalse(topic_engine._is_duplicate("Historia de la televisión", ["Historia de la radio"]))
 
+    def test_google_trends_only_adds_signals_related_to_the_niche(self):
+        trends = [
+            {"title": "Historia de Roma antigua"},
+            {"title": "Boca Juniors"},
+            {"title": "La ciencia del espacio"},
+        ]
+        selected = topic_engine._relevant_trends("historia", "Roma, imperio", trends)
+        self.assertEqual([item["title"] for item in selected], ["Historia de Roma antigua"])
+
     def test_topic_normalization_helps_avoid_repeats(self):
         self.assertEqual(topic_engine._normal("Historia: del Rock!"), "historia del rock")
 
