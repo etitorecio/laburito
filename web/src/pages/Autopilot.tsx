@@ -63,21 +63,6 @@ const STEPS = [
   { title: 'Confirmación', subtitle: 'Revisá y activá tu Autopiloto' },
 ];
 
-const PRODUCTION_STAGES = [
-  ['1', 'Programación y tema', 'El calendario activa la regla y evita repetir temas.'],
-  ['2', 'Investigación y fuentes', 'Busca material documental y registra enlaces y atribuciones.'],
-  ['3', 'Guion y gancho', 'Organiza apertura, desarrollo y cierre a partir de la evidencia disponible.'],
-  ['4', 'Voz en off', 'Genera la narración en español con el motor TTS configurado.'],
-  ['5', 'Selección visual', 'Busca imágenes con licencia o utiliza clips propios/autorizados de las bibliotecas locales.'],
-  ['6', 'Preparación de escenas', 'Prepara cada visual, encuadre, duración y transición con FFmpeg.'],
-  ['7', 'Subtítulos', 'Sincroniza y quema subtítulos; también exporta SRT y VTT.'],
-  ['8', 'Música y mezcla', 'Mezcla voz y música de fondo según el volumen configurado.'],
-  ['9', 'Render vertical', 'Une las escenas y genera el MP4 final en 9:16.'],
-  ['10', 'Control de calidad', 'Comprueba que el archivo exista y que ffprobe pueda leer resolución y duración.'],
-  ['11', 'Publicación', 'Encola la subida real a YouTube cuando OAuth y la evidencia estén listos.'],
-  ['12', 'Registro', 'Guarda el enlace, el ID de YouTube y el resultado de la tarea.'],
-];
-
 export default function Autopilot() {
   const [data, setData] = useState<Options | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -538,17 +523,6 @@ export default function Autopilot() {
               : <button className="btn primary" disabled={busy || !form.niche.trim()} onClick={() => void save()}>{busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear autopiloto'}</button>}
             {editingId && <button className="btn ghost" disabled={busy} onClick={reset}>Cancelar</button>}
           </div>
-        </div>
-      </Card>
-
-      <Card title="Flujo de producción de cada Short" sub="Orden real del trabajo: desde la regla programada hasta el registro de la publicación.">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8 }}>
-          {PRODUCTION_STAGES.map(([number, title, detail]) => (
-            <div key={number} style={{ display: 'flex', gap: 10, padding: 10, border: '1px solid var(--border, #d1d5db)', borderRadius: 10 }}>
-              <span style={{ flex: '0 0 26px', height: 26, display: 'grid', placeItems: 'center', borderRadius: 99, background: 'var(--surface, #e5e7eb)', fontWeight: 800 }}>{number}</span>
-              <div><strong style={{ fontSize: 13 }}>{title}</strong><small className="muted" style={{ display: 'block', marginTop: 3 }}>{detail}</small></div>
-            </div>
-          ))}
         </div>
       </Card>
 
