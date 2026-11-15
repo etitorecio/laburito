@@ -7,6 +7,7 @@ import TransitionPicker from '../components/TransitionPicker';
 import VisualStylePicker from '../components/VisualStylePicker';
 import VideoTypePicker from '../components/VideoTypePicker';
 import VoicePicker from '../components/VoicePicker';
+import ProjectResearch from '../components/ProjectResearch';
 
 interface Props {
   projectId: number;
