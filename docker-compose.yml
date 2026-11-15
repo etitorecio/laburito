@@ -12,6 +12,7 @@ services:
     environment:
       PORT: "8080"
       AITUBER_DATA_DIR: /app/data
+      AITUBER_LOCAL_PERSISTENT: "1"
       APP_TOKEN: ${APP_TOKEN:?Copiá .env.example a .env y definí APP_TOKEN}
       YOUTUBE_CLIENT_ID: ${YOUTUBE_CLIENT_ID:-}
       YOUTUBE_CLIENT_SECRET: ${YOUTUBE_CLIENT_SECRET:-}
