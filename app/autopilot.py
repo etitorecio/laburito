@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
     voice TEXT NOT NULL DEFAULT 'es',
     speed INTEGER NOT NULL DEFAULT 150,
     pitch INTEGER NOT NULL DEFAULT 45,
+    visual_style TEXT NOT NULL DEFAULT '',
     aspect TEXT NOT NULL DEFAULT '9:16',
     caption_style TEXT NOT NULL DEFAULT 'short_pop',
     transition_default TEXT NOT NULL DEFAULT 'fundido',
@@ -58,7 +59,7 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
 """
 
 FIELDS = [
-    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "speed", "pitch", "aspect",
+    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "speed", "pitch", "visual_style", "aspect",
     "audience", "tone", "hook_style", "cta", "content_pillars", "avoid_topics",
     "caption_style", "transition_default", "resolution", "fps", "music", "music_volume",
     "cadence_hours", "cadence_minutes", "videos_per_period", "period_days", "schedule_time", "timezone", "enabled", "destination", "privacy", "auto_publish", "next_run_at",
@@ -72,6 +73,7 @@ def ensure_schema() -> None:
         "last_error": "TEXT",
         "speed": "INTEGER NOT NULL DEFAULT 150",
         "pitch": "INTEGER NOT NULL DEFAULT 45",
+        "visual_style": "TEXT NOT NULL DEFAULT ''",
         "videos_per_period": "INTEGER NOT NULL DEFAULT 1",
         "cadence_minutes": "INTEGER NOT NULL DEFAULT 1440",
         "period_days": "INTEGER NOT NULL DEFAULT 1",
@@ -146,6 +148,8 @@ def _clean(data: dict) -> dict:
         clean["speed"] = max(80, min(300, int(data["speed"])))
     if "pitch" in data and data["pitch"] is not None:
         clean["pitch"] = max(0, min(99, int(data["pitch"])))
+    if "visual_style" in data and data["visual_style"] is not None:
+        clean["visual_style"] = str(data["visual_style"]).strip()[:180]
     if "aspect" in data and data["aspect"] is not None:
         if data["aspect"] not in options.ASPECTS:
             raise ValueError("Aspecto no soportado")
@@ -299,7 +303,11 @@ def _create_project(rule: dict) -> dict:
         (rule.get("channel_id"),),
     )
     previous_topics = [row.get("topic", "") for row in previous]
-    research = topic_engine.research_topic(niche, previous_topics)
+    research = topic_engine.research_topic(
+        niche, previous_topics,
+        content_pillars=rule.get("content_pillars") or "",
+        avoid_topics=rule.get("avoid_topics") or "",
+    )
     topic = research["topic"]
     title = topic
     duration = int(rule.get("duration_target_sec") or tpl.get("default_duration") or 30)
@@ -327,6 +335,7 @@ def _create_project(rule: dict) -> dict:
         "cta": rule.get("cta") or "Hacé una pregunta concreta al final",
         "content_pillars": rule.get("content_pillars") or "",
         "avoid_topics": rule.get("avoid_topics") or "",
+        "visual_style": rule.get("visual_style") or "",
     })
     db.execute(
         "INSERT INTO sources(project_id, title, url, author, license, accessed_at, attribution, kind, notes, created_at) "
