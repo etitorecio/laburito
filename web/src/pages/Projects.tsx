@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, type Channel, type Meta, type Project } from '../api';
+import { api, type Channel, type Diagnostics, type Meta, type Project } from '../api';
 import { Badge, Card, Empty, Field, Msg, Progress, statusTone } from '../ui';
 import VoicePicker from '../components/VoicePicker';
 import MusicPicker from '../components/MusicPicker';
@@ -13,6 +13,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
   const [projects, setProjects] = useState<Project[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
+  const [ollamaAvailable, setOllamaAvailable] = useState<boolean | null>(null);
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
   const [busy, setBusy] = useState(false);
@@ -69,10 +70,11 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
 
   async function load() {
     try {
-      const [p, c, m] = await Promise.all([
+      const [p, c, m, diagnostics] = await Promise.all([
         api.get<Project[]>('/api/projects'),
         api.get<Channel[]>('/api/channels'),
         api.get<Meta>('/api/meta'),
+        api.get<Diagnostics>('/api/diagnostics'),
       ]);
       setProjects(p);
       setChannels(c);
@@ -81,6 +83,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
         channel_id: String(c.find((channel) => channel.name.toLocaleLowerCase() === (current.template === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id ?? ''),
       });
       setMeta(m);
+      setOllamaAvailable(diagnostics.ollama.available);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -161,6 +164,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
   return (
     <div className="stack">
       <Msg error={error} ok={ok} />
+      {ollamaAvailable === false && <p className="muted">Esta instancia no tiene un modelo generativo conectado: la idea se convierte en un guion estructurado de respaldo. Para generar narraciones originales sin pagar APIs, conectá Ollama local desde Ajustes.</p>}
 
       <Card title="Crear video" sub="Partí de una idea para generar el guion o pegá un guion propio. Después se crean escenas y se prepara el render.">
         <div className="stack" style={{ gap: 14 }}>
