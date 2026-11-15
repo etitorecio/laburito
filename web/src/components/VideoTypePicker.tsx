@@ -200,7 +200,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
         })}
       </div>
       {error && <p className="error-text">{error}</p>}
-      {!compact && <p className="muted caption-style-help">Minecraft y Subway Surfers necesitan al menos un clip propio o autorizado; podés cargar hasta cinco para alternarlos. Los archivos se guardan en tu PC y no se envían a servicios externos.</p>}
+      {!compact && <p className="muted caption-style-help">Minecraft y Subway Surfers necesitan al menos un clip propio o autorizado; podés cargar hasta cinco para alternarlos. Los archivos se guardan en el almacenamiento de esta instalación y no se envían a servicios de terceros.</p>}
     </div>
   );
 }
