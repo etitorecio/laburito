@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, type AutopilotRule, type Channel, type Meta, type TemplateOption, type Diagnostics } from '../api';
 import { Badge, Card, Empty, Field, Msg } from '../ui';
 import CaptionStylePicker from '../components/CaptionStylePicker';
+import TransitionPicker from '../components/TransitionPicker';
 
 type Options = {
   rules: AutopilotRule[];
@@ -452,10 +453,13 @@ export default function Autopilot() {
                 onChange={(value) => update('caption_style', value)}
               />
             </Field>
-            <Field label="Movimiento y transición entre escenas">
-              <select value={form.transition_default} onChange={(e) => update('transition_default', e.target.value)}>
-                {(meta?.transitions ?? []).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
-              </select>
+            <Field label="Movimiento de las escenas">
+              <TransitionPicker
+                options={meta?.transitions ?? []}
+                value={form.transition_default}
+                onChange={(value) => update('transition_default', value)}
+                compact
+              />
             </Field>
             <Field label="Calidad de exportación">
               <select value={form.resolution} onChange={(e) => update('resolution', e.target.value)}>
