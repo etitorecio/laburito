@@ -267,6 +267,29 @@ def _motion_filters(transition: str, width: int, height: int, duration: float, f
     return []
 
 
+def transition_preview(transition_id: str) -> Path:
+    """Genera un clip corto que muestra el efecto real aplicado por FFmpeg."""
+    if transition_id not in options.TRANSITION_IDS:
+        raise ValueError("Movimiento de escena desconocido")
+    preview_dir = db.DATA_DIR / "transition_previews"
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    output = preview_dir / f"{transition_id}.mp4"
+    if output.exists() and output.stat().st_size > 1000:
+        return output
+
+    width, height, duration, fps = 360, 640, 3.0, 20
+    filters = _motion_filters(transition_id, width, height, duration, fps)
+    filters.extend(["drawbox=x=iw*0.12:y=ih*0.22:w=iw*0.76:h=ih*0.18:color=0xf59e0b@0.35:t=fill", "format=yuv420p"])
+    _ff([
+        "-f", "lavfi", "-i", f"testsrc2=size={width}x{height}:rate={fps}:duration={duration}",
+        "-vf", ",".join(filters), "-an", "-c:v", "libx264", "-preset", "ultrafast",
+        "-crf", "30", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(output),
+    ], timeout=90)
+    if not output.exists() or output.stat().st_size < 1000:
+        raise RuntimeError("FFmpeg no pudo generar la demostración de movimiento")
+    return output
+
+
 def render_scene(
     project: dict,
     scene: dict,
