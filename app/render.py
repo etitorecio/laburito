@@ -130,8 +130,22 @@ def ensure_audio(project: dict, scene: dict) -> tuple[Path, float, dict]:
     engine_signature = f"{cached_engine}|{tts_status.get('piper_model') or ''}"
     key = _h(f"{narration}|{project.get('voice')}|{project.get('speed')}|{project.get('pitch')}|{engine_signature}")
     wav = _audio_dir(int(project["id"])) / f"{key}.wav"
-    info: dict = {"cached": wav.exists(), "engine": cached_engine if wav.exists() else ""}
-    if not wav.exists():
+    metadata_path = wav.with_suffix(".json")
+    info: dict = {}
+    if wav.exists() and metadata_path.exists():
+        try:
+            info = json.loads(metadata_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            info = {}
+    if wav.exists() and info.get("engine") == "silencio":
+        # No reutilizar una pista muda: volver a intentar si el motor ya se recuperó.
+        wav.unlink(missing_ok=True)
+        metadata_path.unlink(missing_ok=True)
+    if wav.exists():
+        info["cached"] = True
+        info.setdefault("engine", cached_engine)
+    else:
+        info = {"cached": False}
         try:
             info.update(
                 tts.synthesize(
@@ -143,10 +157,11 @@ def ensure_audio(project: dict, scene: dict) -> tuple[Path, float, dict]:
                 )
             )
         except Exception as exc:
-            # Sin motor TTS: el render sigue con silencio y advertencia explícita.
+            # El Short no se marcará como terminado si no hay narración real.
             words = max(1, len(narration.split()))
             tts.silence_wav(wav, seconds=words / 2.6)
             info.update({"engine": "silencio", "warning": str(exc)})
+        metadata_path.write_text(json.dumps(info, ensure_ascii=False), encoding="utf-8")
     duration = media.probe_duration(wav)
     if duration <= 0:
         words = max(1, len(narration.split()))
