@@ -192,6 +192,50 @@ def _drawtext_chain(cues: list[dict], font: str, width: int, height: int, style:
     return ",".join(parts)
 
 
+def caption_preview(style_id: str) -> Path:
+    """Genera una muestra PNG con el mismo filtro drawtext que usa el render."""
+    if style_id not in options.CAPTION_STYLES:
+        raise ValueError("Estilo de subtítulos desconocido")
+    preview_dir = db.DATA_DIR / "caption_previews"
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    output = preview_dir / f"{style_id}.png"
+    if output.exists() and output.stat().st_size > 500:
+        return output
+
+    style = options.CAPTION_STYLES[style_id]
+    font = media.font_path()
+    if not font:
+        raise RuntimeError("No hay una fuente TTF instalada para generar la demostración")
+    width, height = 480, 854
+    sample = "Esta historia cambió todo y nadie lo vio venir."
+    cues = media.caption_chunks(
+        sample, 2.0, style["max_words"], style["max_chars"], style["max_lines"]
+    )
+    cue_dir = preview_dir / f"{style_id}_cues"
+    cue_dir.mkdir(parents=True, exist_ok=True)
+    for index, cue in enumerate(cues):
+        lines = cue["lines"]
+        if style.get("uppercase"):
+            lines = [line.upper() for line in lines]
+        text_file = cue_dir / f"{index}.txt"
+        text_file.write_text("\\n".join(lines), encoding="utf-8")
+        cue["file"] = str(text_file)
+
+    background = [
+        "drawbox=x=0:y=0:w=iw:h=ih:color=0x102a43:t=fill",
+        "drawbox=x=iw*0.08:y=ih*0.18:w=iw*0.84:h=ih*0.34:color=0x2563eb@0.35:t=fill",
+        "drawbox=x=iw*0.20:y=ih*0.52:w=iw*0.95:h=ih*0.26:color=0x0b132b@0.9:t=fill",
+    ]
+    background.append(_drawtext_chain(cues, font, width, height, style))
+    _ff([
+        "-f", "lavfi", "-i", f"color=c=0x0b132b:s={width}x{height}:d=2:r=1",
+        "-vf", ",".join(background), "-frames:v", "1", str(output),
+    ], timeout=60)
+    if not output.exists() or output.stat().st_size < 500:
+        raise RuntimeError("FFmpeg no pudo generar la demostración de subtítulos")
+    return output
+
+
 def _motion_filters(transition: str, width: int, height: int, duration: float, fps: int) -> list[str]:
     """Transición/movimiento real de la escena (8 opciones)."""
     kind = (transition or "corte").strip()
