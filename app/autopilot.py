@@ -119,7 +119,11 @@ def _clean(data: dict) -> dict:
             raise ValueError("Plantilla desconocida")
         clean["template"] = data["template"]
     if "duration_target_sec" in data and data["duration_target_sec"] is not None:
-        clean["duration_target_sec"] = max(5, min(3600, int(data["duration_target_sec"])))
+        short_templates = {"shorts", "listicle", "pov", "quote", "cuadrado", "vertical_45"}
+        if data.get("template", "shorts") in short_templates:
+            clean["duration_target_sec"] = max(15, min(90, int(data["duration_target_sec"])))
+        else:
+            clean["duration_target_sec"] = max(5, min(3600, int(data["duration_target_sec"])))
     if "voice" in data and data["voice"] is not None:
         clean["voice"] = str(data["voice"])[:40]
     if "aspect" in data and data["aspect"] is not None:
