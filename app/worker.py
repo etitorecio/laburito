@@ -315,15 +315,15 @@ def _loop() -> None:
                 if persistence.configured():
                     try:
                         persistence.sync_backup()
-                        if job.get("kind") == "publish_project" and project_id is not None:
+                        if job.get("kind") == "publish_project" and job.get("project_id") is not None:
                             current = db.query_one("SELECT status FROM jobs WHERE id=?", (job["id"],))
                             payload = json.loads(job.get("payload_json") or "{}")
                             if current and current.get("status") == "completado" and payload.get("destination") == "youtube":
                                 try:
-                                    persistence.delete_pending_video(int(project_id))
+                                    persistence.delete_pending_video(int(job["project_id"]))
                                 except Exception as exc:
                                     db.log("warn", "persistence", f"No se pudo limpiar el MP4 pendiente: {exc}",
-                                           {"project_id": project_id})
+                                           {"project_id": job.get("project_id")})
                     except Exception as exc:
                         db.log("error", "persistence", f"No se pudo respaldar después de la tarea: {exc}")
                 continue
