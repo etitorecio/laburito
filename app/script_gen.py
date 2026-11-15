@@ -805,6 +805,84 @@ def expand_with_ollama(url: str, model: str, prompt: str, timeout: int = 120) ->
 
 
 
+
+def rewrite_fiction_with_ollama(url: str, model: str, project: dict, script: dict) -> dict:
+    """Escribe ficción coherente usando solo un modelo Ollama local, sin servicios pagos."""
+    scenes = script.get("scenes") or []
+    outline = [
+        {
+            "idx": scene.get("idx"),
+            "title": scene.get("title"),
+            "duration_target_sec": scene.get("duration_target_sec"),
+        }
+        for scene in scenes
+    ]
+    template_id = project.get("template") or ""
+    if template_id == "frutinovela":
+        brief = (
+            "Es una telenovela vertical por episodios. Conservá exactamente los nombres, personalidades "
+            "y relaciones de los personajes. Continuá el cliffhanger del episodio anterior sin contradecirlo. "
+            "Cada escena debe avanzar la misma trama; incluí acciones concretas, diálogos breves cuando sumen "
+            "y un cliffhanger nuevo al final. No reinicies la historia ni resuelvas todo de golpe."
+        )
+        target_words = "entre 260 y 360 palabras"
+    else:
+        brief = (
+            "Es un relato ORIGINAL con ritmo de historia narrada en comunidades tipo Reddit; no afirmes que "
+            "es una publicación real ni copies historias ajenas. Construí una sola historia coherente en primera "
+            "persona, con detalles cotidianos concretos, tensión creciente, un giro que se prepare con pistas "
+            "y una decisión final que invite a debatir."
+        )
+        target_words = "entre 340 y 430 palabras para aproximadamente tres minutos de voz"
+    prompt = (
+        "Redactá un guion audiovisual en español rioplatense natural. " + brief + " "
+        "Evitá frases genéricas, repeticiones, explicaciones meta y relleno. "
+        f"La narración completa debe tener {target_words}. "
+        "Respetá exactamente la cantidad y el orden de escenas del esquema; distribuí la historia "
+        "progresivamente y no repitas el mismo texto en distintas escenas. "
+        "Devolvé únicamente JSON válido con esta forma: "
+        "{\"scenes\":[{\"idx\":0,\"narration\":\"...\"}]}\n\n"
+        f"Tipo de serie: {template_id}\n"
+        f"Título: {project.get('title') or ''}\n"
+        f"Premisa/tema del episodio: {project.get('topic') or project.get('title') or ''}\n"
+        f"Personajes y relaciones: {project.get('content_pillars') or 'Elegí un elenco pequeño y mantenelo estable'}\n"
+        f"Continuidad anterior: {project.get('series_context') or 'Es el primer episodio; presentá la situación y los vínculos'}\n"
+        f"Público: {project.get('audience') or 'Público general'}\n"
+        f"Tono: {project.get('tone') or 'Dramático y cercano'}\n"
+        f"Duración objetivo: {project.get('duration_target_sec') or 180} segundos\n"
+        f"Esquema de escenas: {json.dumps(outline, ensure_ascii=False)}"
+    )
+    raw = expand_with_ollama(url, model, prompt, timeout=240)
+    cleaned = raw.strip()
+    if cleaned.startswith(chr(96) * 3):
+        cleaned = re.sub(r"^\\x60{3}(?:json)?\\s*|\\s*\\x60{3}$", "", cleaned, flags=re.IGNORECASE)
+    first, last = cleaned.find("{"), cleaned.rfind("}")
+    if first < 0 or last <= first:
+        raise RuntimeError("Ollama no devolvió un JSON reconocible para la ficción.")
+    data = json.loads(cleaned[first:last + 1])
+    generated = data.get("scenes") if isinstance(data, dict) else None
+    if not isinstance(generated, list) or len(generated) != len(scenes):
+        raise RuntimeError("Ollama devolvió una cantidad de escenas distinta a la solicitada.")
+    by_idx = {int(item.get("idx", -1)): item for item in generated if isinstance(item, dict)}
+    rewritten = []
+    for scene in scenes:
+        item = by_idx.get(int(scene.get("idx", -1)))
+        narration = str((item or {}).get("narration") or "").strip()
+        if len(narration) < 50:
+            raise RuntimeError(f"Ollama dejó vacía o demasiado corta la escena {scene.get('idx')}.")
+        rewritten.append({**scene, "narration": narration})
+    return {
+        **script,
+        "scenes": rewritten,
+        "warnings": [
+            *script.get("warnings", []),
+            "Guion de ficción redactado con Ollama local; revisá continuidad y diálogos antes de publicar.",
+        ],
+        "writer": "ollama-local-fiction",
+        "evidence_sources": 0,
+    }
+
+
 def rewrite_with_ollama(url: str, model: str, project: dict, script: dict, notes: list[dict]) -> dict:
     """Reescribe el guion con un modelo Ollama local, usando solo la evidencia recuperada."""
     source_notes = [
