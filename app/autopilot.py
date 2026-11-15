@@ -351,6 +351,8 @@ def _validate_auto_publish(clean: dict, current: dict | None = None) -> None:
 
 
 def _validate_factory_channel(data: dict) -> None:
+    if data.get("template") not in {"reddit_story", "frutinovela"}:
+        return
     channel_id = data.get("channel_id")
     if not channel_id and data.get("template") in {"reddit_story", "frutinovela"}:
         expected_name = "Frutinovelas" if data["template"] == "frutinovela" else "Historias"
