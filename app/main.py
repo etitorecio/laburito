@@ -333,9 +333,10 @@ async def analyze_visual_style_reference(file: UploadFile = File(...)):
     if len(raw) > 8 * 1024 * 1024:
         raise HTTPException(413, "La imagen de referencia no puede superar 8 MB.")
     try:
-        image = Image.open(io.BytesIO(raw)).convert("RGB")
-        if image.width * image.height > 40_000_000:
+        opened = Image.open(io.BytesIO(raw))
+        if opened.width * opened.height > 40_000_000:
             raise HTTPException(413, "La imagen tiene demasiados píxeles para analizarla.")
+        image = opened.convert("RGB")
         image.thumbnail((96, 96))
         red, green, blue = ImageStat.Stat(image).mean[:3]
         brightness = (red + green + blue) / 3
