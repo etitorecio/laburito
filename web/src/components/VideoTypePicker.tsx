@@ -154,7 +154,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
                             <input
                               type="file"
                               accept="video/mp4,video/quicktime,video/webm,video/x-matroska"
-                              disabled={busy === option.id || !rightsConfirmed}
+                              disabled={busy === option.id || !rightsConfirmed[option.id]}
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 void upload(option.id, file);
