@@ -1,4 +1,4 @@
-"""Copia de seguridad cifrada en tránsito y persistencia externa opcional.
+"""Copia de seguridad comprimida y persistencia externa opcional (solo HTTPS).
 
 En AppJet Free el filesystem del contenedor es efímero. Si se configura un
 bucket privado de Supabase Storage, se sincroniza una copia SQLite comprimida
@@ -30,7 +30,7 @@ def _settings() -> tuple[str, str, str]:
 
 def configured() -> bool:
     base, key, _bucket = _settings()
-    return bool(base and key)
+    return bool(base.startswith("https://") and key)
 
 
 def status() -> dict:
@@ -51,8 +51,8 @@ def status() -> dict:
 def _request(method: str, path: str, body: bytes | None = None,
              content_type: str = "application/json", extra_headers: dict | None = None):
     base, key, _bucket = _settings()
-    if not base or not key:
-        raise RuntimeError("Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY.")
+    if not base.startswith("https://") or not key:
+        raise RuntimeError("Configurá SUPABASE_URL con HTTPS y SUPABASE_SERVICE_ROLE_KEY.")
     headers = {
         "apikey": key,
         "Authorization": f"Bearer {key}",
