@@ -15,7 +15,6 @@ export default function Settings() {
   const [youtubeVerified, setYoutubeVerified] = useState(false);
   const [youtubeBusy, setYoutubeBusy] = useState(false);
   const [youtubeOAuthBusy, setYoutubeOAuthBusy] = useState(false);
-  const [piperBusy, setPiperBusy] = useState(false);
 
   async function load() {
     try {
@@ -55,18 +54,6 @@ export default function Settings() {
       setOk('Configuración guardada.');
     } catch (e) {
       setError((e as Error).message);
-    }
-  }
-
-  async function installPiperVoice() {
-    setError(''); setOk(''); setPiperBusy(true);
-    try {
-      const result = await api.post<{ installed: boolean; job_id?: number; message: string }>('/api/tts/piper/install');
-      setOk(result.job_id ? result.message + ' Tarea #' + result.job_id + ' en la Cola.' : result.message);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setPiperBusy(false);
     }
   }
 
@@ -160,9 +147,8 @@ export default function Settings() {
         <div className="pill-row">
           <Badge tone={diag?.tts.piper_available ? 'ok' : 'warn'}>{diag?.tts.piper_available ? 'Voz neural instalada' : diag?.tts.piper_installed ? 'Motor listo · falta descargar la voz' : 'Motor Piper pendiente de despliegue'}</Badge>
         </div>
-        <p className="muted">Piper DaveFX es una voz neural en español de España. La descarga inicial ocupa aproximadamente 63 MB; después funciona localmente, sin conexión ni créditos. El modelo y sus datos son CC0: no requieren atribución. Durante la síntesis consume más RAM que espeak-ng.</p>
-        <p className="muted">Cuando termine la instalación, entrá al Autopiloto y elegí «Español neural (Piper DaveFX · España)». Si no la instalás, Laburito sigue usando espeak-ng.</p>
-        <button className="btn primary" disabled={piperBusy || !diag?.tts.piper_installed || !!diag?.tts.piper_available} onClick={() => void installPiperVoice()}>{piperBusy ? 'Encolando…' : diag?.tts.piper_available ? 'Voz neural instalada' : 'Instalar voz neural (63 MB)'}</button>
+        <p className="muted">Piper DaveFX es una voz neural en español de España. La descarga inicial de aproximadamente 63 MB se inicia automáticamente; después funciona localmente, sin conexión ni créditos. El modelo y sus datos son CC0: no requieren atribución. Durante la síntesis consume más RAM que espeak-ng.</p>
+        <p className="muted">Cuando termine la descarga, la voz aparece automáticamente en el selector del Autopiloto. Mientras tanto, Laburito sigue usando espeak-ng.</p>
       </Card>
 
       <Card title="Producción" sub="Parámetros usados por el guionista y el render.">
