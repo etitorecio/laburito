@@ -46,13 +46,6 @@ const INITIAL = {
   enabled: true,
 };
 
-const LANGUAGE_LABELS: Record<string, string> = {
-  es: 'Español', en: 'Inglés', pt: 'Portugués', it: 'Italiano', fr: 'Francés',
-  de: 'Alemán', ru: 'Ruso', uk: 'Ucraniano', nl: 'Neerlandés', pl: 'Polaco',
-  sv: 'Sueco', tr: 'Turco', ar: 'Árabe', hi: 'Hindi', id: 'Indonesio',
-  vi: 'Vietnamita', ja: 'Japonés', ko: 'Coreano', zh: 'Chino mandarín',
-};
-
 const STEPS = [
   { title: 'Canal', subtitle: 'Dónde va a trabajar tu autopiloto' },
   { title: 'Nicho', subtitle: 'Qué contenido tiene que descubrir' },
@@ -229,9 +222,6 @@ export default function Autopilot() {
   }
 
   const voiceOptions = (meta?.voices ?? []).filter((v) => v.language === 'es');
-  const selectedLanguage = 'es';
-  const voiceLanguages = ['es'];
-  const filteredVoices = voiceOptions.filter((v) => v.language === selectedLanguage);
   const destinationInfo = data?.destinations.find((d) => d.id === 'youtube');
 
   return (
@@ -306,20 +296,11 @@ export default function Autopilot() {
           </>}
 
           {step === 3 && <>
-            <h3>Idioma y voz de narración</h3>
-            <p className="muted">La voz disponible determina el idioma real de la narración. Las opciones no disponibles aparecen deshabilitadas.</p>
-            <Field label="Idioma del video">
-              <select value={selectedLanguage} onChange={(e) => {
-                const nextVoice = voiceOptions.find((v) => v.language === e.target.value && v.available)
-                  ?? voiceOptions.find((v) => v.language === e.target.value);
-                if (nextVoice) update('voice', nextVoice.id);
-              }}>
-                {voiceLanguages.map((language) => <option key={language} value={language}>{LANGUAGE_LABELS[language] || language}</option>)}
-              </select>
-            </Field>
+            <h3>Voz española</h3>
+            <p className="muted">Todos los Shorts se escriben y narran en español. Elegí únicamente la voz y el ritmo de narración.</p>
             <Field label="Voz">
               <select value={form.voice} onChange={(e) => update('voice', e.target.value)}>
-                {filteredVoices.map((v) => <option key={v.id} value={v.id} disabled={!v.available}>{v.label}{v.available ? '' : ' (no disponible)'}</option>)}
+                {voiceOptions.map((v) => <option key={v.id} value={v.id} disabled={!v.available}>{v.label}{v.available ? '' : ' (no disponible)'}</option>)}
               </select>
             </Field>
             <Field label={'Velocidad de narración: ' + form.speed + ' palabras/minuto'}>
@@ -329,9 +310,8 @@ export default function Autopilot() {
               <input type="range" min="0" max="99" step="1" value={form.pitch} onChange={(e) => update('pitch', Number(e.target.value))} />
             </Field>
             <div className="muted">La velocidad y el tono se aplican al motor espeak-ng. Piper usa el ritmo y tono propios del modelo neural.</div>
-            <div className="muted">Por ahora el guion automático se redacta en español; por eso solo habilitamos voces españolas y evitamos ofrecer idiomas que el motor de guiones todavía no genera correctamente.</div>
           </>}
-
+          
           {step === 4 && <>
             <h3>Tipo de Short y aspecto visual</h3>
             <Field label="Formato narrativo">
