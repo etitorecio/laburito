@@ -88,6 +88,7 @@ class ProjectPatch(BaseModel):
     voice: str | None = None
     speed: int | None = None
     pitch: int | None = None
+    visual_style: str | None = None
     aspect: str | None = None
     notes: str | None = None
     status: str | None = None
@@ -177,6 +178,7 @@ class AutopilotIn(BaseModel):
     voice: str = "es"
     speed: int = 150
     pitch: int = 45
+    visual_style: str = ""
     aspect: str | None = None
     caption_style: str | None = None
     transition_default: str | None = None
