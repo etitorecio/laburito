@@ -184,12 +184,8 @@ export default function Settings() {
 
       <Card title="Producción" sub="Parámetros usados por el guionista y el render.">
         <div className="row">
-          <Field label="Idioma por defecto">
-            <select value={values.default_language || 'es'} onChange={(e) => setValues({ ...values, default_language: e.target.value })}>
-              <option value="es">Español</option>
-              <option value="en">Inglés</option>
-              <option value="pt">Portugués</option>
-            </select>
+          <Field label="Idioma de producción">
+            <div className="input" aria-readonly="true">Español · único idioma disponible</div>
           </Field>
           <Field label="Voz por defecto">
             <select value={values.default_voice || 'es'} onChange={(e) => setValues({ ...values, default_voice: e.target.value })}>
