@@ -265,11 +265,12 @@ def _validate_auto_publish(clean: dict, current: dict | None = None) -> None:
     if not bool(merged.get("auto_publish")) or merged.get("destination", "entrega") != "youtube":
         return
     from . import publish
-    youtube = next((item for item in publish.destinations() if item.get("id") == "youtube"), {})
-    if not youtube.get("available"):
-        missing = ", ".join(youtube.get("missing_env") or [])
-        suffix = f" Faltan: {missing}." if missing else ""
-        raise ValueError("Antes de activar la publicación automática, conectá y verificá YouTube en Ajustes." + suffix)
+    try:
+        publish.youtube_account_status()
+    except publish.PublishError as exc:
+        raise ValueError(
+            "Antes de activar la publicación automática, conectá y verificá YouTube en Ajustes. " + str(exc)
+        ) from exc
 
 
 def create_rule(data: dict) -> dict:
