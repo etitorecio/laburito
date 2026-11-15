@@ -98,6 +98,10 @@ export default function Autopilot() {
   }
 
   async function save() {
+    if (form.auto_publish && form.destination === 'youtube' && !youtubeReady) {
+      setError('Antes de activar la publicación automática, conectá y verificá tu canal de YouTube en Ajustes.');
+      return;
+    }
     setBusy(true); setError(''); setOk('');
     try {
       const payload = {
