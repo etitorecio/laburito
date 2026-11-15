@@ -322,10 +322,11 @@ def _transition_preview_unlocked(transition_id: str) -> Path:
         return output
 
     width, height, duration, fps = 360, 640, 3.0, 20
+    base = _visual_style_sample_base(preview_dir / "paisaje-demo.png")
     filters = _motion_filters(transition_id, width, height, duration, fps)
-    filters.extend(["drawbox=x=iw*0.12:y=ih*0.22:w=iw*0.76:h=ih*0.18:color=0xf59e0b@0.35:t=fill", "format=yuv420p"])
+    filters.append("format=yuv420p")
     _ff([
-        "-f", "lavfi", "-i", f"testsrc2=size={width}x{height}:rate={fps}:duration={duration}",
+        "-loop", "1", "-framerate", str(fps), "-i", str(base), "-t", str(duration),
         "-vf", ",".join(filters), "-an", "-c:v", "libx264", "-preset", "ultrafast",
         "-crf", "30", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(output),
     ], timeout=90)
