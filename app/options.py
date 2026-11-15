@@ -290,9 +290,12 @@ VIDEO_TYPES = [
     {"id": "skeleton", "label": "Esqueleto animado", "description": "Skeleton Video 2.5D generado localmente; sin IA ni créditos.", "available": True},
     {"id": "stock_footage", "label": "Videos de archivo", "description": "Cinco clips reales de archivo propios o autorizados, alternados automáticamente.", "available": False},
     {"id": "minecraft", "label": "Gameplay de Minecraft", "description": "Biblioteca de clips propios o autorizados; requiere al menos uno y permite hasta cinco en rotación.", "available": False},
-    {"id": "subway", "label": "Gameplay de Subway Surfers", "description": "Biblioteca de clips propios o autorizados; requiere cinco clips para rotación.", "available": False},
+    {"id": "subway", "label": "Gameplay de Subway Surfers", "description": "Biblioteca de clips propios o autorizados; requiere al menos uno y permite hasta cinco en rotación.", "available": False},
 ]
 VIDEO_TYPE_IDS = {item["id"] for item in VIDEO_TYPES}
+
+# Plantillas de las dos fábricas: siempre deben producir Shorts verticales.
+VERTICAL_SHORT_TEMPLATES = {"shorts", "reddit_story", "frutinovela"}
 
 VISUAL_STYLES = [
     {"id": "automatico", "label": "Automático", "description": "Sin tratamiento adicional; conserva los colores de la imagen."},
@@ -333,7 +336,7 @@ def caption_style(project: dict) -> dict:
 def resolve_defaults(payload: dict) -> dict:
     """Completa las opciones de un proyecto a partir de su plantilla."""
     tpl = template(payload.get("template"))
-    aspect = payload.get("aspect") or tpl["aspect"]
+    aspect = "9:16" if tpl["id"] in VERTICAL_SHORT_TEMPLATES else (payload.get("aspect") or tpl["aspect"])
     if aspect not in ASPECTS:
         aspect = tpl["aspect"]
     resolution = payload.get("resolution") if payload.get("resolution") in RESOLUTIONS else "720p"
