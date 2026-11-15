@@ -16,15 +16,7 @@ export default function Accounts() {
     setLoading(true);
     setError('');
     try {
-      let result = await api.get<{ accounts: WorkspaceChannel[] }>('/api/youtube/accounts');
-      const names = new Set(result.accounts.map((item) => item.name.toLocaleLowerCase()));
-      if (!names.has('historias')) {
-        await api.post('/api/channels', { name: 'Historias', topic: 'Historias estilo Reddit', language: 'es', audience: 'Público general', tone: 'Intrigante y dinámico', visual_identity: 'Gameplay vertical de fondo', formats: 'short', cadence: 'diario' });
-      }
-      if (!names.has('frutinovelas')) {
-        await api.post('/api/channels', { name: 'Frutinovelas', topic: 'Telenovelas de frutas por episodios', language: 'es', audience: 'Público general', tone: 'Dramático, emotivo y divertido', visual_identity: 'Personajes frutales recurrentes', formats: 'short', cadence: 'diario' });
-      }
-      result = await api.get<{ accounts: WorkspaceChannel[] }>('/api/youtube/accounts');
+      const result = await api.get<{ accounts: WorkspaceChannel[] }>('/api/youtube/accounts');
       setChannels(result.accounts);
     } catch (e) {
       setError((e as Error).message);
