@@ -49,7 +49,7 @@ const INITIAL = {
   resolution: '720p',
   fps: 25,
   music: 'auto',
-  music_volume: 0.12,
+  music_volume: 0.3,
   destination: 'entrega',
   privacy: 'unlisted',
   auto_publish: false,
@@ -400,9 +400,12 @@ export default function Autopilot() {
                 </div>
               ))}
             </Field>
-            <Field label={'Volumen de música: ' + Math.round(form.music_volume * 100) + '%'}>
-              <input type="range" min="0" max="0.5" step="0.01" value={form.music_volume} onChange={(e) => update('music_volume', Number(e.target.value))} />
-            </Field>
+            <details className="advanced-settings">
+              <summary>Opciones avanzadas de música</summary>
+              <Field label={'Volumen de música: ' + Math.round(form.music_volume * 100) + '%'}>
+                <input type="range" min="0" max="0.5" step="0.01" value={form.music_volume} onChange={(e) => update('music_volume', Number(e.target.value))} />
+              </Field>
+            </details>
             <p className="muted">Las camas musicales se generan localmente. El modo automático alterna las pistas que cargaste y, si no hay ninguna, rota las camas integradas.</p>
           </>}
 
