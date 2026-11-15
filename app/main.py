@@ -244,7 +244,7 @@ class AutopilotIn(BaseModel):
     enabled: bool = True
     destination: str = "youtube"
     privacy: str = "public"
-    auto_publish: bool = True
+    auto_publish: bool = False
 
 
 class AutopilotPatch(BaseModel):
