@@ -132,7 +132,7 @@ export default function Autopilot() {
 
   async function save() {
     if (!selectedFactoryChannel || !form.channel_id || Number(form.channel_id) !== selectedFactoryChannel.id) {
-      setError('No se encontró el canal interno correspondiente a esta fábrica. Actualizá la pantalla e intentá de nuevo.');
+      setError('No se encontró la configuración de la fábrica. Actualizá la pantalla e intentá de nuevo. Actualizá la pantalla e intentá de nuevo.');
       return;
     }
     if (form.auto_publish && form.destination === 'youtube' && !youtubeReady) {
@@ -520,7 +520,7 @@ export default function Autopilot() {
               Publicar automáticamente en YouTube al terminar el render
             </label>}
             {form.destination === 'entrega' && <p className="muted">Los videos se guardarán en tu biblioteca para que puedas revisarlos y publicarlos manualmente. No requiere cuenta externa ni credenciales.</p>}
-            {form.destination === 'youtube' && !youtubeReady && <p className="muted">La fábrica seleccionada todavía no tiene una cuenta de YouTube vinculada. Elegí el canal interno correcto y conectá su cuenta en <a href="#/cuentas">Cuentas</a>. No alcanza con conectar la cuenta de la otra fábrica.</p>}
+            {form.destination === 'youtube' && !youtubeReady && <p className="muted">La fábrica seleccionada todavía no tiene una cuenta de YouTube vinculada. Elegí la fábrica correcta y conectá tu cuenta de Google en <a href="#/cuentas">Cuentas</a>. No alcanza con conectar la cuenta de la otra fábrica.</p>}
             {form.destination === 'youtube' && linkedYoutubeAccount && <p className="muted">Esta fábrica publicará exclusivamente en: <strong>{linkedYoutubeAccount.channel_title}</strong>.</p>}
             {form.destination === 'youtube' && destinationInfo && <p className="muted">{destinationInfo.note}{destinationInfo.missing_env.length ? ' Faltan: ' + destinationInfo.missing_env.join(', ') + '.' : ''}</p>}
 
@@ -633,7 +633,7 @@ export default function Autopilot() {
                 <div className="grow">
                   <h4>{rule.name || rule.niche}</h4>
                   <div className="meta"><span>{rule.niche}</span><span>·</span><span>{rule.videos_per_period || 1} cada {rule.period_days || 1} día(s)</span><span>·</span><Badge tone={rule.enabled ? 'ok' : 'warn'}>{rule.enabled ? 'Activo' : 'Pausado'}</Badge></div>
-                  <div className="meta"><span>{rule.channel_name || 'Sin canal'}</span><span>·</span><span>{rule.template}</span><span>·</span><span>{rule.destination === 'youtube' ? 'YouTube' : 'Entrega local'}</span></div>
+                  <div className="meta"><span>{rule.channel_name || 'Fábrica sin asignar'}</span><span>·</span><span>{rule.template}</span><span>·</span><span>{rule.destination === 'youtube' ? 'YouTube' : 'Entrega local'}</span></div>
                   <small>{rule.last_project_title ? 'Último video: ' + rule.last_project_title + ' · ' + (rule.last_project_status || 'creado') : 'Todavía no generó proyectos'}{rule.last_job_status ? ' · ' + (rule.last_job_kind === 'publish_project' ? 'Publicación' : 'Producción') + ': ' + rule.last_job_status : ''}{rule.last_job_message ? ' — ' + rule.last_job_message : ''}{rule.last_error ? ' · Último error: ' + rule.last_error : ''}{rule.last_run_at ? ' · Ejecutado: ' + new Date(rule.last_run_at).toLocaleString() : ''}{rule.next_run_at ? ' · Próximo: ' + new Date(rule.next_run_at).toLocaleString() : ''}</small>
                   {rule.last_job_status && ['en_cola', 'ejecutando'].includes(rule.last_job_status) && <div style={{ marginTop: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}><span>{rule.last_job_kind === 'publish_project' ? 'Publicando video' : 'Produciendo video'}</span><strong>{Math.max(0, Math.min(100, rule.last_job_progress || 0))}%</strong></div>
