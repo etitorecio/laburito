@@ -10,6 +10,7 @@ export type Route =
   | 'biblioteca'
   | 'analitica'
   | 'autopilot'
+  | 'cuentas'
   | 'ajustes';
 
 // Rutas válidas del hash: la landing pública más las secciones del estudio.
@@ -25,6 +26,7 @@ export const VALID_ROUTES: Route[] = [
   'biblioteca',
   'analitica',
   'autopilot',
+  'cuentas',
   'ajustes',
 ];
 
@@ -38,6 +40,7 @@ export const ROUTES: { id: Route; label: string; icon: string }[] = [
   { id: 'biblioteca', label: 'Biblioteca', icon: '🖼️' },
   { id: 'analitica', label: 'Analítica', icon: '📈' },
   { id: 'autopilot', label: 'Autopiloto', icon: '🤖' },
+  { id: 'cuentas', label: 'Cuentas', icon: '🔗' },
   { id: 'ajustes', label: 'Ajustes', icon: '⚡' },
 ];
 
