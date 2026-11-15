@@ -84,7 +84,7 @@ def _auto_publish_blocker(render_result: dict) -> str:
     """Evita subir automáticamente un MP4 que quedó sin narración."""
     quality = render_result.get("quality") or {}
     engines = quality.get("tts_engines") or []
-    if "silencio" in engines:
+    if not engines or "silencio" in engines:
         return "Publicación automática retenida: el render quedó sin narración de voz. Revisá el motor TTS."
     return ""
 
