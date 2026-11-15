@@ -29,7 +29,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from . import db, media, persistence
+from . import db, media, persistence, options
 
 YOUTUBE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 YOUTUBE_UPLOAD_URL = "https://www.googleapis.com/upload/youtube/v3/videos"
@@ -397,11 +397,35 @@ def _validate_autopilot_short(project, source: Path) -> dict:
     return info
 
 
+def _validate_factory_short(project, source: Path) -> dict:
+    """Impide publicar una fábrica como Short si el MP4 real no cumple 9:16 y 3 min."""
+    try:
+        info = media.probe_video(source)
+    except Exception as exc:
+        raise PublishError(f"No se pudo validar el MP4 antes de publicar: {exc}") from exc
+    width, height = int(info.get("width") or 0), int(info.get("height") or 0)
+    duration = float(info.get("duration") or 0)
+    if not width or not height or width >= height:
+        raise PublishError("Publicación cancelada: las fábricas Historias y Frutinovelas exigen video vertical 9:16.")
+    ratio = width / height
+    if abs(ratio - (9 / 16)) > 0.025:
+        raise PublishError(f"Publicación cancelada: proporción {width}x{height}; la fábrica exige 9:16.")
+    if duration <= 0 or duration > 180:
+        raise PublishError(f"Publicación cancelada: duración inválida para un Short ({duration:.1f} s). El máximo es 180 segundos.")
+    return info
+
+
 def _validate_autopilot_video(project, source: Path) -> dict:
     """Valida Shorts y documentales del Autopiloto antes de subirlos."""
-    if not (_g(project, "notes") or "").startswith("Autopiloto:"):
+    is_autopilot = (_g(project, "notes") or "").startswith("Autopiloto:")
+    template_id = _g(project, "template")
+    if not is_autopilot:
+        if template_id in {"shorts", "reddit_story", "frutinovela"}:
+            return _validate_factory_short(project, source)
         return {}
     if _g(project, "kind") == "short":
+        if template_id in options.VERTICAL_SHORT_TEMPLATES:
+            return _validate_factory_short(project, source)
         return _validate_autopilot_short(project, source)
     if _g(project, "kind") != "documentary":
         raise PublishError("Publicación cancelada: tipo de video del Autopiloto no compatible.")
