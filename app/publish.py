@@ -484,10 +484,13 @@ def _youtube_upload(project, meta: dict, privacy: str, report) -> dict:
         if items and items[0].get("id") == video_id:
             status_data = items[0].get("status") or {}
             processing_data = items[0].get("processingDetails") or {}
+            upload_status = status_data.get("uploadStatus") or "unknown"
+            processing_status = processing_data.get("processingStatus") or "unknown"
+            failed = upload_status in ("failed", "rejected") or processing_status in ("failed", "terminated")
             verification = {
-                "status": "processing_failed" if status_data.get("uploadStatus") == "failed" else "verified",
-                "upload_status": status_data.get("uploadStatus") or "unknown",
-                "processing_status": processing_data.get("processingStatus") or "unknown",
+                "status": "processing_failed" if failed else "verified",
+                "upload_status": upload_status,
+                "processing_status": processing_status,
             }
         else:
             db.log("warn", "publicacion", "YouTube aceptó la subida, pero el video todavía no aparece en videos.list.",
