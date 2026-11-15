@@ -565,7 +565,8 @@ def generate_script(
         ]
         + ([f"{len(unused)} nota(s) de investigación sin usar; revisalas y sumalas como escenas."] if unused else []),
         "sources_considered": len(sources),
-        "notes_used": 1 if source_note and len(evidence_sentences) >= len(beats) else claim_index,
+        "notes_used": 1 if source_note and evidence_sentences else claim_index,
+        "writer": "source-extract" if source_note and evidence_sentences else "template",
     }
 
 
