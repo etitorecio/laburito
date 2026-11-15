@@ -415,6 +415,19 @@ export default function Autopilot() {
               <textarea rows={3} maxLength={240} value={form.visual_style_prompt} onChange={(e) => update('visual_style_prompt', e.target.value)} placeholder="Ej.: iluminación cálida, fotografía analógica, tonos verdes y textura de película…" />
             </Field>
             <p className="muted">La descripción guía la búsqueda de imágenes libres y, cuando reconoce un estilo, aplica filtros locales. No genera imágenes IA ni necesita créditos.</p>
+            <Field label="Usar una imagen como referencia (opcional)">
+              <input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setBusy(true); setError(''); setOk('');
+                try {
+                  const result = await api.upload<{ visual_style_prompt: string; analysis: string }>('/api/visual-style/analyze', file);
+                  update('visual_style_prompt', result.visual_style_prompt);
+                  setOk(result.analysis + ' Revisá y ajustá la descripción antes de continuar.');
+                } catch (error) { setError((error as Error).message); }
+                finally { setBusy(false); e.target.value = ''; }
+              }} />
+            </Field>
           </>}
 
           {step === 4 && <>
