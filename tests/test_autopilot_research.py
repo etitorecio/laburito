@@ -97,6 +97,9 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(autopilot._clean({"template": "shorts", "duration_target_sec": 180})["duration_target_sec"], 180)
         self.assertEqual(autopilot._clean({"template": "shorts", "duration_target_sec": 240})["duration_target_sec"], 180)
 
+    def test_manual_video_defaults_to_cpu_friendly_720p(self):
+        self.assertEqual(options.resolve_defaults({"template": "shorts"})["resolution"], "720p")
+
     def test_youtube_autopilot_requires_valid_vertical_short_file(self):
         from pathlib import Path
         project = {"kind": "short", "notes": "Autopiloto: diario"}
