@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, getToken, type Meta } from '../api';
+import { api, type Meta } from '../api';
 
 type VideoType = Meta['video_types'][number];
 type Clip = { filename: string; size: number; url: string };
@@ -28,7 +28,6 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
   const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
-  const token = getToken();
 
   async function loadClips() {
     try {
@@ -105,7 +104,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
                 <div className="background-clip-slots">
                   {Array.from({ length: required }, (_, index) => {
                     const clip = categoryClips[index];
-                    const src = clip ? `${clip.url}${token ? `?token=${encodeURIComponent(token)}` : ''}` : '';
+                    const src = clip ? `${clip.url}` : '';
                     return (
                       <div className="background-clip-slot" key={index}>
                         {clip ? (
@@ -138,7 +137,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
                 <div className="video-type-placeholder">
                   {option.id === 'skeleton' ? (
                     <video
-                      src={`/api/skeleton-preview/walk${token ? `?token=${encodeURIComponent(token)}` : ''}`}
+                      src={`/api/skeleton-preview/walk`}
                       controls muted loop playsInline preload="none"
                     />
                   ) : (
