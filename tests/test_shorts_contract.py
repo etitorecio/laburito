@@ -87,10 +87,6 @@ class ShortsContractTests(unittest.TestCase):
 
     def test_factory_render_requires_vertical_video_under_three_minutes_and_voice(self):
         project = {"template": "reddit_story", "kind": "short"}
-
-    def test_documentary_render_is_not_subject_to_shorts_geometry(self):
-        project = {"template": "shorts", "kind": "documental"}
-        render._validate_vertical_short_render(project, {"width": 1920, "height": 1080, "duration": 60}, [])
         info = {"width": 720, "height": 1280, "duration": 175}
         results = [{"audio_info": {"engine": "espeak-ng"}}]
         render._validate_vertical_short_render(project, info, results)
@@ -100,6 +96,10 @@ class ShortsContractTests(unittest.TestCase):
             render._validate_vertical_short_render(project, info, [{"audio_info": {"engine": "silencio"}}])
         with self.assertRaisesRegex(RuntimeError, "vertical 9:16"):
             render._validate_vertical_short_render(project, {"width": 1280, "height": 720, "duration": 30}, results)
+
+    def test_documentary_render_is_not_subject_to_shorts_geometry(self):
+        project = {"template": "shorts", "kind": "documental"}
+        render._validate_vertical_short_render(project, {"width": 1920, "height": 1080, "duration": 60}, [])
 
     def test_factory_upload_requires_vertical_9_by_16_under_three_minutes(self):
         valid = {"width": 1080, "height": 1920, "duration": 175}
