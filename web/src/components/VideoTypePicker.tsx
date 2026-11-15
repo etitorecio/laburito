@@ -129,7 +129,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
                       <small>Descargá únicamente desde una opción de descarga ofrecida por el creador o grabá tu propia partida. No uses páginas para extraer videos de YouTube.</small>
                     </div>
                     <div className="background-clip-slots">
-                  {Array.from({ length: required }, (_, index) => {
+                  {Array.from({ length: 5 }, (_, index) => {
                     const clip = categoryClips[index];
                     const src = clip ? `${clip.url}` : '';
                     return (
@@ -199,7 +199,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
         })}
       </div>
       {error && <p className="error-text">{error}</p>}
-      {!compact && <p className="muted caption-style-help">Minecraft y Subway Surfers aceptan desde un clip propio o autorizado y alternan hasta cinco. Los archivos se guardan en tu PC y no se envían a servicios externos.</p>}
+      {!compact && <p className="muted caption-style-help">Minecraft y Subway Surfers necesitan al menos un clip propio o autorizado; podés cargar hasta cinco para alternarlos. Los archivos se guardan en tu PC y no se envían a servicios externos.</p>}
     </div>
   );
 }
