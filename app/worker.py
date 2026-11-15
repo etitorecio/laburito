@@ -335,4 +335,6 @@ def status() -> dict:
         "worker_alive": bool(_thread and _thread.is_alive()),
         "queued": db.scalar("SELECT COUNT(*) FROM jobs WHERE status='en_cola'", default=0),
         "running": db.scalar("SELECT COUNT(*) FROM jobs WHERE status='ejecutando'", default=0),
+        "done": db.scalar("SELECT COUNT(*) FROM jobs WHERE status='completado'", default=0),
+        "failed": db.scalar("SELECT COUNT(*) FROM jobs WHERE status='error'", default=0),
     }
