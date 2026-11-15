@@ -17,6 +17,56 @@ import urllib.request
 
 from . import options
 
+def script_from_text(project: dict, raw_text: str) -> dict:
+    """Convierte un guion escrito por el usuario en escenas listas para renderizar."""
+    text = (raw_text or "").replace("\\r\\n", "\\n").replace("\\r", "\\n").strip()
+    if not text:
+        raise ValueError("El guion está vacío.")
+    if len(text) > 12000:
+        raise ValueError("El guion no puede superar los 12.000 caracteres.")
+
+    paragraphs = [part.strip() for part in re.split(r"\\n\\s*\\n", text) if part.strip()]
+    chunks: list[str] = []
+    for paragraph in paragraphs:
+        sentences = [part.strip() for part in re.split(r"(?<=[.!?…])\\s+", paragraph) if part.strip()]
+        if not sentences:
+            sentences = [paragraph]
+        current: list[str] = []
+        words = 0
+        for sentence in sentences:
+            sentence_words = len(sentence.split())
+            if current and words + sentence_words > 65:
+                chunks.append(" ".join(current))
+                current, words = [], 0
+            if sentence_words > 65 and not current:
+                tokens = sentence.split()
+                for start in range(0, len(tokens), 65):
+                    chunks.append(" ".join(tokens[start:start + 65]))
+                continue
+            current.append(sentence)
+            words += sentence_words
+        if current:
+            chunks.append(" ".join(current))
+
+    topic = str(project.get("topic") or project.get("title") or "video").strip()
+    scenes = []
+    for index, narration in enumerate(chunks):
+        words = re.findall(r"\\w+", narration, flags=re.UNICODE)
+        title = " ".join(words[:7]).strip().capitalize() or f"Escena {index + 1}"
+        scenes.append({
+            "idx": index,
+            "title": title[:72],
+            "narration": narration,
+            "visual_query": f"{topic} {title} escena ilustrativa",
+            "transition": "fundido",
+        })
+    return {
+        "scenes": scenes,
+        "warnings": ["Guion propio: se respetó el texto proporcionado y se dividió en escenas para el render."],
+        "writer": "user-script",
+    }
+
+
 DOCUMENTARY_BLUEPRINT = [
     {
         "key": "apertura",
