@@ -14,7 +14,7 @@ Plataforma local para **investigar nichos, gestionar canales y producir document
 - **Cola persistente**: un trabajo a la vez, reanudable tras reinicio y con caché por escena (no repite trabajo).
 - **Entrega**: ZIP con MP4, SRT, VTT, guion en Markdown, fuentes/atribuciones en CSV, miniaturas, metadatos de publicación e informe de calidad.
 - **Analítica**: importación del CSV real de YouTube Studio (no inventa métricas) y resumen con hipótesis.
-- **Autopiloto**: configura nicho, canal, formato, duración, voz, aspecto, subtítulos, transiciones, resolución, FPS, música y frecuencia. Descubre temas nuevos, evita títulos ya producidos, registra fuentes y envía cada proyecto a render y entrega/publicación según la configuración. El workflow `autopilot-wakeup.yml` despierta la app desde GitHub Actions una vez por hora; el worker interno ejecuta las reglas vencidas. Esto reduce el riesgo de que el hosting duerma, pero no reemplaza un almacenamiento persistente: AppJet debe conservar `AITUBER_DATA_DIR` entre reinicios para no perder reglas, historial ni refresh token.
+- **Autopiloto de Shorts**: está limitado a formatos verticales 9:16 y duraciones de 15 a 180 segundos; no crea documentales ni videos horizontales. Configura nicho, canal, voz, estilo visual, subtítulos, transiciones, resolución, música y frecuencia. Descubre temas no usados, registra fuentes, crea el guion, renderiza y valida el MP4 antes de enviarlo a YouTube. Las reglas nuevas priorizan publicación automática pública en YouTube; para activarla hace falta conectar y verificar OAuth. Si falta evidencia suficiente o falla la voz/render, retiene la publicación y conserva la entrega para revisión. La huella SHA-256 evita volver a subir el mismo archivo. El workflow `autopilot-wakeup.yml` despierta la app desde GitHub Actions una vez por hora; el worker interno ejecuta las reglas vencidas. Esto reduce el riesgo de que el hosting duerma, pero no reemplaza un almacenamiento persistente: AppJet debe conservar `AITUBER_DATA_DIR` entre reinicios para no perder reglas, historial ni refresh token. La precisión del horario depende de que el proceso del servidor siga activo; si se duerme, el siguiente despertar puede retrasar la ejecución.
 - **Calendario**: programación editorial por canal.
 - **Biblioteca**: todo lo producido o descargado, con licencia y autor.
 - **Diagnóstico**: estado real de FFmpeg, fuentes, voz, base de datos, espacio y worker.
@@ -101,7 +101,7 @@ La prueba E2E crea un directorio de datos temporal, verifica resolución, duraci
 
 ## Limitaciones conocidas
 
-- YouTube admite publicación automática cuando la cuenta está conectada por OAuth y el servidor tiene credenciales configuradas. TikTok no está integrado.
+- El Autopiloto solo publica Shorts verticales 9:16 de hasta 180 segundos en YouTube. La portada personalizada no se puede fijar mediante la API para Shorts; se guarda localmente para uso manual. TikTok no está integrado.
 - El material visual externo depende de la red y de las licencias de cada repositorio; siempre se registra autor, licencia y fecha de consulta.
 - La música de fondo se toma de las camas libres integradas o de `data/music/` (el usuario puede aportar pistas libres).
 - La voz es sintética y local; para una voz neural local se puede instalar Piper DaveFX (España, CC0) desde Ajustes; la voz rioplatense espeak sigue disponible.
