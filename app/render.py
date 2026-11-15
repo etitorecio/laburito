@@ -34,6 +34,18 @@ def _style(project: dict) -> dict:
     """Estilo de subtítulos del proyecto (13 opciones, ver app/options.py)."""
     return options.caption_style(project)
 
+def _captions_enabled(project: dict) -> bool:
+    """Lee el interruptor opcional guardado por el Autopiloto; proyectos normales conservan subtítulos."""
+    notes = str(project.get("notes") or "")
+    marker = "[LABURITO_META]"
+    if marker not in notes:
+        return True
+    try:
+        metadata = json.loads(notes.split(marker, 1)[1])
+    except (json.JSONDecodeError, TypeError):
+        return True
+    return bool(metadata.get("captions_enabled", True))
+
 
 def _size(project: dict) -> tuple[int, int]:
     aspect = project.get("aspect") or options.template(project.get("template"))["aspect"]
@@ -471,8 +483,9 @@ def render_scene(
     except OSError:
         visual_signature = str(visual_path)
 
-    font = media.font_path()
-    if not font:
+    captions_enabled = _captions_enabled(project)
+    font = media.font_path() if captions_enabled else ""
+    if captions_enabled and not font:
         raise RuntimeError(
             "No hay ninguna fuente TTF instalada (instalá font-dejavu / fonts-dejavu). "
             "Los subtítulos necesitan una fuente del sistema."
@@ -496,7 +509,7 @@ def render_scene(
         style["max_words"],
         style["max_chars"],
         style["max_lines"],
-    )
+    ) if captions_enabled else []
     caption_dir = seg_dir / "captions"
     caption_dir.mkdir(parents=True, exist_ok=True)
     for i, cue in enumerate(cues):
