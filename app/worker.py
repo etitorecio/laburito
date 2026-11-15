@@ -22,12 +22,18 @@ def enqueue(project_id: int | None, kind: str, payload: dict | None = None) -> i
     import json
 
     if kind == "publish_project" and project_id is not None:
-        existing = db.query_one(
-            "SELECT id FROM jobs WHERE project_id=? AND kind=? AND status IN ('en_cola','ejecutando','completado') ORDER BY id DESC LIMIT 1",
+        wanted_payload = payload or {}
+        existing_jobs = db.query(
+            "SELECT id, payload_json FROM jobs WHERE project_id=? AND kind=? AND status IN ('en_cola','ejecutando','completado') ORDER BY id DESC",
             (int(project_id), kind),
         )
-        if existing:
-            return int(existing["id"])
+        for existing in existing_jobs:
+            try:
+                existing_payload = json.loads(existing.get("payload_json") or "{}")
+            except (TypeError, ValueError):
+                existing_payload = {}
+            if existing_payload == wanted_payload:
+                return int(existing["id"])
     job_id = db.execute(
         "INSERT INTO jobs(project_id, kind, status, progress, message, payload_json, created_at, updated_at) "
         "VALUES(?,?,?,?,?,?,?,?)",
