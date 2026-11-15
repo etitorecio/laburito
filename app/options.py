@@ -273,13 +273,13 @@ VISUAL_STYLES = [
     {"id": "automatico", "label": "Automático", "description": "Sin tratamiento adicional; conserva los colores de la imagen."},
     {"id": "cinematico", "label": "Cinematográfico", "description": "Contraste suave, color profundo y viñeta."},
     {"id": "realista", "label": "Realista", "description": "Nitidez moderada y color natural."},
-    {"id": "anime", "label": "Anime / ilustrado", "description": "Color más intenso y bordes definidos; no convierte fotos en dibujos."},
+    {"id": "anime", "label": "Color anime (filtro)", "description": "Saturación y bordes más intensos; conserva la foto, no la redibuja."},
     {"id": "pixel_art", "label": "Pixel art", "description": "Pixelado visible por reducción y ampliación por bloques."},
     {"id": "noir", "label": "Cine noir", "description": "Blanco y negro de alto contraste."},
     {"id": "vintage", "label": "Vintage", "description": "Tono sepia y viñeta suave."},
     {"id": "cyberpunk", "label": "Cyberpunk", "description": "Saturación alta y dominante fría."},
-    {"id": "acuarela", "label": "Acuarela suave", "description": "Suavizado leve y color pastel; no es una pintura generada."},
-    {"id": "comic", "label": "Cómic", "description": "Contraste y detección de bordes."},
+    {"id": "acuarela", "label": "Suavizado tipo acuarela", "description": "Suavizado leve y color pastel; no convierte la foto en una pintura."},
+    {"id": "comic", "label": "Cómic (filtro)", "description": "Contraste y bordes marcados; no reemplaza una ilustración."},
 ]
 VISUAL_STYLE_IDS = {item["id"] for item in VISUAL_STYLES}
 
