@@ -369,16 +369,14 @@ export default function Editor({ projectId, go }: Props) {
               ))}
             </select>
           </Field>
-          <div className="field">
-            <label className="check-row">
-              <input
-                type="checkbox"
-                checked={captionsEnabled}
-                onChange={(e) => void patchProject({ notes: notesWithCaptionsSetting(project.notes || '', e.target.checked) })}
-              />
-              Agregar subtítulos al video
-            </label>
-          </div>
+          <label className="check-row">
+            <input
+              type="checkbox"
+              checked={captionsEnabled}
+              onChange={(e) => void patchProject({ notes: notesWithCaptionsSetting(project.notes || '', e.target.checked) })}
+            />
+            Agregar subtítulos al video
+          </label>
           {captionsEnabled ? (
             <Field label="Estilo de subtítulos">
               <CaptionStylePicker
