@@ -92,6 +92,7 @@ export interface Project {
   notes: string;
   template: string;
   visual_style: string;
+  visual_style_prompt?: string;
   video_type: string;
   caption_style: string;
   captions_enabled?: boolean;
