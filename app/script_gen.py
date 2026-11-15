@@ -435,7 +435,7 @@ REDDIT_STORY_BLUEPRINT = [
         "title": "El comienzo que no cierra",
         "weight": 0.10,
         "purpose": "Abrir en medio del problema y dejar una pregunta que obligue a seguir.",
-        "narration": "Nunca pensé que {topic} iba a terminar convirtiéndose en el peor problema de mi vida. Al principio parecía una situación normal, hasta que pasó algo que no pude explicar.",
+        "narration": "Nunca pensé que {topic} iba a terminar convirtiéndose en el peor problema de mi vida. Todo empezó con algo tan cotidiano que ni siquiera le presté atención. Yo confiaba en las personas involucradas, conocía sus costumbres y estaba convencido de que podía anticipar sus reacciones. Pero esa noche recibí una noticia que no tenía sentido. Cuando intenté entenderla, descubrí que alguien me estaba ocultando una parte importante de la historia.",
         "visual": "{topic} historia reddit escena intensa primer plano vertical",
     },
     {
@@ -443,7 +443,7 @@ REDDIT_STORY_BLUEPRINT = [
         "title": "Cómo empezó todo",
         "weight": 0.15,
         "purpose": "Presentar protagonista, vínculos y situación con detalles concretos.",
-        "narration": "Para entender lo que pasó, tengo que explicar cómo era todo antes. Yo confiaba en las personas involucradas y tenía motivos para pensar que nada raro estaba pasando. Ahora, mirando hacia atrás, había señales que no quise ver.",
+        "narration": "Para entender lo que pasó, tengo que explicar cómo era todo antes. Éramos un grupo que se conocía desde hacía tiempo y teníamos una rutina bastante normal. Había confianza, chistes internos y problemas que parecían fáciles de resolver hablando. Por eso, cuando apareció la primera contradicción, no pensé que fuera algo grave. Preferí creer la explicación más sencilla y seguir con mi vida. Ahora, mirando hacia atrás, había señales que no quise ver.",
         "visual": "{topic} vida cotidiana casa teléfono mensajes vertical",
     },
     {
@@ -451,7 +451,7 @@ REDDIT_STORY_BLUEPRINT = [
         "title": "La primera señal",
         "weight": 0.18,
         "purpose": "Introducir una anomalía concreta que cambie la situación.",
-        "narration": "Todo cambió cuando apareció un detalle que no encajaba. Pregunté qué estaba pasando y recibí una explicación demasiado rápida. En ese momento decidí dejarlo pasar, pero esa decisión hizo que el problema creciera.",
+        "narration": "Todo cambió cuando apareció un detalle que no encajaba: una conversación, una fecha y una respuesta que se contradecían entre sí. Pregunté directamente qué estaba pasando, pero recibí una explicación demasiado rápida y nadie quiso mostrarme el resto. Una persona cambió de tema; otra me dijo que estaba exagerando. En ese momento decidí dejarlo pasar para evitar una pelea, sin imaginar que esa decisión iba a darles tiempo para preparar otra versión.",
         "visual": "{topic} mensaje sospechoso reacción persona vertical",
     },
     {
@@ -459,7 +459,7 @@ REDDIT_STORY_BLUEPRINT = [
         "title": "Cada vez peor",
         "weight": 0.22,
         "purpose": "Elevar las consecuencias y mostrar decisiones, no repetir el conflicto.",
-        "narration": "Durante los días siguientes, las cosas empeoraron. Cada vez que intentaba aclararlo aparecía una contradicción nueva. Lo más difícil no era lo que estaba pasando, sino darme cuenta de que la gente en la que confiaba sabía mucho más de lo que decía.",
+        "narration": "Durante los días siguientes, las cosas empeoraron. Empecé a revisar lo que había pasado y encontré pequeñas diferencias entre lo que cada uno contaba. Cuando preguntaba por una, aparecía otra excusa; cuando intentaba hablar en privado, alguien intervenía para cortar la conversación. Lo más difícil no era el problema en sí, sino darme cuenta de que la gente en la que confiaba sabía mucho más de lo que decía y esperaba que yo no hiciera preguntas.",
         "visual": "{topic} discusión tensión llamada teléfono vertical",
     },
     {
@@ -467,7 +467,7 @@ REDDIT_STORY_BLUEPRINT = [
         "title": "Lo que realmente había pasado",
         "weight": 0.20,
         "purpose": "Revelar una información que reinterprete las pistas anteriores.",
-        "narration": "Entonces descubrí el detalle que lo cambió todo: la explicación que me habían dado era cierta solo a medias. Había otra persona involucrada y una razón que nadie se había animado a contarme. De golpe, todas las piezas empezaron a encajar.",
+        "narration": "Entonces descubrí el detalle que lo cambió todo: la explicación que me habían dado era cierta solo a medias. Encontré una prueba que conectaba dos hechos que hasta ese momento parecían separados. Había otra persona involucrada y una razón que nadie se había animado a contarme. De golpe, las contradicciones dejaron de parecer casualidad. Entendí por qué habían insistido tanto en que no preguntara y por qué todos repetían exactamente la misma versión.",
         "visual": "{topic} revelación sorpresa prueba documento vertical",
     },
     {
@@ -475,7 +475,7 @@ REDDIT_STORY_BLUEPRINT = [
         "title": "La decisión y la pregunta",
         "weight": 0.15,
         "purpose": "Mostrar la consecuencia y terminar con una pregunta concreta para comentarios.",
-        "narration": "Al final tuve que tomar una decisión que cambió esa relación para siempre. Todavía no sé si hice lo correcto, por eso quiero preguntarles algo: ¿ustedes habrían hecho lo mismo en mi lugar o creen que me equivoqué?",
+        "narration": "Al final tuve que enfrentar a las personas involucradas y tomar una decisión que cambió esa relación para siempre. No voy a decir que todo se resolvió de manera perfecta: quedaron cosas sin explicar y todavía hay alguien que sostiene que yo fui quien exageró. Lo que sí sé es que ya no podía seguir fingiendo que nada había pasado. Todavía no sé si hice lo correcto, por eso quiero preguntarles algo: ¿ustedes habrían hecho lo mismo en mi lugar o creen que me equivoqué?",
         "visual": "{topic} persona reflexionando final historia vertical",
     },
 ]
@@ -701,6 +701,13 @@ def generate_script(
             }
         )
 
+    if script_kind == "frutinovela" and project.get("series_context") and scenes:
+        recap = str(project["series_context"]).strip()
+        scenes[0]["narration"] = (
+            "En el capítulo anterior: " + recap[:420] +
+            " Y ahora, cuando todos creían que podían seguir adelante, " +
+            scenes[0]["narration"]
+        )
     unused = [n for n in notes if n is not source_note and (n.get("claim") or "").strip() not in claims[:claim_index]]
     return {
         "title": project.get("title") or f"Short: {topic}",
