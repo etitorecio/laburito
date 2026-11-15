@@ -371,6 +371,25 @@ def caption_style_preview(style_id: str):
         raise HTTPException(503, f"No se pudo generar la vista previa: {exc}") from exc
 
 
+@app.get("/api/voice-preview/{voice_id}")
+def voice_sample_preview(voice_id: str):
+    if voice_id not in tts.VOICES:
+        raise HTTPException(404, "Voz española inexistente")
+    preview_dir = db.DATA_DIR / "voice_previews"
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    preview = preview_dir / f"{voice_id}.wav"
+    try:
+        if not preview.exists() or preview.stat().st_size < 1000:
+            tts.synthesize(
+                "Hola. Esta es una muestra de voz en español para tus videos. "
+                "Elegí la que mejor combine con el estilo de tu canal.",
+                preview, voice=voice_id, speed=150, pitch=45,
+            )
+        return FileResponse(preview, media_type="audio/wav")
+    except Exception as exc:
+        raise HTTPException(503, f"No se pudo generar la muestra de voz: {exc}") from exc
+
+
 @app.get("/api/transition-preview/{transition_id}")
 def transition_effect_preview(transition_id: str):
     if transition_id not in options.TRANSITION_IDS:
