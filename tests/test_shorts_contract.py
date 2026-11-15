@@ -48,6 +48,23 @@ class ShortsContractTests(unittest.TestCase):
         self.assertEqual(script_gen.fiction_word_range(90), (189, 225))
         self.assertEqual(script_gen.fiction_word_range(45), (94, 112))
 
+    def test_youtube_credentials_are_isolated_per_factory_channel(self):
+        with patch.dict("os.environ", {"YOUTUBE_CLIENT_ID": "client", "YOUTUBE_CLIENT_SECRET": "secret"}):
+            with patch.object(publish, "ensure_schema"):
+                with patch.object(publish.db, "query_one", side_effect=[{"refresh_token": "token-historias"}, {"refresh_token": "token-frutas"}]):
+                    historias = publish.youtube_credentials(1)
+                    frutas = publish.youtube_credentials(2)
+        self.assertEqual(historias["refresh_token"], "token-historias")
+        self.assertEqual(frutas["refresh_token"], "token-frutas")
+
+    def test_youtube_account_cannot_be_assigned_to_both_factories(self):
+        with patch.object(publish, "ensure_schema"):
+            with patch.object(publish.db, "query_one", side_effect=[{"id": 1}, {"channel_id": 2}]):
+                with patch.object(publish.db, "execute") as execute:
+                    with self.assertRaisesRegex(publish.PublishError, "ya está asignada"):
+                        publish.save_youtube_account(1, "refresh", {"channel_id": "UCsame", "channel_title": "Canal"})
+                    execute.assert_not_called()
+
     def test_factory_render_requires_vertical_video_under_three_minutes_and_voice(self):
         project = {"template": "reddit_story"}
         info = {"width": 720, "height": 1280, "duration": 175}
