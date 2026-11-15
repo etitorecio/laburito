@@ -520,6 +520,32 @@ def skeleton_sample_preview(action: str):
         raise HTTPException(503, f"No se pudo generar la muestra de esqueleto: {exc}") from exc
 
 
+@app.get("/api/music-preview/{bed_id}")
+def music_bed_preview(bed_id: str):
+    if bed_id not in options.MUSIC_IDS:
+        raise HTTPException(404, "Pista musical inexistente")
+    try:
+        preview = media.ensure_music_bed(bed_id)
+        return FileResponse(preview, media_type="audio/wav")
+    except Exception as exc:
+        raise HTTPException(503, f"No se pudo generar la muestra musical: {exc}") from exc
+
+
+@app.get("/api/music-file/{filename}")
+def uploaded_music_preview(filename: str):
+    safe_name = Path(filename).name
+    if safe_name != filename or Path(safe_name).suffix.lower() not in {".mp3", ".wav", ".ogg", ".m4a", ".flac"}:
+        raise HTTPException(404, "Pista musical inexistente")
+    target = db.MUSIC_DIR / safe_name
+    if not target.exists():
+        raise HTTPException(404, "Pista musical inexistente")
+    media_type = {
+        ".mp3": "audio/mpeg", ".wav": "audio/wav", ".ogg": "audio/ogg",
+        ".m4a": "audio/mp4", ".flac": "audio/flac",
+    }.get(target.suffix.lower(), "application/octet-stream")
+    return FileResponse(target, media_type=media_type)
+
+
 @app.get("/api/voice-preview/{voice_id}")
 def voice_sample_preview(voice_id: str):
     if voice_id not in tts.VOICES:
