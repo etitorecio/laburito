@@ -572,7 +572,7 @@ def publish(project_id: int, destination: str = "entrega", calendar_id: int | No
 
     fingerprint = _video_fingerprint(source)
     previous = db.query_one(
-        "SELECT * FROM publicaciones WHERE project_id=? AND destination=? AND status='publicado' ORDER BY id DESC LIMIT 1",
+        "SELECT * FROM publicaciones WHERE project_id=? AND destination=? AND status IN ('publicado','procesamiento_fallido') ORDER BY id DESC LIMIT 1",
         (project_id, destination),
     )
     if previous:
@@ -585,7 +585,7 @@ def publish(project_id: int, destination: str = "entrega", calendar_id: int | No
             return {
                 "ok": True,
                 "destination": destination,
-                "status": "publicado",
+                "status": _g(previous, "status") or "publicado",
                 "url": _g(previous, "url"),
                 "external_id": _g(previous, "external_id"),
                 "message": "Este mismo archivo ya estaba publicado. Se evitó una segunda subida.",
@@ -607,6 +607,12 @@ def publish(project_id: int, destination: str = "entrega", calendar_id: int | No
 
     if result.get("verification"):
         meta["youtube_verification"] = result["verification"]
+    verification = result.get("verification") or {}
+    publication_status = (
+        "procesamiento_fallido"
+        if verification.get("status") == "processing_failed"
+        else "publicado"
+    )
     now = db.now()
     db.execute(
         "INSERT INTO publicaciones(project_id, calendar_id, destination, status, url, external_id, meta_json, message, created_at, updated_at)"
@@ -615,7 +621,7 @@ def publish(project_id: int, destination: str = "entrega", calendar_id: int | No
             project_id,
             calendar_id,
             destination,
-            "publicado",
+            publication_status,
             result["url"],
             result["external_id"],
             json.dumps(meta, ensure_ascii=False),
@@ -635,7 +641,7 @@ def publish(project_id: int, destination: str = "entrega", calendar_id: int | No
     return {
         "ok": True,
         "destination": destination,
-        "status": "publicado",
+        "status": publication_status,
         "url": result["url"],
         "external_id": result["external_id"],
         "message": result["message"],
