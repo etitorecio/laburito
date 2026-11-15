@@ -45,6 +45,8 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
   });
 
   const templates = (meta?.templates ?? []).filter((t) => ['reddit_story', 'frutinovela'].includes(t.id));
+  const requiredChannelName = form.template === 'frutinovela' ? 'frutinovelas' : 'historias';
+  const factoryChannel = channels.find((channel) => channel.name.toLocaleLowerCase() === requiredChannelName) ?? null;
   const activeTemplate = templates.find((t) => t.id === form.template) ?? null;
   const voiceOptions = (meta?.voices ?? []).filter((v) => v.language === 'es');
 
@@ -96,6 +98,10 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
   async function create() {
     setError('');
     setOk('');
+    if (!factoryChannel) {
+      setError('No se encontró el canal interno de esta fábrica. Actualizá la pantalla e intentá de nuevo.');
+      return;
+    }
     if (!form.title.trim()) {
       setError('Escribí un título para el video.');
       return;
@@ -114,7 +120,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
       const { captions_enabled, characters, input_mode, script_text, ...projectForm } = form;
       created = await api.post<Project>('/api/projects', {
         ...projectForm,
-        channel_id: form.channel_id ? Number(form.channel_id) : (channels.find((c) => c.name.toLocaleLowerCase() === (form.template === 'frutinovela' ? 'frutinovelas' : 'historias'))?.id ?? null),
+        channel_id: factoryChannel.id,
         topic: form.topic || form.title,
         notes: (!captions_enabled || form.visual_style_prompt.trim() || !form.create_thumbnail || characters.trim() || (input_mode === 'script' && script_text.trim())) ? '[LABURITO_META]' + JSON.stringify({ captions_enabled, visual_style_prompt: form.visual_style_prompt.trim(), create_thumbnail: form.create_thumbnail, characters: characters.trim(), script_text: input_mode === 'script' ? script_text.trim() : '' }) : '',
       });
@@ -204,7 +210,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
             <Field label="Canal de contenido" hint="Agrupa proyectos y calendario; es independiente de tu cuenta de YouTube.">
               <select value={form.channel_id} onChange={(e) => setForm({ ...form, channel_id: e.target.value })}>
                 <option value="">Sin canal de contenido</option>
-                {channels.map((channel) => <option key={channel.id} value={channel.id}>{channel.name}</option>)}
+                {channels.filter((channel) => channel.name.toLocaleLowerCase() === requiredChannelName).map((channel) => <option key={channel.id} value={channel.id}>{channel.name}</option>)}
               </select>
               <div className="row" style={{ gap: 8, marginTop: 6 }}>
                 {channels.length === 0 && <button type="button" className="btn small ghost" onClick={() => go('canales')}>Crear canal de contenido</button>}
@@ -342,7 +348,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
           {meta && meta.external_templates.length > 0 && (
             <p className="muted">Los generadores externos de video IA no se incluyen: requerirían servicios con créditos. Los formatos desactivados no se presentan como disponibles.</p>
           )}
-          <button className="btn primary" onClick={create} disabled={busy || !form.title.trim()}>{busy ? 'Produciendo video…' : form.input_mode === 'script' ? 'Convertir guion y crear video' : 'Crear video desde la idea'}</button>
+          <button className="btn primary" onClick={create} disabled={busy || !factoryChannel || !form.title.trim()}>{busy ? 'Produciendo video…' : form.input_mode === 'script' ? 'Convertir guion y crear video' : 'Crear video desde la idea'}</button>
         </div>
       </Card>
 
