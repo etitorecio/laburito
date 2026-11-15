@@ -25,7 +25,7 @@ services:
     volumes:
       - ./ollama:/root/.ollama
     entrypoint: ["/bin/sh", "-c"]
-    command: ["ollama pull llama3.2 || echo 'No se pudo descargar el modelo local; se usará el guion de respaldo.'; exit 0"]
+    command: ["ollama pull qwen2.5:1.5b-instruct || echo 'No se pudo descargar el modelo local; se usará el guion de respaldo.'; exit 0"]
     restart: "no"
 
   laburito:
