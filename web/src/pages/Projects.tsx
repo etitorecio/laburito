@@ -31,6 +31,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     captions_enabled: true,
     visual_style: 'automatico',
     visual_style_prompt: '',
+    create_thumbnail: true,
     video_type: 'moving_images',
     music_volume: 0.12,
     transition_default: 'fundido',
@@ -95,7 +96,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
         ...projectForm,
         channel_id: form.channel_id ? Number(form.channel_id) : null,
         topic: form.topic || form.title,
-        notes: (!captions_enabled || form.visual_style_prompt.trim()) ? '[LABURITO_META]' + JSON.stringify({ captions_enabled, visual_style_prompt: form.visual_style_prompt.trim() }) : '',
+        notes: (!captions_enabled || form.visual_style_prompt.trim() || !form.create_thumbnail) ? '[LABURITO_META]' + JSON.stringify({ captions_enabled, visual_style_prompt: form.visual_style_prompt.trim(), create_thumbnail: form.create_thumbnail }) : '',
       });
       setForm({ ...form, title: '', topic: '' });
       setOk('Proyecto creado. Generá el guion para crear las escenas.');
@@ -254,6 +255,10 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
                 finally { setBusy(false); e.target.value = ''; }
               }} />
             </Field>
+            <label className="check-row">
+              <input type="checkbox" checked={form.create_thumbnail} onChange={(e) => setForm({ ...form, create_thumbnail: e.target.checked })} />
+              Crear miniatura automáticamente
+            </label>
             <h4>Tipo de video</h4>
             <VideoTypePicker options={meta?.video_types ?? []} value={form.video_type} onChange={(value) => setForm({ ...form, video_type: value })} />
             <div className="row">
