@@ -383,7 +383,8 @@ def voice_sample_preview(voice_id: str):
             tts.synthesize(
                 "Hola. Esta es una muestra de voz en español para tus videos. "
                 "Elegí la que mejor combine con el estilo de tu canal.",
-                preview, voice=voice_id, speed=150, pitch=45,
+                preview, voice=voice_id, speed=150,
+                pitch=30 if voice_id == "es-masculino" else 65 if voice_id == "es-agudo" else 45,
             )
         return FileResponse(preview, media_type="audio/wav")
     except Exception as exc:
