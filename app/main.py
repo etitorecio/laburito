@@ -829,6 +829,14 @@ def generate_script(project_id: int, replace: bool = True):
         raise HTTPException(404, "Proyecto inexistente")
     notes = db.query("SELECT * FROM research_notes ORDER BY id DESC")
     sources = db.query("SELECT * FROM sources WHERE project_id=?", (project_id,))
+    metadata_marker = "[LABURITO_META]"
+    if metadata_marker in (project.get("notes") or ""):
+        try:
+            project_metadata = json.loads(project["notes"].split(metadata_marker, 1)[1])
+            if project_metadata.get("characters"):
+                project["content_pillars"] = project_metadata["characters"]
+        except (TypeError, ValueError, json.JSONDecodeError):
+            pass
     if project.get("template") == "frutinovela" and project.get("channel_id"):
         previous = db.query_one(
             "SELECT id,title,topic FROM projects WHERE channel_id=? AND template='frutinovela' AND id<>? ORDER BY id DESC LIMIT 1",
