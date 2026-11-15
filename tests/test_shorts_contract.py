@@ -43,9 +43,16 @@ class ShortsContractTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "no existe"):
                 autopilot._validate_factory_channel({"channel_id": 999, "template": "reddit_story"})
 
-    def test_autopilot_requires_a_channel_for_each_factory(self):
-        with self.assertRaisesRegex(ValueError, "Asigná la fábrica"):
-            autopilot._validate_factory_channel({"template": "reddit_story"})
+    def test_autopilot_auto_assigns_the_matching_factory_channel(self):
+        data = {"template": "reddit_story"}
+        with patch.object(autopilot.db, "query_one", return_value={"id": 7, "name": "Historias"}):
+            autopilot._validate_factory_channel(data)
+        self.assertEqual(data["channel_id"], 7)
+
+    def test_autopilot_rejects_factory_when_default_channel_is_missing(self):
+        with patch.object(autopilot.db, "query_one", return_value=None):
+            with self.assertRaisesRegex(ValueError, "No existe el canal interno"):
+                autopilot._validate_factory_channel({"template": "reddit_story"})
 
     def test_vertical_shorts_duration_is_clamped_to_three_minutes(self):
         self.assertEqual(options.clamp_vertical_short_duration("reddit_story", 999), 180)
