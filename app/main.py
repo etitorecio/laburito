@@ -1398,7 +1398,34 @@ def youtube_oauth_callback(code: str = "", state: str = "", error: str = ""):
             persistence.sync_backup()
         except Exception as exc:
             raise HTTPException(503, f"YouTube quedó autorizado, pero no se pudo guardar la credencial en el respaldo persistente: {exc}") from exc
-    return RedirectResponse(url="/#/ajustes", status_code=303)
+    return RedirectResponse(url="/#/cuentas", status_code=303)
+
+
+@app.post("/api/youtube/disconnect")
+def youtube_disconnect():
+    """Desconecta la cuenta guardada y revoca el permiso OAuth cuando Google lo permite."""
+    credentials = publish.youtube_credentials()
+    refresh_token = credentials.get("refresh_token", "")
+    if refresh_token:
+        revoke = urllib.request.Request(
+            "https://oauth2.googleapis.com/revoke",
+            data=urllib.parse.urlencode({"token": refresh_token}).encode(),
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(revoke, timeout=20):
+                pass
+        except Exception as exc:
+            # Se elimina igualmente el token local para que Laburito deje de usar esa cuenta.
+            db.log("warn", "youtube", f"No se pudo confirmar la revocación remota de YouTube: {exc}")
+    db.set_setting("youtube_refresh_token", "")
+    if persistence.configured():
+        try:
+            persistence.sync_backup()
+        except Exception as exc:
+            raise HTTPException(503, f"La cuenta se desconectó en esta instalación, pero falló la sincronización del respaldo: {exc}") from exc
+    return {"ok": True, "connected": False}
 
 
 @app.get("/api/youtube/status")
