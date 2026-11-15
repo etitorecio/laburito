@@ -280,7 +280,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
         </div>
       </Card>
 
-      <Card title="Proyectos" sub="Estado real de cada producción.">
+      <Card title="Tus videos" sub="Producciones, estado y acceso al editor.">
         {projects.length === 0 ? (
           <Empty>Sin proyectos. Creá el primero y generá el guion.</Empty>
         ) : (
