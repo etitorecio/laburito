@@ -362,6 +362,63 @@ def visual_style_preview(style_id: str) -> Path:
         return _visual_style_preview_unlocked(style_id)
 
 
+def _visual_style_sample_base(path: Path) -> Path:
+    """Paisaje ilustrado original para comparar los tratamientos de color."""
+    if path.exists() and path.stat().st_size > 1000:
+        return path
+    width, height = 480, 854
+    image = Image.new("RGB", (width, height))
+    pixels = image.load()
+    stops = [
+        (0.0, (9, 24, 52)),
+        (0.48, (43, 83, 112)),
+        (0.68, (205, 129, 91)),
+        (1.0, (13, 34, 49)),
+    ]
+    for y in range(height):
+        t = y / max(1, height - 1)
+        for index in range(len(stops) - 1):
+            if stops[index][0] <= t <= stops[index + 1][0]:
+                a, ca = stops[index]
+                b, cb = stops[index + 1]
+                mix = (t - a) / (b - a)
+                color = tuple(int(ca[c] * (1 - mix) + cb[c] * mix) for c in range(3))
+                break
+        else:
+            color = stops[-1][1]
+        for x in range(width):
+            pixels[x, y] = color
+
+    glow = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    glow_draw = ImageDraw.Draw(glow)
+    glow_draw.ellipse((292, 175, 418, 301), fill=(255, 194, 125, 110))
+    glow = glow.filter(ImageFilter.GaussianBlur(34))
+    image = Image.alpha_composite(image.convert("RGBA"), glow)
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((325, 208, 385, 268), fill=(255, 219, 161, 255))
+    draw.polygon([(0, 520), (95, 350), (165, 475), (260, 320), (390, 480), (480, 375), (480, 660), (0, 660)],
+                 fill=(64, 91, 104, 255))
+    draw.polygon([(0, 610), (110, 455), (205, 585), (315, 430), (480, 600), (480, 730), (0, 730)],
+                 fill=(29, 59, 73, 255))
+    draw.polygon([(0, 680), (120, 610), (240, 690), (355, 600), (480, 680), (480, 854), (0, 854)],
+                 fill=(11, 37, 51, 255))
+    draw.polygon([(0, 725), (130, 700), (250, 738), (380, 690), (480, 725), (480, 854), (0, 854)],
+                 fill=(19, 69, 84, 255))
+    # Árboles y una silueta humana para dar escala a la escena.
+    for x, base_y, size in ((40, 715, 1.0), (85, 704, .75), (425, 720, 1.05), (455, 705, .8)):
+        draw.rectangle((x - 4, base_y - 45 * size, x + 4, base_y), fill=(7, 24, 34, 255))
+        draw.polygon([(x, base_y - 110 * size), (x - 28 * size, base_y - 38 * size),
+                      (x + 28 * size, base_y - 38 * size)], fill=(8, 29, 39, 255))
+    draw.ellipse((238, 664, 252, 678), fill=(4, 15, 23, 255))
+    draw.line((245, 678, 245, 720), fill=(4, 15, 23, 255), width=8)
+    draw.line((245, 690, 228, 708), fill=(4, 15, 23, 255), width=6)
+    draw.line((245, 690, 262, 708), fill=(4, 15, 23, 255), width=6)
+    draw.line((245, 720, 232, 748), fill=(4, 15, 23, 255), width=7)
+    draw.line((245, 720, 258, 748), fill=(4, 15, 23, 255), width=7)
+    image.convert("RGB").save(path, format="PNG", optimize=True)
+    return path
+
+
 def _visual_style_preview_unlocked(style_id: str) -> Path:
     """Muestra PNG generado con los mismos filtros que se aplican a las escenas."""
     if style_id not in options.VISUAL_STYLE_IDS:
@@ -371,14 +428,12 @@ def _visual_style_preview_unlocked(style_id: str) -> Path:
     output = preview_dir / f"{style_id}.png"
     if output.exists() and output.stat().st_size > 500:
         return output
+    base = _visual_style_sample_base(preview_dir / "paisaje-demo.png")
     filters = _visual_style_filters(style_id)
-    filters.extend([
-        "drawbox=x=iw*0.12:y=ih*0.20:w=iw*0.76:h=ih*0.22:color=0xf59e0b@0.32:t=fill",
-        "format=rgb24",
-    ])
+    filters.append("format=rgb24")
     _ff([
-        "-f", "lavfi", "-i", "testsrc2=size=480x854:rate=1:duration=1",
-        "-vf", ",".join(filters), "-frames:v", "1", "-c:v", "png", str(output),
+        "-i", str(base), "-vf", ",".join(filters),
+        "-frames:v", "1", "-c:v", "png", str(output),
     ], timeout=60)
     if not output.exists() or output.stat().st_size < 500:
         raise RuntimeError("FFmpeg no pudo generar la demostración del estilo")
