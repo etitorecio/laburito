@@ -23,6 +23,29 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertIn("next_run_at", execute.call_args.args[0])
         self.assertIn("now", execute.call_args.args[1])
 
+    def test_autopilot_holds_publication_for_unrewritten_script(self):
+        rule = {"id": 9, "auto_publish": True, "cadence_hours": 24, "destination": "youtube", "privacy": "unlisted"}
+        with patch.object(autopilot, "get_rule", return_value=rule):
+            with patch.object(autopilot, "_create_project", return_value={"project_id": 77, "script_writer": "source-extract"}):
+                with patch("app.publish.set_auto_publish") as set_publish:
+                    with patch("app.worker.enqueue", return_value=88):
+                        with patch.object(autopilot.db, "execute"):
+                            with patch.object(autopilot.db, "now", return_value="now"):
+                                with patch.object(autopilot, "_ts", return_value="later"):
+                                    result = autopilot.run_rule(9)
+        set_publish.assert_not_called()
+        self.assertEqual(result["project_id"], 77)
+        self.assertIn("retenida", result["publish_warning"])
+
+    def test_script_without_sources_is_marked_as_template_only(self):
+        result = script_gen.generate_script(
+            {"id": 1001, "topic": "Tema sin fuentes", "kind": "short", "template": "shorts", "duration_target_sec": 45},
+            [],
+            [],
+        )
+        self.assertEqual(result["writer"], "template")
+        self.assertIn("no publicar automáticamente", result["warnings"][0])
+
     def test_topic_picker_skips_near_duplicate_titles(self):
         self.assertTrue(topic_engine._is_duplicate("Historia de la radio", ["La historia de la radio"]))
         self.assertFalse(topic_engine._is_duplicate("Historia de la televisión", ["Historia de la radio"]))
