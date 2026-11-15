@@ -201,7 +201,11 @@ def _clean(data: dict) -> dict:
         required_clips = 5
         if chosen_type in {"minecraft", "subway", "stock_footage"}:
             clip_dir = db.DATA_DIR / "background_clips" / chosen_type
-            clip_count = len(list(clip_dir.glob("*.mp4"))) if clip_dir.exists() else 0
+            allowed_video_suffixes = {".mp4", ".mov", ".webm", ".mkv"}
+            clip_count = (
+                sum(1 for path in clip_dir.iterdir() if path.is_file() and path.suffix.lower() in allowed_video_suffixes)
+                if clip_dir.exists() else 0
+            )
             if clip_count < required_clips:
                 raise ValueError(f"El formato {chosen_type} necesita {required_clips} clip(s) propios o autorizados.")
         if chosen_type == "skeleton" and int(data.get("duration_target_sec") or 0) > 420:
