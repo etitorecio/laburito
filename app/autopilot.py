@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
     voice TEXT NOT NULL DEFAULT 'es',
     speed INTEGER NOT NULL DEFAULT 150,
     pitch INTEGER NOT NULL DEFAULT 45,
-    visual_style TEXT NOT NULL DEFAULT '',
+    visual_style TEXT NOT NULL DEFAULT 'automatico',
+    video_type TEXT NOT NULL DEFAULT 'moving_images',
     title_style TEXT NOT NULL DEFAULT 'automatico',
     custom_tags TEXT NOT NULL DEFAULT '',
     aspect TEXT NOT NULL DEFAULT '9:16',
@@ -63,7 +64,7 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
 """
 
 FIELDS = [
-    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "speed", "pitch", "visual_style", "title_style", "custom_tags", "aspect",
+    "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "speed", "pitch", "visual_style", "video_type", "title_style", "custom_tags", "aspect",
     "audience", "tone", "hook_style", "cta", "content_pillars", "avoid_topics",
     "caption_style", "transition_default", "resolution", "fps", "music", "music_volume",
     "cadence_hours", "cadence_minutes", "videos_per_period", "period_days", "schedule_time", "timezone", "enabled", "destination", "privacy", "auto_publish", "next_run_at",
@@ -77,7 +78,8 @@ def ensure_schema() -> None:
         "last_error": "TEXT",
         "speed": "INTEGER NOT NULL DEFAULT 150",
         "pitch": "INTEGER NOT NULL DEFAULT 45",
-        "visual_style": "TEXT NOT NULL DEFAULT ''",
+        "visual_style": "TEXT NOT NULL DEFAULT 'automatico'",
+        "video_type": "TEXT NOT NULL DEFAULT 'moving_images'",
         "title_style": "TEXT NOT NULL DEFAULT 'automatico'",
         "custom_tags": "TEXT NOT NULL DEFAULT ''",
         "videos_per_period": "INTEGER NOT NULL DEFAULT 1",
@@ -170,6 +172,9 @@ def _clean(data: dict) -> dict:
         clean["pitch"] = max(0, min(99, int(data["pitch"])))
     if "visual_style" in data and data["visual_style"] is not None:
         clean["visual_style"] = str(data["visual_style"]).strip()[:180]
+    if "video_type" in data and data["video_type"] is not None:
+        chosen = str(data["video_type"]).strip()
+        clean["video_type"] = chosen if chosen in options.VIDEO_TYPE_IDS else "moving_images"
     if "title_style" in data and data["title_style"] is not None:
         if data["title_style"] not in ("automatico", "pregunta", "curiosidad", "directo", "misterio"):
             raise ValueError("Estilo de título no válido")
@@ -369,8 +374,8 @@ def _create_project(rule: dict) -> dict:
     duration = max(15, min(180, int(rule.get("duration_target_sec") or tpl.get("default_duration") or 30)))
     pid = db.execute(
         "INSERT INTO projects(channel_id, title, topic, kind, aspect, status, duration_target_sec, voice, speed, pitch, notes, "
-        "template, caption_style, transition_default, resolution, fps, music, music_volume, created_at, updated_at) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "template, visual_style, video_type, caption_style, transition_default, resolution, fps, music, music_volume, created_at, updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (
             rule.get("channel_id"), title, topic, "short",
             "9:16", "borrador", duration,
@@ -381,7 +386,9 @@ def _create_project(rule: dict) -> dict:
                 "title_style": rule.get("title_style") or "automatico",
                 "custom_tags": rule.get("custom_tags") or "",
             }, ensure_ascii=False),
-            tpl["id"], rule.get("caption_style") or tpl.get("caption_style"),
+            tpl["id"], rule.get("visual_style") or "automatico",
+            rule.get("video_type") or "moving_images",
+            rule.get("caption_style") or tpl.get("caption_style"),
             rule.get("transition_default") or "fundido", rule.get("resolution") or "1080p",
             int(rule.get("fps") or 25), rule.get("music") or "auto",
             float(rule.get("music_volume") if rule.get("music_volume") is not None else 0.12), db.now(), db.now(),
@@ -395,7 +402,8 @@ def _create_project(rule: dict) -> dict:
         "cta": rule.get("cta") or "Hacé una pregunta concreta al final",
         "content_pillars": rule.get("content_pillars") or "",
         "avoid_topics": rule.get("avoid_topics") or "",
-        "visual_style": rule.get("visual_style") or "",
+        "visual_style": rule.get("visual_style") or "automatico",
+        "video_type": rule.get("video_type") or "moving_images",
     })
     db.execute(
         "INSERT INTO sources(project_id, title, url, author, license, accessed_at, attribution, kind, notes, created_at) "
