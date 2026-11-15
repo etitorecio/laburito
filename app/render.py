@@ -777,7 +777,7 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
     srt.write_text(media.build_srt(cues_global), encoding="utf-8")
     vtt.write_text(media.build_vtt(cues_global), encoding="utf-8")
 
-    thumb_w, thumb_h = options.dimensions(project.get("aspect") or "16:9", "1080p")
+    thumb_w, thumb_h = options.dimensions(project.get("aspect") or "16:9", project.get("resolution") or "720p")
     thumb = workdir / f"miniatura_{suffix}.jpg"
     if _thumbnail_enabled(project):
         try:
