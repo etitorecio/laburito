@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS autopilot_rules(
     content_pillars TEXT NOT NULL DEFAULT '',
     avoid_topics TEXT NOT NULL DEFAULT '',
     cadence_hours INTEGER NOT NULL DEFAULT 24,
+    cadence_minutes INTEGER NOT NULL DEFAULT 1440,
     videos_per_period INTEGER NOT NULL DEFAULT 1,
     period_days INTEGER NOT NULL DEFAULT 1,
     schedule_time TEXT NOT NULL DEFAULT '10:00',
@@ -58,7 +59,7 @@ FIELDS = [
     "name", "niche", "channel_id", "template", "duration_target_sec", "voice", "aspect",
     "audience", "tone", "hook_style", "cta", "content_pillars", "avoid_topics",
     "caption_style", "transition_default", "resolution", "fps", "music", "music_volume",
-    "cadence_hours", "videos_per_period", "period_days", "schedule_time", "timezone", "enabled", "destination", "privacy", "auto_publish", "next_run_at",
+    "cadence_hours", "cadence_minutes", "videos_per_period", "period_days", "schedule_time", "timezone", "enabled", "destination", "privacy", "auto_publish", "next_run_at",
 ]
 
 
@@ -68,6 +69,7 @@ def ensure_schema() -> None:
     migrations = {
         "last_error": "TEXT",
         "videos_per_period": "INTEGER NOT NULL DEFAULT 1",
+        "cadence_minutes": "INTEGER NOT NULL DEFAULT 1440",
         "period_days": "INTEGER NOT NULL DEFAULT 1",
         "schedule_time": "TEXT NOT NULL DEFAULT '10:00'",
         "timezone": "TEXT NOT NULL DEFAULT 'America/Argentina/Buenos_Aires'",
@@ -176,9 +178,11 @@ def _clean(data: dict) -> dict:
     if "videos_per_period" in clean or "period_days" in clean:
         count = clean.get("videos_per_period", int(data.get("videos_per_period", 1) or 1))
         days = clean.get("period_days", int(data.get("period_days", 1) or 1))
-        clean["cadence_hours"] = max(1, min(720, int(round(days * 24 / count))))
+        clean["cadence_minutes"] = max(30, min(43200, int(round(days * 1440 / count))))
+        clean["cadence_hours"] = max(1, int(round(clean["cadence_minutes"] / 60)))
     elif "cadence_hours" in data and data["cadence_hours"] is not None:
         clean["cadence_hours"] = max(1, min(720, int(data["cadence_hours"])))
+        clean["cadence_minutes"] = clean["cadence_hours"] * 60
     if "schedule_time" in data and data["schedule_time"] is not None:
         value = str(data["schedule_time"]).strip()
         if len(value) != 5 or value[2] != ":" or not value[:2].isdigit() or not value[3:].isdigit() or int(value[:2]) > 23 or int(value[3:]) > 59:
@@ -219,8 +223,8 @@ def _next_run_at(rule: dict, after: datetime | None = None) -> str:
     clock = str(rule.get("schedule_time") or "10:00")
     hour, minute = int(clock[:2]), int(clock[3:])
     target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-    interval = int(rule.get("cadence_hours") or 24)
-    step = timedelta(hours=interval) if interval < 24 else timedelta(days=max(1, interval // 24))
+    interval_minutes = int(rule.get("cadence_minutes") or (int(rule.get("cadence_hours") or 24) * 60))
+    step = timedelta(minutes=interval_minutes)
     while target <= now:
         target += step
     return target.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -256,7 +260,7 @@ def update_rule(rule_id: int, data: dict) -> dict | None:
             clean["next_run_at"] = _ts(0)
         elif "niche" in clean and clean["niche"] != current.get("niche"):
             clean["next_run_at"] = _ts(0)
-        elif any(key in clean for key in ("cadence_hours", "videos_per_period", "period_days", "schedule_time", "timezone")):
+        elif any(key in clean for key in ("cadence_hours", "cadence_minutes", "videos_per_period", "period_days", "schedule_time", "timezone")):
             merged = {**current, **clean}
             clean["next_run_at"] = _next_run_at(merged)
         sets = ", ".join(f"{k}=?" for k in clean)
@@ -466,7 +470,7 @@ def tick() -> int:
             rule = get_rule(int(row["id"])) or {}
             db.execute(
                 "UPDATE autopilot_rules SET next_run_at=?, last_error=?, updated_at=? WHERE id=?",
-                (_ts(float(rule.get("cadence_hours") or 24)), str(exc)[:500], db.now(), row["id"]),
+                (_next_run_at(rule), str(exc)[:500], db.now(), row["id"]),
             )
             db.log("error", "autopilot", f"Regla {row['id']} falló: {exc}")
     return fired
