@@ -151,7 +151,7 @@ export default function Autopilot() {
       channel_id: rule.channel_id ? String(rule.channel_id) : '',
       template: rule.template,
       duration_target_sec: rule.duration_target_sec ?? 30,
-      voice: rule.voice,
+      voice: rule.voice?.startsWith('es') ? rule.voice : 'es',
       speed: rule.speed ?? 150,
       pitch: rule.pitch ?? 45,
       visual_style: rule.visual_style || 'Documental cinematográfico realista',
