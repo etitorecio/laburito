@@ -67,7 +67,7 @@ export default function Accounts() {
   return (
     <div className="stack">
       <Msg error={error} ok={ok} />
-      <Card title="Cuentas conectadas" sub="Vinculá la cuenta que va a recibir tus publicaciones. La autorización se hace directamente con Google.">
+      <Card title="Cuenta de YouTube" sub="Vinculá la cuenta que va a recibir tus publicaciones. Se administra una cuenta a la vez; podés cambiarla cuando quieras. La autorización se hace directamente con Google.">
         {loading ? <Empty>Comprobando conexión…</Empty> : account ? (
           <div className="stack">
             <div className="pill-row">
