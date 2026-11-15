@@ -538,9 +538,25 @@ def generate_script(
                 "Misterio sin resolver": f"Hay una pregunta sobre {topic} que todavía merece atención. ",
                 "Afirmación polémica verificable": f"Sobre {topic}, la explicación más repetida no siempre alcanza. ",
             }
-            narration = hook_prefixes.get(hook_style, "") + narration
+            tone_prefixes = {
+                "Dinámico y cercano": "Mirá este detalle: ",
+                "Misterioso y tenso": "Prestá atención a lo que aparece después: ",
+                "Documental y riguroso": "Vamos a los datos: ",
+                "Humorístico e irónico": "Parece sencillo, pero tiene su vuelta: ",
+                "Emocional y reflexivo": "La historia detrás de este tema merece atención: ",
+                "Enérgico y provocador": "Este es el punto que no hay que pasar por alto: ",
+            }
+            narration = hook_prefixes.get(hook_style, "") + tone_prefixes.get(project.get("tone", ""), "") + narration
         if idx == len(beats) - 1:
             cta = (project.get("cta") or "").strip()
+            default_cta_starts = (
+                "Guardá este vídeo", "Contame abajo", "Si te quedó una duda",
+                "¿Qué parte te sorprendió", "¿Vos qué opinás", "Compartilo con alguien",
+                "Seguime para ver más", "En el próximo seguimos",
+            )
+            for phrase in default_cta_starts:
+                if phrase in narration:
+                    narration = narration.split(phrase, 1)[0].rstrip()
             cta_lines = {
                 "Hacé una pregunta concreta al final": "¿Qué parte te sorprendió más? Te leo en los comentarios.",
                 "Invitá a comentar una opinión": "¿Vos qué opinás? Dejá tu punto de vista en los comentarios.",
