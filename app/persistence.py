@@ -69,12 +69,24 @@ def _ensure_bucket() -> None:
     payload = json.dumps({"id": bucket, "name": bucket, "public": False}).encode()
     try:
         with _request("POST", "/storage/v1/bucket", payload):
-            pass
+            return
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", "replace")[:300]
-        if exc.code == 409 or (exc.code == 400 and "already exists" in detail.lower()):
-            return
-        raise RuntimeError(f"No se pudo preparar el bucket privado de Supabase ({exc.code}): {detail}") from exc
+        if not (exc.code == 409 or (exc.code == 400 and "already exists" in detail.lower())):
+            raise RuntimeError(f"No se pudo preparar el bucket privado de Supabase ({exc.code}): {detail}") from exc
+
+    # No asumir que un bucket preexistente es privado: allí se guardan
+    # respaldos que incluyen credenciales OAuth.
+    bucket_url = "/storage/v1/bucket/" + urllib.parse.quote(bucket, safe="")
+    try:
+        with _request("GET", bucket_url) as response:
+            details = json.loads(response.read().decode("utf-8", "replace"))
+    except Exception as exc:
+        raise RuntimeError(f"No se pudo verificar la privacidad del bucket Supabase: {exc}") from exc
+    if details.get("public") is True:
+        raise RuntimeError(
+            f"El bucket Supabase '{bucket}' es público. Cambialo a privado antes de usarlo para respaldos."
+        )
 
 
 def restore_if_available() -> bool:
