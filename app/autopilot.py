@@ -16,7 +16,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from . import db, options
 
 CADENCE_OPTIONS = [6, 12, 24, 48, 72, 168]
-SHORT_TEMPLATE_IDS = {"shorts", "listicle", "pov", "quote", "cuadrado", "vertical_45"}
+SHORT_TEMPLATE_IDS = {"shorts", "frutinovela", "listicle", "pov", "quote", "cuadrado", "vertical_45"}
 LONGFORM_TEMPLATE_IDS = {"longform", "explainer"}
 AUTOPILOT_TEMPLATE_IDS = SHORT_TEMPLATE_IDS | LONGFORM_TEMPLATE_IDS
 
