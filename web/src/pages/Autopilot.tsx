@@ -228,9 +228,9 @@ export default function Autopilot() {
     }));
   }
 
-  const voiceOptions = meta?.voices ?? [];
-  const selectedLanguage = voiceOptions.find((v) => v.id === form.voice)?.language ?? 'es';
-  const voiceLanguages = Array.from(new Set(voiceOptions.map((v) => v.language).filter((v): v is string => !!v)));
+  const voiceOptions = (meta?.voices ?? []).filter((v) => v.language === 'es');
+  const selectedLanguage = 'es';
+  const voiceLanguages = ['es'];
   const filteredVoices = voiceOptions.filter((v) => v.language === selectedLanguage);
   const destinationInfo = data?.destinations.find((d) => d.id === 'youtube');
 
@@ -274,6 +274,7 @@ export default function Autopilot() {
             <Field label="Nicho principal">
               <input value={form.niche} onChange={(e) => update('niche', e.target.value)} placeholder="Misterio, ciencia, fútbol, historias, tecnología..." />
             </Field>
+            <p className="muted">El descubrimiento automático busca temas documentados en Wikipedia y resúmenes académicos de OpenAlex. Todavía no mide tendencias virales en tiempo real.</p>
             <Field label="Público al que le hablamos">
               <input value={form.audience} onChange={(e) => update('audience', e.target.value)} placeholder="Ej.: jóvenes interesados en historias reales" />
             </Field>
@@ -328,7 +329,7 @@ export default function Autopilot() {
               <input type="range" min="0" max="99" step="1" value={form.pitch} onChange={(e) => update('pitch', Number(e.target.value))} />
             </Field>
             <div className="muted">La velocidad y el tono se aplican al motor espeak-ng. Piper usa el ritmo y tono propios del modelo neural.</div>
-            <div className="muted">No se muestran voces de proveedores pagos. La narración usa los motores instalados en el servidor.</div>
+            <div className="muted">Por ahora el guion automático se redacta en español; por eso solo habilitamos voces españolas y evitamos ofrecer idiomas que el motor de guiones todavía no genera correctamente.</div>
           </>}
 
           {step === 4 && <>
