@@ -115,7 +115,7 @@ def list_rules() -> list[dict]:
     ensure_schema()
     rows = db.query(
         "SELECT r.*, c.name AS channel_name, p.title AS last_project_title, p.status AS last_project_status, "
-        "j.status AS last_job_status, j.message AS last_job_message "
+        "j.status AS last_job_status, j.message AS last_job_message, j.progress AS last_job_progress, j.kind AS last_job_kind "
         "FROM autopilot_rules r "
         "LEFT JOIN channels c ON c.id=r.channel_id "
         "LEFT JOIN projects p ON p.id=r.last_project_id "
