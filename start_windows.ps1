@@ -7,13 +7,29 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
+$dockerReady = $false
 try {
     docker info *> $null
+    $dockerReady = ($LASTEXITCODE -eq 0)
 } catch {
-    Write-Host "Docker Desktop no está iniciado. Abrilo, esperá a que diga Engine running y ejecutá de nuevo." -ForegroundColor Yellow
-    exit 1
+    $dockerReady = $false
 }
-if ($LASTEXITCODE -ne 0) {
+if (-not $dockerReady) {
+    $desktop = Join-Path $env:ProgramFiles "Docker\Docker\Docker Desktop.exe"
+    if (Test-Path $desktop) {
+        Write-Host "Iniciando Docker Desktop..." -ForegroundColor Cyan
+        Start-Process $desktop
+        for ($attempt = 1; $attempt -le 30; $attempt++) {
+            Start-Sleep -Seconds 5
+            docker info *> $null
+            if ($LASTEXITCODE -eq 0) {
+                $dockerReady = $true
+                break
+            }
+        }
+    }
+}
+if (-not $dockerReady) {
     Write-Host "Docker Desktop no está listo. Abrilo, esperá a que diga Engine running y ejecutá de nuevo." -ForegroundColor Yellow
     exit 1
 }
