@@ -280,10 +280,15 @@ def _create_project(rule: dict) -> dict:
                     db.now(),
                 ),
             )
-    notes = db.query(
-        "SELECT * FROM research_notes WHERE niche=? ORDER BY id DESC LIMIT 12",
-        (niche,),
-    )
+    note_ids = [int(note_id) for note_id in research.get("note_ids", []) if note_id]
+    if note_ids:
+        placeholders = ",".join("?" for _ in note_ids)
+        notes = db.query(
+            f"SELECT * FROM research_notes WHERE id IN ({placeholders}) ORDER BY id DESC",
+            tuple(note_ids),
+        )
+    else:
+        notes = []
     project_sources = db.query("SELECT * FROM sources WHERE project_id=? ORDER BY id", (pid,))
     script = script_gen.generate_script(project, notes, project_sources)
     ollama_url = db.get_setting("ollama_url", "")
