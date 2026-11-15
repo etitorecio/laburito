@@ -77,7 +77,7 @@ const VISUAL_OPTIONS = [
   { id: 'stock_images', title: 'Stock footage / imágenes', subtitle: 'Fotografías de archivo con licencia y movimiento', preview: '🎞️', available: true, style: 'Fotografía de archivo con licencia', kind: 'stock' },
   { id: 'full_motion_ai', title: 'Full Motion AI Video', subtitle: 'Clips de video generados por IA', preview: '🎬', available: false, style: 'Full Motion AI Video', kind: 'ai' },
   { id: 'skeleton', title: 'Skeleton Video', subtitle: 'Animación 3D de esqueleto', preview: '💀', available: false, style: 'Skeleton Video', kind: 'skeleton' },
-  { id: 'minecraft', title: 'Minecraft gameplay', subtitle: '5 clips de ejemplo · requiere videos con licencia o propios', preview: '⛏️', available: false, style: 'Minecraft gameplay', kind: 'minecraft' },
+  { id: 'minecraft', title: 'Minecraft gameplay', subtitle: '5 miniaturas de preview · requiere gameplay propio o licenciado', preview: '⛏️', available: false, style: 'Minecraft gameplay', kind: 'minecraft' },
   { id: 'subway', title: 'Subway Surfers gameplay', subtitle: '5 clips de ejemplo · requiere videos con licencia o propios', preview: '🏃', available: false, style: 'Subway Surfers gameplay', kind: 'subway' },
 ];
 
