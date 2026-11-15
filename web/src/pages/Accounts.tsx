@@ -18,6 +18,7 @@ export default function Accounts() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setOauthConfigLoaded(false);
     setError('');
     try {
       const result = await api.get<{ accounts: WorkspaceChannel[]; oauth_ready: boolean; missing_env: string[]; redirect_uri: string }>('/api/youtube/accounts');
