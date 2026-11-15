@@ -97,7 +97,7 @@ def run_job(job: dict) -> None:
             except publish.PublishError:
                 auto = {"enabled": False, "destination": "entrega"}
             blocker = _auto_publish_blocker(result)
-            if auto["enabled"] and blocker:
+            if auto["enabled"] and auto["destination"] == "youtube" and blocker:
                 db.execute(
                     "UPDATE jobs SET message=?, updated_at=? WHERE id=?",
                     (blocker[:400], db.now(), job_id),
@@ -107,6 +107,12 @@ def run_job(job: dict) -> None:
                     (blocker[:500], db.now(), int(project_id)),
                 )
                 db.log("warn", "worker", blocker, {"project_id": project_id})
+                # No se pierde el MP4: se entrega localmente para revisión.
+                enqueue(
+                    int(project_id),
+                    "publish_project",
+                    {"destination": "entrega", "privacy": render_payload.get("privacy", "unlisted")},
+                )
                 auto = {"enabled": False, "destination": "entrega"}
             if auto["enabled"]:
                 publish_job = enqueue(
