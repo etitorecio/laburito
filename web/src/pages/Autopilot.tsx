@@ -54,7 +54,7 @@ const STEPS = [
   { title: 'Aspecto', subtitle: 'Formato y estilo visual' },
   { title: 'Audio', subtitle: 'Música y mezcla' },
   { title: 'Calendario', subtitle: 'Cantidad, duración y horario' },
-  { title: 'Publicación', subtitle: 'Dónde guardar o publicar' },
+  { title: 'Social Media Integration', subtitle: 'Conexión y publicación automática' },
 ];
 
 export default function Autopilot() {
@@ -453,7 +453,7 @@ export default function Autopilot() {
           </>}
 
           {step === 7 && <>
-            <h3>Títulos, etiquetas y publicación</h3>
+            <h3>Social Media Integration · Publicación</h3>
             <Field label="Estilo de título automático">
               <select value={form.title_style} onChange={(e) => update('title_style', e.target.value)}>
                 <option value="automatico">Mantener el título del tema</option>
@@ -466,7 +466,7 @@ export default function Autopilot() {
             <Field label="Etiquetas adicionales (separadas por coma)">
               <input value={form.custom_tags} onChange={(e) => update('custom_tags', e.target.value)} placeholder="Ej.: curiosidades, historia, datos interesantes" />
             </Field>
-            <Field label="Qué hacer con cada video terminado">
+            <Field label="Destino de cada Short">
               <select value={form.destination} onChange={(e) => update('destination', e.target.value)}>
                 <option value="entrega">Guardar en Laburito para revisar</option>
                 <option value="youtube">Publicar en YouTube</option>
@@ -481,7 +481,7 @@ export default function Autopilot() {
             </Field>
             <label className="check-row">
               <input type="checkbox" checked={form.auto_publish} onChange={(e) => update('auto_publish', e.target.checked)} />
-              Publicar automáticamente al terminar el render
+              Publicar automáticamente en YouTube al terminar el render
             </label>
             {form.destination === 'youtube' && !youtubeReady && <p className="muted">YouTube todavía no está listo. Conectalo en <a href="#/ajustes">Ajustes → YouTube</a>. Hasta entonces, no se puede publicar.</p>}
             {form.destination === 'youtube' && destinationInfo && <p className="muted">{destinationInfo.note}{destinationInfo.missing_env.length ? ' Faltan: ' + destinationInfo.missing_env.join(', ') + '.' : ''}</p>}
