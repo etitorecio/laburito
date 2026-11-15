@@ -268,6 +268,7 @@ export interface AutopilotRule {
   voice: string;
   speed: number;
   pitch: number;
+  visual_style: string;
   aspect: string;
   caption_style: string;
   transition_default: string;
