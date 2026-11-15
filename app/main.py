@@ -830,13 +830,15 @@ def generate_script(project_id: int, replace: bool = True):
     notes = db.query("SELECT * FROM research_notes ORDER BY id DESC")
     sources = db.query("SELECT * FROM sources WHERE project_id=?", (project_id,))
     metadata_marker = "[LABURITO_META]"
+    project_metadata = {}
     if metadata_marker in (project.get("notes") or ""):
         try:
-            project_metadata = json.loads(project["notes"].split(metadata_marker, 1)[1])
+            project_metadata = json.loads(project["notes"].split(metadata_marker, 1)[1].splitlines()[0])
             if project_metadata.get("characters"):
                 project["content_pillars"] = project_metadata["characters"]
         except (TypeError, ValueError, json.JSONDecodeError):
-            pass
+            project_metadata = {}
+    custom_script = str(project_metadata.get("script_text") or "").strip()
     if project.get("template") == "frutinovela" and project.get("channel_id"):
         previous = db.query_one(
             "SELECT id,title,topic FROM projects WHERE channel_id=? AND template='frutinovela' AND id<>? ORDER BY id DESC LIMIT 1",
@@ -851,9 +853,9 @@ def generate_script(project_id: int, replace: bool = True):
                 f"{previous.get('title') or 'Episodio anterior'}: {previous.get('topic') or ''}. "
                 + (ending.get("narration") or "" if ending else "")
             )
-    script = script_gen.generate_script(project, notes, sources)
+    script = script_gen.script_from_text(project, custom_script) if custom_script else script_gen.generate_script(project, notes, sources)
     ollama_url = db.get_setting("ollama_url", "") or os.environ.get("OLLAMA_URL", "").strip()
-    if ollama_url and script_gen.ollama_model_available(ollama_url, "qwen2.5:1.5b-instruct"):
+    if not custom_script and ollama_url and script_gen.ollama_model_available(ollama_url, "qwen2.5:1.5b-instruct"):
         try:
             if project.get("template") in {"frutinovela", "reddit_story"}:
                 script = script_gen.rewrite_fiction_with_ollama(
