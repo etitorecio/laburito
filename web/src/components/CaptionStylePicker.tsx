@@ -1,5 +1,4 @@
 import type { OptionItem } from '../api';
-import { getToken } from '../api';
 
 export interface CaptionStyleOption extends OptionItem {
   max_words?: number;
@@ -23,13 +22,12 @@ interface Props {
 }
 
 export default function CaptionStylePicker({ options, value, onChange, compact = false }: Props) {
-  const token = getToken();
   return (
     <div className="caption-style-picker" aria-label="Demostraciones de estilos de subtítulos">
       <div className="caption-style-track">
         {options.map((option) => {
           const selected = value === option.id;
-          const previewUrl = `/api/caption-preview/${encodeURIComponent(option.id)}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+          const previewUrl = `/api/caption-preview/${encodeURIComponent(option.id)}`;
           return (
             <button
               key={option.id}
