@@ -20,8 +20,8 @@ const INITIAL = {
   name: '',
   niche: '',
   channel_id: '',
-  template: 'shorts',
-  duration_target_sec: 30,
+  template: 'reddit_story',
+  duration_target_sec: 180,
   voice: 'es',
   speed: 150,
   pitch: 45,
@@ -111,7 +111,7 @@ export default function Autopilot() {
   }, []);
 
   const templates = useMemo(
-    () => (data?.templates ?? meta?.templates ?? []).filter((t) => ['shorts', 'frutinovela', 'reddit_story', 'listicle', 'pov', 'quote', 'longform', 'explainer', 'cuadrado', 'vertical_45'].includes(t.id)),
+    () => (data?.templates ?? meta?.templates ?? []).filter((t) => ['reddit_story', 'frutinovela'].includes(t.id)),
     [data, meta],
   );
   const linkedYoutubeAccount = youtubeAccounts.find((account) => account.id === Number(form.channel_id))?.account ?? null;
