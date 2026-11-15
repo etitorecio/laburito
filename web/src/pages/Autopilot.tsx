@@ -462,7 +462,7 @@ export default function Autopilot() {
 <h3>Duración y calendario automático</h3>
             <Field label="Duración objetivo">
               <select value={form.duration_target_sec} onChange={(e) => update('duration_target_sec', Number(e.target.value))}>
-                {Array.from(new Set([...(selectedTemplate?.durations ?? [15,20,30,45,60,90,120,180]), ...(form.video_type === 'skeleton' ? [420] : [])])).filter((x) => form.video_type !== 'skeleton' || x <= 420).sort((a, b) => a - b).map((x) => <option key={x} value={x}>{x >= 60 ? Math.floor(x / 60) + ' minuto(s)' : x + ' segundos'}</option>)}
+                {Array.from(new Set([...(selectedTemplate?.durations ?? [15,20,30,45,60,90,120,180]), ...(form.video_type === 'skeleton' && (form.template === 'longform' || form.template === 'explainer') ? [420] : [])])).filter((x) => form.video_type !== 'skeleton' || x <= 420).sort((a, b) => a - b).map((x) => <option key={x} value={x}>{x >= 60 ? Math.floor(x / 60) + ' minuto(s)' : x + ' segundos'}</option>)}
               </select>
             </Field>
             <Field label="Cantidad de videos">
