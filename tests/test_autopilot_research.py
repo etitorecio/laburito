@@ -216,7 +216,7 @@ class AutopilotResearchTests(unittest.TestCase):
     def test_autopilot_allows_free_source_based_youtube_publication_without_ollama(self):
         rule = {"id": 10, "auto_publish": True, "cadence_hours": 24, "destination": "youtube", "privacy": "public"}
         with patch.object(autopilot, "get_rule", return_value=rule):
-            with patch.object(autopilot, "_create_project", return_value={"project_id": 78, "script_writer": "source-extract", "evidence_sources": 2}):
+            with patch.object(autopilot, "_create_project", return_value={"project_id": 78, "script_writer": "source-extract", "evidence_sources": 1}):
                 with patch("app.publish.set_auto_publish") as set_publish:
                     with patch("app.worker.enqueue", return_value=89):
                         with patch.object(autopilot.db, "execute"):
