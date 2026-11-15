@@ -411,7 +411,10 @@ export default function Autopilot() {
               onChange={(value) => update('visual_style', value)}
               compact
             />
-            <p className="muted">Los estilos disponibles aplican filtros de color, contraste y textura. No se presentan como generadores de imágenes IA.</p>
+            <Field label="Estilo personalizado (opcional)">
+              <textarea rows={3} maxLength={240} value={form.visual_style_prompt} onChange={(e) => update('visual_style_prompt', e.target.value)} placeholder="Ej.: iluminación cálida, fotografía analógica, tonos verdes y textura de película…" />
+            </Field>
+            <p className="muted">La descripción guía la búsqueda de imágenes libres y, cuando reconoce un estilo, aplica filtros locales. No genera imágenes IA ni necesita créditos.</p>
           </>}
 
           {step === 4 && <>
@@ -557,7 +560,7 @@ export default function Autopilot() {
               <p>{form.videos_per_period} video(s) cada {form.period_days === 1 ? 'día' : form.period_days === 7 ? 'semana' : '30 días'}, a las {form.schedule_time} ({form.timezone}).</p>
               <p>{form.duration_target_sec >= 60 ? Math.floor(form.duration_target_sec / 60) + ' min' : form.duration_target_sec + ' s'} · {form.aspect} · {form.resolution} · {form.destination === 'youtube' && form.auto_publish ? 'Publicación automática en YouTube' : 'Guardar en Laburito'}.</p>
               <p>Voz: {voiceOptions.find((v) => v.id === form.voice)?.label || form.voice} · Música: {form.music === 'auto' ? 'Automática' : form.music === 'ninguna' ? 'Sin música' : form.music}</p>
-              <p>Tipo: {meta?.video_types.find((v) => v.id === form.video_type)?.label || form.video_type} · Estilo: {meta?.visual_styles.find((v) => v.id === form.visual_style)?.label || form.visual_style} · Subtítulos: {form.captions_enabled ? (meta?.caption_styles.find((x) => x.id === form.caption_style)?.label || form.caption_style) : 'Desactivados'}</p>
+              <p>Tipo: {meta?.video_types.find((v) => v.id === form.video_type)?.label || form.video_type} · Estilo: {meta?.visual_styles.find((v) => v.id === form.visual_style)?.label || form.visual_style}{form.visual_style_prompt ? ' + personalizado' : ''} · Subtítulos: {form.captions_enabled ? (meta?.caption_styles.find((x) => x.id === form.caption_style)?.label || form.caption_style) : 'Desactivados'}</p>
             </div>
             <label className="check-row">
               <input type="checkbox" checked={form.enabled} onChange={(e) => update('enabled', e.target.checked)} />
