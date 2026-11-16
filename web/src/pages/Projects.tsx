@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, type Channel, type Diagnostics, type Meta, type Project } from '../api';
+import { api, mediaUrl, type Channel, type Diagnostics, type Meta, type Project } from '../api';
 import { Badge, Card, Empty, Field, Msg, Progress, statusTone } from '../ui';
 import VoicePicker from '../components/VoicePicker';
 import MusicPicker from '../components/MusicPicker';
@@ -409,7 +409,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
           <div className="list">
             {projects.map((p) => (
               <div className="list-item project-list-item" key={p.id}>
-                {p.status === 'renderizado' ? <img className="project-list-thumb" src={`/media/renders/${p.id}/miniatura_${p.kind === 'short' ? 'short' : 'documental'}.jpg`} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} /> : <div className="project-list-thumb project-list-thumb-empty">▶</div>}
+                {p.thumbnail_path ? <img className="project-list-thumb" src={mediaUrl(p.thumbnail_path)} alt="" loading="lazy" /> : p.status === 'renderizado' ? <img className="project-list-thumb" src={`/media/renders/${p.id}/miniatura_${p.kind === 'short' ? 'short' : 'documental'}.jpg`} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} /> : <div className="project-list-thumb project-list-thumb-empty">▶</div>}
                 <div className="grow">
                   <h4>{p.title}</h4>
                   <div className="meta">
