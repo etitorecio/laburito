@@ -613,7 +613,7 @@ def search_archive(query: str, limit: int = 10) -> list[dict]:
                 "provider": "Internet Archive",
                 "title": (doc.get("title") or ident)[:160] if isinstance(doc.get("title"), str) else ident,
                 "page": f"https://archive.org/details/{ident}",
-                "url": "",
+                "url": f"https://archive.org/services/img/{ident}",
                 "thumb": f"https://archive.org/services/img/{ident}",
                 "author": "Internet Archive",
                 "license": "ver licencia del ítem" if not doc.get("licenseurl") else doc["licenseurl"],
