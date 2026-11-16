@@ -122,6 +122,7 @@ export default function Editor({ projectId, go }: Props) {
   const [overlays, setOverlays] = useState<TimelineOverlay[]>([]);
   const [selectedOverlayId, setSelectedOverlayId] = useState<number | null>(null);
   const [draggedOverlayId, setDraggedOverlayId] = useState<number | null>(null);
+  const [draggedOverlayOffset, setDraggedOverlayOffset] = useState(0);
   const [visualVariantIndex, setVisualVariantIndex] = useState<Record<number, number>>({});
   const [overlayTextDraft, setOverlayTextDraft] = useState("");
   const [voiceDraft, setVoiceDraft] = useState("");
@@ -488,9 +489,10 @@ export default function Editor({ projectId, go }: Props) {
     const clip = overlays.find((item) => item.id === draggedOverlayId);
     if (!clip) return;
     const rect = event.currentTarget.getBoundingClientRect();
-    const seconds = Math.max(0, (event.clientX - rect.left) / timelineScale);
+    const seconds = Math.max(0, Math.round(((event.clientX - rect.left - draggedOverlayOffset) / timelineScale) * 10) / 10);
     void patchTimelineOverlay(clip, { start_sec: seconds });
     setDraggedOverlayId(null);
+    setDraggedOverlayOffset(0);
   }
 
   async function createTimelineSfxOverlay() {
@@ -1122,7 +1124,7 @@ export default function Editor({ projectId, go }: Props) {
                   <div className="editor-track-label">CAPAS</div>
                   <div className="editor-overlay-lane" style={{ width: timelineWidth }} onDragOver={(event) => event.preventDefault()} onDrop={dropOverlayOnLane}>
                     {overlays.filter((clip) => clip.kind !== "audio").map((clip) => <button type="button" key={clip.id} draggable
-                      onDragStart={() => setDraggedOverlayId(clip.id)} onDragEnd={() => setDraggedOverlayId(null)}
+                      onDragStart={(event) => { setDraggedOverlayId(clip.id); setDraggedOverlayOffset(event.clientX - event.currentTarget.getBoundingClientRect().left); }} onDragEnd={() => { setDraggedOverlayId(null); setDraggedOverlayOffset(0); }}
                       className={"editor-overlay-clip " + clip.kind + (selectedOverlayId === clip.id ? " active" : "")}
                       style={{ left: clip.start_sec * timelineScale, width: Math.max(34, clip.duration_sec * timelineScale), top: 6 }}
                       onClick={() => { setSelectedOverlayId(clip.id); setPreviewPlaying(false); setPreviewElapsed(clip.start_sec); }}
