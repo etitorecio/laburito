@@ -60,7 +60,7 @@ class SceneImageUploadTests(unittest.TestCase):
             result = asyncio.run(upload_scene_image(7, upload))
             self.assertTrue(result["ok"])
             self.assertEqual(result["media_type"], "video")
-            self.assertIn("video_fondo", execute.call_args_list[0].args[0])
+            self.assertEqual(execute.call_args_list[0].args[1][1], "video_fondo")
             saved = list((Path(temp) / "media" / "uploads" / "3").glob("scene-7-*.mp4"))
             self.assertEqual(len(saved), 1)
             self.assertGreater(saved[0].stat().st_size, 100)
