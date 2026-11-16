@@ -61,6 +61,8 @@ class SceneImageUploadTests(unittest.TestCase):
             self.assertTrue(result["ok"])
             self.assertEqual(result["media_type"], "video")
             self.assertEqual(execute.call_args_list[0].args[1][1], "video_fondo")
+            self.assertEqual(execute.call_args_list[0].args[1][3], 5.0)
+            self.assertIn("visual_source_duration_sec", execute.call_args_list[0].args[0])
             saved = list((Path(temp) / "media" / "uploads" / "3").glob("scene-7-*.mp4"))
             self.assertEqual(len(saved), 1)
             self.assertGreater(saved[0].stat().st_size, 100)
