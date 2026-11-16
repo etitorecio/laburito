@@ -111,7 +111,7 @@ def _scheduled_publish_settings(project_id: int) -> dict:
         "SELECT auto_publish, destination, privacy FROM autopilot_rules WHERE last_project_id=? ORDER BY id DESC LIMIT 1",
         (project_id,),
     )
-    if not row or not bool(row.get("auto_publish")) or row.get("destination") == "youtube":
+    if not row or not bool(row.get("auto_publish")) or (row.get("destination") or "youtube") == "youtube":
         return {"enabled": False, "destination": "youtube", "privacy": "unlisted"}
     destination = row.get("destination") or "youtube"
     if destination not in ("youtube", "entrega"):
