@@ -136,7 +136,7 @@ class WorkerReliabilityTests(unittest.TestCase):
             "quality": {"tts_engines": ["espeak-ng"]},
         }):
             with patch.object(worker, "_validate_render_result", return_value={"path": "/tmp/final_short.mp4"}):
-                with patch.object(worker, "_scheduled_publish_settings", return_value={"enabled": True, "destination": "youtube", "privacy": "unlisted"}):
+                with patch.object(worker, "_scheduled_publish_settings", return_value={"enabled": True, "destination": "entrega", "privacy": "unlisted"}):
                     with patch.object(worker.persistence, "configured", return_value=True):
                         with patch.object(worker.persistence, "sync_pending_video", side_effect=RuntimeError("storage unavailable")):
                             with patch.object(worker, "enqueue") as enqueue:
