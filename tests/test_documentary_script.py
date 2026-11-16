@@ -36,6 +36,26 @@ class DocumentaryScriptTests(unittest.TestCase):
         self.assertEqual(len(result["scenes"]), 10)
         self.assertTrue(all(scene["narration"].strip() for scene in result["scenes"]))
 
+    def test_english_academic_abstracts_are_not_narrated_in_a_spanish_fallback(self):
+        result = script_gen.generate_script(
+            {
+                "kind": "documentary",
+                "template": "longform",
+                "duration_target_sec": 600,
+                "title": "Historia de una innovación",
+                "topic": "Historia de una innovación",
+            },
+            notes=[{
+                "source_url": "https://example.org/paper",
+                "claim": "The discovery changed the process and created new opportunities for research. " * 12,
+                "evidence_level": "resumen académico",
+            }],
+            sources=[],
+        )
+        narration = " ".join(scene["narration"] for scene in result["scenes"])
+        self.assertNotIn("The discovery", narration)
+        self.assertTrue(any("sin evidencia suficiente" in warning for warning in result["warnings"]))
+
     def test_longform_ollama_prompt_requests_documentary_length(self):
         scenes = [
             {"idx": i, "title": f"Escena {i + 1}", "duration_target_sec": 60}
