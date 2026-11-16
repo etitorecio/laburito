@@ -7,7 +7,7 @@ from fastapi import HTTPException
 
 from app import db
 from app.main import ScenePatch, patch_scene
-from app.render import _visual_input_args
+from app.render import _apply_timeline_overlays, _visual_input_args
 
 
 class SceneVideoTrimTests(unittest.TestCase):
@@ -32,6 +32,31 @@ class SceneVideoTrimTests(unittest.TestCase):
         self.assertIn("visual_source_duration_sec", columns)
         self.assertEqual(version, "7")
         self.assertTrue(db.query_one("SELECT name FROM sqlite_master WHERE type='table' AND name='timeline_overlays'"))
+
+    def test_timeline_overlay_composition_adds_positioned_video_layer(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            base = root / "base.mp4"
+            clip = root / "overlay.mp4"
+            output = root / "out.mp4"
+            base.write_bytes(b"base-video")
+            clip.write_bytes(b"overlay-video")
+            def fake_ff(args):
+                output.write_bytes(b"rendered-overlay-video" * 100)
+            with patch("app.render._ff", side_effect=fake_ff) as ff:
+                result = _apply_timeline_overlays(
+                    base,
+                    [{"kind": "video", "path": str(clip), "start_sec": 2, "duration_sec": 3,
+                      "x": 0.6, "y": 0.7, "width": 0.3, "opacity": 0.8}],
+                    output, 1920, 1080, 12,
+                )
+            self.assertEqual(result, output)
+            command = ff.call_args.args[0]
+            filter_graph = command[command.index("-filter_complex") + 1]
+            self.assertIn("overlay=", filter_graph)
+            self.assertIn("between(t,2.000,5.000)", filter_graph)
+            self.assertIn("(main_w-overlay_w)*0.6000", filter_graph)
+            self.assertIn("colorchannelmixer=aa=0.800", filter_graph)
 
     def test_video_input_uses_entire_source_when_trim_is_unset(self):
         args = _visual_input_args(Path("clip.mp4"), 30)
