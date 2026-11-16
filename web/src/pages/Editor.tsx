@@ -272,6 +272,27 @@ export default function Editor({ projectId, go }: Props) {
     }
   }
 
+  async function addScene() {
+    setBusy('scene-add');
+    setError('');
+    setOk('');
+    try {
+      const created = await api.post<Scene>(`/api/projects/${projectId}/scenes`, {
+        title: `Escena ${(project?.scenes?.length ?? 0) + 1}`,
+        narration: '',
+        visual_query: project?.topic || project?.title || '',
+        transition: project?.transition_default || 'corte',
+      });
+      setSelectedSceneId(created.id);
+      await load();
+      setOk('Escena vacía creada. Escribí la narración y elegí su visual antes de renderizar.');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy('');
+    }
+  }
+
   async function regenerate(scene: Scene) {
     setBusy(`regenerate-${scene.id}`);
     setError('');
@@ -392,6 +413,7 @@ export default function Editor({ projectId, go }: Props) {
   }
 
   const scenes = project.scenes ?? [];
+  const canRender = scenes.length > 0 && scenes.every((scene) => Boolean(scene.narration.trim()));
   const words = scenes.reduce((acc, s) => acc + (s.narration || '').trim().split(/\s+/).filter(Boolean).length, 0);
   const quality = project.quality ?? {};
   const captionsEnabled = captionsEnabledFromNotes(project.notes || '');
@@ -415,8 +437,9 @@ export default function Editor({ projectId, go }: Props) {
         <div className="editor-project-title"><h2>{project.title}</h2><span>{project.kind === 'short' ? 'Short vertical' : 'Video largo'} · {project.aspect} · {scenes.length} escenas</span></div>
         <div className="row gap-8">
           <button className="btn small ghost" onClick={() => go('proyectos')}>Volver</button>
-          <button className="btn small" onClick={() => generateScript(false)} disabled={busy === 'script'}>Añadir escenas</button>
-          <button className="btn small primary" onClick={render} disabled={busy === 'render' || scenes.length === 0}>Renderizar</button>
+          <button className="btn small" onClick={addScene} disabled={!!busy}>{busy === 'scene-add' ? 'Creando…' : 'Nueva escena'}</button>
+          <button className="btn small" onClick={() => generateScript(false)} disabled={busy === 'script'}>Generar más escenas</button>
+          <button className="btn small primary" onClick={render} disabled={busy === 'render' || !canRender} title={!canRender ? 'Completá la narración de todas las escenas antes de renderizar' : 'Renderizar el video'}>Renderizar</button>
         </div>
       </div>
       <details className="editor-settings">
