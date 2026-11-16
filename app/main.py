@@ -1371,6 +1371,7 @@ async def upload_scene_image(scene_id: int, file: UploadFile = File(...)):
     folder = db.MEDIA_DIR / "uploads" / str(project_id)
     folder.mkdir(parents=True, exist_ok=True)
     stamp = time.time_ns()
+    source_duration = 0.0
     if is_image:
         try:
             with Image.open(io.BytesIO(raw)) as source:
@@ -1394,7 +1395,8 @@ async def upload_scene_image(scene_id: int, file: UploadFile = File(...)):
         source_path.write_bytes(raw)
         try:
             info = media.probe_video(source_path)
-            if not info.get("width") or not info.get("height") or float(info.get("duration") or 0) <= 0:
+            source_duration = float(info.get("duration") or 0)
+            if not info.get("width") or not info.get("height") or source_duration <= 0:
                 raise HTTPException(400, "El archivo no contiene un video válido.")
             proc = media.run([
                 media.ffmpeg(), "-y", "-i", str(source_path), "-map", "0:v:0",
@@ -1413,8 +1415,9 @@ async def upload_scene_image(scene_id: int, file: UploadFile = File(...)):
 
     db.execute(
         "UPDATE scenes SET visual_path=?, visual_kind=?, visual_license=?, visual_author='Usuario', "
-        "visual_url='archivo local subido', updated_at=? WHERE id=?",
-        (str(target), visual_kind, label, db.now(), scene_id),
+        "visual_url='archivo local subido', visual_source_duration_sec=?, visual_trim_start_sec=0, "
+        "visual_trim_end_sec=0, updated_at=? WHERE id=?",
+        (str(target), visual_kind, label, source_duration, db.now(), scene_id),
     )
     db.execute(
         "INSERT INTO assets(project_id,scene_id,kind,path,label,license,author,url,bytes,created_at) "
