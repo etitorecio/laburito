@@ -167,6 +167,23 @@ export default function Editor({ projectId, go }: Props) {
       setProject(nextProject);
       setOverlays(nextOverlays);
       setSelectedOverlayId((current) => current && nextOverlays.some((clip) => clip.id === current) ? current : null);
+      try {
+        const savedHistory = await api.get<{
+          entries: Array<{ target: string; target_id: number; before_json: string; after_json: string; label: string }>;
+          cursor: number;
+        }>(`/api/projects/${projectId}/history`);
+        historyRef.current = savedHistory.entries.map((entry) => ({
+          target: entry.target as "scene" | "overlay",
+          id: entry.target_id,
+          before: JSON.parse(entry.before_json) as Record<string, unknown>,
+          after: JSON.parse(entry.after_json) as Record<string, unknown>,
+          label: entry.label,
+        }));
+        historyCursorRef.current = savedHistory.cursor;
+        setHistoryVersion((version) => version + 1);
+      } catch {
+        // La edición sigue disponible aunque una instalación antigua aún no tenga historial persistente.
+      }
     } catch (e) {
       setError((e as Error).message);
     }
