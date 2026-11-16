@@ -291,6 +291,27 @@ export default function Editor({ projectId, go }: Props) {
     }
   }
 
+  async function duplicateScene(scene: Scene) {
+    setBusy(`duplicate-${scene.id}`);
+    setError('');
+    setOk('');
+    try {
+      const created = await api.post<Scene>(`/api/projects/${projectId}/scenes`, {
+        title: scene.title + ' (copia)',
+        narration: scene.narration,
+        visual_query: scene.visual_query,
+        transition: scene.transition || project?.transition_default || 'corte',
+      });
+      await load();
+      setSelectedSceneId(created.id);
+      setOk('Escena duplicada. Revisá su visual y ajustá el texto si hace falta.');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy('');
+    }
+  }
+
   async function regenerate(scene: Scene) {
     setBusy(`regenerate-${scene.id}`);
     setError('');
@@ -840,6 +861,7 @@ export default function Editor({ projectId, go }: Props) {
                 <div className="row gap-8">
                   <button className="btn small ghost" onClick={() => move(activeScene, -1)} disabled={activeSceneIndex <= 0}>←</button>
                   <button className="btn small ghost" onClick={() => move(activeScene, 1)} disabled={activeSceneIndex >= scenes.length - 1}>→</button>
+                  <button className="btn small ghost" onClick={() => duplicateScene(activeScene)} disabled={!!busy}>{busy === "duplicate-" + activeScene.id ? "Duplicando…" : "Duplicar"}</button>
                   <button className="btn small ghost" onClick={() => regenerate(activeScene)} disabled={busy === "regenerate-" + activeScene.id}>{busy === "regenerate-" + activeScene.id ? "Regenerando…" : "Regenerar"}</button>
                   <button className="btn small danger" onClick={() => removeScene(activeScene)}>Eliminar</button>
                 </div>
