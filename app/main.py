@@ -974,6 +974,8 @@ def create_scene(project_id: int, payload: SceneIn):
         "SELECT COALESCE(MAX(idx), -1) + 1 FROM scenes WHERE project_id=?",
         (project_id,), 0,
     ))
+    if next_idx >= 400:
+        raise HTTPException(400, "Un proyecto admite hasta 400 escenas.")
     scene_id = db.execute(
         "INSERT INTO scenes(project_id,idx,title,narration,visual_query,transition,status,created_at,updated_at) "
         "VALUES(?,?,?,?,?,?,?,?,?)",
