@@ -751,6 +751,7 @@ export default function Editor({ projectId, go }: Props) {
                       <span className="scene-index">{i + 1}</span>
                       <input
                         defaultValue={scene.title}
+                        key={`title-${scene.id}-${scene.updated_at}`}
                         style={{ minWidth: 160 }}
                         onBlur={(e) => e.target.value !== scene.title && patchScene(scene, { title: e.target.value })}
                       />
@@ -765,12 +766,14 @@ export default function Editor({ projectId, go }: Props) {
                   {scene.visual_path && <img className="scene-visual-preview" src={mediaUrl(scene.visual_path)} alt={`Visual de ${scene.title}`} loading="lazy" />}
                   <textarea
                     defaultValue={scene.narration}
+                    key={`narration-${scene.id}-${scene.updated_at}`}
                     onBlur={(e) => e.target.value !== scene.narration && patchScene(scene, { narration: e.target.value })}
                   />
                   <div className="row" style={{ marginTop: 8 }}>
                     <Field label="Búsqueda visual">
                       <input
                         defaultValue={scene.visual_query}
+                        key={`visual-${scene.id}-${scene.updated_at}`}
                         onBlur={(e) => e.target.value !== scene.visual_query && patchScene(scene, { visual_query: e.target.value })}
                       />
                     </Field>
