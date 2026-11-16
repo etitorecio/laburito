@@ -62,8 +62,13 @@ def interpret_prompt(prompt: str) -> dict:
         topic = subject or default_topic
         title = f"{title_prefix} · {topic}" if subject else default_topic
     elif template == "reddit_story":
-        topic = subject or default_topic
-        title = f"{title_prefix} · {topic}"
+        is_horror = bool(re.search(r"\\b(?:terror|horror|miedo|sobrenatural)\\b", lowered))
+        if is_horror:
+            topic = f"Historia de terror: {subject}" if subject else "Historia de terror original"
+            title = f"Historia de terror · {subject}" if subject else "Historia de terror original"
+        else:
+            topic = subject or default_topic
+            title = f"{title_prefix} · {topic}"
     elif template == "longform":
         topic = subject or default_topic
         title = f"{title_prefix} · {topic}"
