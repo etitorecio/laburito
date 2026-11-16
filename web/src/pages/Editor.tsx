@@ -158,6 +158,7 @@ export default function Editor({ projectId, go }: Props) {
   const historyQueueRef = useRef<Promise<void>>(Promise.resolve());
   const timer = useRef<number | null>(null);
   const overlayPointerDragRef = useRef<{ id: number; offsetX: number; pointerId: number } | null>(null);
+  const scenePointerDragRef = useRef<{ id: number; pointerId: number } | null>(null);
 
   useEffect(() => { setSplitCursor(0); }, [selectedSceneId]);
 
@@ -1281,11 +1282,25 @@ export default function Editor({ projectId, go }: Props) {
                       return <button type="button" key={scene.id}
                         className={"editor-track-clip " + track.id + (previewScene?.id === scene.id ? " active" : "") + (draggedSceneId === scene.id ? " dragging" : "")}
                         style={{ flex: "0 0 " + width + "px", width }}
-                        draggable={track.id === "visual"}
-                        onDragStart={() => setDraggedSceneId(scene.id)}
-                        onDragOver={(event) => event.preventDefault()}
-                        onDrop={(event) => { event.preventDefault(); if (draggedSceneId !== null) void reorderScene(draggedSceneId, scene.id); }}
-                        onDragEnd={() => setDraggedSceneId(null)}
+                        draggable={false}
+                        data-scene-clip={track.id === "visual" ? "true" : undefined}
+                        data-scene-id={track.id === "visual" ? scene.id : undefined}
+                        onPointerDown={(event) => {
+                          if (track.id !== "visual" || (event.pointerType === "mouse" && event.button !== 0)) return;
+                          scenePointerDragRef.current = { id: scene.id, pointerId: event.pointerId };
+                          setDraggedSceneId(scene.id);
+                          event.currentTarget.setPointerCapture(event.pointerId);
+                        }}
+                        onPointerUp={(event) => {
+                          const drag = scenePointerDragRef.current;
+                          if (track.id !== "visual" || !drag || drag.id !== scene.id || drag.pointerId !== event.pointerId) return;
+                          const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-scene-clip='true']");
+                          const targetId = Number(target?.dataset.sceneId || 0);
+                          if (targetId && targetId !== scene.id) void reorderScene(scene.id, targetId);
+                          scenePointerDragRef.current = null;
+                          setDraggedSceneId(null);
+                        }}
+                        onPointerCancel={() => { if (scenePointerDragRef.current?.id === scene.id) { scenePointerDragRef.current = null; setDraggedSceneId(null); } }}
                         onClick={() => { setSelectedSceneId(scene.id); setPreviewPlaying(false); setPreviewElapsed(timelineStarts[index]); }}
                         title={scene.title + " · " + fmtDuration(seconds) + " · inicio " + fmtDuration(timelineStarts[index])}>
                         {track.id === "visual" ? <>{scene.visual_path && (/\.(mp4|mov|webm|mkv)$/i.test(scene.visual_path) ? <video src={mediaUrl(scene.visual_path)} muted playsInline preload="metadata" /> : <img src={mediaUrl(scene.visual_path)} alt="" />)}<span>{index + 1}. {scene.title}</span></>
