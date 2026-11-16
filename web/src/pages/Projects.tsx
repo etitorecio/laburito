@@ -399,7 +399,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
           <div className="list">
             {projects.map((p) => (
               <div className="list-item project-list-item" key={p.id}>
-                {p.status === 'renderizado' ? <img className="project-list-thumb" src={`/media/renders/${p.id}/thumb.jpg`} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} /> : <div className="project-list-thumb project-list-thumb-empty">▶</div>}
+                {p.status === 'renderizado' ? <img className="project-list-thumb" src={`/media/renders/${p.id}/miniatura_${p.kind === 'short' ? 'short' : 'documental'}.jpg`} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} /> : <div className="project-list-thumb project-list-thumb-empty">▶</div>}
                 <div className="grow">
                   <h4>{p.title}</h4>
                   <div className="meta">
