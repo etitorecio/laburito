@@ -853,6 +853,7 @@ export default function Editor({ projectId, go }: Props) {
               <div className="editor-ruler-row">
                 <div className="editor-track-label">TIEMPO</div>
                 <div className="editor-ruler" style={{ width: timelineWidth }}>
+                  <span className="editor-ruler-playhead" style={{ left: Math.min(previewElapsed, timelineDuration) * timelineScale }} />
                   {Array.from({ length: Math.floor(timelineDuration / rulerStep) + 1 }, (_, tick) => tick * rulerStep).map((second) => (
                     <span className="editor-ruler-tick" key={second} style={{ left: second * timelineScale }}>
                       <i />{fmtDuration(second)}
@@ -874,7 +875,7 @@ export default function Editor({ projectId, go }: Props) {
                       const seconds = sceneDurations[index];
                       const width = seconds * timelineScale;
                       return <button type="button" key={scene.id}
-                        className={"editor-track-clip " + track.id + (activeScene?.id === scene.id ? " active" : "") + (draggedSceneId === scene.id ? " dragging" : "")}
+                        className={"editor-track-clip " + track.id + (previewScene?.id === scene.id ? " active" : "") + (draggedSceneId === scene.id ? " dragging" : "")}
                         style={{ flex: "0 0 " + width + "px", width }}
                         draggable={track.id === "visual"}
                         onDragStart={() => setDraggedSceneId(scene.id)}
