@@ -1424,8 +1424,15 @@ export default function Editor({ projectId, go }: Props) {
                 <Field label="Nombre"><input defaultValue={clip.title} key={"overlay-title-" + clip.id + "-" + clip.updated_at} onBlur={(e) => e.target.value !== clip.title && void patchTimelineOverlay(clip, { title: e.target.value })} /></Field>
                 <div className="scene-trim-fields">
                   <Field label="Inicio (s)"><input type="number" min="0" step="0.1" defaultValue={clip.start_sec} key={"overlay-start-" + clip.id + "-" + clip.updated_at} onBlur={(e) => { const value = Math.max(0, Number(e.target.value) || 0); if (value !== clip.start_sec) void patchTimelineOverlay(clip, { start_sec: value }); }} /></Field>
-                  <Field label="Duración (s)"><input type="number" min="0.1" max="3600" step="0.1" defaultValue={clip.duration_sec} key={"overlay-duration-" + clip.id + "-" + clip.updated_at} onBlur={(e) => { const value = Math.max(0.1, Number(e.target.value) || 0.1); if (value !== clip.duration_sec) void patchTimelineOverlay(clip, { duration_sec: value }); }} /></Field>
+                  <Field label="Duración en la línea (s)"><input type="number" min="0.1" max="3600" step="0.1" defaultValue={clip.duration_sec} key={"overlay-duration-" + clip.id + "-" + clip.updated_at} onBlur={(e) => { const value = Math.max(0.1, Number(e.target.value) || 0.1); if (value !== clip.duration_sec) void patchTimelineOverlay(clip, { duration_sec: value }); }} /></Field>
                 </div>
+                {["video", "audio"].includes(clip.kind) && <>
+                  <div className="scene-trim-fields">
+                    <Field label="Recorte desde (s)"><input type="number" min="0" max={clip.source_duration_sec || 3600} step="0.1" defaultValue={clip.source_start_sec} key={"overlay-source-start-" + clip.id + "-" + clip.updated_at} onBlur={(e) => { const value = Math.max(0, Number(e.target.value) || 0); if (value !== clip.source_start_sec) void patchTimelineOverlay(clip, { source_start_sec: value }); }} /></Field>
+                    <Field label="Recorte hasta (s)"><input type="number" min="0" max={clip.source_duration_sec || 3600} step="0.1" defaultValue={clip.source_end_sec} key={"overlay-source-end-" + clip.id + "-" + clip.updated_at} onBlur={(e) => { const value = Math.max(0, Number(e.target.value) || 0); if (value !== clip.source_end_sec) void patchTimelineOverlay(clip, { source_end_sec: value }); }} /></Field>
+                  </div>
+                  <small className="muted">Fuente original: {fmtDuration(clip.source_duration_sec)} · 0 en “hasta” usa el final del archivo</small>
+                </>}
                 {clip.kind !== "audio" && <>
                   <Field label={"Ancho: " + Math.round(clip.width * 100) + "%"}><input type="range" min="0.05" max="1" step="0.01" value={clip.width} onChange={(e) => void patchTimelineOverlay(clip, { width: Number(e.target.value) })} /></Field>
                   <Field label={"Posición horizontal: " + Math.round(clip.x * 100) + "%"}><input type="range" min="0" max="1" step="0.01" value={clip.x} onChange={(e) => void patchTimelineOverlay(clip, { x: Number(e.target.value) })} /></Field>
