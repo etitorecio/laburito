@@ -55,3 +55,11 @@ jobs:
         env:
           AITUBER_DATA_DIR: /tmp/laburito-live-smoke
         run: python scripts/live_smoke.py http://127.0.0.1:8080
+
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the production Docker image used by AppJet
+        run: docker build --pull -t laburito:ci .
