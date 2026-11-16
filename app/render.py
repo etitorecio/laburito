@@ -741,12 +741,12 @@ def _apply_timeline_overlays(
         start = max(0.0, float(clip.get("start_sec") or 0))
         duration = max(0.0, float(clip.get("duration_sec") or 0))
         kind = str(clip.get("kind") or "").lower()
-        if path.is_file() and duration > 0 and start < total_duration and kind in {"image", "video", "audio"}:
+        if path.is_file() and duration > 0 and start < total_duration and kind in {"image", "video", "audio", "text"}:
             usable.append((clip, path, start, min(duration, total_duration - start), kind))
     if not usable:
         return base_video
 
-    visual_clips = [item for item in usable if item[4] in {"image", "video"}]
+    visual_clips = [item for item in usable if item[4] in {"image", "video", "text"}]
     audio_clips = [item for item in usable if item[4] == "audio"]
     args = ["-i", str(base_video)]
     filters = []
