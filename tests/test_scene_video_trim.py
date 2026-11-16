@@ -39,8 +39,15 @@ class SceneVideoTrimTests(unittest.TestCase):
                 patch_scene(7, ScenePatch(visual_trim_start_sec=5))
         self.assertEqual(error.exception.status_code, 400)
 
+    def test_patch_rejects_trim_past_source_duration(self):
+        scene = {"id": 7, "project_id": 3, "visual_trim_start_sec": 0, "visual_trim_end_sec": 0, "visual_source_duration_sec": 8}
+        with patch("app.main.db.query_one", return_value=scene):
+            with self.assertRaises(HTTPException) as error:
+                patch_scene(7, ScenePatch(visual_trim_end_sec=9))
+        self.assertEqual(error.exception.status_code, 400)
+
     def test_patch_persists_valid_trim_window(self):
-        scene = {"id": 7, "project_id": 3, "visual_trim_start_sec": 0, "visual_trim_end_sec": 0}
+        scene = {"id": 7, "project_id": 3, "visual_trim_start_sec": 0, "visual_trim_end_sec": 0, "visual_source_duration_sec": 10}
         updated = {**scene, "visual_trim_start_sec": 2, "visual_trim_end_sec": 6}
         with patch("app.main.db.query_one", side_effect=[scene, updated]), \
              patch("app.main.db.execute") as execute, \
