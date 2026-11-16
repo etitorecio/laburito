@@ -2651,7 +2651,7 @@ async def analytics_import(file: UploadFile = File(...), channel_id: int | None 
 @app.get("/api/publish/destinations")
 def publish_destinations():
     publish.ensure_schema()
-    return {"destinations": publish.destinations(), "auto_publish_available": False}
+    return {"destinations": publish.destinations(), "auto_publish_available": True}
 
 
 @app.post("/api/tts/piper/install", status_code=202)
