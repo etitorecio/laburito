@@ -7,7 +7,6 @@ import TransitionPicker from '../components/TransitionPicker';
 import VisualStylePicker from '../components/VisualStylePicker';
 import VideoTypePicker from '../components/VideoTypePicker';
 import VoicePicker from '../components/VoicePicker';
-import ProjectResearch from '../components/ProjectResearch';
 
 interface Props {
   projectId: number;
@@ -420,14 +419,6 @@ export default function Editor({ projectId, go }: Props) {
   return (
     <div className="stack">
       <Msg error={error} ok={ok} />
-      {!['frutinovela', 'reddit_story'].includes(project.template) && (
-        <details className="editor-settings">
-          <summary><strong>Investigación y fuentes</strong><span>Consultar evidencia y recursos del tema</span></summary>
-          <ProjectResearch projectId={projectId} topic={project.topic || project.title} />
-        </details>
-      )}
-
-
       <div className="editor-projectbar">
         <div className="editor-project-title"><h2>{project.title}</h2><span>{project.kind === 'short' ? 'Short vertical' : 'Video largo'} · {project.aspect} · {scenes.length} escenas</span></div>
         <div className="row gap-8">
@@ -900,9 +891,9 @@ export default function Editor({ projectId, go }: Props) {
             )}
           </Card>
 
-          <Card title="Fuentes y atribuciones" sub="Registro exportable junto al vídeo.">
+          <Card title="Créditos de recursos" sub="Atribuciones y licencias de los materiales usados en el video.">
             {(project.sources ?? []).length === 0 ? (
-              <Empty>Sin fuentes registradas. Guardá material desde Investigación o el editor.</Empty>
+              <Empty>Los créditos de los recursos se mostrarán acá cuando se utilicen materiales externos.</Empty>
             ) : (
               <div className="list">
                 {(project.sources ?? []).map((s) => (
