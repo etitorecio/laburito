@@ -170,6 +170,12 @@ class SceneSplitIn(BaseModel):
     split_at: int
 
 
+class TimelineOverlaySfxIn(BaseModel):
+    effect: str
+    start_sec: float = 0
+    volume: float = 0.8
+
+
 class TimelineOverlayMusicIn(BaseModel):
     bed_id: str
     start_sec: float = 0
@@ -1696,6 +1702,54 @@ def _write_timeline_text_image(text: str, target: Path) -> None:
         y += line_height + line_gap
     target.parent.mkdir(parents=True, exist_ok=True)
     image.save(target, format="PNG", optimize=True)
+
+
+@app.post("/api/projects/{project_id}/timeline-overlays/sfx", status_code=201)
+def create_timeline_sfx_overlay(project_id: int, payload: TimelineOverlaySfxIn):
+    project = db.query_one("SELECT id FROM projects WHERE id=?", (project_id,))
+    if not project:
+        raise HTTPException(404, "Proyecto inexistente")
+    if not 0 <= payload.start_sec <= 3600 or not 0 <= payload.volume <= 2:
+        raise HTTPException(400, "La posición o el volumen del efecto no son válidos.")
+    presets = {
+        "whoosh": ("Barrido", "anoisesrc=color=white:amplitude=0.32:duration=1.2",
+                   "highpass=f=350,lowpass=f=6500,afade=t=in:d=0.12,afade=t=out:st=0.55:d=0.65"),
+        "impact": ("Impacto", "anoisesrc=color=pink:amplitude=0.55:duration=0.9",
+                   "lowpass=f=1300,afade=t=out:st=0.05:d=0.85,aecho=0.8:0.7:90:0.35"),
+        "chime": ("Campanilla", "sine=frequency=880:duration=1.5",
+                  "afade=t=out:st=0.2:d=1.3,aecho=0.8:0.8:220:0.3"),
+        "click": ("Clic", "anoisesrc=color=white:amplitude=0.4:duration=0.14",
+                  "highpass=f=2200,afade=t=out:st=0.01:d=0.13"),
+        "riser": ("Subida", "anoisesrc=color=white:amplitude=0.2:duration=2.0",
+                  "highpass=f=250,lowpass=f=9000,volume='0.15+0.75*t/2',afade=t=out:st=1.7:d=0.3"),
+    }
+    if payload.effect not in presets:
+        raise HTTPException(400, "Ese efecto no está disponible.")
+    label, source, filters = presets[payload.effect]
+    folder = db.MEDIA_DIR / "overlays" / str(project_id)
+    folder.mkdir(parents=True, exist_ok=True)
+    target = folder / f"sfx-{payload.effect}-{time.time_ns()}.wav"
+    proc = media.run([
+        media.ffmpeg(), "-y", "-f", "lavfi", "-i", source, "-af", filters,
+        "-ar", "44100", "-ac", "2", "-c:a", "pcm_s16le", str(target),
+    ], timeout=60)
+    if proc.returncode != 0 or not target.is_file() or target.stat().st_size < 1024:
+        target.unlink(missing_ok=True)
+        detail = (proc.stderr or b"").decode("utf-8", "ignore")[-300:]
+        raise HTTPException(503, "No se pudo generar el efecto local: " + detail)
+    duration = float(media.probe_audio(target).get("duration") or 0)
+    overlay_id = db.execute(
+        "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,volume,created_at,updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (project_id, "audio", str(target), label, payload.start_sec, duration, 0.62, 0.62, 0.32, 1.0,
+         payload.volume, db.now(), db.now()),
+    )
+    db.execute(
+        "INSERT INTO assets(project_id,kind,path,label,bytes,created_at) VALUES(?,?,?,?,?,?)",
+        (project_id, "efecto_generado", str(target), label, target.stat().st_size, db.now()),
+    )
+    _touch_project(project_id)
+    return db.query_one("SELECT * FROM timeline_overlays WHERE id=?", (overlay_id,))
 
 
 @app.post("/api/projects/{project_id}/timeline-overlays/music", status_code=201)
