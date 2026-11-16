@@ -966,7 +966,7 @@ export default function Editor({ projectId, go }: Props) {
                   ? <video key={clip.id} className="editor-preview-overlay" src={mediaUrl(clip.path)} muted loop autoPlay={previewPlaying} playsInline style={overlayStyle}
                       onLoadedMetadata={(event) => { event.currentTarget.currentTime = Math.max(0, previewElapsed - clip.start_sec); if (!previewPlaying) event.currentTarget.pause(); }}
                       onTimeUpdate={(event) => { if (!previewPlaying) event.currentTarget.pause(); else { const expected = Math.max(0, previewElapsed - clip.start_sec); if (Math.abs(event.currentTarget.currentTime - expected) > 1) event.currentTarget.currentTime = expected; } }} />
-                  : <img key={clip.id} className="editor-preview-overlay" src={mediaUrl(clip.path)} alt={clip.title} style={overlayStyle} />;
+                  : <img key={clip.id} className="editor-preview-overlay" src={mediaUrl(clip.path) + (clip.kind === "text" ? "?v=" + encodeURIComponent(clip.updated_at) : "")} alt={clip.title} style={overlayStyle} />;
               })}
               {previewPlaying && overlays.filter((clip) => clip.kind === "audio" && previewElapsed >= clip.start_sec && previewElapsed < clip.start_sec + clip.duration_sec).map((clip) =>
                 <audio key={clip.id} hidden autoPlay loop src={mediaUrl(clip.path)}
