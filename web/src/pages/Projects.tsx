@@ -205,6 +205,20 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     }
   }
 
+  async function duplicate(project: Project) {
+    setBusy(true);
+    setError('');
+    try {
+      const copy = await api.post<Project>(`/api/projects/${project.id}/duplicate`, {});
+      await load();
+      go('editor', copy.id);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function remove(project: Project) {
     if (!confirm(`¿Eliminar «${project.title}» y sus escenas?`)) return;
     try {
@@ -464,6 +478,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
                 </div>
                 <div className="row gap-8">
                   <button className="btn small primary" onClick={() => go('editor', p.id)}>Abrir editor</button>
+                  <button className="btn small ghost" onClick={() => void duplicate(p)} disabled={busy}>Duplicar</button>
                   <button className="btn small danger" onClick={() => remove(p)}>Eliminar</button>
                 </div>
               </div>
