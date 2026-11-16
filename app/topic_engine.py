@@ -319,7 +319,10 @@ def suggest_topics(niche: str, limit: int = 10) -> list[dict]:
     if not niche:
         raise ValueError("Escribí un nicho o tema para buscar ideas.")
     limit = max(1, min(10, int(limit)))
-    trend_signals = _relevant_trends(niche, "", trending_searches())
+    try:
+        trend_signals = _relevant_trends(niche, "", trending_searches())
+    except Exception:
+        trend_signals = []
     terms = [niche, niche + " historia", niche + " descubrimientos"]
     terms.extend(niche + " " + item["title"] for item in trend_signals[:2])
     found: list[dict] = []
