@@ -234,6 +234,13 @@ def main() -> int:
     )
     check(status == 201 and (sfx_overlay or {}).get("kind") == "audio", "efecto local independiente generado", f"({status})")
 
+    status, voice_overlay, _ = call(
+        "POST",
+        f"/api/projects/{project_id}/timeline-overlays/voice",
+        {"text": "Esta es una prueba de voz en off local.", "start_sec": 1.0, "volume": 0.5},
+    )
+    check(status == 201 and (voice_overlay or {}).get("kind") == "audio", "voz en off local independiente generada", f"({status})")
+
     status, job, _ = call("POST", f"/api/projects/{project_id}/render")
     check(status in (200, 202), "render encolado", f"({status})")
     job_id = (job or {}).get("id") or ((job or {}).get("job") or {}).get("id")
