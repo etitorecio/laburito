@@ -519,22 +519,20 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(result["channel_title"], "Canal de prueba")
         self.assertEqual(request.call_args.args[0].get_header("Authorization"), "Bearer access-token")
 
-    def test_youtube_autopublish_requires_live_channel_verification(self):
+    def test_youtube_autopublish_requires_explicit_user_approval(self):
         with patch.object(publish, "ensure_schema"):
             with patch.object(publish.db, "query_one", return_value={"id": 1, "channel_id": 10}):
-                with patch.object(publish.db, "execute"):
-                    with patch.object(publish.persistence, "durable_storage_available", return_value=True):
-                        with patch.object(publish, "youtube_account_status") as verify:
-                            publish.set_auto_publish(1, True, "youtube")
-        verify.assert_called_once_with(10)
+                with patch.object(publish, "youtube_account_status") as verify:
+                    with self.assertRaisesRegex(publish.PublishError, "aprobación manual"):
+                        publish.set_auto_publish(1, True, "youtube")
+        verify.assert_not_called()
 
-    def test_youtube_autopublish_is_blocked_without_durable_storage(self):
+    def test_youtube_autopublish_is_blocked_even_with_durable_storage(self):
         with patch.object(publish, "ensure_schema"):
             with patch.object(publish.db, "query_one", return_value={"id": 1, "channel_id": 10}):
-                with patch.object(publish, "youtube_account_status"):
-                    with patch.object(publish.persistence, "durable_storage_available", return_value=False):
-                        with self.assertRaisesRegex(publish.PublishError, "volumen local persistente"):
-                            publish.set_auto_publish(1, True, "youtube")
+                with patch.object(publish.persistence, "durable_storage_available", return_value=True):
+                    with self.assertRaisesRegex(publish.PublishError, "aprobación manual"):
+                        publish.set_auto_publish(1, True, "youtube")
 
     def test_ollama_rewrite_keeps_scene_structure(self):
         from unittest.mock import patch
