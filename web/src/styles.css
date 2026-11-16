@@ -2757,3 +2757,14 @@ th {
   .editor-hub-project { gap: 8px; }
   .editor-hub-project .badge { display: none; }
 }
+
+
+.idea-finder { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -4px 0 14px; }
+.idea-finder > small { flex: 1 1 220px; }
+.idea-suggestions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; width: 100%; margin-top: 4px; }
+.idea-suggestion { display: flex; flex-direction: column; gap: 5px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); color: var(--text); text-align: left; cursor: pointer; }
+.idea-suggestion:hover { border-color: var(--accent); background: rgba(255,176,32,.06); }
+.idea-suggestion strong { font-size: .88rem; }
+.idea-suggestion span { color: var(--muted); font-size: .78rem; line-height: 1.4; }
+.idea-suggestion small { color: var(--accent); font-size: .7rem; }
+@media (max-width: 640px) { .idea-suggestions { grid-template-columns: 1fr; } }
