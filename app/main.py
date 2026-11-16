@@ -170,6 +170,13 @@ class SceneSplitIn(BaseModel):
     split_at: int
 
 
+class TimelineOverlayMusicIn(BaseModel):
+    bed_id: str
+    start_sec: float = 0
+    duration_sec: float = 45
+    volume: float = 0.35
+
+
 class TimelineOverlayVoiceIn(BaseModel):
     text: str
     start_sec: float = 0
@@ -1689,6 +1696,37 @@ def _write_timeline_text_image(text: str, target: Path) -> None:
         y += line_height + line_gap
     target.parent.mkdir(parents=True, exist_ok=True)
     image.save(target, format="PNG", optimize=True)
+
+
+@app.post("/api/projects/{project_id}/timeline-overlays/music", status_code=201)
+def create_timeline_music_overlay(project_id: int, payload: TimelineOverlayMusicIn):
+    project = db.query_one("SELECT * FROM projects WHERE id=?", (project_id,))
+    if not project:
+        raise HTTPException(404, "Proyecto inexistente")
+    if payload.bed_id not in options.MUSIC_IDS:
+        raise HTTPException(400, "La cama musical seleccionada no existe.")
+    if not 0 <= payload.start_sec <= 3600 or not 5 <= payload.duration_sec <= 3600 or not 0 <= payload.volume <= 2:
+        raise HTTPException(400, "La posición, duración o volumen de la música no son válidos.")
+    try:
+        music_path = media.ensure_music_bed(payload.bed_id)
+        duration = float(media.probe_audio(music_path).get("duration") or 0)
+        if duration <= 0:
+            raise RuntimeError("La cama musical no contiene audio.")
+    except Exception as exc:
+        raise HTTPException(503, f"No se pudo generar la música local: {exc}") from exc
+    bed = next((item for item in options.MUSIC_BEDS if item["id"] == payload.bed_id), options.MUSIC_BEDS[0])
+    overlay_id = db.execute(
+        "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,volume,created_at,updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (project_id, "audio", str(music_path), bed["label"], payload.start_sec,
+         min(payload.duration_sec, 3600), 0.62, 0.62, 0.32, 1.0, payload.volume, db.now(), db.now()),
+    )
+    db.execute(
+        "INSERT INTO assets(project_id,kind,path,label,bytes,created_at) VALUES(?,?,?,?,?,?)",
+        (project_id, "musica_generada", str(music_path), bed["label"], music_path.stat().st_size, db.now()),
+    )
+    _touch_project(project_id)
+    return db.query_one("SELECT * FROM timeline_overlays WHERE id=?", (overlay_id,))
 
 
 @app.post("/api/projects/{project_id}/timeline-overlays/voice", status_code=201)
