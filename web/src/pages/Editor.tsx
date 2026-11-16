@@ -852,7 +852,7 @@ export default function Editor({ projectId, go }: Props) {
             {scenes.length === 0 ? <Empty>Generá un guion o agregá una escena para empezar.</Empty> : <div className="editor-timeline-shell">
               <div className="editor-ruler-row">
                 <div className="editor-track-label">TIEMPO</div>
-                <div className="editor-ruler" style={{ width: timelineWidth }}>
+                <div className="editor-ruler" style={{ width: timelineWidth }} onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); const second = rect.width ? ((event.clientX - rect.left) / rect.width) * timelineDuration : 0; setPreviewElapsed(Math.max(0, Math.min(timelineDuration, second))); setPreviewPlaying(false); }} title="Tocá para mover el cabezal de reproducción">
                   <span className="editor-ruler-playhead" style={{ left: Math.min(previewElapsed, timelineDuration) * timelineScale }} />
                   {Array.from({ length: Math.floor(timelineDuration / rulerStep) + 1 }, (_, tick) => tick * rulerStep).map((second) => (
                     <span className="editor-ruler-tick" key={second} style={{ left: second * timelineScale }}>
