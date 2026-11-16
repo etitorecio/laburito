@@ -15,7 +15,7 @@ class ProjectExportTests(unittest.TestCase):
             workdir = root / "work"
             workdir.mkdir()
             (workdir / "final_short.mp4").write_bytes(b"final-video")
-            (workdir / "short.srt").write_text("1\\n00:00:00,000 --> 00:00:01,000\\nHola\\n", encoding="utf-8")
+            (workdir / "short.srt").write_text("1\n00:00:00,000 --> 00:00:01,000\nHola\n", encoding="utf-8")
             source_media = root / "uploaded-image.png"
             source_media.write_bytes(b"original-image")
             project = {"id": 7, "title": "Proyecto portable", "kind": "short", "quality_json": "{}"}
@@ -34,11 +34,11 @@ class ProjectExportTests(unittest.TestCase):
                     return [overlay]
                 raise AssertionError(sql)
 
-            with patch.object(render.db, "query_one", return_value=project), \\
-                 patch.object(render.db, "query", side_effect=query), \\
-                 patch.object(render.db, "EXPORT_DIR", root / "exports"), \\
-                 patch.object(render, "_workdir", return_value=workdir), \\
-                 patch.object(render.db, "execute"), \\
+            with patch.object(render.db, "query_one", return_value=project), \
+                 patch.object(render.db, "query", side_effect=query), \
+                 patch.object(render.db, "EXPORT_DIR", root / "exports"), \
+                 patch.object(render, "_workdir", return_value=workdir), \
+                 patch.object(render.db, "execute"), \
                  patch.object(render.db, "now", return_value="2026-11-16T00:00:00"):
                 archive = render.export_project(7)
 
