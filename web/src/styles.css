@@ -2828,3 +2828,9 @@ th {
   .editor-transport input[type="range"] { order: 3; flex-basis: 100%; }
   .editor-transport small { min-width: 0; }
 }
+
+
+.editor-track-clip.sfx { background: #49345f; border-color: rgba(167,139,250,.4); }
+.scene-sfx-controls { display: flex; flex-direction: column; gap: 9px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); }
+.scene-sfx-controls audio { width: 100%; }
+.scene-sfx-controls .field { margin: 0; }
