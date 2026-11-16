@@ -802,6 +802,34 @@ export default function Editor({ projectId, go }: Props) {
               </figure>)}{results.length === 0 && <small>Sin resultados todavía.</small>}</div>}
             </div>}
           </Card>
+          <Card title="Audio y música" sub="Elegí la pista de fondo y mezclala debajo de la voz.">
+            <Field label="Pista musical">
+              <select value={project.music || "auto"} onChange={(e) => void patchProject({ music: e.target.value })}>
+                <option value="auto">Automática</option>
+                <option value="ninguna">Sin música</option>
+                {(meta?.music_beds ?? []).map((track) => <option key={track.id} value={"bed:" + track.id}>{track.label}</option>)}
+                {(meta?.music_library ?? []).map((track) => <option key={track} value={track}>{track}</option>)}
+              </select>
+            </Field>
+            {project.music !== "ninguna" && <Field label={"Volumen de música: " + Math.round((project.music_volume ?? 0.12) * 100) + "%"}>
+              <input type="range" min="0" max="0.5" step="0.01" value={project.music_volume ?? 0.12} onChange={(e) => void patchProject({ music_volume: Number(e.target.value) })} />
+            </Field>}
+            <label className="btn small ghost">＋ Subir pista de audio
+              <input type="file" accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/flac,.mp3,.wav,.ogg,.m4a,.flac" hidden disabled={!!busy} onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setBusy("music-upload"); setError(""); setOk("");
+                try {
+                  const result = await api.upload<{ filename: string; music_library: string[] }>("/api/music/upload", file);
+                  setMeta((previous) => previous ? { ...previous, music_library: result.music_library } : previous);
+                  await patchProject({ music: result.filename });
+                  setOk("Pista agregada a la biblioteca y asignada a este video.");
+                } catch (uploadError) { setError((uploadError as Error).message); }
+                finally { setBusy(""); e.target.value = ""; }
+              }} />
+            </label>
+            <small className="muted">Los archivos se guardan localmente. Formatos: MP3, WAV, OGG, M4A y FLAC.</small>
+          </Card>
           <Card title="Entrega" sub="Revisá el resultado completo antes de descargarlo.">
             {project.status === "renderizado" ? <div className="stack">
               <video controls preload="metadata" className={project.aspect === "9:16" ? "preview vertical" : "preview"} src={"/api/projects/" + projectId + "/video"} />
