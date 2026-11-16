@@ -126,7 +126,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
                     Confirmo que tengo permiso comercial para usar y publicar clips de {option.label}
                   </label>
                   <details className="background-clip-manager">
-                    <summary>Administrar clips · {categoryClips.length} cargados · mínimo {required}, máximo {MAX_CLIPS}</summary>
+                    <summary>Administrar clips · {categoryClips.length} cargados · mínimo {required}, máximo {maxClips(option.id)}</summary>
                     <div className="clip-source-list">
                       <strong>Fuentes y permisos revisados</strong>
                       {(CLIP_SOURCES[option.id] || []).map((source) => (
@@ -192,7 +192,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
               )}
 
               <div className="video-type-footer">
-                {required > 0 && <small>{categoryClips.length} de {MAX_CLIPS} clips · mínimo {required}</small>}
+                {required > 0 && <small>{categoryClips.length} de {maxClips(option.id)} clips · mínimo {required}</small>}
                 <button
                   type="button"
                   className="btn small"
@@ -208,7 +208,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
         })}
       </div>
       {error && <p className="error-text">{error}</p>}
-      {!compact && <p className="muted caption-style-help">Minecraft y Subway Surfers necesitan clips propios o autorizados; los videos de archivo requieren cinco. Video de fondo usa un solo clip en todas las escenas, en bucle y sin audio original. Los archivos se guardan en el almacenamiento de esta instalación y no se envían a servicios de terceros.</p>}
+      {!compact && <p className="muted caption-style-help">Minecraft y Subway Surfers usan clips propios o autorizados; Videos de archivo alterna cinco. Video de fondo reutiliza un único clip en cada escena y silencia su audio original. Los archivos se guardan en el almacenamiento de esta instalación y no se envían a servicios de terceros.</p>}
     </div>
   );
 }
