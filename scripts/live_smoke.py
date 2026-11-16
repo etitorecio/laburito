@@ -392,6 +392,7 @@ def main() -> int:
         check(natural_project.get("template") == "reddit_story", "la orden natural elige Historias", str(natural_project.get("template")))
         natural_deadline = time.time() + 460
         natural_state = ""
+        natural_message = ""
         while time.time() < natural_deadline:
             time.sleep(5)
             _, jobs, _ = call("GET", "/api/jobs")
@@ -399,9 +400,17 @@ def main() -> int:
             row = next((item for item in rows if item.get("id") == natural_job_id or item.get("project_id") == natural_project_id), None)
             if row:
                 natural_state = str(row.get("status") or "")
+                natural_message = str(row.get("message") or "")
                 if natural_state in {"listo", "error", "cancelado", "done", "failed", "completado"}:
                     break
-        check(natural_state in {"listo", "done", "completado"}, "orden natural completa el render", f"({natural_state or 'sin estado'})")
+        check(
+            natural_state in {"listo", "done", "completado"},
+            "orden natural completa el render",
+            f"({natural_state or 'sin estado'}: {natural_message})",
+        )
+        if natural_state == "error" and os.path.exists("/tmp/laburito-live-smoke.log"):
+            with open("/tmp/laburito-live-smoke.log", encoding="utf-8", errors="replace") as server_log:
+                print("  LOG WORKER: " + "\\n".join(server_log.read().splitlines()[-50:]))
         natural_status, natural_mp4, _ = call("GET", f"/api/projects/{natural_project_id}/video", raw=True)
         check(natural_status == 200, "orden natural entrega MP4", f"({natural_status})")
         check(len(natural_mp4) > 10_000, "MP4 de orden natural contiene video", f"({len(natural_mp4)} bytes)")
