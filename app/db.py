@@ -24,7 +24,7 @@ TMP_DIR = DATA_DIR / "tmp"
 
 _WRITE_LOCK = threading.RLock()
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 
 _MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -244,6 +244,11 @@ _MIGRATIONS: dict[int, list[str]] = {
             created_at TEXT NOT NULL
         )""",
         "CREATE INDEX IF NOT EXISTS idx_editor_history_project ON editor_history(project_id, id)",
+    ],
+    10: [
+        "ALTER TABLE timeline_overlays ADD COLUMN source_start_sec REAL NOT NULL DEFAULT 0",
+        "ALTER TABLE timeline_overlays ADD COLUMN source_end_sec REAL NOT NULL DEFAULT 0",
+        "ALTER TABLE timeline_overlays ADD COLUMN source_duration_sec REAL NOT NULL DEFAULT 0",
     ],
 }
 
