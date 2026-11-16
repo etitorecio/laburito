@@ -137,69 +137,19 @@ def run_job(job: dict) -> None:
                 on_progress=lambda pct, msg: _set_progress(job_id, pct, msg),
             )
             result["validation"] = _validate_render_result(result)
-            # Auto-subida: si el proyecto la tiene activada, se publica al terminar.
-            try:
-                auto = publish.auto_publish_settings(int(project_id))
-            except publish.PublishError as exc:
-                message = "Render terminado, pero no se pudo consultar la autopublicación: " + str(exc)
-                db.execute(
-                    "UPDATE jobs SET message=?, updated_at=? WHERE id=?",
-                    (message[:400], db.now(), job_id),
-                )
-                db.execute(
-                    "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE last_project_id=?",
-                    (message[:500], db.now(), int(project_id)),
-                )
-                db.log("error", "worker", message, {"project_id": project_id})
-                # La configuración del proyecto pudo fallar transitoriamente.
-                # Recuperamos la intención desde la regla para no perder la publicación.
-                auto = _scheduled_publish_settings(int(project_id))
-                if not auto["enabled"]:
-                    db.execute(
-                        "UPDATE jobs SET message=?, updated_at=? WHERE id=?",
-                        ((message + " — no se pudo recuperar una regla activa; requiere revisión.")[:400], db.now(), job_id),
-                    )
-            blocker = ""
-            if auto["enabled"] and auto["destination"] == "youtube":
-                if not persistence.durable_storage_available():
-                    blocker = (
-                        "Publicación automática retenida: no hay almacenamiento persistente. "
-                        "Conectá Supabase o usá un volumen local persistente."
-                    )
-                else:
-                    blocker = _auto_publish_blocker(result)
-                if blocker:
-                    db.execute(
-                        "UPDATE jobs SET message=?, updated_at=? WHERE id=?",
-                        (blocker[:400], db.now(), job_id),
-                    )
-                    db.execute(
-                        "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE last_project_id=?",
-                        (blocker[:500], db.now(), int(project_id)),
-                    )
-                    db.log("warn", "worker", blocker, {"project_id": project_id})
-                    # El MP4 permanece disponible, pero no se simula una publicación.
-                    auto = {"enabled": False, "destination": "youtube"}
-            if auto["enabled"]:
-                if auto["destination"] == "youtube" and persistence.configured():
-                    # En despliegues con disco efímero no iniciar la subida hasta
-                    # confirmar una copia remota recuperable del MP4.
-                    # Si falla, el trabajo de render se reintenta y no se pierde el Short.
-                    persistence.sync_pending_video(int(project_id), result["video"])
-                publish_job = enqueue(
-                    int(project_id),
-                    "publish_project",
-                    {
-                        "destination": auto["destination"],
-                        "privacy": render_payload.get("privacy", auto.get("privacy", "unlisted")),
-                    },
-                )
-                db.log(
-                    "info",
-                    "worker",
-                    f"Auto-subida encolada para el proyecto {project_id}",
-                    {"destination": auto["destination"], "job": publish_job},
-                )
+            # La publicación es siempre una acción explícita del usuario.
+            # El Autopiloto puede producir y renderizar, pero nunca publicar por sí solo.
+            approval_message = (
+                "Render terminado y validado. Revisá el video y usá Publicar cuando quieras "
+                "autorizar la entrega o la subida a YouTube."
+            )
+            db.execute(
+                "UPDATE jobs SET message=?, updated_at=? WHERE id=?",
+                (approval_message, db.now(), job_id),
+            )
+            db.log(
+                "info", "worker", approval_message, {"project_id": project_id}
+            )
             # Completar el render después de encolar la publicación: así un reinicio
             # no deja un MP4 terminado sin su tarea de subida.
             db.execute(
