@@ -383,18 +383,19 @@ export default function Editor({ projectId, go }: Props) {
       )}
 
 
+      <div className="editor-projectbar">
+        <div className="editor-project-title"><h2>{project.title}</h2><span>{project.kind === 'short' ? 'Short vertical' : 'Video largo'} · {project.aspect} · {scenes.length} escenas</span></div>
+        <div className="row gap-8">
+          <button className="btn small ghost" onClick={() => go('proyectos')}>Volver</button>
+          <button className="btn small" onClick={() => generateScript(false)} disabled={busy === 'script'}>Añadir escenas</button>
+          <button className="btn small primary" onClick={render} disabled={busy === 'render' || scenes.length === 0}>Renderizar</button>
+        </div>
+      </div>
       <details className="editor-settings">
         <summary><strong>Configuración del video</strong><span>Duración · voz · estilo visual · subtítulos · música</span></summary>
       <Card
         title={project.title}
         sub={`${project.kind === 'short' ? 'Short vertical' : 'Documental'} · ${project.aspect} · ${scenes.length} escenas · ${words} palabras · ~${fmtDuration(totalChars / 14)} de voz`}
-        actions={
-          <>
-            <button className="btn small ghost" onClick={() => go('proyectos')}>Volver</button>
-            <button className="btn small" onClick={() => generateScript(false)} disabled={busy === 'script'}>+ Escenas</button>
-            <button className="btn small primary" onClick={render} disabled={busy === 'render' || scenes.length === 0} title={scenes.length === 0 ? 'Primero generá el guion para crear escenas' : 'Renderizar el video'}>Renderizar</button>
-          </>
-        }
       >
         <div className="pill-row" style={{ marginBottom: 12 }}>
           <Badge tone={statusTone(project.status)}>{project.status}</Badge>
