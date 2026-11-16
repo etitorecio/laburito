@@ -2933,3 +2933,22 @@ th {
 
 .editor-overlay-clip { cursor: grab; }
 .editor-overlay-clip:active { cursor: grabbing; }
+
+
+/* Creación rápida: formatos visibles, canal opcional y una sola acción principal. */
+.studio-prompt-presets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:0 0 12px}
+.studio-prompt-presets button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:9px 10px;border:1px solid var(--sh-line);border-radius:11px;background:#17182b;color:#cfc8ff;font:inherit;font-weight:750;cursor:pointer}
+.studio-prompt-presets button:hover,.studio-prompt-presets button:focus-visible{border-color:#a78bfa;background:#25203d;outline:none}
+.studio-prompt-presets span{color:#f6f4ff;font-size:.82rem}
+.studio-prompt-controls{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:10px 0}
+.studio-prompt-controls label{display:grid;gap:4px;min-width:0;flex:1;color:var(--sh-muted);font-size:.72rem;font-weight:700}
+.studio-prompt-controls select{width:100%;max-width:360px;min-height:44px;padding:9px 11px;border:1px solid var(--sh-line);border-radius:10px;background:#111523;color:#f6f4ff;font:inherit}
+.studio-prompt-form>small{display:block;line-height:1.45}
+.studio-primary:disabled{opacity:.55;cursor:wait}
+@media(max-width:560px){
+  .studio-prompt-presets{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .studio-prompt-presets button{justify-content:flex-start;min-height:44px;padding:8px 11px}
+  .studio-prompt-controls{align-items:stretch;flex-direction:column}
+  .studio-prompt-controls select{max-width:none}
+  .studio-prompt-controls .studio-primary{min-height:48px;width:100%}
+}
