@@ -25,8 +25,8 @@ class ChannelWatermarkTests(unittest.TestCase):
         buffer = io.BytesIO()
         Image.new("RGBA", (40, 20), (255, 0, 0, 128)).save(buffer, format="PNG")
         with tempfile.TemporaryDirectory() as tmp:
-            with patch.object(main.db, "DATA_DIR", Path(tmp)), \\
-                 patch.object(main.db, "query_one", side_effect=[{"id": 4}, {"id": 4, "watermark_enabled": 1}]), \\
+            with patch.object(main.db, "DATA_DIR", Path(tmp)), \
+                 patch.object(main.db, "query_one", side_effect=[{"id": 4}, {"id": 4, "watermark_enabled": 1}]), \
                  patch.object(main.db, "execute") as execute:
                 result = asyncio.run(main.upload_channel_watermark(4, Upload(buffer.getvalue())))
             target = Path(result.get("watermark_path") or (Path(tmp) / "channels" / "4" / "watermark.png"))
@@ -35,7 +35,7 @@ class ChannelWatermarkTests(unittest.TestCase):
             self.assertEqual(execute.call_count, 1)
 
     def test_watermark_settings_are_clamped_and_validated(self):
-        with patch.object(main.db, "query_one", return_value={"id": 4}), \\
+        with patch.object(main.db, "query_one", return_value={"id": 4}), \
              patch.object(main.db, "execute") as execute:
             main.update_channel_watermark(
                 4,
