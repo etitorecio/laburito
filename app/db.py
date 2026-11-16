@@ -24,7 +24,7 @@ TMP_DIR = DATA_DIR / "tmp"
 
 _WRITE_LOCK = threading.RLock()
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 _MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -230,6 +230,20 @@ _MIGRATIONS: dict[int, list[str]] = {
     ],
     8: [
         "ALTER TABLE timeline_overlays ADD COLUMN volume REAL NOT NULL DEFAULT 1",
+    ],
+    9: [
+        """CREATE TABLE IF NOT EXISTS editor_history(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+            target TEXT NOT NULL,
+            target_id INTEGER NOT NULL,
+            before_json TEXT NOT NULL,
+            after_json TEXT NOT NULL,
+            label TEXT NOT NULL DEFAULT '',
+            undone INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL
+        )""",
+        "CREATE INDEX IF NOT EXISTS idx_editor_history_project ON editor_history(project_id, id)",
     ],
 }
 
