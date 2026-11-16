@@ -122,6 +122,7 @@ export default function Editor({ projectId, go }: Props) {
   const [overlays, setOverlays] = useState<TimelineOverlay[]>([]);
   const [selectedOverlayId, setSelectedOverlayId] = useState<number | null>(null);
   const [draggedOverlayId, setDraggedOverlayId] = useState<number | null>(null);
+  const [visualVariantIndex, setVisualVariantIndex] = useState<Record<number, number>>({});
   const [draggedSceneId, setDraggedSceneId] = useState<number | null>(null);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [previewElapsed, setPreviewElapsed] = useState(0);
@@ -330,7 +331,9 @@ export default function Editor({ projectId, go }: Props) {
     setError("");
     setOk("");
     try {
-      await api.post(`/api/scenes/${scene.id}/regenerate-visual?variant=0`, {});
+      const variant = visualVariantIndex[scene.id] ?? 0;
+      await api.post(`/api/scenes/${scene.id}/regenerate-visual?variant=${variant}`, {});
+      setVisualVariantIndex((current) => ({ ...current, [scene.id]: variant + 1 }));
       await load();
       setSelectedSceneId(scene.id);
       setOk("Visual alternativo aplicado. La fuente y su licencia quedaron guardadas.");
