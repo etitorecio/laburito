@@ -642,5 +642,35 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertIn("Ficción original", result["warnings"][0])
 
 
+    def test_specific_topic_research_returns_scoped_wikipedia_and_academic_evidence(self):
+        def fake_get(params):
+            if params.get("list") == "search":
+                return {"query": {"search": [{"title": "Historia del cine", "snippet": "Historia"}]}}
+            return {"query": {"pages": {"1": {
+                "title": "Historia del cine",
+                "fullurl": "https://es.wikipedia.org/wiki/Historia_del_cine",
+                "extract": "La historia del cine estudia su desarrollo técnico, artístico y social. " * 18,
+            }}}}
+
+        academic = [{
+            "title": "Early cinema and society",
+            "url": "https://doi.org/10.0000/example",
+            "abstract": "An academic abstract about early cinema. " * 20,
+            "author": "A. Researcher",
+            "provider": "OpenAlex",
+        }]
+        with patch.object(topic_engine, "_get", side_effect=fake_get):
+            with patch.object(topic_engine, "_openalex_abstracts", return_value=academic):
+                with patch.object(topic_engine, "_external_references", return_value=[]):
+                    result = topic_engine.research_specific_topic("historia del cine")
+
+        self.assertEqual(result["topic"], "historia del cine")
+        self.assertEqual(len(result["notes"]), 2)
+        self.assertEqual(result["notes"][0]["evidence_level"], "orientación")
+        self.assertEqual(result["notes"][1]["evidence_level"], "resumen académico")
+        self.assertEqual(result["notes"][1]["title"], "Early cinema and society")
+        self.assertTrue(all(note["source_url"] for note in result["notes"]))
+
+
 if __name__ == "__main__":
     unittest.main()
