@@ -19,6 +19,11 @@ def interpret_prompt(prompt: str) -> dict:
         channel_name = "Frutinovelas"
         default_topic = "Frutinovela original"
         title_prefix = "Frutinovela"
+    elif re.search(r"\b(?:short|shorts|video\s+corto|vídeo\s+corto)\b", lowered):
+        template = "shorts"
+        channel_name = None
+        default_topic = "Short original"
+        title_prefix = "Short"
     elif re.search(r"documental|video\s+largo|vídeo\s+largo|long.?form", lowered):
         template = "longform"
         channel_name = None
