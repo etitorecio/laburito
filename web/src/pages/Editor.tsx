@@ -531,7 +531,7 @@ export default function Editor({ projectId, go }: Props) {
   const totalChars = scenes.reduce((acc, s) => acc + (s.narration || '').length, 0);
   // La línea de tiempo usa una escala temporal común para todas las pistas.
   const sceneDurations = scenes.map((scene) =>
-    Math.max(2, (scene.narration || '').trim().split(/\s+/).filter(Boolean).length / 2.4),
+    Math.max(2, Number(scene.audio_sec) || (scene.narration || '').trim().split(/\s+/).filter(Boolean).length / 2.4),
   );
   const timelineScale = 18 * timelineZoom;
   const timelineStarts = sceneDurations.map((_, index) =>
