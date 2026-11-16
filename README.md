@@ -16,6 +16,7 @@ Reconstrucción libre y local de la experiencia de IATuber, para **Shorts y docu
 - **Rendimiento local**: 720p y 25 FPS por defecto para reducir carga en CPU; se puede subir a 1080p o más cuando el equipo lo permita. espeak-ng funciona localmente y Piper neural DaveFX se descarga automáticamente al iniciar (63 MB), sin claves ni pagos.
 - **Demostraciones**: los 13 estilos de subtítulos, los movimientos de escena y los 10 tratamientos visuales tienen vistas previas generadas por FFmpeg, el mismo motor del video final.
 - **Render**: FFmpeg para Shorts verticales 9:16, con subtítulos quemados, miniaturas y música de fondo opcional.
+- **Video de fondo**: podés cargar un único MP4 propio o autorizado para reutilizarlo en todas las escenas; su audio original se descarta y la narración/música quedan por encima. También hay bibliotecas separadas para gameplay y clips de archivo.
 - **Frutinovelas**: plantilla vertical de ficción episódica con personajes recurrentes definidos por el usuario, escenas de melodrama, traición, giro y cliffhanger para continuar la serie. Dibuja ilustraciones 2D procedurales originales del mismo elenco frutal en cada escena, sin IA externa ni créditos.
 - **Cola persistente**: un trabajo a la vez, reanudable tras reinicio y con caché por escena (no repite trabajo).
 - **Entrega**: ZIP con MP4, SRT, VTT, guion en Markdown, fuentes/atribuciones en CSV, miniaturas, metadatos de publicación e informe de calidad.
