@@ -229,6 +229,22 @@ def main() -> int:
             "recorte de entrada/salida guardado contra la duración original",
             f"({status})",
         )
+        status, history_entry, _ = call(
+            "POST", f"/api/projects/{project_id}/history",
+            {
+                "target": "scene", "target_id": scene_id,
+                "before": {"visual_trim_start_sec": 0, "visual_trim_end_sec": 0},
+                "after": {"visual_trim_start_sec": 0.2, "visual_trim_end_sec": 1.8},
+                "label": "Recorte de video",
+            },
+        )
+        check(status == 201 and bool((history_entry or {}).get("id")), "historial persistente registrado", f"({status})")
+        status, undone, _ = call("POST", f"/api/projects/{project_id}/history/undo")
+        check(status == 200 and (undone or {}).get("ok"), "deshacer persistente", f"({status})")
+        status, redone, _ = call("POST", f"/api/projects/{project_id}/history/redo")
+        check(status == 200 and (redone or {}).get("ok"), "rehacer persistente", f"({status})")
+        status, saved_history, _ = call("GET", f"/api/projects/{project_id}/history")
+        check(status == 200 and (saved_history or {}).get("can_undo"), "historial restaurable", f"({status})")
     finally:
         os.unlink(video_path)
 
