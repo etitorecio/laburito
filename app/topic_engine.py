@@ -228,6 +228,58 @@ def choose_topic(
     )
 
 
+
+def research_specific_topic(topic: str) -> dict:
+    """Investiga el tema elegido por el usuario sin mostrar un módulo separado."""
+    topic = re.sub(r"\\s+", " ", (topic or "").strip())
+    if not topic:
+        raise ValueError("Escribí un tema para investigar.")
+    data = _get({
+        "action": "query", "list": "search", "srsearch": topic,
+        "srnamespace": 0, "srlimit": 6, "format": "json",
+    })
+    candidates = data.get("query", {}).get("search", [])
+    if not candidates:
+        raise RuntimeError("No encontré documentación pública suficiente para ese tema.")
+    ranked = sorted(
+        candidates,
+        key=lambda item: difflib.SequenceMatcher(
+            None, _normal(topic), _normal(item.get("title") or "")
+        ).ratio(),
+        reverse=True,
+    )
+    selected = ranked[0]
+    title = (selected.get("title") or "").strip()
+    page_data = _get({
+        "action": "query", "prop": "extracts|info", "explaintext": 1,
+        "inprop": "url", "exchars": 14000, "titles": title, "format": "json",
+    })
+    page = next(iter(page_data.get("query", {}).get("pages", {}).values()), {})
+    extract = re.sub(r"\\s+", " ", page.get("extract", "")).strip()
+    if len(extract) < 450:
+        raise RuntimeError("Encontré una página, pero no contiene suficiente información para escribir un guion fiable.")
+    url = page.get("fullurl") or (
+        "https://es.wikipedia.org/wiki/" + urllib.parse.quote(title.replace(" ", "_"))
+    )
+    academic = _openalex_abstracts(title, limit=3)
+    notes = [{
+        "niche": topic, "claim": extract[:12000], "evidence_level": "orientación",
+        "source_url": url, "methodology": "Extracto introductorio de Wikipedia; contrastar con fuentes independientes.",
+    }]
+    notes.extend({
+        "niche": topic, "claim": item["abstract"], "evidence_level": "resumen académico",
+        "source_url": item["url"],
+        "methodology": "Resumen bibliográfico OpenAlex; no sustituye la lectura del estudio original.",
+    } for item in academic)
+    return {
+        "topic": topic, "title": title, "url": url,
+        "source_title": title + " — Wikipedia",
+        "summary": extract[:12000], "notes": notes,
+        "academic_sources": academic,
+        "references": _external_references(title),
+    }
+
+
 def research_topic(
     niche: str,
     previous_topics: list[str],
