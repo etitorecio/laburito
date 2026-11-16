@@ -112,7 +112,7 @@ const FEATURES = [
   {
     icon: '🎙️',
     title: 'Voces locales',
-    desc: 'espeak-ng incluido con cinco voces y soporte opcional de Piper para una voz más natural.',
+    desc: 'Seis perfiles de voz española con espeak-ng y soporte opcional de Piper neural, sin servicios de voz pagos.',
   },
   {
     icon: '🎨',
@@ -127,7 +127,7 @@ const FEATURES = [
   {
     icon: '✍️',
     title: 'Guiones editables',
-    desc: 'Cambia cualquier escena, acorta o alarga, y regenera solo esa parte sin rehacer el vídeo.',
+    desc: 'Editá cualquier escena y regenerá solo esa parte. Con Ollama conectado usa IA local; sin él aplica una variante de respaldo.',
   },
   {
     icon: '🔁',
