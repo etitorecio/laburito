@@ -4,6 +4,7 @@ from __future__ import annotations
 import csv
 import io
 import hmac
+import hashlib
 import json
 import os
 import platform
@@ -652,6 +653,35 @@ def voice_sample_preview(voice_id: str, speed: int = 150, pitch: int = 45):
         return FileResponse(preview, media_type="audio/wav")
     except Exception as exc:
         raise HTTPException(503, f"No se pudo generar la muestra de voz: {exc}") from exc
+
+
+@app.get("/api/scenes/{scene_id}/voice-preview")
+def scene_voice_preview(scene_id: int):
+    """Genera una muestra de la narración de una escena con la voz real del proyecto."""
+    scene = db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))
+    if not scene:
+        raise HTTPException(404, "Escena inexistente")
+    narration = (scene.get("narration") or "").strip()
+    if not narration:
+        raise HTTPException(400, "Escribí la narración de la escena antes de escucharla.")
+    project = db.query_one("SELECT voice,speed,pitch FROM projects WHERE id=?", (scene["project_id"],))
+    if not project:
+        raise HTTPException(404, "Proyecto inexistente")
+    voice = project.get("voice") or "es"
+    speed = max(80, min(300, int(project.get("speed") or 150)))
+    pitch = max(0, min(99, int(project.get("pitch") or 45)))
+    signature = hashlib.sha256(
+        f"{narration}|{voice}|{speed}|{pitch}".encode("utf-8")
+    ).hexdigest()[:20]
+    preview_dir = db.DATA_DIR / "voice_previews"
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    preview = preview_dir / f"scene-{scene_id}-{signature}.wav"
+    try:
+        if not preview.exists() or preview.stat().st_size < 1000:
+            tts.synthesize(narration, preview, voice=voice, speed=speed, pitch=pitch)
+        return FileResponse(preview, media_type="audio/wav")
+    except Exception as exc:
+        raise HTTPException(503, f"No se pudo generar la voz de esta escena: {exc}") from exc
 
 
 @app.get("/api/transition-preview/{transition_id}")
