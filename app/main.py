@@ -1072,6 +1072,9 @@ def create_from_prompt(payload: NaturalCreateIn):
         channel_id=channel_id,
         template=intent["template"],
         aspect=intent["aspect"],
+        # Las voces reales pueden superar levemente la duración estimada; dejar
+        # margen evita que una historia de 3 min falle por unos segundos al validar Shorts.
+        duration_target_sec=150 if intent["template"] == "reddit_story" else None,
         notes=(
             "Orden original del usuario: " + intent["prompt"]
             + (
