@@ -2635,3 +2635,14 @@ th {
 @media (max-width: 560px) {
   .project-list-thumb { width: 68px; height: 54px; flex-basis: 68px; }
 }
+
+.scene-audio-preview {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 10px 0;
+  color: var(--muted);
+  font-size: .76rem;
+}
+.scene-audio-preview audio { width: min(100%, 360px); height: 36px; }
