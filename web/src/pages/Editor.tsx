@@ -320,15 +320,10 @@ export default function Editor({ projectId, go }: Props) {
     setError('');
     setOk('');
     try {
-      const created = await api.post<Scene>(`/api/projects/${projectId}/scenes`, {
-        title: scene.title + ' (copia)',
-        narration: scene.narration,
-        visual_query: scene.visual_query,
-        transition: scene.transition || project?.transition_default || 'corte',
-      });
+      const created = await api.post<Scene>(`/api/scenes/${scene.id}/duplicate`, {});
       await load();
       setSelectedSceneId(created.id);
-      setOk('Escena duplicada. Revisá su visual y ajustá el texto si hace falta.');
+      setOk('Escena duplicada con su visual, efecto y transición.');
     } catch (e) {
       setError((e as Error).message);
     } finally {
