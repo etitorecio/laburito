@@ -136,7 +136,7 @@ export default function App() {
       </main>
 
       <nav className="tabbar">
-        {ROUTES.filter((r) => ['inicio', 'proyectos', 'autopilot', 'cola', 'cuentas'].includes(r.id)).map((r) => (
+        {ROUTES.filter((r) => ['inicio', 'proyectos', 'editor', 'autopilot', 'cola', 'cuentas'].includes(r.id)).map((r) => (
           <button key={r.id} className={`tab ${route === r.id ? 'active' : ''}`} onClick={() => go(r.id)}>
             <span aria-hidden>{r.icon}</span>
             <small>{r.label}</small>
