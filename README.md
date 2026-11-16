@@ -26,6 +26,8 @@ Reconstrucción libre y local de la experiencia de IATuber, para **Shorts y docu
 - **Biblioteca**: todo lo producido o descargado, con licencia y autor.
 - **Diagnóstico**: estado real de FFmpeg, fuentes, voz, base de datos, espacio y worker.
 
+- **Creación por orden natural**: desde Inicio podés escribir «haceme un short sobre X», «haceme una historia de terror» o «haceme una frutinovela». Laburito interpreta el formato, asigna la fábrica/canal correspondiente cuando aplica, crea el proyecto, investiga los temas no ficticios, genera escenas y guion, y encola el render para que continúe en segundo plano. La interfaz te lleva al editor para seguir el progreso y revisar el resultado. El endpoint es `POST /api/create-from-prompt` con `{ "prompt": "..." }`; el parser actual es determinista y se seguirá ampliando con pruebas.
+
 ## Instalación local
 
 Requisitos: Python 3.11+, FFmpeg y espeak-ng.
