@@ -978,14 +978,27 @@ export default function Editor({ projectId, go }: Props) {
                 <div className="editor-track">
                   <div className="editor-track-label">CAPAS</div>
                   <div className="editor-overlay-lane" style={{ width: timelineWidth }}>
-                    {overlays.map((clip) => <button type="button" key={clip.id}
+                    {overlays.filter((clip) => clip.kind !== "audio").map((clip) => <button type="button" key={clip.id}
                       className={"editor-overlay-clip " + clip.kind + (selectedOverlayId === clip.id ? " active" : "")}
                       style={{ left: clip.start_sec * timelineScale, width: Math.max(34, clip.duration_sec * timelineScale), top: 6 }}
                       onClick={() => { setSelectedOverlayId(clip.id); setPreviewPlaying(false); setPreviewElapsed(clip.start_sec); }}
                       title={clip.title + " · " + fmtDuration(clip.start_sec) + " · " + fmtDuration(clip.duration_sec)}>
-                      {clip.kind === "image" ? "▧ " : clip.kind === "audio" ? "♫ " : "▶ "}{clip.title}
+                      {clip.kind === "image" ? "▧ " : "▶ "}{clip.title}
                     </button>)}
-                    {!overlays.length && <small className="muted">Capas independientes: imágenes, videos y audio en pistas propias.</small>}
+                    {!overlays.some((clip) => clip.kind !== "audio") && <small className="muted">Imágenes y videos superpuestos de forma independiente.</small>}
+                  </div>
+                </div>
+                <div className="editor-track">
+                  <div className="editor-track-label">AUDIO EXTRA</div>
+                  <div className="editor-overlay-lane audio-lane" style={{ width: timelineWidth }}>
+                    {overlays.filter((clip) => clip.kind === "audio").map((clip) => <button type="button" key={clip.id}
+                      className={"editor-overlay-clip audio" + (selectedOverlayId === clip.id ? " active" : "")}
+                      style={{ left: clip.start_sec * timelineScale, width: Math.max(34, clip.duration_sec * timelineScale), top: 6 }}
+                      onClick={() => { setSelectedOverlayId(clip.id); setPreviewPlaying(false); setPreviewElapsed(clip.start_sec); }}
+                      title={clip.title + " · " + fmtDuration(clip.start_sec) + " · " + fmtDuration(clip.duration_sec)}>
+                      ♫ {clip.title}
+                    </button>)}
+                    {!overlays.some((clip) => clip.kind === "audio") && <small className="muted">Pistas de audio independientes con volumen propio.</small>}
                   </div>
                 </div>
                 <div className="editor-track">
