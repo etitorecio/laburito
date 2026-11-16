@@ -98,12 +98,9 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
   async function create() {
     setError('');
     setOk('');
-    if (!selectedChannel) {
-      setError('Elegí un canal válido antes de crear el video.');
-      return;
-    }
-    if (!form.title.trim()) {
-      setError('Escribí un título para el video.');
+    const projectTitle = (form.title.trim() || form.topic.trim() || form.script_text.trim().split(/[.!?]/)[0] || 'Nuevo video').slice(0, 120);
+    if (form.input_mode === 'idea' && !form.topic.trim()) {
+      setError('Escribí la idea o el tema de tu video.');
       return;
     }
     if (form.input_mode === 'script' && !form.script_text.trim()) {
@@ -120,8 +117,9 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
       const { captions_enabled, characters, input_mode, script_text, ...projectForm } = form;
       created = await api.post<Project>('/api/projects', {
         ...projectForm,
-        channel_id: selectedChannel.id,
-        topic: form.topic || form.title,
+        title: projectTitle,
+        channel_id: selectedChannel?.id ?? null,
+        topic: form.topic || projectTitle,
         notes: (!captions_enabled || form.visual_style_prompt.trim() || !form.create_thumbnail || characters.trim() || (input_mode === 'script' && script_text.trim())) ? '[LABURITO_META]' + JSON.stringify({ captions_enabled, visual_style_prompt: form.visual_style_prompt.trim(), create_thumbnail: form.create_thumbnail, characters: characters.trim(), script_text: input_mode === 'script' ? script_text.trim() : '' }) : '',
       });
       setOk('1/3 · Proyecto creado. Escribiendo el guion y preparando las escenas…');
@@ -242,20 +240,10 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
               <small>{form.script_text.length.toLocaleString('es')} / 12.000 caracteres</small>
             </Field>
           )}
-          <div className="row">
-            <Field label="Título">
-              <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="El último tranvía" />
-            </Field>
-            <Field label="Tema / idea">
-              <input value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })} placeholder="Qué pasó con el transporte eléctrico" />
-            </Field>
-          </div>
-          {easyMode && <Field label="Canal">
-            <select value={form.channel_id} onChange={(e) => setForm({ ...form, channel_id: e.target.value })}>
-              <option value="">Seleccioná un canal…</option>
-              {channels.map((channel) => <option key={channel.id} value={channel.id}>{channel.name}</option>)}
-            </select>
-          </Field>}
+          <Field label={form.input_mode === 'idea' ? '¿De qué querés que trate el video?' : 'Título (opcional)'}>
+            <input value={form.input_mode === 'idea' ? form.topic : form.title} onChange={(e) => setForm(form.input_mode === 'idea' ? { ...form, topic: e.target.value, title: e.target.value.slice(0, 120) } : { ...form, title: e.target.value })} placeholder={form.input_mode === 'idea' ? 'Ej.: El misterio de las civilizaciones perdidas' : 'Poné un título para tu video'} />
+          </Field>
+          {easyMode && <p className="muted">Podés crear el video directamente. Si después querés organizarlo, lo asignás a un canal desde el editor.</p>}
           {!easyMode && <div className="row">
             <Field label="Plantilla de contenido" hint={activeTemplate?.description}>
               <select value={form.template} onChange={(e) => applyTemplate(e.target.value)}>
@@ -413,7 +401,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
           )}
           </>}
           <div className="creation-submit">
-            <button className="btn primary" onClick={create} disabled={busy || !selectedChannel || !form.title.trim()}>{busy ? 'Preparando tu video…' : form.input_mode === 'script' ? 'Crear video con mi guion' : '✦ Crear mi video'}</button>
+            <button className="btn primary" onClick={create} disabled={busy || (form.input_mode === 'idea' ? !form.topic.trim() : !form.script_text.trim())}>{busy ? 'Preparando tu video…' : form.input_mode === 'script' ? 'Crear video con mi guion' : '✦ Crear mi video'}</button>
             {!easyMode && <button className="btn ghost" onClick={createBlank} disabled={busy || !selectedChannel || !form.title.trim()}>Empezar desde cero</button>}
             <small>{easyMode ? 'La configuración recomendada se aplica automáticamente. Podés cambiarla después en el editor.' : 'Podés revisar cada ajuste antes de producir.'}</small>
           </div>
