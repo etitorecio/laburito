@@ -383,6 +383,9 @@ def create_rule(data: dict) -> dict:
     clean.setdefault("aspect", selected_template.get("aspect", "9:16"))
     _validate_factory_channel(clean)
     clean.setdefault("destination", "youtube")
+    # YouTube siempre requiere aprobación manual, incluso si el cliente omite destination.
+    if clean["destination"] == "youtube":
+        clean["auto_publish"] = 0
     clean.setdefault("privacy", "public")
     clean.setdefault("resolution", "720p")
     clean.setdefault("music_volume", 0.3)
