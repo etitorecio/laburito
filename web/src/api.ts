@@ -62,7 +62,7 @@ export interface Scene {
 export interface TimelineOverlay {
   id: number;
   project_id: number;
-  kind: 'image' | 'video' | 'audio';
+  kind: 'image' | 'video' | 'audio' | 'text';
   path: string;
   title: string;
   start_sec: number;
