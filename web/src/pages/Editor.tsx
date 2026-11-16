@@ -325,6 +325,22 @@ export default function Editor({ projectId, go }: Props) {
     }
   }
 
+  async function regenerateVisual(scene: Scene) {
+    setBusy("visual-" + scene.id);
+    setError("");
+    setOk("");
+    try {
+      await api.post(`/api/scenes/${scene.id}/regenerate-visual?variant=0`, {});
+      await load();
+      setSelectedSceneId(scene.id);
+      setOk("Visual alternativo aplicado. La fuente y su licencia quedaron guardadas.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy("");
+    }
+  }
+
   async function duplicateScene(scene: Scene) {
     setBusy(`duplicate-${scene.id}`);
     setError('');
@@ -1052,7 +1068,8 @@ export default function Editor({ projectId, go }: Props) {
                   <button className="btn small ghost" onClick={() => move(activeScene, -1)} disabled={activeSceneIndex <= 0}>←</button>
                   <button className="btn small ghost" onClick={() => move(activeScene, 1)} disabled={activeSceneIndex >= scenes.length - 1}>→</button>
                   <button className="btn small ghost" onClick={() => duplicateScene(activeScene)} disabled={!!busy}>{busy === "duplicate-" + activeScene.id ? "Duplicando…" : "Duplicar"}</button>
-                  <button className="btn small ghost" onClick={() => regenerate(activeScene)} disabled={busy === "regenerate-" + activeScene.id}>{busy === "regenerate-" + activeScene.id ? "Regenerando…" : "Regenerar"}</button>
+                  <button className="btn small ghost" onClick={() => regenerate(activeScene)} disabled={!!busy}>{busy === "regenerate-" + activeScene.id ? "Reescribiendo…" : "Reescribir texto"}</button>
+                  <button className="btn small ghost" onClick={() => void regenerateVisual(activeScene)} disabled={!!busy}>{busy === "visual-" + activeScene.id ? "Buscando visual…" : "Regenerar visual"}</button>
                   <button className="btn small danger" onClick={() => removeScene(activeScene)}>Eliminar</button>
                 </div>
               </div>
