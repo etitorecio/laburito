@@ -683,9 +683,10 @@ class AutopilotResearchTests(unittest.TestCase):
                                 with patch.object(main_app.db, "scalar", return_value=-1):
                                     with patch.object(main_app.db, "now", return_value="2026-11-16T00:00:00Z"):
                                         with patch.object(main_app.db, "log"):
-                                            with patch.object(main_app, "_touch_project"):
-                                                with patch.object(main_app, "_project_full", return_value=project):
-                                                    result = main_app.generate_script(991)
+                                            with patch.object(main_app.db, "get_setting", return_value=""):
+                                                with patch.object(main_app, "_touch_project"):
+                                                    with patch.object(main_app, "_project_full", return_value=project):
+                                                        result = main_app.generate_script(991)
 
         inserts = [call.args[0] for call in execute.call_args_list]
         self.assertEqual(sum("INSERT INTO research_notes" in sql for sql in inserts), 2)
