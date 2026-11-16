@@ -124,6 +124,7 @@ export default function Editor({ projectId, go }: Props) {
   const [draggedOverlayId, setDraggedOverlayId] = useState<number | null>(null);
   const [visualVariantIndex, setVisualVariantIndex] = useState<Record<number, number>>({});
   const [overlayTextDraft, setOverlayTextDraft] = useState("");
+  const [voiceDraft, setVoiceDraft] = useState("");
   const [draggedSceneId, setDraggedSceneId] = useState<number | null>(null);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [previewElapsed, setPreviewElapsed] = useState(0);
@@ -486,6 +487,29 @@ export default function Editor({ projectId, go }: Props) {
     const seconds = Math.max(0, (event.clientX - rect.left) / timelineScale);
     void patchTimelineOverlay(clip, { start_sec: seconds });
     setDraggedOverlayId(null);
+  }
+
+  async function createTimelineVoiceOverlay() {
+    const text = voiceDraft.trim();
+    if (!text) return;
+    setBusy("create-voice-overlay");
+    setError("");
+    setOk("");
+    try {
+      const clip = await api.post<TimelineOverlay>(`/api/projects/${projectId}/timeline-overlays/voice`, {
+        text,
+        start_sec: previewElapsed,
+        volume: 1,
+      });
+      setVoiceDraft("");
+      await load();
+      setSelectedOverlayId(clip.id);
+      setOk("Voz en off generada localmente y añadida a la pista de audio.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy("");
+    }
   }
 
   async function createTimelineTextOverlay() {
@@ -1221,6 +1245,10 @@ export default function Editor({ projectId, go }: Props) {
                 </div>
               </div>;
             })()}
+          </Card>
+          <Card title="Generar voz en off" sub="Crea una pista de voz independiente con el motor local gratuito. Se inserta en el cabezal actual.">
+            <Field label="Texto de la voz"><textarea rows={4} maxLength={12000} value={voiceDraft} onChange={(e) => setVoiceDraft(e.target.value)} placeholder="Escribí lo que querés que diga la voz…" /></Field>
+            <button className="btn small primary" onClick={() => void createTimelineVoiceOverlay()} disabled={!voiceDraft.trim() || !!busy}>{busy === "create-voice-overlay" ? "Generando voz…" : "＋ Generar y añadir voz"}</button>
           </Card>
         </aside>
       </section>
