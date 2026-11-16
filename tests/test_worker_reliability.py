@@ -31,13 +31,26 @@ class WorkerReliabilityTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "no devolvió la ruta"):
             worker._validate_render_result({})
 
-    def test_scheduled_settings_preserve_youtube_destination_after_project_lookup_error(self):
+    def test_scheduled_settings_always_require_manual_youtube_approval(self):
+        for row in (
+            {"auto_publish": 1, "destination": "youtube", "privacy": "public"},
+            {"auto_publish": 1, "destination": None, "privacy": "public"},
+            {"auto_publish": 1, "privacy": "public"},
+        ):
+            with self.subTest(row=row):
+                with patch.object(worker.db, "query_one", return_value=row):
+                    settings = worker._scheduled_publish_settings(12)
+                self.assertEqual(settings, {
+                    "enabled": False, "destination": "youtube", "privacy": "unlisted"
+                })
+
+    def test_scheduled_settings_still_allow_automatic_local_delivery(self):
         with patch.object(worker.db, "query_one", return_value={
-            "auto_publish": 1, "destination": "youtube", "privacy": "public"
+            "auto_publish": 1, "destination": "entrega", "privacy": "private"
         }):
             settings = worker._scheduled_publish_settings(12)
         self.assertEqual(settings, {
-            "enabled": True, "destination": "youtube", "privacy": "public"
+            "enabled": True, "destination": "entrega", "privacy": "private"
         })
 
     def test_render_keeps_manual_approval_when_autopublish_is_disabled(self):
@@ -99,7 +112,7 @@ class WorkerReliabilityTests(unittest.TestCase):
             "quality": {"tts_engines": ["espeak-ng"]},
         }):
             with patch.object(worker, "_validate_render_result", return_value={"path": "/tmp/final_short.mp4"}):
-                with patch.object(worker, "_scheduled_publish_settings", return_value={"enabled": True, "destination": "youtube", "privacy": "unlisted"}):
+                with patch.object(worker, "_scheduled_publish_settings", return_value={"enabled": True, "destination": "entrega", "privacy": "unlisted"}):
                     with patch.object(worker.persistence, "configured", return_value=True):
                         with patch.object(worker.persistence, "sync_pending_video") as sync_video:
                             with patch.object(worker, "enqueue", return_value=321) as enqueue:
@@ -109,7 +122,7 @@ class WorkerReliabilityTests(unittest.TestCase):
                                             worker.run_job(job)
         sync_video.assert_called_once_with(13, "/tmp/final_short.mp4")
         enqueue.assert_called_once_with(13, "publish_project", {
-            "destination": "youtube", "calendar_id": None, "privacy": "unlisted"
+            "destination": "entrega", "calendar_id": None, "privacy": "unlisted"
         })
 
     def test_render_does_not_queue_autopublish_if_remote_mp4_backup_fails(self):
