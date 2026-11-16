@@ -9,17 +9,17 @@ import re
 
 
 def interpret_prompt(prompt: str) -> dict:
-    raw = re.sub(r"\\s+", " ", str(prompt or "")).strip()
+    raw = re.sub(r"\s+", " ", str(prompt or "")).strip()
     if not raw:
         raise ValueError("Escribí qué video querés crear.")
     lowered = raw.casefold()
 
-    if re.search(r"frutinovela|novela\\s+de\\s+frutas|telenovela\\s+de\\s+frutas", lowered):
+    if re.search(r"frutinovela|novela\s+de\s+frutas|telenovela\s+de\s+frutas", lowered):
         template = "frutinovela"
         channel_name = "Frutinovelas"
         default_topic = "Frutinovela original"
         title_prefix = "Frutinovela"
-    elif re.search(r"documental|video\\s+largo|vídeo\\s+largo|long.?form", lowered):
+    elif re.search(r"documental|video\s+largo|vídeo\s+largo|long.?form", lowered):
         template = "longform"
         channel_name = None
         default_topic = "Documental original"
@@ -37,19 +37,19 @@ def interpret_prompt(prompt: str) -> dict:
 
     subject = raw
     subject = re.sub(
-        r"^(?:che[, ]*)?(?:haceme|hazme|armame|creame|créame|generame|genérame|crea|crear|generar|produce|producime|quiero|necesito)\\s+",
+        r"^(?:che[, ]*)?(?:haceme|hazme|armame|creame|créame|generame|genérame|crea|crear|generar|produce|producime|quiero|necesito)\s+",
         "",
         subject,
         flags=re.IGNORECASE,
     )
     subject = re.sub(
-        r"^(?:(?:un|una|el|la)\\s+)?(?:short|video|vídeo|documental|historia|relato|frutinovela)(?:\\s+de\\s+terror)?\\s*",
+        r"^(?:(?:un|una|el|la)\s+)?(?:short|video|vídeo|documental|historia|relato|frutinovela)(?:\s+de\s+terror)?\s*",
         "",
         subject,
         flags=re.IGNORECASE,
     )
-    subject = re.sub(r"^(?:sobre|acerca\\s+de|de)\\s+", "", subject, flags=re.IGNORECASE)
-    subject = re.sub(r"\\s+", " ", subject).strip(" .,:;!?")
+    subject = re.sub(r"^(?:sobre|acerca\s+de|de)\s+", "", subject, flags=re.IGNORECASE)
+    subject = re.sub(r"\s+", " ", subject).strip(" .,:;!?")
     if subject.casefold() in {"terror", "miedo", "original", "frutas", "frutinovela"}:
         subject = ""
 
