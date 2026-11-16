@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api, fmtDuration, mediaUrl, type MediaResult, type Meta, type Project, type Scene } from '../api';
+import { api, fmtDuration, mediaUrl, type MediaResult, type Meta, type Project, type Scene, type TimelineOverlay } from '../api';
 import { Badge, Card, Empty, Field, Msg, Progress, statusTone } from '../ui';
 import type { Route } from '../routes';
 import CaptionStylePicker from '../components/CaptionStylePicker';
@@ -119,6 +119,8 @@ export default function Editor({ projectId, go }: Props) {
   const [busy, setBusy] = useState('');
   const [searchFor, setSearchFor] = useState<number | null>(null);
   const [selectedSceneId, setSelectedSceneId] = useState<number | null>(null);
+  const [overlays, setOverlays] = useState<TimelineOverlay[]>([]);
+  const [selectedOverlayId, setSelectedOverlayId] = useState<number | null>(null);
   const [draggedSceneId, setDraggedSceneId] = useState<number | null>(null);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [previewElapsed, setPreviewElapsed] = useState(0);
@@ -137,7 +139,13 @@ export default function Editor({ projectId, go }: Props) {
 
   const load = useCallback(async () => {
     try {
-      setProject(await api.get<Project>(`/api/projects/${projectId}`));
+      const [nextProject, nextOverlays] = await Promise.all([
+        api.get<Project>(`/api/projects/${projectId}`),
+        api.get<TimelineOverlay[]>(`/api/projects/${projectId}/timeline-overlays`),
+      ]);
+      setProject(nextProject);
+      setOverlays(nextOverlays);
+      setSelectedOverlayId((current) => current && nextOverlays.some((clip) => clip.id === current) ? current : null);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -445,6 +453,47 @@ export default function Editor({ projectId, go }: Props) {
       setError((e as Error).message);
     } finally {
       setBusy('');
+    }
+  }
+
+  async function uploadTimelineOverlay(file: File) {
+    setBusy("upload-overlay");
+    setError("");
+    setOk("");
+    try {
+      const clip = await api.upload<TimelineOverlay>(
+        `/api/projects/${projectId}/timeline-overlays/upload?start_sec=${encodeURIComponent(previewElapsed)}`,
+        file,
+      );
+      await load();
+      setSelectedOverlayId(clip.id);
+      setOk("Capa agregada a la línea de tiempo.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function patchTimelineOverlay(clip: TimelineOverlay, patch: Partial<TimelineOverlay>) {
+    try {
+      const updated = await api.patch<TimelineOverlay>(`/api/timeline-overlays/${clip.id}`, patch);
+      setOverlays((current) => current.map((item) => item.id === clip.id ? updated : item));
+      setOk("Capa guardada.");
+    } catch (e) {
+      setError((e as Error).message);
+      await load();
+    }
+  }
+
+  async function removeTimelineOverlay(clip: TimelineOverlay) {
+    try {
+      await api.del(`/api/timeline-overlays/${clip.id}`);
+      setOverlays((current) => current.filter((item) => item.id !== clip.id));
+      setSelectedOverlayId(null);
+      setOk("Capa eliminada.");
+    } catch (e) {
+      setError((e as Error).message);
     }
   }
 
