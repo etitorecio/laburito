@@ -43,7 +43,7 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
           </div>
           <div className="studio-trust"><span>✓ Sin créditos pagos</span><span>✓ Herramientas libres</span><span>✓ Tus canales, tu control</span></div>
         </div>
-        <div className="studio-showcase" aria-label="Ejemplos de formatos de video">
+        <div className="studio-showcase" aria-label="Vistas ilustrativas de formatos de video">
           <div className="showcase-card showcase-short"><small>SHORT · 9:16</small><span className="showcase-symbol">✦</span><strong>Historias que atrapan</strong><em>00:58</em></div>
           <div className="showcase-card showcase-doc"><small>DOCUMENTAL · 16:9</small><span className="showcase-symbol">◈</span><strong>Secretos de la historia</strong><em>12:40</em></div>
           <div className="showcase-card showcase-series"><small>SERIE · EPISODIOS</small><span className="showcase-symbol">♡</span><strong>Frutinovela</strong><em>EP. 04</em></div>
