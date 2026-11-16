@@ -170,6 +170,15 @@ class SceneSplitIn(BaseModel):
     split_at: int
 
 
+class TimelineOverlayVoiceIn(BaseModel):
+    text: str
+    start_sec: float = 0
+    voice: str | None = None
+    speed: int | None = None
+    pitch: int | None = None
+    volume: float = 1
+
+
 class TimelineOverlayTextIn(BaseModel):
     text: str
     start_sec: float = 0
@@ -1680,6 +1689,48 @@ def _write_timeline_text_image(text: str, target: Path) -> None:
         y += line_height + line_gap
     target.parent.mkdir(parents=True, exist_ok=True)
     image.save(target, format="PNG", optimize=True)
+
+
+@app.post("/api/projects/{project_id}/timeline-overlays/voice", status_code=201)
+def create_timeline_voice_overlay(project_id: int, payload: TimelineOverlayVoiceIn):
+    project = db.query_one("SELECT * FROM projects WHERE id=?", (project_id,))
+    if not project:
+        raise HTTPException(404, "Proyecto inexistente")
+    text = " ".join((payload.text or "").split())[:12000]
+    if not text:
+        raise HTTPException(400, "Escribí el texto de la voz en off.")
+    if not 0 <= payload.start_sec <= 3600 or not 0 <= payload.volume <= 2:
+        raise HTTPException(400, "La posición o el volumen de la voz no son válidos.")
+    folder = db.MEDIA_DIR / "overlays" / str(project_id)
+    folder.mkdir(parents=True, exist_ok=True)
+    target = folder / f"voice-{time.time_ns()}.wav"
+    try:
+        tts.synthesize(
+            text, target,
+            voice=payload.voice or project.get("voice") or "es",
+            speed=payload.speed or project.get("speed") or 150,
+            pitch=payload.pitch or project.get("pitch") or 45,
+        )
+        audio_info = media.probe_audio(target)
+        duration = float(audio_info.get("duration") or 0)
+        if not audio_info.get("codec") or duration <= 0:
+            raise RuntimeError("El motor de voz no produjo un audio válido.")
+    except Exception as exc:
+        target.unlink(missing_ok=True)
+        raise HTTPException(503, f"No se pudo generar la voz en off local: {exc}") from exc
+    title = (text[:72] + "…") if len(text) > 72 else text
+    overlay_id = db.execute(
+        "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,volume,created_at,updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (project_id, "audio", str(target), title, payload.start_sec, min(duration, 3600),
+         0.62, 0.62, 0.32, 1.0, payload.volume, db.now(), db.now()),
+    )
+    db.execute(
+        "INSERT INTO assets(project_id,kind,path,label,bytes,created_at) VALUES(?,?,?,?,?,?)",
+        (project_id, "voz_en_off", str(target), title, target.stat().st_size, db.now()),
+    )
+    _touch_project(project_id)
+    return db.query_one("SELECT * FROM timeline_overlays WHERE id=?", (overlay_id,))
 
 
 @app.post("/api/projects/{project_id}/timeline-overlays/text", status_code=201)
