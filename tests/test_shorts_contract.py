@@ -121,16 +121,35 @@ class ShortsContractTests(unittest.TestCase):
 
     def test_user_supplied_clip_formats_are_available_but_ai_video_is_not(self):
         by_id = {item["id"]: item for item in options.VIDEO_TYPES}
-        for video_type in ("stock_footage", "minecraft", "subway"):
+        for video_type in ("stock_footage", "minecraft", "subway", "background_video"):
             with self.subTest(video_type=video_type):
                 self.assertTrue(by_id[video_type]["available"])
         self.assertFalse(by_id["full_motion_ai"]["available"])
+
+    def test_background_video_reuses_one_local_clip_for_every_scene(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            folder = root / "background_clips" / "background_video"
+            folder.mkdir(parents=True)
+            clip = folder / "loop.mp4"
+            clip.write_bytes(b"test")
+            with patch.object(render.db, "DATA_DIR", root):
+                first, kind1, info1 = render.ensure_visual({"id": 1, "video_type": "background_video"}, {"idx": 0})
+                second, kind2, info2 = render.ensure_visual({"id": 1, "video_type": "background_video"}, {"idx": 8})
+            self.assertEqual(first, clip)
+            self.assertEqual(second, clip)
+            self.assertEqual(kind1, "video_fondo")
+            self.assertEqual(kind2, "video_fondo")
+            self.assertEqual(info1["mode"], "repetir debajo de toda la narración")
+            self.assertEqual(info2["provider"], "biblioteca_local")
 
     def test_gameplay_clip_minimums_match_the_product_contract(self):
         self.assertEqual(options.VIDEO_CLIP_MINIMUMS, {
             "stock_footage": 5,
             "minecraft": 1,
             "subway": 1,
+            "background_video": 1,
         })
 
 
