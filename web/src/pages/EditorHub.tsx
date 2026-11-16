@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, type Project } from '../api';
+import { api, mediaUrl, type Project } from '../api';
 import { Badge, Card, Empty, Msg, statusTone } from '../ui';
 
 type Aspect = '9:16' | '1:1' | '16:9';
@@ -39,7 +39,7 @@ export default function EditorHub({ go }: { go: (route: 'editor' | 'proyectos', 
     <Card title="Abrir un video" sub="Continuá editando una producción o retomá un proyecto guardado.">
       {recent.length ? <div className="editor-hub-projects">{recent.map((project) => (
         <button className="editor-hub-project" key={project.id} onClick={() => go('editor', project.id)}>
-          <span className={'editor-hub-thumb ' + (project.aspect === '9:16' ? 'portrait' : '')}>▶</span>
+          <span className={'editor-hub-thumb ' + (project.aspect === '9:16' ? 'portrait' : '')}>{project.thumbnail_path ? <img src={mediaUrl(project.thumbnail_path)} alt="" /> : project.status === "renderizado" ? <img src={mediaUrl("renders/" + project.id + "/miniatura_" + (project.kind === "short" ? "short" : "documental") + ".jpg")} alt="" /> : "▶"}</span>
           <span className="editor-hub-project-info"><strong>{project.title}</strong><small>{project.kind === 'short' ? 'Short vertical' : 'Video largo'} · {project.aspect} · {project.scenes_count ?? 0} escenas</small></span>
           <Badge tone={statusTone(project.status)}>{project.status}</Badge>
           <span aria-hidden>›</span>
