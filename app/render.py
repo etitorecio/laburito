@@ -551,6 +551,16 @@ def render_scene(
     # imagen y cambiar scene.visual_path. El hash debe usar el recurso efectivo
     # para que la segunda ejecución encuentre exactamente la misma caché.
     wav, duration, audio_info = ensure_audio(project, scene)
+    sfx_path = Path(scene.get("sfx_path") or "")
+    sfx_signature = ""
+    if scene.get("sfx_path") and sfx_path.is_file():
+        try:
+            sfx_stat = sfx_path.stat()
+            sfx_signature = f"{sfx_path}:{sfx_stat.st_size}:{sfx_stat.st_mtime_ns}"
+        except OSError:
+            sfx_signature = str(sfx_path)
+    sfx_volume = max(0.0, min(2.0, float(scene.get("sfx_volume") or 0.0)))
+    sfx_start = max(0.0, min(duration, float(scene.get("sfx_start_sec") or 0.0)))
     visual, visual_kind, visual_info = ensure_visual(project, scene)
     scene["visual_path"] = str(visual)
     visual_path = Path(visual)
@@ -573,12 +583,30 @@ def render_scene(
         f"{narration}|{visual_signature}|{duration:.3f}|{width}x{height}"
         f"|{project.get('kind')}|{style_signature}|{transition}|{fps}|{font}"
         f"|{project.get('visual_style') or 'automatico'}|{_project_metadata(project).get('visual_style_prompt', '')}|{project.get('video_type') or 'moving_images'}"
-        f"|{scene.get('visual_query') or ''}"
+        f"|{scene.get('visual_query') or ''}|{sfx_signature}|{sfx_volume:.3f}|{sfx_start:.3f}"
     )
     seg_dir = scene_dir / key
     seg_dir.mkdir(parents=True, exist_ok=True)
     scene_mp4 = seg_dir / "scene.mp4"
     manifest = seg_dir / "manifest.json"
+
+    # Los efectos de sonido se mezclan sobre la voz a nivel de escena y quedan cacheados.
+    scene_wav = wav
+    if sfx_signature and sfx_volume > 0:
+        mixed_wav = seg_dir / "scene-audio.wav"
+        if not mixed_wav.exists() or mixed_wav.stat().st_size < 1024:
+            delay_ms = int(sfx_start * 1000)
+            delay_filter = f"adelay={delay_ms}|{delay_ms}" if delay_ms else "anull"
+            _ff([
+                "-i", str(wav), "-i", str(sfx_path),
+                "-filter_complex",
+                f"[1:a]volume={sfx_volume:.3f},{delay_filter},atrim=0:{duration:.3f}[effect];"
+                "[0:a][effect]amix=inputs=2:duration=first:dropout_transition=0,alimiter=limit=0.95[mix]",
+                "-map", "[mix]", "-t", f"{duration:.3f}", "-c:a", "pcm_s16le",
+                str(mixed_wav),
+            ])
+        if mixed_wav.is_file() and mixed_wav.stat().st_size > 1024:
+            scene_wav = mixed_wav
 
     cues = media.caption_chunks(
         narration,
