@@ -7,7 +7,7 @@ from fastapi import HTTPException
 
 from app import db
 from app.main import ScenePatch, patch_scene
-from app.render import _apply_timeline_overlays, _visual_input_args
+from app.render import _apply_timeline_overlays, _trim_visual_source, _visual_input_args
 
 
 class SceneVideoTrimTests(unittest.TestCase):
@@ -86,6 +86,27 @@ class SceneVideoTrimTests(unittest.TestCase):
             self.assertIn("volume=0.750,adelay=1500|1500[a1]", graph)
             self.assertIn("amix=inputs=2:duration=first", graph)
             self.assertIn("[aout]", command)
+
+    def test_trimmed_video_is_materialized_once_as_a_loopable_source(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "source.mp4"
+            source.write_bytes(b"video-source")
+            scene_dir = root / "scene"
+            scene_dir.mkdir()
+            def fake_ff(args):
+                Path(args[-1]).write_bytes(b"trimmed-video" * 300)
+            with patch("app.render._ff", side_effect=fake_ff) as ff:
+                trimmed = _trim_visual_source(source, scene_dir, 0.2, 1.8, 2.0)
+                again = _trim_visual_source(source, scene_dir, 0.2, 1.8, 2.0)
+
+        command = ff.call_args.args[0]
+        self.assertEqual(trimmed, again)
+        self.assertEqual(ff.call_count, 1)
+        self.assertIn("-ss", command)
+        self.assertEqual(command[command.index("-ss") + 1], "0.200")
+        self.assertEqual(command[command.index("-t") + 1], "1.600")
+        self.assertGreater(trimmed.stat().st_size, 1000)
 
     def test_video_input_uses_entire_source_when_trim_is_unset(self):
         args = _visual_input_args(Path("clip.mp4"), 30)
