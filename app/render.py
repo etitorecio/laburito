@@ -962,7 +962,7 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
     overlay_clips = db.query("SELECT * FROM timeline_overlays WHERE project_id=? ORDER BY start_sec,id", (project_id,))
     if overlay_clips:
         overlaid = workdir / f"final_{suffix}_overlays.mp4"
-        _apply_timeline_overlays(final, overlay_clips, overlaid, width, height, float(info.get("duration") or actual_duration))
+        _apply_timeline_overlays(final, overlay_clips, overlaid, width, height, float(actual_duration))
         final = overlaid
 
     progress(96, "Subtítulos y miniatura")
