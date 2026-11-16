@@ -1696,7 +1696,13 @@ def reorder_scenes(project_id: int, ids: list[int] = Body(..., embed=True)):
 
 @app.delete("/api/scenes/{scene_id}")
 def delete_scene(scene_id: int):
+    scene = db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))
+    if not scene:
+        raise HTTPException(404, "Escena inexistente")
+    db.execute("DELETE FROM editor_history WHERE project_id=? AND target='scene' AND target_id=?",
+               (scene["project_id"], scene_id))
     db.execute("DELETE FROM scenes WHERE id=?", (scene_id,))
+    _touch_project(scene["project_id"])
     return {"ok": True}
 
 
@@ -2105,6 +2111,8 @@ def delete_timeline_overlay(overlay_id: int):
     overlay_root = db.MEDIA_DIR / "overlays"
     if not shared_overlays and not shared_assets and path.is_file() and str(path).startswith(str(overlay_root)):
         path.unlink(missing_ok=True)
+    db.execute("DELETE FROM editor_history WHERE project_id=? AND target='overlay' AND target_id=?",
+               (overlay["project_id"], overlay_id))
     db.execute("DELETE FROM assets WHERE project_id=? AND path=?", (overlay["project_id"], overlay.get("path") or ""))
     db.execute("DELETE FROM timeline_overlays WHERE id=?", (overlay_id,))
     _touch_project(overlay["project_id"])
