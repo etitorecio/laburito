@@ -9,7 +9,7 @@ from unittest.mock import patch
 from fastapi import HTTPException
 from starlette.datastructures import Headers, UploadFile
 
-from app.main import TimelineOverlayPatch, TimelineOverlayTextIn, TimelineOverlayVoiceIn, create_timeline_text_overlay, create_timeline_voice_overlay, patch_timeline_overlay, upload_timeline_overlay
+from app.main import TimelineOverlayMusicIn, TimelineOverlayPatch, TimelineOverlayTextIn, TimelineOverlayVoiceIn, create_timeline_music_overlay, create_timeline_text_overlay, create_timeline_voice_overlay, patch_timeline_overlay, upload_timeline_overlay
 
 
 class TimelineOverlayUploadTests(unittest.TestCase):
@@ -73,6 +73,29 @@ class TimelineOverlayUploadTests(unittest.TestCase):
         self.assertEqual(len(saved), 1)
         self.assertGreater(saved_size, 0)
         self.assertIn("timeline_overlays", execute.call_args_list[0].args[0])
+        touch.assert_called_once_with(3)
+
+    def test_generates_local_music_bed_as_an_independent_audio_layer(self):
+        with tempfile.TemporaryDirectory() as temp:
+            music_path = Path(temp) / "ambient.wav"
+            music_path.write_bytes(b"local-music-bed" * 100)
+            overlay = {
+                "id": 90, "project_id": 3, "kind": "audio", "title": "Ambiente oscuro",
+                "start_sec": 4.0, "duration_sec": 20.0, "volume": 0.35,
+            }
+            with patch("app.main.db.query_one", side_effect=[{"id": 3}, overlay]), \
+                 patch("app.main.media.ensure_music_bed", return_value=music_path), \
+                 patch("app.main.media.probe_audio", return_value={"codec": "pcm_s16le", "duration": 45}), \
+                 patch("app.main.db.execute", side_effect=[90, 0]) as execute, \
+                 patch("app.main._touch_project") as touch:
+                result = create_timeline_music_overlay(
+                    3, TimelineOverlayMusicIn(bed_id="ambiente", start_sec=4, duration_sec=20, volume=0.35)
+                )
+
+        self.assertEqual(result["kind"], "audio")
+        self.assertEqual(result["title"], "Ambiente oscuro")
+        self.assertIn("timeline_overlays", execute.call_args_list[0].args[0])
+        self.assertEqual(execute.call_args_list[0].args[1][10], 0.35)
         touch.assert_called_once_with(3)
 
     def test_generates_local_voiceover_as_an_independent_audio_layer(self):
