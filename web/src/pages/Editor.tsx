@@ -752,10 +752,11 @@ export default function Editor({ projectId, go }: Props) {
         <div className="editor-workspace-main">
           <Card title="Vista previa" sub={activeScene ? "Escena " + (activeSceneIndex + 1) + " de " + scenes.length + " · " + activeScene.title : "Vista previa de escena"}>
             <div className={"editor-preview-stage " + (project.aspect === "9:16" ? "portrait" : project.aspect === "1:1" ? "square" : "")}>
-              {previewScene?.visual_path ? (/\.(mp4|mov|webm|mkv)$/i.test(activeScene.visual_path)
+              {previewScene?.visual_path ? (/\.(mp4|mov|webm|mkv)$/i.test(previewScene.visual_path)
                 ? <video src={mediaUrl(previewScene.visual_path)} controls muted playsInline preload="metadata" />
                 : <img src={mediaUrl(previewScene.visual_path)} alt={previewScene.title} />)
                 : <div className="editor-preview-empty"><span>✦</span><strong>Tu escena está lista para ilustrar</strong><small>Buscá un recurso con licencia o subí tu propio material.</small></div>}
+              {captionsEnabled && previewScene?.narration?.trim() && <div className="editor-preview-caption">{previewScene.narration.trim().split(/\\s+/).slice(0, 12).join(" ")}</div>}
             </div>
             {activeScene && <div className="editor-preview-controls">
               <div className="editor-transport">
@@ -771,8 +772,8 @@ export default function Editor({ projectId, go }: Props) {
               </div>
               <span>{previewScene?.title ?? activeScene.title} · {activeScene.narration.trim().split(/\s+/).filter(Boolean).length} palabras</span>
               <div className="row gap-8">
-                <button className="btn small ghost" onClick={() => activeSceneIndex > 0 && setSelectedSceneId(scenes[activeSceneIndex - 1].id)} disabled={activeSceneIndex <= 0}>← Anterior</button>
-                <button className="btn small ghost" onClick={() => activeSceneIndex < scenes.length - 1 && setSelectedSceneId(scenes[activeSceneIndex + 1].id)} disabled={activeSceneIndex >= scenes.length - 1}>Siguiente →</button>
+                <button className="btn small ghost" onClick={() => { if (activeSceneIndex > 0) { setPreviewPlaying(false); setSelectedSceneId(scenes[activeSceneIndex - 1].id); setPreviewElapsed(timelineStarts[activeSceneIndex - 1]); } }} disabled={activeSceneIndex <= 0}>← Anterior</button>
+                <button className="btn small ghost" onClick={() => { if (activeSceneIndex < scenes.length - 1) { setPreviewPlaying(false); setSelectedSceneId(scenes[activeSceneIndex + 1].id); setPreviewElapsed(timelineStarts[activeSceneIndex + 1]); } }} disabled={activeSceneIndex >= scenes.length - 1}>Siguiente →</button>
               </div>
             </div>}
           </Card>
@@ -808,7 +809,7 @@ export default function Editor({ projectId, go }: Props) {
                         onDragOver={(event) => event.preventDefault()}
                         onDrop={(event) => { event.preventDefault(); if (draggedSceneId !== null) void reorderScene(draggedSceneId, scene.id); }}
                         onDragEnd={() => setDraggedSceneId(null)}
-                        onClick={() => setSelectedSceneId(scene.id)}
+                        onClick={() => { setSelectedSceneId(scene.id); setPreviewPlaying(false); setPreviewElapsed(timelineStarts[index]); }}
                         title={scene.title + " · " + fmtDuration(seconds) + " · inicio " + fmtDuration(timelineStarts[index])}>
                         {track.id === "visual" ? <>{scene.visual_path && (/\.(mp4|mov|webm|mkv)$/i.test(scene.visual_path) ? <video src={mediaUrl(scene.visual_path)} muted playsInline preload="metadata" /> : <img src={mediaUrl(scene.visual_path)} alt="" />)}<span>{index + 1}. {scene.title}</span></>
                           : track.id === "voice" ? <span>▰ Voz {index + 1} · {fmtDuration(seconds)}</span>
