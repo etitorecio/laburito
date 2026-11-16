@@ -35,7 +35,7 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
       <section className="studio-hero">
         <div className="studio-hero-copy">
           <span className="studio-eyebrow"><i /> TU ESTUDIO DE CREACIÓN</span>
-          <h2>De una idea a tu próximo <span>video viral.</span></h2>
+          <h2>De una idea a tu próximo <span>video.</span></h2>
           <p>Creá Shorts y videos largos, organizá todos tus canales y producí contenido desde un solo lugar.</p>
           <div className="studio-hero-actions">
             <button className="studio-primary" onClick={() => go('proyectos')}>＋ Crear video</button>
@@ -51,7 +51,7 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
       </section>
 
       <section className="studio-stats">
-        <div><span>Canales</span><strong>{diag?.counts.canales ?? channels.length}</strong><small>Sin límite fijo</small></div>
+        <div><span>Canales</span><strong>{diag?.counts.canales ?? channels.length}</strong><small>Según tu almacenamiento</small></div>
         <div><span>Videos</span><strong>{diag?.counts.proyectos ?? projects.length}</strong><small>Proyectos creados</small></div>
         <div><span>Escenas</span><strong>{diag?.counts.escenas ?? 0}</strong><small>En tu biblioteca</small></div>
         <div><span>Motor local</span><strong className={ready ? 'stat-ready' : 'stat-warn'}>{ready ? 'Listo' : 'Revisar'}</strong><small>{ready ? 'FFmpeg y voz disponibles' : 'Ver diagnóstico del sistema'}</small></div>
