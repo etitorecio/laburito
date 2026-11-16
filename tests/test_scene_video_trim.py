@@ -29,12 +29,14 @@ class SceneVideoTrimTests(unittest.TestCase):
                 version = db.scalar("SELECT value FROM meta WHERE key='schema_version'")
                 overlays_table = db.query_one("SELECT name FROM sqlite_master WHERE type='table' AND name='timeline_overlays'")
                 overlay_columns = {row["name"] for row in db.query("PRAGMA table_info(timeline_overlays)")}
+                history_table = db.query_one("SELECT name FROM sqlite_master WHERE type='table' AND name='editor_history'")
         self.assertIn("visual_trim_start_sec", columns)
         self.assertIn("visual_trim_end_sec", columns)
         self.assertIn("visual_source_duration_sec", columns)
-        self.assertEqual(version, "8")
+        self.assertEqual(version, "9")
         self.assertTrue(overlays_table)
         self.assertIn("volume", overlay_columns)
+        self.assertTrue(history_table)
 
     def test_timeline_overlay_composition_adds_positioned_video_layer(self):
         with tempfile.TemporaryDirectory() as temp:
