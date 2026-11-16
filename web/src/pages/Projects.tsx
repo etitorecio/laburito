@@ -17,6 +17,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
   const [busy, setBusy] = useState(false);
+  const [easyMode, setEasyMode] = useState(true);
 
   const [form, setForm] = useState({
     title: '',
@@ -209,9 +210,21 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
       <Msg error={error} ok={ok} />
       {ollamaAvailable === false && <p className="muted">Esta instancia no tiene un modelo generativo conectado: la idea se convierte en un guion estructurado de respaldo. Para generar narraciones originales sin pagar APIs, conectá Ollama local desde Ajustes.</p>}
 
-      <Card title="Crear video" sub="Partí de una idea para generar el guion o pegá un guion propio. Después se crean escenas y se prepara el render.">
+      <Card title="Crear video" sub="No necesitás configurar nada: elegí el formato, contá de qué trata y AITuber prepara el guion y la producción.">
         <div className="stack" style={{ gap: 14 }}>
-          <Field label="Cómo querés crear el video">
+          <div className="creation-mode-switch" role="group" aria-label="Nivel de configuración">
+            <button type="button" className={easyMode ? 'active' : ''} onClick={() => setEasyMode(true)}>✦ Modo fácil</button>
+            <button type="button" className={!easyMode ? 'active' : ''} onClick={() => setEasyMode(false)}>⚙ Ajustes avanzados</button>
+          </div>
+          {easyMode && <div className="quick-format-grid">
+            <button type="button" className={form.aspect === '9:16' ? 'quick-format active' : 'quick-format'} onClick={() => setForm({ ...form, aspect: '9:16', duration_target_sec: 60 })}>
+              <span className="quick-format-icon">▯</span><strong>Short</strong><small>Vertical · rápido · ideal para Shorts</small>
+            </button>
+            <button type="button" className={form.aspect === '16:9' ? 'quick-format active' : 'quick-format'} onClick={() => setForm({ ...form, aspect: '16:9', duration_target_sec: 600 })}>
+              <span className="quick-format-icon">▭</span><strong>Documental</strong><small>Horizontal · historias y explicaciones</small>
+            </button>
+          </div>}
+          <Field label="¿De dónde partimos?">
             <select value={form.input_mode} onChange={(e) => setForm({ ...form, input_mode: e.target.value as 'idea' | 'script' })}>
               <option value="idea">Desde una idea: generar el guion</option>
               <option value="script">Desde un guion propio: convertirlo en escenas</option>
@@ -231,7 +244,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
               <input value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })} placeholder="Qué pasó con el transporte eléctrico" />
             </Field>
           </div>
-          <div className="row">
+          {!easyMode && <div className="row">
             <Field label="Plantilla de contenido" hint={activeTemplate?.description}>
               <select value={form.template} onChange={(e) => applyTemplate(e.target.value)}>
                 {templates.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
@@ -261,8 +274,9 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
                 ))}
               </select>
             </Field>
-          </div>
+          </div>}
 
+          {!easyMode && <>
           <details className="advanced-settings">
             <summary>Voz y narración</summary>
             <Field label="Elegí una voz en español">
@@ -385,9 +399,11 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
           {meta && meta.external_templates.length > 0 && (
             <p className="muted">Los generadores externos de video IA no se incluyen: requerirían servicios con créditos. Los formatos desactivados no se presentan como disponibles.</p>
           )}
-          <div className="row wrap gap-8">
-            <button className="btn ghost" onClick={createBlank} disabled={busy || !selectedChannel || !form.title.trim()}>Empezar desde cero</button>
-            <button className="btn primary" onClick={create} disabled={busy || !selectedChannel || !form.title.trim()}>{busy ? 'Produciendo video…' : form.input_mode === 'script' ? 'Convertir guion y crear video' : 'Crear video desde la idea'}</button>
+          </>}
+          <div className="creation-submit">
+            <button className="btn primary" onClick={create} disabled={busy || !selectedChannel || !form.title.trim()}>{busy ? 'Preparando tu video…' : form.input_mode === 'script' ? 'Crear video con mi guion' : '✦ Crear mi video'}</button>
+            {!easyMode && <button className="btn ghost" onClick={createBlank} disabled={busy || !selectedChannel || !form.title.trim()}>Empezar desde cero</button>}
+            <small>{easyMode ? 'La configuración recomendada se aplica automáticamente. Podés cambiarla después en el editor.' : 'Podés revisar cada ajuste antes de producir.'}</small>
           </div>
         </div>
       </Card>
