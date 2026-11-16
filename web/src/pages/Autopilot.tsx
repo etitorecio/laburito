@@ -20,8 +20,8 @@ const INITIAL = {
   name: '',
   niche: '',
   channel_id: '',
-  template: 'reddit_story',
-  duration_target_sec: 180,
+  template: 'shorts',
+  duration_target_sec: 60,
   voice: 'es',
   speed: 150,
   pitch: 45,
@@ -77,6 +77,7 @@ export default function Autopilot() {
   const [form, setForm] = useState(INITIAL);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [step, setStep] = useState(0);
+  const [simpleMode, setSimpleMode] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
@@ -225,6 +226,7 @@ export default function Autopilot() {
     });
     setEditingId(rule.id);
     setStep(0);
+    setSimpleMode(true);
     setError('');
     setOk('Editando «' + (rule.name || rule.niche) + '».');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -234,6 +236,7 @@ export default function Autopilot() {
     setEditingId(null);
     setForm(INITIAL);
     setStep(0);
+    setSimpleMode(true);
     setOk('');
     setError('');
   }
@@ -293,6 +296,58 @@ export default function Autopilot() {
       {persistenceConfigured === true && <p className="muted">{persistenceNote}</p>}
       <Card title={editingId ? 'Editar autopiloto' : 'Crear autopiloto'} sub="Configurá una vez todo lo que querés producir. Después el sistema usa estas reglas en cada video programado.">
         <div className="stack" style={{ gap: 12 }}>
+          {simpleMode ? <>
+            <div className="creation-mode-switch" role="group" aria-label="Configuración del autopiloto">
+              <button type="button" className="active">✦ Configuración rápida</button>
+              <button type="button" onClick={() => setSimpleMode(false)}>⚙ Ajustes avanzados</button>
+            </div>
+            <h3>¿Qué querés que produzca automáticamente?</h3>
+            <Field label="Tema del canal">
+              <input value={form.niche} onChange={(e) => update('niche', e.target.value)} placeholder="Ej.: misterios históricos, ciencia, curiosidades…" />
+            </Field>
+            <Field label="Canal">
+              <select value={form.channel_id} onChange={(e) => update('channel_id', e.target.value)}>
+                {(data?.channels ?? []).map((channel) => <option key={channel.id} value={channel.id}>{channel.name}</option>)}
+              </select>
+            </Field>
+            <Field label="Formato">
+              <div className="quick-format-grid">
+                <button type="button" className={form.template === 'shorts' ? 'quick-format active' : 'quick-format'} onClick={() => chooseTemplate('shorts')}>
+                  <span className="quick-format-icon">▯</span><strong>Shorts</strong><small>Verticales · hasta 3 minutos</small>
+                </button>
+                <button type="button" className={form.template === 'longform' ? 'quick-format active' : 'quick-format'} onClick={() => chooseTemplate('longform')}>
+                  <span className="quick-format-icon">▭</span><strong>Documentales</strong><small>Horizontales · videos largos</small>
+                </button>
+              </div>
+            </Field>
+            <div className="row">
+              <Field label="Frecuencia">
+                <select value={form.cadence_hours} onChange={(e) => update('cadence_hours', Number(e.target.value))}>
+                  <option value={24}>Un video por día</option>
+                  <option value={48}>Un video cada 2 días</option>
+                  <option value={72}>Un video cada 3 días</option>
+                  <option value={168}>Un video por semana</option>
+                </select>
+              </Field>
+              <Field label="Horario">
+                <input type="time" value={form.schedule_time} onChange={(e) => update('schedule_time', e.target.value)} />
+              </Field>
+            </div>
+            <Field label="Dónde guardar los videos">
+              <select value={form.destination} onChange={(e) => update('destination', e.target.value)}>
+                <option value="entrega">En Laburito, listos para revisar</option>
+                <option value="youtube">YouTube (revisión antes de publicar)</option>
+              </select>
+            </Field>
+            <p className="muted">La investigación del tema, el guion, la voz, los visuales, los subtítulos y el render se ejecutan automáticamente. No necesitás configurar cada parte.</p>
+            <div className="row" style={{ justifyContent: 'flex-end' }}>
+              <button className="btn primary" disabled={busy || !form.niche.trim() || !selectedChannel || !form.channel_id} onClick={() => void save()}>{busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear autopiloto'}</button>
+            </div>
+          </> : <>
+          <div className="creation-mode-switch" role="group" aria-label="Configuración del autopiloto">
+            <button type="button" onClick={() => setSimpleMode(true)}>✦ Configuración rápida</button>
+            <button type="button" className="active">⚙ Ajustes avanzados</button>
+          </div>
           <div className="autopilot-progress">
             <div className="autopilot-progress-top">
               <span>PASO {step + 1} DE {STEPS.length}</span>
@@ -619,6 +674,7 @@ export default function Autopilot() {
               : <button className="btn primary" disabled={busy || !form.niche.trim() || !selectedChannel || !form.channel_id || (form.video_type === 'skeleton' && form.duration_target_sec > 420)} onClick={() => void save()}>{busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear autopiloto'}</button>}
             {editingId && <button className="btn ghost" disabled={busy} onClick={reset}>Cancelar</button>}
           </div>
+          </>}
         </div>
       </Card>
 
