@@ -67,6 +67,9 @@ export interface TimelineOverlay {
   title: string;
   start_sec: number;
   duration_sec: number;
+  source_start_sec: number;
+  source_end_sec: number;
+  source_duration_sec: number;
   x: number;
   y: number;
   width: number;
