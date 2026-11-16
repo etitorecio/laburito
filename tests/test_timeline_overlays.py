@@ -9,7 +9,7 @@ from unittest.mock import patch
 from fastapi import HTTPException
 from starlette.datastructures import Headers, UploadFile
 
-from app.main import TimelineOverlayMusicIn, TimelineOverlayPatch, TimelineOverlayTextIn, TimelineOverlayVoiceIn, create_timeline_music_overlay, create_timeline_text_overlay, create_timeline_voice_overlay, patch_timeline_overlay, upload_timeline_overlay
+from app.main import TimelineOverlayMusicIn, TimelineOverlayPatch, TimelineOverlaySfxIn, TimelineOverlayTextIn, TimelineOverlayVoiceIn, create_timeline_music_overlay, create_timeline_sfx_overlay, create_timeline_text_overlay, create_timeline_voice_overlay, patch_timeline_overlay, upload_timeline_overlay
 
 
 class TimelineOverlayUploadTests(unittest.TestCase):
@@ -73,6 +73,29 @@ class TimelineOverlayUploadTests(unittest.TestCase):
         self.assertEqual(len(saved), 1)
         self.assertGreater(saved_size, 0)
         self.assertIn("timeline_overlays", execute.call_args_list[0].args[0])
+        touch.assert_called_once_with(3)
+
+    def test_generates_local_sound_effect_as_an_independent_audio_layer(self):
+        overlay = {
+            "id": 89, "project_id": 3, "kind": "audio", "title": "Campanilla",
+            "start_sec": 2.0, "duration_sec": 1.5, "volume": 0.7,
+        }
+        def fake_ffmpeg(command, timeout=60):
+            Path(command[-1]).write_bytes(b"generated-sfx" * 200)
+            return subprocess.CompletedProcess(command, 0, b"", b"")
+        with tempfile.TemporaryDirectory() as temp, \
+             patch("app.main.db.MEDIA_DIR", Path(temp) / "media"), \
+             patch("app.main.db.query_one", side_effect=[{"id": 3}, overlay]), \
+             patch("app.main.db.execute", side_effect=[89, 0]) as execute, \
+             patch("app.main._touch_project") as touch, \
+             patch("app.main.media.run", side_effect=fake_ffmpeg) as run, \
+             patch("app.main.media.probe_audio", return_value={"codec": "pcm_s16le", "duration": 1.5}):
+            result = create_timeline_sfx_overlay(3, TimelineOverlaySfxIn(effect="chime", start_sec=2, volume=0.7))
+
+        self.assertEqual(result["title"], "Campanilla")
+        self.assertEqual(result["kind"], "audio")
+        self.assertIn("sine=frequency=880:duration=1.5", run.call_args.args[0])
+        self.assertEqual(execute.call_args_list[0].args[1][10], 0.7)
         touch.assert_called_once_with(3)
 
     def test_generates_local_music_bed_as_an_independent_audio_layer(self):
