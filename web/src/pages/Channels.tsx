@@ -81,6 +81,44 @@ export default function Channels() {
     }
   }
 
+  async function uploadWatermark(channelId: number, file: File) {
+    setError('');
+    setOk('');
+    try {
+      await api.upload(`/api/channels/${channelId}/watermark`, file);
+      setOk('Logo guardado. Se aplicará automáticamente a los próximos renders del canal.');
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  async function saveWatermark(channel: Channel, patch: { enabled?: boolean; position?: string; scale?: number; opacity?: number }) {
+    setError('');
+    try {
+      await api.put(`/api/channels/${channel.id}/watermark`, {
+        enabled: Boolean(channel.watermark_enabled),
+        position: channel.watermark_position || 'bottom_right',
+        scale: channel.watermark_scale ?? 0.12,
+        opacity: channel.watermark_opacity ?? 0.85,
+        ...patch,
+      });
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  async function removeWatermark(channelId: number) {
+    try {
+      await api.del(`/api/channels/${channelId}/watermark`);
+      setOk('Logo eliminado del canal.');
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
   return (
     <div className="stack">
       <Msg error={error} ok={ok} />
@@ -141,6 +179,26 @@ export default function Channels() {
                     <span>·</span>
                     <span>Tono: {c.tone || '—'}</span>
                   </div>
+                  <div className="row gap-8" style={{ marginTop: 10, alignItems: 'center' }}>
+                    <label className="btn small ghost">＋ Logo del canal
+                      <input type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadWatermark(c.id, file); e.target.value = ''; }} />
+                    </label>
+                    {c.watermark_path && <>
+                      <label className="small muted"><input type="checkbox" checked={Boolean(c.watermark_enabled)} onChange={(e) => void saveWatermark(c, { enabled: e.target.checked })} /> Marca de agua automática</label>
+                      <select aria-label="Posición del logo" value={c.watermark_position || 'bottom_right'} onChange={(e) => void saveWatermark(c, { position: e.target.value })}>
+                        <option value="top_left">Arriba izquierda</option>
+                        <option value="top_right">Arriba derecha</option>
+                        <option value="bottom_left">Abajo izquierda</option>
+                        <option value="bottom_right">Abajo derecha</option>
+                        <option value="center">Centro</option>
+                      </select>
+                      <button className="btn small danger" onClick={() => void removeWatermark(c.id)}>Quitar logo</button>
+                    </>}
+                  </div>
+                  {c.watermark_path && <div className="row gap-8" style={{ marginTop: 6 }}>
+                    <label className="small muted">Tamaño <input type="range" min="4" max="35" value={Math.round((c.watermark_scale ?? 0.12) * 100)} onChange={(e) => void saveWatermark(c, { scale: Number(e.target.value) / 100 })} /></label>
+                    <label className="small muted">Opacidad <input type="range" min="10" max="100" value={Math.round((c.watermark_opacity ?? 0.85) * 100)} onChange={(e) => void saveWatermark(c, { opacity: Number(e.target.value) / 100 })} /></label>
+                  </div>}
                 </div>
                 <div className="row"><button className="btn small ghost" onClick={() => edit(c)}>Editar</button><button className="btn small danger" onClick={() => remove(c.id)}>Eliminar</button></div>
               </div>
