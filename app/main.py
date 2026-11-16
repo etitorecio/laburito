@@ -2010,6 +2010,14 @@ def split_timeline_overlay(overlay_id: int, payload: TimelineOverlaySplitIn):
     right_source_start = source_start
     if overlay.get("kind") in {"video", "audio"} and source_window > 0:
         right_source_start = source_start + (left_duration % source_window)
+    right_path = overlay["path"]
+    if overlay.get("kind") == "text":
+        source_path = Path(overlay["path"])
+        text_folder = db.MEDIA_DIR / "overlays" / str(overlay["project_id"])
+        text_folder.mkdir(parents=True, exist_ok=True)
+        right_text_path = text_folder / f"text-split-{time.time_ns()}.png"
+        shutil.copy2(source_path, right_text_path)
+        right_path = str(right_text_path)
     db.execute(
         "UPDATE timeline_overlays SET duration_sec=?,updated_at=? WHERE id=?",
         (left_duration, db.now(), overlay_id),
@@ -2017,10 +2025,16 @@ def split_timeline_overlay(overlay_id: int, payload: TimelineOverlaySplitIn):
     new_id = db.execute(
         "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,volume,source_start_sec,source_end_sec,source_duration_sec,created_at,updated_at) "
         "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-        (overlay["project_id"], overlay["kind"], overlay["path"], overlay["title"], at_sec, right_duration,
+        (overlay["project_id"], overlay["kind"], right_path, overlay["title"], at_sec, right_duration,
          overlay["x"], overlay["y"], overlay["width"], overlay["opacity"], overlay.get("volume", 1),
          right_source_start, source_end, source_duration, db.now(), db.now()),
     )
+    if overlay.get("kind") == "text":
+        db.execute(
+            "INSERT INTO assets(project_id,kind,path,label,bytes,created_at) VALUES(?,?,?,?,?,?)",
+            (overlay["project_id"], "capa_text", right_path, overlay["title"][:120],
+             Path(right_path).stat().st_size, db.now()),
+        )
     _touch_project(overlay["project_id"])
     return db.query_one("SELECT * FROM timeline_overlays WHERE id=?", (new_id,))
 
