@@ -273,11 +273,17 @@ export default function Editor({ projectId, go }: Props) {
   }
 
   async function regenerate(scene: Scene) {
+    setBusy(`regenerate-${scene.id}`);
+    setError('');
+    setOk('');
     try {
-      await api.post(`/api/scenes/${scene.id}/regenerate`);
+      const result = await api.post<{ note: string }>(`/api/scenes/${scene.id}/regenerate`);
+      setOk(result.note || 'Escena regenerada. Revisá el texto antes de renderizar.');
       await load();
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      setBusy('');
     }
   }
 
