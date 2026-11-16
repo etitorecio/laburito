@@ -24,7 +24,7 @@ TMP_DIR = DATA_DIR / "tmp"
 
 _WRITE_LOCK = threading.RLock()
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 _MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -227,6 +227,9 @@ _MIGRATIONS: dict[int, list[str]] = {
             updated_at TEXT NOT NULL
         )""",
         "CREATE INDEX IF NOT EXISTS idx_timeline_overlays_project ON timeline_overlays(project_id, start_sec, id)",
+    ],,
+    8: [
+        "ALTER TABLE timeline_overlays ADD COLUMN volume REAL NOT NULL DEFAULT 1",
     ],
 }
 
