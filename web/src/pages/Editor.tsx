@@ -157,6 +157,7 @@ export default function Editor({ projectId, go }: Props) {
   const historyReplayRef = useRef(false);
   const historyQueueRef = useRef<Promise<void>>(Promise.resolve());
   const timer = useRef<number | null>(null);
+  const overlayPointerDragRef = useRef<{ id: number; offsetX: number; pointerId: number } | null>(null);
 
   useEffect(() => { setSplitCursor(0); }, [selectedSceneId]);
 
@@ -1298,10 +1299,31 @@ export default function Editor({ projectId, go }: Props) {
                 <div className="editor-track">
                   <div className="editor-track-label">CAPAS</div>
                   <div className="editor-overlay-lane" style={{ width: timelineWidth }} onDragOver={(event) => event.preventDefault()} onDrop={dropOverlayOnLane}>
-                    {overlays.filter((clip) => clip.kind !== "audio").map((clip) => <button type="button" key={clip.id} draggable
-                      onDragStart={(event) => { setDraggedOverlayId(clip.id); setDraggedOverlayOffset(event.clientX - event.currentTarget.getBoundingClientRect().left); }} onDragEnd={() => { setDraggedOverlayId(null); setDraggedOverlayOffset(0); }}
+                    {overlays.filter((clip) => clip.kind !== "audio").map((clip) => <button type="button" key={clip.id} draggable={false}
+                      onPointerDown={(event) => {
+                        if (event.pointerType === "mouse" && event.button !== 0) return;
+                        const lane = event.currentTarget.closest(".editor-overlay-lane");
+                        if (!lane) return;
+                        const rect = event.currentTarget.getBoundingClientRect();
+                        overlayPointerDragRef.current = { id: clip.id, offsetX: event.clientX - rect.left, pointerId: event.pointerId };
+                        event.currentTarget.setPointerCapture(event.pointerId);
+                        setSelectedOverlayId(clip.id);
+                        setPreviewPlaying(false);
+                      }}
+                      onPointerUp={(event) => {
+                        const drag = overlayPointerDragRef.current;
+                        if (!drag || drag.id !== clip.id || drag.pointerId !== event.pointerId) return;
+                        const lane = event.currentTarget.closest(".editor-overlay-lane");
+                        if (lane) {
+                          const rect = lane.getBoundingClientRect();
+                          const seconds = Math.max(0, Math.round(((event.clientX - rect.left - drag.offsetX) / timelineScale) * 10) / 10);
+                          if (Math.abs(seconds - clip.start_sec) >= 0.1) void patchTimelineOverlay(clip, { start_sec: seconds });
+                        }
+                        overlayPointerDragRef.current = null;
+                      }}
+                      onPointerCancel={() => { overlayPointerDragRef.current = null; }}
                       className={"editor-overlay-clip " + clip.kind + (selectedOverlayId === clip.id ? " active" : "")}
-                      style={{ left: clip.start_sec * timelineScale, width: Math.max(34, clip.duration_sec * timelineScale), top: 6 }}
+                      style={{ left: clip.start_sec * timelineScale, width: Math.max(34, clip.duration_sec * timelineScale), top: 6, touchAction: "none" }}
                       onClick={() => { setSelectedOverlayId(clip.id); setPreviewPlaying(false); setPreviewElapsed(clip.start_sec); }}
                       title={clip.title + " · " + fmtDuration(clip.start_sec) + " · " + fmtDuration(clip.duration_sec)}>
                       {clip.kind === "image" ? "▧ " : clip.kind === "text" ? "T " : "▶ "}{clip.title}
