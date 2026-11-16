@@ -1,0 +1,21 @@
+{
+  "id": "/",
+  "name": "AITuber Libre — Estudio de vídeo",
+  "short_name": "AITuber Libre",
+  "description": "Estudio de producción de Shorts y videos largos.",
+  "lang": "es-AR",
+  "start_url": "/#/inicio",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#06060d",
+  "theme_color": "#06060d",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
