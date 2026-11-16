@@ -311,7 +311,12 @@ def _project_full(project_id: int) -> dict:
 
 
 def _touch_project(project_id: int) -> None:
-    db.execute("UPDATE projects SET updated_at=? WHERE id=?", (db.now(), project_id))
+    # Cualquier cambio en el guion, escenas o ajustes invalida el MP4 y el
+    # informe anteriores: nunca mostrar un render viejo como si fuera actual.
+    db.execute(
+        "UPDATE projects SET updated_at=?, status='borrador', quality_json='{}' WHERE id=?",
+        (db.now(), project_id),
+    )
 
 def _validate_video_type(video_type: str) -> None:
     if video_type not in options.VIDEO_TYPE_IDS:
