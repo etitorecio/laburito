@@ -188,6 +188,25 @@ export default function Editor({ projectId, go }: Props) {
     return () => window.clearInterval(tick);
   }, [previewPlaying, project?.scenes]);
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName))) return;
+      if (event.code === 'Space') {
+        event.preventDefault();
+        setPreviewPlaying((playing) => !playing);
+      } else if (event.code === 'ArrowLeft' || event.code === 'ArrowRight') {
+        event.preventDefault();
+        const direction = event.code === 'ArrowRight' ? 1 : -1;
+        const total = (project?.scenes ?? []).reduce((sum, scene) => sum + Math.max(2, (scene.narration || '').trim().split(/\\s+/).filter(Boolean).length / 2.4), 0);
+        setPreviewPlaying(false);
+        setPreviewElapsed((elapsed) => Math.max(0, Math.min(total, elapsed + direction)));
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [project?.scenes]);
+
   async function assignChannel(channelId: string) {
     if (!channelId) return;
     setBusy('channel'); setError(''); setOk('');
