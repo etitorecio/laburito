@@ -533,6 +533,34 @@ def _visual_style_preview_unlocked(style_id: str) -> Path:
     return output
 
 
+def _mix_scene_audio(
+    voice_wav: Path,
+    effect_path: Path,
+    duration: float,
+    volume: float,
+    start_sec: float,
+    output_path: Path,
+) -> Path:
+    """Mezcla un efecto opcional sin alterar ni reemplazar el audio de voz original."""
+    if not effect_path.is_file() or volume <= 0:
+        return voice_wav
+    if not output_path.exists() or output_path.stat().st_size < 1024:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        delay_ms = int(max(0.0, min(duration, start_sec)) * 1000)
+        delay_filter = f"adelay={delay_ms}|{delay_ms}" if delay_ms else "anull"
+        _ff([
+            "-i", str(voice_wav), "-i", str(effect_path),
+            "-filter_complex",
+            f"[1:a]volume={max(0.0, min(2.0, volume)):.3f},{delay_filter},atrim=0:{duration:.3f}[effect];"
+            "[0:a][effect]amix=inputs=2:duration=first:dropout_transition=0,alimiter=limit=0.95[mix]",
+            "-map", "[mix]", "-t", f"{duration:.3f}", "-c:a", "pcm_s16le",
+            str(output_path),
+        ])
+    if output_path.is_file() and output_path.stat().st_size > 1024:
+        return output_path
+    return voice_wav
+
+
 def render_scene(
     project: dict,
     scene: dict,
@@ -591,22 +619,10 @@ def render_scene(
     manifest = seg_dir / "manifest.json"
 
     # Los efectos de sonido se mezclan sobre la voz a nivel de escena y quedan cacheados.
-    scene_wav = wav
-    if sfx_signature and sfx_volume > 0:
-        mixed_wav = seg_dir / "scene-audio.wav"
-        if not mixed_wav.exists() or mixed_wav.stat().st_size < 1024:
-            delay_ms = int(sfx_start * 1000)
-            delay_filter = f"adelay={delay_ms}|{delay_ms}" if delay_ms else "anull"
-            _ff([
-                "-i", str(wav), "-i", str(sfx_path),
-                "-filter_complex",
-                f"[1:a]volume={sfx_volume:.3f},{delay_filter},atrim=0:{duration:.3f}[effect];"
-                "[0:a][effect]amix=inputs=2:duration=first:dropout_transition=0,alimiter=limit=0.95[mix]",
-                "-map", "[mix]", "-t", f"{duration:.3f}", "-c:a", "pcm_s16le",
-                str(mixed_wav),
-            ])
-        if mixed_wav.is_file() and mixed_wav.stat().st_size > 1024:
-            scene_wav = mixed_wav
+    scene_wav = (
+        _mix_scene_audio(wav, sfx_path, duration, sfx_volume, sfx_start, seg_dir / "scene-audio.wav")
+        if sfx_signature else wav
+    )
 
     cues = media.caption_chunks(
         narration,
