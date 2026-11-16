@@ -251,6 +251,13 @@ _MIGRATIONS: dict[int, list[str]] = {
         "ALTER TABLE timeline_overlays ADD COLUMN source_duration_sec REAL NOT NULL DEFAULT 0",
         "UPDATE timeline_overlays SET source_duration_sec=duration_sec WHERE kind IN ('video','audio') AND source_duration_sec=0",
     ],
+    11: [
+        "ALTER TABLE channels ADD COLUMN watermark_path TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE channels ADD COLUMN watermark_enabled INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE channels ADD COLUMN watermark_position TEXT NOT NULL DEFAULT 'bottom_right'",
+        "ALTER TABLE channels ADD COLUMN watermark_scale REAL NOT NULL DEFAULT 0.12",
+        "ALTER TABLE channels ADD COLUMN watermark_opacity REAL NOT NULL DEFAULT 0.85",
+    ],
 }
 
 DEFAULT_SETTINGS = {
@@ -262,14 +269,7 @@ DEFAULT_SETTINGS = {
     "default_resolution": "1080p",
     "default_transition": "fundido",
     "ollama_url": "",
-    "auto_backup": "1",,
-    11: [
-        "ALTER TABLE channels ADD COLUMN watermark_path TEXT NOT NULL DEFAULT \"\"",
-        "ALTER TABLE channels ADD COLUMN watermark_enabled INTEGER NOT NULL DEFAULT 0",
-        "ALTER TABLE channels ADD COLUMN watermark_position TEXT NOT NULL DEFAULT \"bottom_right\"",
-        "ALTER TABLE channels ADD COLUMN watermark_scale REAL NOT NULL DEFAULT 0.12",
-        "ALTER TABLE channels ADD COLUMN watermark_opacity REAL NOT NULL DEFAULT 0.85",
-    ]
+    "auto_backup": "1",
 }
 
 
