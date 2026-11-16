@@ -126,7 +126,6 @@ export default function Editor({ projectId, go }: Props) {
   const [publications, setPublications] = useState<Publication[]>([]);
   const [youtubeChannels, setYoutubeChannels] = useState<YoutubeWorkspaceChannel[]>([]);
   const [publishDest, setPublishDest] = useState('entrega');
-  const [autoPublish, setAutoPublish] = useState(false);
   const timer = useRef<number | null>(null);
 
   const load = useCallback(async () => {
@@ -148,7 +147,6 @@ export default function Editor({ projectId, go }: Props) {
       setDestinations(dest.destinations);
       setPublications(pubs.publications);
       setYoutubeChannels(accounts.accounts);
-      setAutoPublish(auto.enabled);
       setPublishDest(auto.destination || 'entrega');
     } catch (e) {
       setError((e as Error).message);
@@ -203,24 +201,6 @@ export default function Editor({ projectId, go }: Props) {
       setError((e as Error).message);
     } finally {
       setBusy('');
-    }
-  }
-
-  async function toggleAutoPublish(enabled: boolean) {
-    setError('');
-    if (enabled && publishDest === 'youtube' && !linkedYoutubeAccount) {
-      setError('Conectá la cuenta de YouTube correspondiente desde Cuentas antes de activar la auto-subida.');
-      return;
-    }
-    try {
-      const res = await api.post<{ enabled: boolean; destination: string }>(`/api/projects/${projectId}/auto-publish`, {
-        enabled,
-        destination: publishDest,
-      });
-      setAutoPublish(res.enabled);
-      setOk(res.enabled ? `Auto-subida activada (${res.destination}).` : 'Auto-subida desactivada.');
-    } catch (e) {
-      setError((e as Error).message);
     }
   }
 
@@ -671,8 +651,8 @@ export default function Editor({ projectId, go }: Props) {
       <details className="editor-settings">
         <summary><strong>Publicación</strong><span>YouTube y entrega local</span></summary>
       <Card
-        title="Publicación y auto-subida"
-        sub="El render terminado se entrega en la carpeta de publicados o se sube a YouTube sin intervención."
+        title="Publicación"
+        sub="Revisá el render y aprobá manualmente cada entrega o subida a YouTube."
         actions={
           <>
             <select value={publishDest} onChange={(e) => setPublishDest(e.target.value)} style={{ maxWidth: 260 }}>
@@ -698,10 +678,7 @@ export default function Editor({ projectId, go }: Props) {
           </Field>
           {!youtubeChannels.length && <button className="btn small ghost" onClick={() => go('cuentas')}>Conectar cuenta de Google en Cuentas</button>}
         </div>
-        <label className="row center gap-8" style={{ marginBottom: 10 }}>
-          <input type="checkbox" checked={autoPublish} onChange={(e) => toggleAutoPublish(e.target.checked)} />
-          <span>Publicar automáticamente al terminar cada render</span>
-        </label>
+        <p className="muted" style={{ marginBottom: 10 }}>La subida nunca se ejecuta sola. Revisá el video terminado y pulsá Publicar para autorizar cada publicación.</p>
         {publishDest === 'youtube' && (
           linkedYoutubeAccount ? (
             <p className="muted">Este proyecto se publicará en <strong>{linkedYoutubeAccount.channel_title}</strong>, la cuenta vinculada a {youtubeChannels.find((channel) => channel.id === project?.channel_id)?.name || 'su canal interno'}.</p>
