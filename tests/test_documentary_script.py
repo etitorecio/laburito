@@ -15,6 +15,27 @@ class DocumentaryScriptTests(unittest.TestCase):
         self.assertNotIn("pedal", joined)
         self.assertTrue(all(beat["title"] and beat["purpose"] for beat in beats))
 
+
+    def test_sparse_research_never_creates_empty_documentary_scenes(self):
+        claim = "El registro describe un cambio documentado en el proceso. " * 12
+        result = script_gen.generate_script(
+            {
+                "kind": "long",
+                "template": "longform",
+                "duration_target_sec": 600,
+                "title": "Historia de una innovación",
+                "topic": "Historia de una innovación",
+            },
+            notes=[{
+                "source_url": "https://example.org/history",
+                "claim": claim,
+                "evidence_level": "hecho",
+            }],
+            sources=[],
+        )
+        self.assertEqual(len(result["scenes"]), 10)
+        self.assertTrue(all(scene["narration"].strip() for scene in result["scenes"]))
+
     def test_longform_ollama_prompt_requests_documentary_length(self):
         scenes = [
             {"idx": i, "title": f"Escena {i + 1}", "duration_target_sec": 60}
