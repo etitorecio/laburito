@@ -839,14 +839,19 @@ def ollama_model_available(url: str, model: str) -> bool:
         return False
 
 
-def expand_with_ollama(url: str, model: str, prompt: str, timeout: int = 120) -> str:
+def expand_with_ollama(
+    url: str, model: str, prompt: str, timeout: int = 120, num_predict: int | None = None
+) -> str:
     """Expansión opcional con un modelo local (Ollama). Cero coste, sin claves."""
     if not ollama_available(url):
         raise RuntimeError(
             "Ollama no está accesible. Es opcional: instalalo desde ollama.com y configurá la URL "
             "en Configuración para expandir guiones con un modelo local."
         )
-    payload = json.dumps({"model": model or "llama3.2", "prompt": prompt, "stream": False}).encode()
+    payload_data = {"model": model or "llama3.2", "prompt": prompt, "stream": False}
+    if num_predict:
+        payload_data["options"] = {"num_predict": int(num_predict)}
+    payload = json.dumps(payload_data).encode()
     req = urllib.request.Request(
         url.rstrip("/") + "/api/generate",
         data=payload,
@@ -1029,7 +1034,7 @@ def rewrite_with_ollama(url: str, model: str, project: dict, script: dict, notes
             for note in source_notes
         )
     )
-    raw = expand_with_ollama(url, model, prompt, timeout=timeout)
+    raw = expand_with_ollama(url, model, prompt, timeout=timeout, num_predict=4096 if is_longform else 2048)
     cleaned = raw.strip()
     if cleaned.startswith(chr(96) * 3):
         cleaned = re.sub(r"^\x60{3}(?:json)?\s*|\s*\x60{3}$", "", cleaned, flags=re.IGNORECASE)
