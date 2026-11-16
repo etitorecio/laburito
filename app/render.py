@@ -1054,6 +1054,10 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
         "subtitles": len(cues_global),
         "thumbnail_generated": bool(Path(thumb).exists()),
         "music": bool(music),
+        "timeline_layers": {
+            "visual": sum(1 for clip in overlay_clips if clip.get("kind") in {"image", "video"}),
+            "audio": sum(1 for clip in overlay_clips if clip.get("kind") == "audio"),
+        },
         "warnings": warnings,
         "tts_engines": sorted({r["audio_info"].get("engine", "?") for r in results}),
         "visuals": {
