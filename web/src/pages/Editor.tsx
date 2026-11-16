@@ -160,6 +160,7 @@ export default function Editor({ projectId, go }: Props) {
   const overlayPointerDragRef = useRef<{ id: number; offsetX: number; pointerId: number } | null>(null);
   const scenePointerDragRef = useRef<{ id: number; pointerId: number } | null>(null);
   const sceneSuppressClickRef = useRef(false);
+  const playheadPointerRef = useRef<number | null>(null);
 
   useEffect(() => { setSplitCursor(0); }, [selectedSceneId]);
 
@@ -1258,7 +1259,32 @@ export default function Editor({ projectId, go }: Props) {
             {scenes.length === 0 ? <Empty>Generá un guion o agregá una escena para empezar.</Empty> : <div className="editor-timeline-shell">
               <div className="editor-ruler-row">
                 <div className="editor-track-label">TIEMPO</div>
-                <div className="editor-ruler" style={{ width: timelineWidth }} onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); const second = rect.width ? ((event.clientX - rect.left) / rect.width) * timelineDuration : 0; setPreviewElapsed(Math.max(0, Math.min(timelineDuration, second))); setPreviewPlaying(false); }} title="Tocá para mover el cabezal de reproducción">
+                <div className="editor-ruler" style={{ width: timelineWidth, touchAction: "none" }}
+                  onPointerDown={(event) => {
+                    if (event.pointerType === "mouse" && event.button !== 0) return;
+                    playheadPointerRef.current = event.pointerId;
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    const second = rect.width ? ((event.clientX - rect.left) / rect.width) * timelineDuration : 0;
+                    setPreviewElapsed(Math.max(0, Math.min(timelineDuration, second)));
+                    setPreviewPlaying(false);
+                  }}
+                  onPointerMove={(event) => {
+                    if (playheadPointerRef.current !== event.pointerId) return;
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    const second = rect.width ? ((event.clientX - rect.left) / rect.width) * timelineDuration : 0;
+                    setPreviewElapsed(Math.max(0, Math.min(timelineDuration, second)));
+                  }}
+                  onPointerUp={(event) => {
+                    if (playheadPointerRef.current !== event.pointerId) return;
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    const second = rect.width ? ((event.clientX - rect.left) / rect.width) * timelineDuration : 0;
+                    setPreviewElapsed(Math.max(0, Math.min(timelineDuration, second)));
+                    playheadPointerRef.current = null;
+                  }}
+                  onPointerCancel={() => { playheadPointerRef.current = null; }}
+                  onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); const second = rect.width ? ((event.clientX - rect.left) / rect.width) * timelineDuration : 0; setPreviewElapsed(Math.max(0, Math.min(timelineDuration, second))); setPreviewPlaying(false); }}
+                  title="Arrastrá o tocá para mover el cabezal de reproducción">
                   <span className="editor-ruler-playhead" style={{ left: Math.min(previewElapsed, timelineDuration) * timelineScale }} />
                   {Array.from({ length: Math.floor(timelineDuration / rulerStep) + 1 }, (_, tick) => tick * rulerStep).map((second) => (
                     <span className="editor-ruler-tick" key={second} style={{ left: second * timelineScale }}>
