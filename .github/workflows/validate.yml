@@ -11,6 +11,7 @@ on:
       - "Dockerfile"
       - ".github/workflows/**"
       - "docker-compose.yml"
+      - "web/**"
   pull_request:
     branches: [appjet]
     paths:
@@ -20,6 +21,7 @@ on:
       - "requirements.txt"
       - "Dockerfile"
       - "docker-compose.yml"
+      - "web/**"
   workflow_dispatch:
 
 concurrency:
