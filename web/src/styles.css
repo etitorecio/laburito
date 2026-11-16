@@ -2839,3 +2839,24 @@ th {
 
 .editor-shortcuts { color: var(--muted); font-size: .68rem; white-space: nowrap; }
 @media (max-width: 600px) { .editor-shortcuts { display: none; } }
+
+.editor-ruler-playhead {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  bottom: -270px;
+  width: 2px;
+  background: #ff6b6b;
+  box-shadow: 0 0 7px rgba(255,107,107,.65);
+  pointer-events: none;
+}
+.editor-ruler-playhead::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: -4px;
+  width: 10px;
+  height: 8px;
+  border-radius: 2px 2px 5px 5px;
+  background: #ff6b6b;
+}
