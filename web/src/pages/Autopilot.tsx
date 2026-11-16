@@ -267,9 +267,12 @@ export default function Autopilot() {
 
   function chooseTemplate(id: string) {
     const selected = templates.find((t) => t.id === id);
+    const factoryName = id === 'frutinovela' ? 'Frutinovelas' : id === 'reddit_story' ? 'Historias' : '';
+    const factoryChannel = factoryName ? data?.channels.find((channel) => channel.name.toLowerCase() === factoryName.toLowerCase()) : undefined;
     setForm((old) => ({
       ...old,
       template: id,
+      ...(factoryChannel ? { channel_id: String(factoryChannel.id) } : {}),
       ...(selected ? {
         aspect: selected.aspect,
         caption_style: selected.caption_style,
