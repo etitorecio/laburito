@@ -357,8 +357,8 @@ class AutopilotResearchTests(unittest.TestCase):
                     with patch("app.worker.enqueue", return_value=89):
                         with patch.object(autopilot.db, "execute") as execute:
                             with patch.object(autopilot.db, "now", return_value="now"):
-                            with patch.object(autopilot.db, "log"):
-                                result = autopilot.run_rule(10)
+                                with patch.object(autopilot.db, "log"):
+                                    result = autopilot.run_rule(10)
         set_publish.assert_not_called()
         self.assertEqual(result["publish_warning"], "YouTube requiere aprobación manual; se desactivó la autopublicación de esta regla.")
         self.assertTrue(any("auto_publish=0" in call.args[0] for call in execute.call_args_list))
@@ -407,7 +407,7 @@ class AutopilotResearchTests(unittest.TestCase):
                                             result = autopilot.run_rule(9)
         set_publish.assert_not_called()
         self.assertEqual(result["project_id"], 77)
-        self.assertIn("retenida", result["publish_warning"])
+        self.assertIn("requiere aprobación manual", result["publish_warning"])
 
     def test_script_without_sources_is_marked_as_template_only(self):
         result = script_gen.generate_script(
@@ -536,18 +536,15 @@ class AutopilotResearchTests(unittest.TestCase):
                     with self.assertRaisesRegex(publish.PublishError, "almacenamiento persistente"):
                         publish.set_auto_publish(1, True, "youtube")
 
-    def test_youtube_autopublish_is_enabled_only_after_channel_verification(self):
+    def test_youtube_autopublish_is_rejected_until_manual_approval(self):
         with patch.object(publish, "ensure_schema"):
             with patch.object(publish.db, "query_one", return_value={"id": 1, "channel_id": 10}):
-                with patch.object(publish.persistence, "durable_storage_available", return_value=True):
-                    with patch.object(publish, "youtube_account_status", return_value={"channel_id": "UC123"}) as verify:
-                        with patch.object(publish.db, "execute") as execute:
-                            with patch.object(publish.db, "now", return_value="now"):
-                                with patch.object(publish, "auto_publish_settings", return_value={"enabled": True, "destination": "youtube"}):
-                                    result = publish.set_auto_publish(1, True, "youtube")
-        verify.assert_called_once_with(10)
-        self.assertTrue(result["enabled"])
-        self.assertEqual(execute.call_args.args[1], (1, "youtube", "now", 1))
+                with patch.object(publish, "youtube_account_status") as verify:
+                    with patch.object(publish.db, "execute") as execute:
+                        with self.assertRaisesRegex(publish.PublishError, "aprobación manual"):
+                            publish.set_auto_publish(1, True, "youtube")
+        verify.assert_not_called()
+        execute.assert_not_called()
 
     def test_ollama_rewrite_keeps_scene_structure(self):
         from unittest.mock import patch
