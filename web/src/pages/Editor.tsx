@@ -380,7 +380,7 @@ export default function Editor({ projectId, go }: Props) {
     const entry = direction === "undo"
       ? historyRef.current[historyCursorRef.current - 1]
       : historyRef.current[historyCursorRef.current];
-    if (!entry) return;
+    if (!entry || busy) return;
     historyReplayRef.current = true;
     setBusy(direction);
     setError("");
@@ -1191,8 +1191,8 @@ export default function Editor({ projectId, go }: Props) {
                     setPreviewPlaying(true);
                   }
                 }}>{previewPlaying ? "Ⅱ Pausar" : "▶ Reproducir"}</button>
-                <button className="btn small ghost" onClick={() => void undoHistory()} disabled={!canUndo} title="Deshacer (Ctrl/Cmd+Z)">↶</button>
-                <button className="btn small ghost" onClick={() => void redoHistory()} disabled={!canRedo} title="Rehacer (Ctrl/Cmd+Shift+Z)">↷</button>
+                <button className="btn small ghost" onClick={() => void undoHistory()} disabled={!canUndo || !!busy} title="Deshacer (Ctrl/Cmd+Z)">↶</button>
+                <button className="btn small ghost" onClick={() => void redoHistory()} disabled={!canRedo || !!busy} title="Rehacer (Ctrl/Cmd+Shift+Z)">↷</button>
                 <input aria-label="Posición de reproducción" type="range" min="0" max={Math.max(1, timelineDuration)} step="0.1" value={Math.min(previewElapsed, timelineDuration)} onChange={(e) => { setPreviewElapsed(Number(e.target.value)); setPreviewPlaying(false); }} />
                 <small>{fmtDuration(previewElapsed)} / {fmtDuration(timelineDuration)}</small><span className="editor-shortcuts">Espacio: reproducir · ←/→: avanzar 1 s</span>
               </div>
