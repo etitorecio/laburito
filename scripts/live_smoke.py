@@ -14,6 +14,9 @@ import io
 import json
 import sys
 import time
+import wave
+import math
+import struct
 import urllib.error
 import urllib.request
 
@@ -56,13 +59,13 @@ def call(method: str, path: str, payload: dict | None = None, raw: bool = False)
         return exc.code, {"error": detail}, exc.headers
 
 
-def upload_png(path: str, filename: str, png_bytes: bytes):
+def upload_media(path: str, filename: str, content_type: str, file_bytes: bytes):
     boundary = "----AITuberLibreSmokeBoundary"
     body = (
         f"--{boundary}\r\n"
         f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'
-        "Content-Type: image/png\r\n\r\n"
-    ).encode() + png_bytes + f"\r\n--{boundary}--\r\n".encode()
+        f"Content-Type: {content_type}\r\n\r\n"
+    ).encode() + file_bytes + f"\r\n--{boundary}--\r\n".encode()
     req = urllib.request.Request(
         BASE + path,
         data=body,
@@ -192,6 +195,22 @@ def main() -> int:
         overlay_buffer.getvalue(),
     )
     check(status == 201 and bool((overlay or {}).get("id")), "capa visual independiente agregada", f"({status})")
+
+    audio_buffer = io.BytesIO()
+    with wave.open(audio_buffer, "wb") as wav_file:
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(2)
+        wav_file.setframerate(22050)
+        frames = b"".join(
+            struct.pack("<h", int(5000 * math.sin(2 * math.pi * 440 * frame / 22050)))
+            for frame in range(11025)
+        )
+        wav_file.writeframes(frames)
+    status, audio_overlay, _ = upload_media(
+        f"/api/projects/{project_id}/timeline-overlays/upload?start_sec=0.5",
+        "smoke-audio.wav", "audio/wav", audio_buffer.getvalue(),
+    )
+    check(status == 201 and (audio_overlay or {}).get("kind") == "audio", "capa de audio independiente agregada", f"({status})")
 
     status, job, _ = call("POST", f"/api/projects/{project_id}/render")
     check(status in (200, 202), "render encolado", f"({status})")
