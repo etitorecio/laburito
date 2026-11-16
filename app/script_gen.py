@@ -70,125 +70,83 @@ def script_from_text(project: dict, raw_text: str) -> dict:
 DOCUMENTARY_BLUEPRINT = [
     {
         "key": "apertura",
-        "title": "Apertura cinematográfica",
-        "weight": 0.08,
-        "purpose": "Enganchar en los primeros segundos con una imagen sonora concreta y una pregunta.",
-        "narration": (
-            "Una guitarra limpia toca una frase simple. Después, un pie pisa un pedal y el sonido cambia para siempre. "
-            "Lo que era una nota seca se convierte en una pared de sonido que sostiene canciones enteras. "
-            "Detrás de ese pequeño interruptor hay circuitos, inventores, patentes y una industria que nadie planeó. "
-            "Esta es la historia de {topic}, contada desde sus componentes hasta su legado. "
-            "Y la pregunta que guía todo el recorrido es simple: ¿cómo algo tan pequeño cambió la forma de escuchar música?"
-        ),
-        "visual": "{topic} guitarra pedal primer plano",
+        "title": "Apertura y pregunta central",
+        "weight": 0.07,
+        "purpose": "Abrir con una escena concreta y plantear la pregunta que el documental va a responder.",
+        "narration": "Hay una pregunta que atraviesa toda la historia de {topic}: ¿cómo llegó a convertirse en algo relevante? Para responderla no alcanza con repetir la versión más conocida. Hay que volver al contexto, seguir las decisiones y distinguir los hechos comprobados de las explicaciones que aparecieron después.",
+        "visual": "{topic} imagen documental de apertura",
     },
     {
         "key": "contexto",
-        "title": "Contexto: por qué importa",
-        "weight": 0.10,
-        "purpose": "Explicar el punto de partida y por qué el tema merece 8 a 20 minutos.",
-        "narration": (
-            "Para entender {topic} hay que ubicarse en el momento exacto en que la tecnología y la música se cruzaron. "
-            "Los músicos buscaban sonidos que no existían y las herramientas disponibles eran limitadas, caras y ruidosas. "
-            "Ese deseo de algo nuevo es el motor de toda la historia: cuando la técnica no alcanza, aparece la improvisación, "
-            "y cuando la improvisación funciona, aparece la industria. "
-            "Antes de avanzar conviene ordenar el terreno: qué existía antes, quién lo usaba y por qué el resultado no conformaba a nadie."
-        ),
-        "visual": "{topic} historia contexto estudio grabación vintage",
+        "title": "El contexto",
+        "weight": 0.09,
+        "purpose": "Ubicar época, lugar, condiciones y problema inicial.",
+        "narration": "Antes de que {topic} tomara la forma que conocemos, existían condiciones concretas que hicieron posible su aparición. La época, los recursos disponibles y las necesidades de quienes participaron explican por qué ciertas decisiones tenían sentido entonces, aunque hoy parezcan evidentes o extrañas.",
+        "visual": "{topic} contexto histórico lugar época",
     },
     {
         "key": "origen",
-        "title": "El origen del efecto",
-        "weight": 0.12,
-        "purpose": "Mostrar los primeros experimentos, con nombres y fechas cuando estén verificados.",
-        "narration": (
-            "Todo empieza con un experimento que casi nadie registró. En talleres y garajes, técnicos y músicos tocaban cables, "
-            "válvulas y parlantes para descubrir qué pasaba si se forzaba el circuito. "
-            "La historia de {topic} no es la historia de un genio solitario: es la suma de pruebas, errores y copias que circulaban "
-            "de mano en mano entre bandas y reparadores. "
-            "Cada intento fallido dejaba una pista: un zumbido, una saturación, una oscilación que alguien decidió conservar porque sonaba bien."
-        ),
-        "visual": "{topic} taller válvulas circuito antiguo",
+        "title": "Los primeros pasos",
+        "weight": 0.11,
+        "purpose": "Reconstruir los orígenes sin adjudicar inventos o fechas sin respaldo.",
+        "narration": "El origen de {topic} no debe reducirse a una fecha aislada ni a un único protagonista si las fuentes muestran un proceso más amplio. Para reconstruirlo hay que seguir los primeros antecedentes, identificar qué está documentado y señalar qué partes siguen siendo discutidas o incompletas.",
+        "visual": "{topic} documentos archivo primeros antecedentes",
     },
     {
         "key": "protagonistas",
-        "title": "Inventores y fabricantes",
-        "weight": 0.12,
-        "purpose": "Presentar a las personas y empresas, separando lo documentado de la leyenda.",
-        "narration": (
-            "Detrás de {topic} hay personas concretas: el técnico que ajustó el primer prototipo, el músico que lo usó en una grabación "
-            "que se volvió famosa y el fabricante que decidió producirlo en serie. "
-            "Las leyendas del origen suelen ser más ordenadas que los hechos: muchas veces el invento apareció en varios lugares a la vez "
-            "y el crédito quedó para quien lo patentó o lo supo vender. "
-            "Vale la pena distinguir tres cosas: lo que está documentado, lo que repiten las entrevistas y lo que la evidencia sugiere."
-        ),
-        "visual": "{topic} fabricante patente catálogo histórico",
+        "title": "Personas e instituciones",
+        "weight": 0.11,
+        "purpose": "Presentar a los actores relevantes y explicar sus intereses y aportes.",
+        "narration": "La historia también se construye a través de las personas, grupos e instituciones que tomaron decisiones. No todos perseguían el mismo objetivo: algunos buscaban resolver un problema, otros sostener una actividad y otros aprovechar una oportunidad. Entender esas diferencias permite explicar cómo avanzó el proceso.",
+        "visual": "{topic} protagonistas instituciones retratos archivo",
     },
     {
-        "key": "descubrimiento",
+        "key": "desarrollo",
+        "title": "Cómo se desarrolló",
+        "weight": 0.13,
+        "purpose": "Explicar etapas, mecanismos y cambios con ejemplos verificables.",
+        "narration": "A partir de ese punto, {topic} empezó a cambiar. Cada etapa agregó una condición nueva y modificó las posibilidades de la siguiente. En lugar de presentar una sucesión de datos aislados, conviene observar qué cambió, quién tomó la decisión, qué problema intentaba resolver y qué consecuencias tuvo.",
+        "visual": "{topic} proceso desarrollo etapas diagrama",
+    },
+    {
+        "key": "inflexion",
         "title": "El punto de inflexión",
-        "weight": 0.12,
-        "purpose": "Mostrar el momento en que el invento deja de ser curiosidad y se vuelve estándar.",
-        "narration": (
-            "Hay un momento en que {topic} deja de ser una rareza de taller y entra en las grabaciones que todo el mundo escucha. "
-            "Un disco, una gira o un programa de televisión alcanzan para instalar un sonido en el oído colectivo. "
-            "A partir de ahí la demanda cambia: los músicos lo piden, los fabricantes lo copian y el precio baja. "
-            "La innovación técnica se convierte en lenguaje estético, y el lenguaje empieza a tener reglas propias."
-        ),
-        "visual": "{topic} escenario concierto años grabación",
+        "weight": 0.11,
+        "purpose": "Identificar el acontecimiento o decisión que alteró el rumbo.",
+        "narration": "En algún momento aparece un cambio que modifica el rumbo de {topic}. Puede ser una decisión, un descubrimiento, una crisis o una nueva condición externa. Lo importante es explicar por qué ese momento fue distinto y qué evidencia permite considerarlo un punto de inflexión, sin exagerar su importancia.",
+        "visual": "{topic} acontecimiento cambio punto de inflexión",
     },
     {
-        "key": "evolucion",
-        "title": "Evolución técnica",
-        "weight": 0.13,
-        "purpose": "Explicar cómo cambió el circuito, el componente y el uso a lo largo del tiempo.",
-        "narration": (
-            "Con el paso de los años {topic} se volvió más barato, más pequeño y más confiable, pero también más estandarizado. "
-            "Los componentes cambiaron de tecnología, las tolerancias se ajustaron y aparecieron versiones que intentaban reproducir "
-            "el sonido de las primeras unidades, ya imposibles de encontrar. "
-            "Cada generación resolvió un problema y creó otro: menos ruido, menos carácter; más control, menos sorpresa. "
-            "Esa tensión entre precisión y personalidad explica buena parte de las discusiones actuales."
-        ),
-        "visual": "{topic} diagrama circuito componentes evolución",
+        "key": "impacto",
+        "title": "Consecuencias e impacto",
+        "weight": 0.11,
+        "purpose": "Mostrar efectos inmediatos y de largo plazo, con sus límites.",
+        "narration": "Las consecuencias no aparecen todas al mismo tiempo ni afectan a todos por igual. Algunas son inmediatas y fáciles de observar; otras se hacen visibles años después. Para entender el impacto de {topic}, hay que separar los resultados documentados de las interpretaciones y reconocer también aquello que no cambió.",
+        "visual": "{topic} consecuencias impacto sociedad",
     },
     {
-        "key": "consecuencias",
-        "title": "Impacto cultural",
-        "weight": 0.13,
-        "purpose": "Conectar el objeto con la música, la economía y la cultura.",
-        "narration": (
-            "El impacto de {topic} se mide en discos, pero también en oficios: aparecieron reparadores, coleccionistas, "
-            "fabricantes pequeños y comunidades enteras dedicadas a comparar versiones y documentar diferencias. "
-            "La cultura material creció alrededor del sonido: catálogos, manuales, foros y grabaciones de demostración. "
-            "Nada de esto fue planificado por una sola empresa; fue el resultado de miles de decisiones pequeñas tomadas por músicos y técnicos."
-        ),
-        "visual": "{topic} colección catálogo comunidad taller",
+        "key": "debate",
+        "title": "Debates y zonas grises",
+        "weight": 0.10,
+        "purpose": "Contrastar interpretaciones y exponer incertidumbres relevantes.",
+        "narration": "No todas las fuentes interpretan {topic} de la misma manera. Algunas diferencias se deben a nueva evidencia; otras, a intereses, métodos o perspectivas distintas. Este contraste no debilita la historia: permite mostrar qué sabemos, qué sigue en discusión y por qué algunas respuestas todavía requieren cautela.",
+        "visual": "{topic} debate documentos comparacion fuentes",
     },
     {
         "key": "legado",
-        "title": "Legado y consecuencias abiertas",
-        "weight": 0.11,
-        "purpose": "Cerrar el arco principal mostrando qué queda hoy.",
-        "narration": (
-            "Hoy {topic} sigue presente, aunque ya no ocupe el centro de la conversación. "
-            "Queda en las grabaciones, en los circuitos que se copian y en la forma en que los músicos piensan el sonido. "
-            "Su historia deja una lección sobre la innovación: casi nunca ocurre en un laboratorio ordenado, "
-            "sino en manos de gente que prueba cosas sin permiso y encuentra algo que valía la pena conservar."
-        ),
-        "visual": "{topic} actualidad estudio grabación moderna",
+        "title": "El legado",
+        "weight": 0.09,
+        "purpose": "Conectar el proceso histórico con su presencia y significado actuales.",
+        "narration": "Mirar {topic} desde el presente permite reconocer qué elementos permanecieron y cuáles fueron transformados. Su legado no depende solamente de lo que ocurrió al principio, sino también de cómo otras generaciones lo interpretaron, lo adaptaron o discutieron sus consecuencias.",
+        "visual": "{topic} legado actualidad archivo",
     },
     {
         "key": "cierre",
-        "title": "Cierre",
-        "weight": 0.09,
-        "purpose": "Sintetizar y abrir conversación sin prometer conclusiones que no se sostienen.",
-        "narration": (
-            "Si algo muestra la historia de {topic} es que el sonido que hoy parece inevitable fue, en su momento, una decisión discutible. "
-            "Alguien eligió conservar un defecto porque sonaba mejor que la limpieza. "
-            "Queda una pregunta abierta: ¿cuántos sonidos que hoy descartamos van a definir la música de las próximas décadas? "
-            "Si te interesa este tipo de historias, contanos en los comentarios qué otro invento musical querés ver investigado."
-        ),
-        "visual": "{topic} cierre estudio mezcla consola",
+        "title": "Conclusión",
+        "weight": 0.08,
+        "purpose": "Responder la pregunta inicial y cerrar sin inventar certezas.",
+        "narration": "Al volver a la pregunta inicial, la historia de {topic} aparece como un proceso de decisiones, condiciones y consecuencias, no como una explicación simple atribuible a una sola causa. Lo que queda claro es qué muestran las fuentes y qué preguntas siguen abiertas. Esa diferencia es parte esencial de contar la historia con rigor.",
+        "visual": "{topic} conclusión plano final documental",
     },
 ]
 
@@ -656,10 +614,9 @@ def generate_script(
             if len(sentence.strip()) >= 45
         ]
 
-    # Never fill an automatic script with generic facts unrelated to the topic.
-    # If the source has fewer facts than the template, reduce the scene count.
+    # Preserve the full documentary structure even when research is sparse.
+    # Evidence is distributed only where available; missing evidence is disclosed below.
     if evidence_sentences:
-        beats = beats[:min(len(beats), len(evidence_sentences))]
         evidence_sentences = evidence_sentences[:max(len(beats), int(target / 10))]
 
     claims = _claims([n for n in notes if n is not source_note])
