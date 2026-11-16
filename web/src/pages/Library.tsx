@@ -35,6 +35,7 @@ export default function Library() {
               <option value="">Todo</option>
               <option value="imagen">Imágenes</option>
               <option value="video">Vídeos</option>
+              <option value="efecto_sonido">Efectos de sonido</option>
               <option value="subtitulos">Subtítulos</option>
               <option value="export_zip">Paquetes ZIP</option>
             </select>
