@@ -124,6 +124,7 @@ export default function Editor({ projectId, go }: Props) {
   const [previewElapsed, setPreviewElapsed] = useState(0);
   const [splitCursor, setSplitCursor] = useState(0);
   const narrationRef = useRef<HTMLTextAreaElement | null>(null);
+  const skipNarrationBlurRef = useRef(false);
   const [results, setResults] = useState<MediaResult[]>([]);
   const [destinations, setDestinations] = useState<PublishDestination[]>([]);
   const [publications, setPublications] = useState<Publication[]>([]);
@@ -338,6 +339,7 @@ export default function Editor({ projectId, go }: Props) {
   async function splitSceneAtCursor(scene: Scene) {
     const narration = narrationRef.current?.value ?? scene.narration;
     const splitAt = narrationRef.current?.selectionStart ?? splitCursor;
+    skipNarrationBlurRef.current = false;
     setBusy("split-" + scene.id);
     setError("");
     setOk("");
@@ -949,9 +951,9 @@ export default function Editor({ projectId, go }: Props) {
                 </div>
               </div>
               <Field label="Nombre de escena"><input defaultValue={activeScene.title} key={"title-" + activeScene.id + "-" + activeScene.updated_at} onBlur={(e) => e.target.value !== activeScene.title && patchScene(activeScene, { title: e.target.value })} /></Field>
-              <Field label="Narración"><textarea ref={narrationRef} className="editor-narration-input" defaultValue={activeScene.narration} key={"narration-" + activeScene.id + "-" + activeScene.updated_at} onSelect={(e) => setSplitCursor(e.currentTarget.selectionStart)} onBlur={(e) => e.target.value !== activeScene.narration && patchScene(activeScene, { narration: e.target.value })} /></Field>
+              <Field label="Narración"><textarea ref={narrationRef} className="editor-narration-input" defaultValue={activeScene.narration} key={"narration-" + activeScene.id + "-" + activeScene.updated_at} onSelect={(e) => setSplitCursor(e.currentTarget.selectionStart)} onBlur={(e) => { if (skipNarrationBlurRef.current) { skipNarrationBlurRef.current = false; return; } if (e.target.value !== activeScene.narration) void patchScene(activeScene, { narration: e.target.value }); }} /></Field>
               <div className="row gap-8" style={{ flexWrap: "wrap" }}>
-                <button className="btn small ghost" onClick={() => void splitSceneAtCursor(activeScene)} disabled={!!busy || splitCursor <= 20 || splitCursor >= activeScene.narration.length - 20}>Dividir escena en el cursor</button>
+                <button className="btn small ghost" onPointerDown={() => { skipNarrationBlurRef.current = true; }} onClick={() => void splitSceneAtCursor(activeScene)} disabled={!!busy || splitCursor <= 20 || splitCursor >= activeScene.narration.length - 20}>Dividir escena en el cursor</button>
                 <small className="muted">Ubicá el cursor en el punto donde querés crear el siguiente clip.</small>
               </div>
               {activeScene.narration.trim() && <div className="scene-audio-preview"><span>Previsualizar voz</span><audio controls preload="none" src={"/api/scenes/" + activeScene.id + "/voice-preview?v=" + encodeURIComponent([activeScene.updated_at, project.voice, project.speed, project.pitch].join("-"))} /></div>}
