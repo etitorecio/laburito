@@ -934,6 +934,23 @@ def create_project(payload: ProjectIn):
     return _project_full(pid)
 
 
+@app.get("/api/projects/{project_id}/music-preview")
+def project_music_preview(project_id: int):
+    project = db.query_one("SELECT * FROM projects WHERE id=?", (project_id,))
+    if not project:
+        raise HTTPException(404, "Proyecto inexistente")
+    music_path = render._music_track(project)
+    if not music_path or not Path(music_path).is_file():
+        raise HTTPException(404, "Este proyecto no tiene una pista musical disponible.")
+    suffix = Path(music_path).suffix.lower()
+    media_type = {
+        ".mp3": "audio/mpeg", ".wav": "audio/wav", ".ogg": "audio/ogg",
+        ".m4a": "audio/mp4", ".flac": "audio/flac",
+    }.get(suffix, "application/octet-stream")
+    return FileResponse(music_path, media_type=media_type, filename=Path(music_path).name,
+                        headers={"Cache-Control": "private, max-age=300"})
+
+
 @app.get("/api/projects/{project_id}")
 def get_project(project_id: int):
     return _project_full(project_id)
