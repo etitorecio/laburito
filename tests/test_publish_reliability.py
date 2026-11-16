@@ -19,12 +19,13 @@ class PublishReliabilityTests(unittest.TestCase):
         self.assertIn("auto_publish=?", execute.call_args.args[0])
         self.assertEqual(execute.call_args.args[1], (1, "entrega", "now", 12))
 
-    def test_auto_publish_youtube_requires_durable_storage_and_linked_channel(self):
+    def test_auto_publish_youtube_is_rejected_for_manual_approval(self):
         with patch.object(publish, "ensure_schema"), \
              patch.object(publish.db, "query_one", return_value={"id": 12, "channel_id": 3}), \
-             patch.object(publish.persistence, "durable_storage_available", return_value=False):
-            with self.assertRaisesRegex(publish.PublishError, "almacenamiento persistente"):
+             patch.object(publish.db, "execute") as execute:
+            with self.assertRaisesRegex(publish.PublishError, "aprobación manual"):
                 publish.set_auto_publish(12, True, "youtube")
+        execute.assert_not_called()
 
     def test_youtube_processing_failure_is_not_recorded_as_published(self):
         with tempfile.TemporaryDirectory() as folder:
