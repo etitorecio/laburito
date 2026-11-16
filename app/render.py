@@ -612,6 +612,7 @@ def render_scene(
         f"|{project.get('kind')}|{style_signature}|{transition}|{fps}|{font}"
         f"|{project.get('visual_style') or 'automatico'}|{_project_metadata(project).get('visual_style_prompt', '')}|{project.get('video_type') or 'moving_images'}"
         f"|{scene.get('visual_query') or ''}|{sfx_signature}|{sfx_volume:.3f}|{sfx_start:.3f}"
+        f"|trim:{float(scene.get('visual_trim_start_sec') or 0):.3f}:{float(scene.get('visual_trim_end_sec') or 0):.3f}"
     )
     seg_dir = scene_dir / key
     seg_dir.mkdir(parents=True, exist_ok=True)
@@ -653,8 +654,15 @@ def render_scene(
         if cues:
             filters.append(_drawtext_chain(cues, font, width, height, style))
         is_video_background = visual_path.suffix.lower() in {".mp4", ".mov", ".webm", ".mkv"}
+        trim_start = max(0.0, float(scene.get("visual_trim_start_sec") or 0))
+        trim_end = max(0.0, float(scene.get("visual_trim_end_sec") or 0))
         input_args = (
-            ["-stream_loop", "-1", "-i", str(visual)]
+            [
+                "-stream_loop", "-1",
+                *(["-ss", f"{trim_start:.3f}"] if trim_start else []),
+                *(["-t", f"{trim_end - trim_start:.3f}"] if trim_end > trim_start else []),
+                "-i", str(visual),
+            ]
             if is_video_background
             else ["-loop", "1", "-framerate", str(fps), "-i", str(visual)]
         )
