@@ -1708,8 +1708,8 @@ def create_timeline_voice_overlay(project_id: int, payload: TimelineOverlayVoice
         tts.synthesize(
             text, target,
             voice=payload.voice or project.get("voice") or "es",
-            speed=payload.speed or project.get("speed") or 150,
-            pitch=payload.pitch or project.get("pitch") or 45,
+            speed=payload.speed if payload.speed is not None else (project.get("speed") or 150),
+            pitch=payload.pitch if payload.pitch is not None else (project.get("pitch") or 45),
         )
         audio_info = media.probe_audio(target)
         duration = float(audio_info.get("duration") or 0)
