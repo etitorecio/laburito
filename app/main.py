@@ -1044,6 +1044,18 @@ def duplicate_project(project_id: int):
 
     for overlay in db.query("SELECT * FROM timeline_overlays WHERE project_id=? ORDER BY start_sec,id", (project_id,)):
         overlay_data = {key: value for key, value in overlay.items() if key != "id"}
+        if overlay.get("kind") == "text":
+            source_path = Path(overlay.get("path") or "")
+            if source_path.is_file():
+                text_folder = db.MEDIA_DIR / "overlays" / str(new_project_id)
+                text_folder.mkdir(parents=True, exist_ok=True)
+                copied_text_path = text_folder / f"text-copy-{time.time_ns()}.png"
+                shutil.copy2(source_path, copied_text_path)
+                overlay_data["path"] = str(copied_text_path)
+                db.execute(
+                    "UPDATE assets SET path=?,bytes=? WHERE project_id=? AND path=? AND kind='capa_text'",
+                    (str(copied_text_path), copied_text_path.stat().st_size, new_project_id, str(source_path)),
+                )
         overlay_data["project_id"] = new_project_id
         overlay_data["created_at"] = stamp
         overlay_data["updated_at"] = stamp
