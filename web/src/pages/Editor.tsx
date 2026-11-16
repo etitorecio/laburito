@@ -169,6 +169,7 @@ export default function Editor({ projectId, go }: Props) {
       setOverlays(nextOverlays);
       setSelectedOverlayId((current) => current && nextOverlays.some((clip) => clip.id === current) ? current : null);
       try {
+        await historyQueueRef.current;
         const savedHistory = await api.get<{
           entries: Array<{ target: string; target_id: number; before_json: string; after_json: string; label: string }>;
           cursor: number;
