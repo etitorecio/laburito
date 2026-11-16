@@ -843,7 +843,7 @@ export default function Editor({ projectId, go }: Props) {
                       }} />
                     </Field>
                     {scene.visual_path ? (
-                      <Badge tone="ok">imagen propia: {scene.visual_kind === 'recurso' ? 'recurso externo' : 'tarjeta generada'}</Badge>
+                      <Badge tone="ok">{scene.visual_url === 'archivo local subido' ? 'imagen propia' : scene.visual_kind === 'recurso' ? 'recurso externo' : 'tarjeta generada'}</Badge>
                     ) : (
                       <Badge tone="warn">tarjeta visual automática</Badge>
                     )}
