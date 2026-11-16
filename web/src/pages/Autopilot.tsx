@@ -562,8 +562,18 @@ export default function Autopilot() {
                 <option value="public">Público</option>
               </select>
             </Field>
-            {form.destination === 'youtube' && <p className="muted">El Autopiloto genera y renderiza los videos. La subida a YouTube siempre queda pendiente de tu aprobación manual.</p>}
-            {form.destination === 'entrega' && <p className="muted">Los videos se guardarán en tu biblioteca para que puedas revisarlos y publicarlos manualmente. No requiere cuenta externa ni credenciales.</p>}
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={form.auto_publish}
+                disabled={form.destination === 'youtube' && (!youtubeReady || persistenceConfigured === false)}
+                onChange={(e) => update('auto_publish', e.target.checked)}
+              />
+              {form.destination === 'youtube' ? 'Publicar automáticamente en YouTube al terminar el render' : 'Guardar automáticamente cada video en Entregas'}
+            </label>
+            {form.destination === 'youtube' && <p className="muted">{form.auto_publish ? 'Al terminar el render validado, Laburito lo subirá al canal conectado con la privacidad elegida. Si falta almacenamiento persistente o la cuenta deja de estar autorizada, se detendrá y avisará.' : 'Con esta opción desactivada, el video queda en Laburito para que lo revises y pulses Publicar manualmente.'}</p>}
+            {form.destination === 'entrega' && <p className="muted">{form.auto_publish ? 'Al terminar el render, el MP4, los subtítulos y los metadatos se copiarán automáticamente a Entregas.' : 'Los videos quedarán en tus proyectos para que los revises y los guardes manualmente. No requiere cuenta externa ni credenciales.'}</p>}
+            {form.destination === 'youtube' && persistenceConfigured === false && <p className="muted">Para activar YouTube automático necesitás almacenamiento persistente configurado. La publicación manual sigue disponible.</p>}
             {form.destination === 'youtube' && !youtubeReady && <p className="muted">El canal seleccionado todavía no tiene una cuenta de YouTube vinculada. Conectá la cuenta de Google correspondiente en <a href="#/cuentas">Cuentas</a>. No alcanza con conectar la cuenta de la otra fábrica.</p>}
             {form.destination === 'youtube' && linkedYoutubeAccount && <p className="muted">Este canal publicará exclusivamente en: <strong>{linkedYoutubeAccount.channel_title}</strong>.</p>}
             {form.destination === 'youtube' && destinationInfo && <p className="muted">{destinationInfo.note}{destinationInfo.missing_env.length ? ' Faltan: ' + destinationInfo.missing_env.join(', ') + '.' : ''}</p>}
@@ -601,7 +611,7 @@ export default function Autopilot() {
                 <option value="UTC">UTC</option>
               </select>
             </Field>
-            <p className="muted">El horario configura cuándo comienza la producción. La publicación en YouTube siempre requiere tu aprobación manual después de revisar el video.</p>
+            <p className="muted">El horario configura cuándo comienza la producción. YouTube: ' + (form.auto_publish ? 'publicación automática al terminar el render' : 'revisión manual antes de publicar') + '.</p>
           </>}
 
           {step === 7 && <>
@@ -648,7 +658,7 @@ export default function Autopilot() {
             <div className="card" style={{ marginTop: 12 }}>
               <strong>{form.name || 'Nuevo Autopiloto'} · {form.niche || 'Sin nicho'}</strong>
               <p>{form.videos_per_period} video(s) cada {form.period_days === 1 ? 'día' : form.period_days === 7 ? 'semana' : '30 días'}, a las {form.schedule_time} ({form.timezone}).</p>
-              <p>{form.duration_target_sec >= 60 ? Math.floor(form.duration_target_sec / 60) + ' min' : form.duration_target_sec + ' s'} · {form.aspect} · {form.resolution} · {form.destination === 'youtube' ? 'Revisión manual antes de publicar en YouTube' : 'Guardar en Laburito'}.</p>
+              <p>{form.duration_target_sec >= 60 ? Math.floor(form.duration_target_sec / 60) + ' min' : form.duration_target_sec + ' s'} · {form.aspect} · {form.resolution} · {form.destination === 'youtube' ? (form.auto_publish ? 'Autopublicación en YouTube' : 'Revisión manual antes de publicar en YouTube') : (form.auto_publish ? 'Entrega automática' : 'Guardar en Laburito')}.</p>
               <p>Voz: {voiceOptions.find((v) => v.id === form.voice)?.label || form.voice} · Música: {form.music === 'auto' ? 'Automática' : form.music === 'ninguna' ? 'Sin música' : form.music}</p>
               <p>Tipo: {meta?.video_types.find((v) => v.id === form.video_type)?.label || form.video_type} · Estilo: {meta?.visual_styles.find((v) => v.id === form.visual_style)?.label || form.visual_style}{form.visual_style_prompt ? ' + personalizado' : ''} · Miniatura: {form.create_thumbnail ? 'Automática' : 'Desactivada'} · Subtítulos: {form.captions_enabled ? (meta?.caption_styles.find((x) => x.id === form.caption_style)?.label || form.caption_style) : 'Desactivados'}</p>
               <p className="muted">Generación local: 0 créditos de IA externos. No se usan servicios de IA pagos.</p>

@@ -82,6 +82,9 @@ def ensure_schema() -> None:
     columns = {row["name"] for row in db.query("PRAGMA table_info(autopilot_rules)")}
     migrations = {
         "last_error": "TEXT",
+        "destination": "TEXT NOT NULL DEFAULT 'entrega'",
+        "privacy": "TEXT NOT NULL DEFAULT 'unlisted'",
+        "auto_publish": "INTEGER NOT NULL DEFAULT 0",
         "speed": "INTEGER NOT NULL DEFAULT 150",
         "pitch": "INTEGER NOT NULL DEFAULT 45",
         "visual_style": "TEXT NOT NULL DEFAULT 'automatico'",
