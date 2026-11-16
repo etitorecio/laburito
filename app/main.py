@@ -301,6 +301,8 @@ def _project_full(project_id: int) -> dict:
         raise HTTPException(404, "Proyecto inexistente")
     project["scenes"] = db.query("SELECT * FROM scenes WHERE project_id=? ORDER BY idx, id", (project_id,))
     project["sources"] = db.query("SELECT * FROM sources WHERE project_id=? ORDER BY id", (project_id,))
+    custom_thumbnail = db.query_one("SELECT path FROM assets WHERE project_id=? AND kind='thumbnail' ORDER BY id DESC LIMIT 1", (project_id,))
+    project["thumbnail_path"] = custom_thumbnail.get("path") if custom_thumbnail else ""
     try:
         project["quality"] = json.loads(project.get("quality_json") or "{}")
     except json.JSONDecodeError:
