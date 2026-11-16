@@ -755,17 +755,14 @@ def set_auto_publish(project_id: int, enabled: bool, destination: str = "entrega
     project = db.query_one("SELECT * FROM projects WHERE id=?", (project_id,))
     if not project:
         raise PublishError(f"El proyecto {project_id} no existe.")
-    if enabled and destination == "youtube":
-        if not _g(project, "channel_id"):
-            raise PublishError("Elegí la fábrica de este proyecto para saber qué cuenta real de YouTube debe publicar.")
-        youtube_account_status(int(_g(project, "channel_id")))
-        if not persistence.durable_storage_available():
-            raise PublishError(
-                "La autopublicación necesita Supabase o un volumen local persistente para no perder el MP4 si el servidor se reinicia."
-            )
+    if enabled:
+        raise PublishError(
+            "La publicación automática está desactivada por seguridad. "
+            "El render se completa primero y la subida requiere que pulses Publicar."
+        )
     db.execute(
-        "UPDATE projects SET auto_publish=?, publish_destination=?, updated_at=? WHERE id=?",
-        (1 if enabled else 0, destination, db.now(), project_id),
+        "UPDATE projects SET auto_publish=0, publish_destination=?, updated_at=? WHERE id=?",
+        (destination, db.now(), project_id),
     )
     return auto_publish_settings(project_id)
 
@@ -785,7 +782,7 @@ def _enqueue(project_id: int, destination: str, calendar_id: int | None, privacy
 
 @router.get("/api/publish/destinations")
 def api_destinations():
-    return {"destinations": destinations(), "auto_publish_available": True}
+    return {"destinations": destinations(), "auto_publish_available": False}
 
 
 @router.post("/api/projects/{project_id}/publish", status_code=202)
