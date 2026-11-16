@@ -1801,7 +1801,12 @@ def patch_timeline_overlay(overlay_id: int, payload: TimelineOverlayPatch):
         raise HTTPException(400, "El volumen de la capa de audio debe estar entre 0 y 200%.")
     if data:
         if overlay.get("kind") == "text" and "title" in data:
-            _write_timeline_text_image(data["title"], Path(overlay["path"]))
+            text_path = Path(overlay["path"])
+            _write_timeline_text_image(data["title"], text_path)
+            db.execute(
+                "UPDATE assets SET label=?,bytes=? WHERE project_id=? AND path=?",
+                (data["title"][:120], text_path.stat().st_size, overlay["project_id"], str(text_path)),
+            )
         sets = ", ".join(f"{key}=?" for key in data)
         db.execute(f"UPDATE timeline_overlays SET {sets},updated_at=? WHERE id=?", (*data.values(), db.now(), overlay_id))
         _touch_project(overlay["project_id"])
