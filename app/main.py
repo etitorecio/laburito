@@ -192,6 +192,14 @@ class TimelineOverlayVoiceIn(BaseModel):
     volume: float = 1
 
 
+class EditorHistoryIn(BaseModel):
+    target: str
+    target_id: int
+    before: dict[str, object]
+    after: dict[str, object]
+    label: str = ""
+
+
 class TimelineOverlayTextIn(BaseModel):
     text: str
     start_sec: float = 0
@@ -1991,6 +1999,93 @@ def patch_timeline_overlay(overlay_id: int, payload: TimelineOverlayPatch):
         db.execute(f"UPDATE timeline_overlays SET {sets},updated_at=? WHERE id=?", (*data.values(), db.now(), overlay_id))
         _touch_project(overlay["project_id"])
     return db.query_one("SELECT * FROM timeline_overlays WHERE id=?", (overlay_id,))
+
+
+@app.get("/api/projects/{project_id}/history")
+def get_editor_history(project_id: int):
+    if not db.query_one("SELECT id FROM projects WHERE id=?", (project_id,)):
+        raise HTTPException(404, "Proyecto inexistente")
+    entries = db.query(
+        "SELECT id,target,target_id,before_json,after_json,label,undone,created_at "
+        "FROM editor_history WHERE project_id=? ORDER BY id",
+        (project_id,),
+    )
+    cursor = sum(1 for entry in entries if not entry["undone"])
+    return {
+        "entries": entries,
+        "cursor": cursor,
+        "can_undo": cursor > 0,
+        "can_redo": cursor < len(entries),
+    }
+
+
+@app.post("/api/projects/{project_id}/history", status_code=201)
+def record_editor_history(project_id: int, payload: EditorHistoryIn):
+    if not db.query_one("SELECT id FROM projects WHERE id=?", (project_id,)):
+        raise HTTPException(404, "Proyecto inexistente")
+    if payload.target not in {"scene", "overlay"} or payload.target_id <= 0:
+        raise HTTPException(400, "El destino del historial no es válido.")
+    if not payload.before or not payload.after:
+        raise HTTPException(400, "El historial necesita valores anteriores y nuevos.")
+    if payload.target == "scene" and not db.query_one(
+        "SELECT id FROM scenes WHERE id=? AND project_id=?", (payload.target_id, project_id)
+    ):
+        raise HTTPException(404, "La escena del historial ya no existe.")
+    if payload.target == "overlay" and not db.query_one(
+        "SELECT id FROM timeline_overlays WHERE id=? AND project_id=?", (payload.target_id, project_id)
+    ):
+        raise HTTPException(404, "La capa del historial ya no existe.")
+    db.execute("DELETE FROM editor_history WHERE project_id=? AND undone=1", (project_id,))
+    history_id = db.execute(
+        "INSERT INTO editor_history(project_id,target,target_id,before_json,after_json,label,undone,created_at) "
+        "VALUES(?,?,?,?,?,?,0,?)",
+        (project_id, payload.target, payload.target_id, json.dumps(payload.before, ensure_ascii=False),
+         json.dumps(payload.after, ensure_ascii=False), payload.label[:160], db.now()),
+    )
+    db.execute(
+        "DELETE FROM editor_history WHERE project_id=? AND id NOT IN "
+        "(SELECT id FROM editor_history WHERE project_id=? ORDER BY id DESC LIMIT 100)",
+        (project_id, project_id),
+    )
+    return db.query_one("SELECT * FROM editor_history WHERE id=?", (history_id,))
+
+
+@app.post("/api/projects/{project_id}/history/undo")
+def undo_editor_history(project_id: int):
+    if not db.query_one("SELECT id FROM projects WHERE id=?", (project_id,)):
+        raise HTTPException(404, "Proyecto inexistente")
+    entry = db.query_one(
+        "SELECT * FROM editor_history WHERE project_id=? AND undone=0 ORDER BY id DESC LIMIT 1",
+        (project_id,),
+    )
+    if not entry:
+        raise HTTPException(409, "No hay cambios para deshacer.")
+    patch = json.loads(entry["before_json"])
+    if entry["target"] == "scene":
+        patch_scene(entry["target_id"], ScenePatch(**patch))
+    else:
+        patch_timeline_overlay(entry["target_id"], TimelineOverlayPatch(**patch))
+    db.execute("UPDATE editor_history SET undone=1 WHERE id=?", (entry["id"],))
+    return {"ok": True, "entry_id": entry["id"], "label": entry["label"]}
+
+
+@app.post("/api/projects/{project_id}/history/redo")
+def redo_editor_history(project_id: int):
+    if not db.query_one("SELECT id FROM projects WHERE id=?", (project_id,)):
+        raise HTTPException(404, "Proyecto inexistente")
+    entry = db.query_one(
+        "SELECT * FROM editor_history WHERE project_id=? AND undone=1 ORDER BY id ASC LIMIT 1",
+        (project_id,),
+    )
+    if not entry:
+        raise HTTPException(409, "No hay cambios para rehacer.")
+    patch = json.loads(entry["after_json"])
+    if entry["target"] == "scene":
+        patch_scene(entry["target_id"], ScenePatch(**patch))
+    else:
+        patch_timeline_overlay(entry["target_id"], TimelineOverlayPatch(**patch))
+    db.execute("UPDATE editor_history SET undone=0 WHERE id=?", (entry["id"],))
+    return {"ok": True, "entry_id": entry["id"], "label": entry["label"]}
 
 
 @app.delete("/api/timeline-overlays/{overlay_id}")
