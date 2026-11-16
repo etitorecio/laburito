@@ -125,6 +125,7 @@ export default function Editor({ projectId, go }: Props) {
   const [visualVariantIndex, setVisualVariantIndex] = useState<Record<number, number>>({});
   const [overlayTextDraft, setOverlayTextDraft] = useState("");
   const [voiceDraft, setVoiceDraft] = useState("");
+  const [voiceOverlayVoice, setVoiceOverlayVoice] = useState("");
   const [draggedSceneId, setDraggedSceneId] = useState<number | null>(null);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [previewElapsed, setPreviewElapsed] = useState(0);
@@ -499,6 +500,9 @@ export default function Editor({ projectId, go }: Props) {
       const clip = await api.post<TimelineOverlay>(`/api/projects/${projectId}/timeline-overlays/voice`, {
         text,
         start_sec: previewElapsed,
+        voice: voiceOverlayVoice || project?.voice || "es",
+        speed: project?.speed ?? 150,
+        pitch: project?.pitch ?? 45,
         volume: 1,
       });
       setVoiceDraft("");
@@ -1248,6 +1252,7 @@ export default function Editor({ projectId, go }: Props) {
           </Card>
           <Card title="Generar voz en off" sub="Crea una pista de voz independiente con el motor local gratuito. Se inserta en el cabezal actual.">
             <Field label="Texto de la voz"><textarea rows={4} maxLength={12000} value={voiceDraft} onChange={(e) => setVoiceDraft(e.target.value)} placeholder="Escribí lo que querés que diga la voz…" /></Field>
+            <Field label="Voz para este clip"><VoicePicker options={voices} value={voiceOverlayVoice || project?.voice || "es"} onChange={setVoiceOverlayVoice} compact speed={project?.speed ?? 150} pitch={project?.pitch ?? 45} /></Field>
             <button className="btn small primary" onClick={() => void createTimelineVoiceOverlay()} disabled={!voiceDraft.trim() || !!busy}>{busy === "create-voice-overlay" ? "Generando voz…" : "＋ Generar y añadir voz"}</button>
           </Card>
         </aside>
