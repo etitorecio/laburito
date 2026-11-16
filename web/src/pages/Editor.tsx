@@ -121,6 +121,7 @@ export default function Editor({ projectId, go }: Props) {
   const [selectedSceneId, setSelectedSceneId] = useState<number | null>(null);
   const [overlays, setOverlays] = useState<TimelineOverlay[]>([]);
   const [selectedOverlayId, setSelectedOverlayId] = useState<number | null>(null);
+  const [draggedOverlayId, setDraggedOverlayId] = useState<number | null>(null);
   const [draggedSceneId, setDraggedSceneId] = useState<number | null>(null);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [previewElapsed, setPreviewElapsed] = useState(0);
@@ -454,6 +455,17 @@ export default function Editor({ projectId, go }: Props) {
     } finally {
       setBusy('');
     }
+  }
+
+  function dropOverlayOnLane(event: React.DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    if (draggedOverlayId === null) return;
+    const clip = overlays.find((item) => item.id === draggedOverlayId);
+    if (!clip) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const seconds = Math.max(0, (event.clientX - rect.left) / timelineScale);
+    void patchTimelineOverlay(clip, { start_sec: seconds });
+    setDraggedOverlayId(null);
   }
 
   async function uploadTimelineOverlay(file: File) {
@@ -983,8 +995,9 @@ export default function Editor({ projectId, go }: Props) {
                 </div>)}
                 <div className="editor-track">
                   <div className="editor-track-label">CAPAS</div>
-                  <div className="editor-overlay-lane" style={{ width: timelineWidth }}>
-                    {overlays.filter((clip) => clip.kind !== "audio").map((clip) => <button type="button" key={clip.id}
+                  <div className="editor-overlay-lane" style={{ width: timelineWidth }} onDragOver={(event) => event.preventDefault()} onDrop={dropOverlayOnLane}>
+                    {overlays.filter((clip) => clip.kind !== "audio").map((clip) => <button type="button" key={clip.id} draggable
+                      onDragStart={() => setDraggedOverlayId(clip.id)} onDragEnd={() => setDraggedOverlayId(null)}
                       className={"editor-overlay-clip " + clip.kind + (selectedOverlayId === clip.id ? " active" : "")}
                       style={{ left: clip.start_sec * timelineScale, width: Math.max(34, clip.duration_sec * timelineScale), top: 6 }}
                       onClick={() => { setSelectedOverlayId(clip.id); setPreviewPlaying(false); setPreviewElapsed(clip.start_sec); }}
@@ -996,8 +1009,9 @@ export default function Editor({ projectId, go }: Props) {
                 </div>
                 <div className="editor-track">
                   <div className="editor-track-label">AUDIO EXTRA</div>
-                  <div className="editor-overlay-lane audio-lane" style={{ width: timelineWidth }}>
-                    {overlays.filter((clip) => clip.kind === "audio").map((clip) => <button type="button" key={clip.id}
+                  <div className="editor-overlay-lane audio-lane" style={{ width: timelineWidth }} onDragOver={(event) => event.preventDefault()} onDrop={dropOverlayOnLane}>
+                    {overlays.filter((clip) => clip.kind === "audio").map((clip) => <button type="button" key={clip.id} draggable
+                      onDragStart={() => setDraggedOverlayId(clip.id)} onDragEnd={() => setDraggedOverlayId(null)}
                       className={"editor-overlay-clip audio" + (selectedOverlayId === clip.id ? " active" : "")}
                       style={{ left: clip.start_sec * timelineScale, width: Math.max(34, clip.duration_sec * timelineScale), top: 6 }}
                       onClick={() => { setSelectedOverlayId(clip.id); setPreviewPlaying(false); setPreviewElapsed(clip.start_sec); }}
