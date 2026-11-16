@@ -189,9 +189,10 @@ def main() -> int:
     # Añade una imagen independiente superpuesta para comprobar el montaje multicapa real.
     overlay_buffer = io.BytesIO()
     Image.new("RGBA", (320, 180), (255, 190, 40, 220)).save(overlay_buffer, format="PNG")
-    status, overlay, _ = upload_png(
+    status, overlay, _ = upload_media(
         f"/api/projects/{project_id}/timeline-overlays/upload?start_sec=1.0",
         "smoke-overlay.png",
+        "image/png",
         overlay_buffer.getvalue(),
     )
     check(status == 201 and bool((overlay or {}).get("id")), "capa visual independiente agregada", f"({status})")
