@@ -54,6 +54,8 @@ export interface Scene {
   visual_trim_start_sec?: number;
   visual_trim_end_sec?: number;
   visual_source_duration_sec?: number;
+  audio_path?: string;
+  audio_sec?: number;
   updated_at: string;
 }
 
