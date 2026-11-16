@@ -5,6 +5,8 @@ on:
     # GitHub ejecuta este chequeo cada cinco minutos; el worker respeta next_run_at.
     - cron: "*/5 * * * *"
   workflow_dispatch:
+  push:
+    branches: [appjet]
 
 permissions:
   contents: read
@@ -46,4 +48,34 @@ jobs:
             sleep 15
           done
           echo "Laburito did not report a healthy background worker."
+          exit 1
+
+  deployment-smoke:
+    if: ${{ github.event_name == 'push' && vars.LABURITO_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Wait for the AppJet edge deployment and verify real health
+        env:
+          LABURITO_URL: ${{ vars.LABURITO_URL }}
+        run: |
+          set -eu
+          BASE_URL="${LABURITO_URL%/}"
+          sleep 30
+          for attempt in $(seq 1 8); do
+            RESPONSE="$(curl --fail --show-error --silent --connect-timeout 8 --max-time 20 "${BASE_URL}/api/health" || true)"
+            echo "$RESPONSE"
+            if echo "$RESPONSE" | jq -e '.ok == true and .worker.worker_alive == true' >/dev/null 2>&1; then
+              if ! echo "$RESPONSE" | jq -e '.persistence.configured == true or .persistence.local_persistent == true' >/dev/null 2>&1; then
+                echo "::error::The deployed app has no durable storage. Configure Supabase Storage or a persistent volume before using real projects."
+                exit 1
+              fi
+              curl --fail --show-error --silent --max-time 20 "${BASE_URL}/" >/dev/null
+              echo "AppJet edge app, frontend, worker, and durable storage are healthy."
+              exit 0
+            fi
+            echo "Deployment not ready (attempt $attempt/8)."
+            sleep 15
+          done
+          echo "::error::The AppJet edge deployment did not become healthy."
           exit 1
