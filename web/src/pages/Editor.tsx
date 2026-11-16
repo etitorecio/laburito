@@ -352,8 +352,8 @@ export default function Editor({ projectId, go }: Props) {
     setError('');
     setOk('');
     try {
-      await api.upload(`/api/scenes/${scene.id}/image`, file);
-      setOk('Imagen asignada a la escena. Se guardó como recurso local.');
+      await api.upload(`/api/scenes/${scene.id}/media`, file);
+      setOk((file.type.startsWith('video/') ? 'Clip de video' : 'Imagen') + ' asignado a la escena. Se guardó localmente.');
       await load();
     } catch (e) {
       setError((e as Error).message);
