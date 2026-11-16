@@ -32,6 +32,11 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
   return (
     <div className="studio-home">
       {error && <div className="msg error">{error}</div>}
+      {diag && !diag.persistence.configured && !diag.persistence.local_persistent && (
+        <div className="msg">
+          <strong>Almacenamiento no persistente.</strong> Esta instancia puede perder proyectos y archivos si el servidor se reinicia o reemplaza. Para conservar todo sin pagar hosting, ejecutá la versión local con Docker y su carpeta de datos persistente.
+        </div>
+      )}
       <section className="studio-hero">
         <div className="studio-hero-copy">
           <span className="studio-eyebrow"><i /> TU ESTUDIO DE CREACIÓN</span>
