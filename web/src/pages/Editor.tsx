@@ -38,6 +38,14 @@ interface Publication {
   created_at: string;
 }
 
+interface EditorHistoryEntry {
+  target: "scene" | "overlay";
+  id: number;
+  before: Record<string, unknown>;
+  after: Record<string, unknown>;
+  label: string;
+}
+
 const META_MARKER = '[LABURITO_META]';
 
 function captionsEnabledFromNotes(notes: string): boolean {
@@ -143,6 +151,10 @@ export default function Editor({ projectId, go }: Props) {
   const [publications, setPublications] = useState<Publication[]>([]);
   const [youtubeChannels, setYoutubeChannels] = useState<YoutubeWorkspaceChannel[]>([]);
   const [publishDest, setPublishDest] = useState('entrega');
+  const [historyVersion, setHistoryVersion] = useState(0);
+  const historyRef = useRef<EditorHistoryEntry[]>([]);
+  const historyCursorRef = useRef(0);
+  const historyReplayRef = useRef(false);
   const timer = useRef<number | null>(null);
 
   useEffect(() => { setSplitCursor(0); }, [selectedSceneId]);
@@ -299,6 +311,52 @@ export default function Editor({ projectId, go }: Props) {
     } catch (e) {
       setError((e as Error).message);
     }
+  }
+
+  function recordHistory(entry: EditorHistoryEntry) {
+    if (historyReplayRef.current || !Object.keys(entry.after).length) return;
+    const next = historyRef.current.slice(0, historyCursorRef.current);
+    next.push(entry);
+    historyRef.current = next.slice(-100);
+    historyCursorRef.current = historyRef.current.length;
+    setHistoryVersion((version) => version + 1);
+  }
+
+  async function replayHistory(direction: "undo" | "redo") {
+    const index = direction === "undo" ? historyCursorRef.current - 1 : historyCursorRef.current;
+    const entry = historyRef.current[index];
+    if (!entry) return;
+    historyReplayRef.current = true;
+    setBusy(direction);
+    setError("");
+    try {
+      const patch = direction === "undo" ? entry.before : entry.after;
+      if (entry.target === "scene") {
+        const updated = await api.patch<Scene>(`/api/scenes/${entry.id}`, patch);
+        setProject((prev) => prev
+          ? { ...prev, scenes: (prev.scenes ?? []).map((scene) => scene.id === updated.id ? updated : scene) }
+          : prev);
+      } else {
+        const updated = await api.patch<TimelineOverlay>(`/api/timeline-overlays/${entry.id}`, patch);
+        setOverlays((current) => current.map((clip) => clip.id === updated.id ? updated : clip));
+      }
+      historyCursorRef.current += direction === "undo" ? -1 : 1;
+      setHistoryVersion((version) => version + 1);
+      setOk(direction === "undo" ? `Deshecho: ${entry.label}` : `Rehecho: ${entry.label}`);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      historyReplayRef.current = false;
+      setBusy("");
+    }
+  }
+
+  async function undoHistory() {
+    await replayHistory("undo");
+  }
+
+  async function redoHistory() {
+    await replayHistory("redo");
   }
 
   async function patchScene(scene: Scene, patch: Partial<Scene>) {
