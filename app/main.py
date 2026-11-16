@@ -205,6 +205,11 @@ class SearchIn(BaseModel):
     provider: str = "all"
 
 
+class IdeasIn(BaseModel):
+    niche: str
+    limit: int = 10
+
+
 class VisualIn(BaseModel):
     url: str
     license: str = ""
@@ -1385,6 +1390,20 @@ def retry_job(job_id: int):
 # --------------------------------------------------------------------------- #
 # Investigación de nichos y fuentes
 # --------------------------------------------------------------------------- #
+
+@app.post("/api/ideas")
+def suggest_video_ideas(payload: IdeasIn):
+    """Busca ideas de video documentables con fuentes públicas gratuitas."""
+    try:
+        ideas = topic_engine.suggest_topics(payload.niche, payload.limit)
+    except Exception as exc:
+        raise HTTPException(503, f"No se pudieron buscar ideas ahora: {exc}") from exc
+    return {
+        "ideas": ideas,
+        "source": "Wikipedia",
+        "trend_note": "Las tendencias solo se incluyen cuando coinciden con el nicho.",
+    }
+
 
 @app.get("/api/research/niches")
 def list_niches():
