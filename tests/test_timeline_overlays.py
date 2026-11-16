@@ -9,7 +9,7 @@ from unittest.mock import patch
 from fastapi import HTTPException
 from starlette.datastructures import Headers, UploadFile
 
-from app.main import TimelineOverlayTextIn, create_timeline_text_overlay, upload_timeline_overlay
+from app.main import TimelineOverlayPatch, TimelineOverlayTextIn, create_timeline_text_overlay, patch_timeline_overlay, upload_timeline_overlay
 
 
 class TimelineOverlayUploadTests(unittest.TestCase):
@@ -96,6 +96,27 @@ class TimelineOverlayUploadTests(unittest.TestCase):
         self.assertTrue(exists)
         self.assertGreater(image_size, 1000)
         self.assertIn("timeline_overlays", execute.call_args_list[0].args[0])
+        touch.assert_called_once_with(3)
+
+    def test_editing_text_overlay_regenerates_its_image_asset(self):
+        with tempfile.TemporaryDirectory() as temp:
+            image_path = Path(temp) / "text.png"
+            image_path.write_bytes(b"old")
+            overlay = {
+                "id": 82, "project_id": 3, "kind": "text", "path": str(image_path),
+                "title": "Texto viejo", "start_sec": 0, "duration_sec": 4,
+                "x": 0.5, "y": 0.75, "width": 0.82, "opacity": 1, "volume": 1,
+            }
+            updated = {**overlay, "title": "Texto nuevo"}
+            with patch("app.main.db.query_one", side_effect=[overlay, updated]), \
+                 patch("app.main.db.execute") as execute, \
+                 patch("app.main._touch_project") as touch:
+                result = patch_timeline_overlay(82, TimelineOverlayPatch(title="Texto nuevo"))
+            image_size = image_path.stat().st_size
+
+        self.assertEqual(result["title"], "Texto nuevo")
+        self.assertGreater(image_size, 1000)
+        self.assertIn("title=?", execute.call_args.args[0])
         touch.assert_called_once_with(3)
 
     def test_rejects_unsupported_overlay_file_types(self):
