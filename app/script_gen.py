@@ -632,7 +632,8 @@ def generate_script(
             first = idx * len(evidence_sentences) // len(beats)
             last = (idx + 1) * len(evidence_sentences) // len(beats)
             factual = evidence_sentences[first:last]
-            narration = (f"Sobre {topic}: " if idx == 0 else "") + " ".join(factual)
+            if factual:
+                narration = (f"Sobre {topic}: " if idx == 0 else "") + " ".join(factual)
         elif beat["key"] in ("origen", "protagonistas", "descubrimiento", "evolucion", "consecuencias", "desarrollo"):
             if claim_index < len(claims):
                 note = next((n for n in notes if (n.get("claim") or "").strip() == claims[claim_index]), None)
