@@ -2866,3 +2866,17 @@ th {
 
 .editor-timeline-zoom { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: .78rem; }
 .editor-timeline-zoom input { width: 104px; accent-color: var(--accent); }
+
+
+.scene-trim-controls {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft, rgba(127,127,127,.06));
+}
+.scene-trim-controls > strong { font-size: .86rem; }
+.scene-trim-controls > small { line-height: 1.4; }
+.scene-trim-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.scene-trim-fields input { width: 100%; min-width: 0; }
