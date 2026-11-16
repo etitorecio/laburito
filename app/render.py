@@ -562,27 +562,12 @@ def _mix_scene_audio(
     return voice_wav
 
 
-def _visual_input_args(
-    visual: Path,
-    fps: int,
-    trim_start: float = 0.0,
-    trim_end: float = 0.0,
-    source_duration: float = 0.0,
-) -> list[str]:
-    """Construye argumentos de entrada FFmpeg respetando el fragmento elegido."""
+def _visual_input_args(visual: Path, fps: int) -> list[str]:
+    """Prepara imágenes estáticas o clips ya recortados y listos para repetirse."""
     is_video = visual.suffix.lower() in {".mp4", ".mov", ".webm", ".mkv"}
     if not is_video:
         return ["-loop", "1", "-framerate", str(fps), "-i", str(visual)]
-    start = max(0.0, float(trim_start or 0))
-    end = max(0.0, float(trim_end or 0))
-    args = ["-stream_loop", "-1"]
-    if start:
-        args.extend(["-ss", f"{start:.3f}"])
-    window_end = end if end > start else (float(source_duration or 0) if start and source_duration > start else 0)
-    if window_end > start:
-        args.extend(["-t", f"{window_end - start:.3f}"])
-    args.extend(["-i", str(visual)])
-    return args
+    return ["-stream_loop", "-1", "-i", str(visual)]
 
 
 def _trim_visual_source(
