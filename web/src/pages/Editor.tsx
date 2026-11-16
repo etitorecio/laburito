@@ -120,6 +120,8 @@ export default function Editor({ projectId, go }: Props) {
   const [searchFor, setSearchFor] = useState<number | null>(null);
   const [selectedSceneId, setSelectedSceneId] = useState<number | null>(null);
   const [draggedSceneId, setDraggedSceneId] = useState<number | null>(null);
+  const [previewPlaying, setPreviewPlaying] = useState(false);
+  const [previewElapsed, setPreviewElapsed] = useState(0);
   const [results, setResults] = useState<MediaResult[]>([]);
   const [destinations, setDestinations] = useState<PublishDestination[]>([]);
   const [publications, setPublications] = useState<Publication[]>([]);
@@ -168,6 +170,23 @@ export default function Editor({ projectId, go }: Props) {
   }, [project, load]);
 
   const linkedYoutubeAccount = youtubeChannels.find((channel) => channel.id === project?.channel_id)?.account ?? null;
+
+  // Reproducción de revisión con avance automático entre escenas.
+  useEffect(() => {
+    if (!previewPlaying) return;
+    const tick = window.setInterval(() => {
+      setPreviewElapsed((elapsed) => {
+        const currentScenes = project?.scenes ?? [];
+        const total = currentScenes.reduce((sum, scene) => sum + Math.max(2, (scene.narration || '').trim().split(/\\s+/).filter(Boolean).length / 2.4), 0);
+        if (elapsed + 0.25 >= total) {
+          setPreviewPlaying(false);
+          return total;
+        }
+        return elapsed + 0.25;
+      });
+    }, 250);
+    return () => window.clearInterval(tick);
+  }, [previewPlaying, project?.scenes]);
 
   async function assignChannel(channelId: string) {
     if (!channelId) return;
@@ -427,6 +446,8 @@ export default function Editor({ projectId, go }: Props) {
   );
   const timelineDuration = sceneDurations.reduce((sum, duration) => sum + duration, 0);
   const timelineWidth = Math.max(240, timelineDuration * timelineScale);
+  const previewSceneIndex = Math.max(0, timelineStarts.findIndex((start, index) => previewElapsed >= start && previewElapsed < start + sceneDurations[index]));
+  const previewScene = scenes[previewSceneIndex] ?? activeScene;
   const rulerStep = timelineDuration > 180 ? 30 : timelineDuration > 90 ? 15 : 5;
 
   return (
@@ -731,13 +752,24 @@ export default function Editor({ projectId, go }: Props) {
         <div className="editor-workspace-main">
           <Card title="Vista previa" sub={activeScene ? "Escena " + (activeSceneIndex + 1) + " de " + scenes.length + " · " + activeScene.title : "Vista previa de escena"}>
             <div className={"editor-preview-stage " + (project.aspect === "9:16" ? "portrait" : project.aspect === "1:1" ? "square" : "")}>
-              {activeScene?.visual_path ? (/\.(mp4|mov|webm|mkv)$/i.test(activeScene.visual_path)
-                ? <video src={mediaUrl(activeScene.visual_path)} controls muted playsInline preload="metadata" />
-                : <img src={mediaUrl(activeScene.visual_path)} alt={activeScene.title} />)
+              {previewScene?.visual_path ? (/\.(mp4|mov|webm|mkv)$/i.test(activeScene.visual_path)
+                ? <video src={mediaUrl(previewScene.visual_path)} controls muted playsInline preload="metadata" />
+                : <img src={mediaUrl(previewScene.visual_path)} alt={previewScene.title} />)
                 : <div className="editor-preview-empty"><span>✦</span><strong>Tu escena está lista para ilustrar</strong><small>Buscá un recurso con licencia o subí tu propio material.</small></div>}
             </div>
             {activeScene && <div className="editor-preview-controls">
-              <span>{activeScene.narration.trim().split(/\s+/).filter(Boolean).length} palabras · ~{fmtDuration(Math.max(2, activeScene.narration.trim().split(/\s+/).filter(Boolean).length / 2.4))}</span>
+              <div className="editor-transport">
+                <button className="btn small primary" onClick={() => {
+                  if (previewPlaying) setPreviewPlaying(false);
+                  else {
+                    if (previewElapsed >= timelineDuration || !previewElapsed) setPreviewElapsed(timelineStarts[activeSceneIndex] || 0);
+                    setPreviewPlaying(true);
+                  }
+                }}>{previewPlaying ? "Ⅱ Pausar" : "▶ Reproducir"}</button>
+                <input aria-label="Posición de reproducción" type="range" min="0" max={Math.max(1, timelineDuration)} step="0.1" value={Math.min(previewElapsed, timelineDuration)} onChange={(e) => { setPreviewElapsed(Number(e.target.value)); setPreviewPlaying(false); }} />
+                <small>{fmtDuration(previewElapsed)} / {fmtDuration(timelineDuration)}</small>
+              </div>
+              <span>{previewScene?.title ?? activeScene.title} · {activeScene.narration.trim().split(/\s+/).filter(Boolean).length} palabras</span>
               <div className="row gap-8">
                 <button className="btn small ghost" onClick={() => activeSceneIndex > 0 && setSelectedSceneId(scenes[activeSceneIndex - 1].id)} disabled={activeSceneIndex <= 0}>← Anterior</button>
                 <button className="btn small ghost" onClick={() => activeSceneIndex < scenes.length - 1 && setSelectedSceneId(scenes[activeSceneIndex + 1].id)} disabled={activeSceneIndex >= scenes.length - 1}>Siguiente →</button>
