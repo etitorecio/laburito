@@ -95,6 +95,7 @@ export interface Project {
   visual_style: string;
   visual_style_prompt?: string;
   create_thumbnail?: boolean;
+  thumbnail_path?: string;
   video_type: string;
   caption_style: string;
   captions_enabled?: boolean;
