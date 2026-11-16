@@ -231,7 +231,7 @@ def choose_topic(
 
 def research_specific_topic(topic: str) -> dict:
     """Investiga el tema elegido por el usuario sin mostrar un módulo separado."""
-    topic = re.sub(r"\\s+", " ", (topic or "").strip())
+    topic = re.sub(r"\s+", " ", (topic or "").strip())
     if not topic:
         raise ValueError("Escribí un tema para investigar.")
     data = _get({
@@ -255,7 +255,7 @@ def research_specific_topic(topic: str) -> dict:
         "inprop": "url", "exchars": 14000, "titles": title, "format": "json",
     })
     page = next(iter(page_data.get("query", {}).get("pages", {}).values()), {})
-    extract = re.sub(r"\\s+", " ", page.get("extract", "")).strip()
+    extract = re.sub(r"\s+", " ", page.get("extract", "")).strip()
     if len(extract) < 450:
         raise RuntimeError("Encontré una página, pero no contiene suficiente información para escribir un guion fiable.")
     url = page.get("fullurl") or (
