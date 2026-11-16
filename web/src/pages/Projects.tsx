@@ -153,21 +153,15 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
   async function createBlank() {
     setError('');
     setOk('');
-    if (!selectedChannel) {
-      setError('Elegí un canal válido antes de crear el proyecto.');
-      return;
-    }
-    if (!form.title.trim()) {
-      setError('Escribí un título para el proyecto vacío.');
-      return;
-    }
+    const blankTitle = (form.title.trim() || form.topic.trim() || 'Proyecto sin título').slice(0, 120);
     setBusy(true);
     try {
       const { captions_enabled, characters, input_mode, script_text, ...projectForm } = form;
       const created = await api.post<Project>('/api/projects', {
         ...projectForm,
-        channel_id: selectedChannel.id,
-        topic: form.topic || form.title,
+        title: blankTitle,
+        channel_id: selectedChannel?.id ?? null,
+        topic: form.topic || blankTitle,
         notes: (!captions_enabled || form.visual_style_prompt.trim() || !form.create_thumbnail || characters.trim() || (input_mode === 'script' && script_text.trim()))
           ? '[LABURITO_META]' + JSON.stringify({
               captions_enabled,
@@ -402,7 +396,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
           </>}
           <div className="creation-submit">
             <button className="btn primary" onClick={create} disabled={busy || (form.input_mode === 'idea' ? !form.topic.trim() : !form.script_text.trim())}>{busy ? 'Preparando tu video…' : form.input_mode === 'script' ? 'Crear video con mi guion' : '✦ Crear mi video'}</button>
-            {!easyMode && <button className="btn ghost" onClick={createBlank} disabled={busy || !selectedChannel || !form.title.trim()}>Empezar desde cero</button>}
+            {!easyMode && <button className="btn ghost" onClick={createBlank} disabled={busy}>Empezar desde cero</button>}
             <small>{easyMode ? 'La configuración recomendada se aplica automáticamente. Podés cambiarla después en el editor.' : 'Podés revisar cada ajuste antes de producir.'}</small>
           </div>
         </div>
