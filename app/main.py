@@ -2029,10 +2029,12 @@ def get_editor_history(project_id: int):
 def record_editor_history(project_id: int, payload: EditorHistoryIn):
     if not db.query_one("SELECT id FROM projects WHERE id=?", (project_id,)):
         raise HTTPException(404, "Proyecto inexistente")
-    if payload.target not in {"scene", "overlay"} or payload.target_id <= 0:
+    if payload.target not in {"scene", "overlay", "project"} or payload.target_id <= 0:
         raise HTTPException(400, "El destino del historial no es válido.")
     if not payload.before or not payload.after:
         raise HTTPException(400, "El historial necesita valores anteriores y nuevos.")
+    if payload.target == "project" and payload.target_id != project_id:
+        raise HTTPException(400, "El historial no puede modificar otro proyecto.")
     if payload.target == "scene" and not db.query_one(
         "SELECT id FROM scenes WHERE id=? AND project_id=?", (payload.target_id, project_id)
     ):
@@ -2069,8 +2071,10 @@ def undo_editor_history(project_id: int):
     patch = json.loads(entry["before_json"])
     if entry["target"] == "scene":
         patch_scene(entry["target_id"], ScenePatch(**patch))
-    else:
+    elif entry["target"] == "overlay":
         patch_timeline_overlay(entry["target_id"], TimelineOverlayPatch(**patch))
+    else:
+        patch_project(project_id, ProjectPatch(**patch))
     db.execute("UPDATE editor_history SET undone=1 WHERE id=?", (entry["id"],))
     return {"ok": True, "entry_id": entry["id"], "label": entry["label"]}
 
@@ -2088,8 +2092,10 @@ def redo_editor_history(project_id: int):
     patch = json.loads(entry["after_json"])
     if entry["target"] == "scene":
         patch_scene(entry["target_id"], ScenePatch(**patch))
-    else:
+    elif entry["target"] == "overlay":
         patch_timeline_overlay(entry["target_id"], TimelineOverlayPatch(**patch))
+    else:
+        patch_project(project_id, ProjectPatch(**patch))
     db.execute("UPDATE editor_history SET undone=0 WHERE id=?", (entry["id"],))
     return {"ok": True, "entry_id": entry["id"], "label": entry["label"]}
 
