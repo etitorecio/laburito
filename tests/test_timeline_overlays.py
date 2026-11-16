@@ -9,7 +9,7 @@ from unittest.mock import patch
 from fastapi import HTTPException
 from starlette.datastructures import Headers, UploadFile
 
-from app.main import TimelineOverlayPatch, TimelineOverlayTextIn, create_timeline_text_overlay, patch_timeline_overlay, upload_timeline_overlay
+from app.main import TimelineOverlayPatch, TimelineOverlayTextIn, TimelineOverlayVoiceIn, create_timeline_text_overlay, create_timeline_voice_overlay, patch_timeline_overlay, upload_timeline_overlay
 
 
 class TimelineOverlayUploadTests(unittest.TestCase):
@@ -72,6 +72,35 @@ class TimelineOverlayUploadTests(unittest.TestCase):
         self.assertEqual(result["kind"], "audio")
         self.assertEqual(len(saved), 1)
         self.assertGreater(saved_size, 0)
+        self.assertIn("timeline_overlays", execute.call_args_list[0].args[0])
+        touch.assert_called_once_with(3)
+
+    def test_generates_local_voiceover_as_an_independent_audio_layer(self):
+        overlay = {
+            "id": 91, "project_id": 3, "kind": "audio", "title": "Voz de prueba",
+            "start_sec": 2.0, "duration_sec": 3.5, "volume": 0.8,
+        }
+        def fake_synthesize(text, target, **kwargs):
+            Path(target).write_bytes(b"generated-voice-audio")
+            return {"engine": "espeak-ng"}
+        with tempfile.TemporaryDirectory() as temp, \
+             patch("app.main.db.MEDIA_DIR", Path(temp) / "media"), \
+             patch("app.main.db.query_one", side_effect=[{"id": 3, "voice": "es-ar", "speed": 150, "pitch": 45}, overlay]), \
+             patch("app.main.db.execute", side_effect=[91, 0]) as execute, \
+             patch("app.main._touch_project") as touch, \
+             patch("app.main.tts.synthesize", side_effect=fake_synthesize) as synthesize, \
+             patch("app.main.media.probe_audio", return_value={"codec": "pcm_s16le", "duration": 3.5}):
+            result = create_timeline_voice_overlay(
+                3, TimelineOverlayVoiceIn(text="Esta es una voz en off", start_sec=2, volume=0.8)
+            )
+            target = Path(execute.call_args_list[0].args[1][2])
+            saved_size = target.stat().st_size if target.is_file() else 0
+
+        self.assertEqual(result["kind"], "audio")
+        self.assertEqual(result["duration_sec"], 3.5)
+        self.assertGreater(saved_size, 0)
+        synthesize.assert_called_once()
+        self.assertEqual(synthesize.call_args.kwargs["voice"], "es-ar")
         self.assertIn("timeline_overlays", execute.call_args_list[0].args[0])
         touch.assert_called_once_with(3)
 
