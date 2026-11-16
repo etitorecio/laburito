@@ -53,6 +53,7 @@ export interface Scene {
   sfx_start_sec?: number;
   visual_trim_start_sec?: number;
   visual_trim_end_sec?: number;
+  visual_source_duration_sec?: number;
   updated_at: string;
 }
 
