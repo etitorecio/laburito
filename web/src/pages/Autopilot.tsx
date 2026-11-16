@@ -562,17 +562,18 @@ export default function Autopilot() {
                 <option value="public">Público</option>
               </select>
             </Field>
-            <label className="check-row">
-              <input
-                type="checkbox"
-                checked={form.auto_publish}
-                disabled={form.destination === 'youtube' && (!youtubeReady || persistenceConfigured === false)}
-                onChange={(e) => update('auto_publish', e.target.checked)}
-              />
-              {form.destination === 'youtube' ? 'Publicar automáticamente en YouTube al terminar el render' : 'Guardar automáticamente cada video en Entregas'}
-            </label>
-            {form.destination === 'youtube' && <p className="muted">{form.auto_publish ? 'Al terminar el render validado, Laburito lo subirá al canal conectado con la privacidad elegida. Si falta almacenamiento persistente o la cuenta deja de estar autorizada, se detendrá y avisará.' : 'Con esta opción desactivada, el video queda en Laburito para que lo revises y pulses Publicar manualmente.'}</p>}
-            {form.destination === 'entrega' && <p className="muted">{form.auto_publish ? 'Al terminar el render, el MP4, los subtítulos y los metadatos se copiarán automáticamente a Entregas.' : 'Los videos quedarán en tus proyectos para que los revises y los guardes manualmente. No requiere cuenta externa ni credenciales.'}</p>}
+            {form.destination === 'entrega' && <>
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={form.auto_publish}
+                  onChange={(e) => update('auto_publish', e.target.checked)}
+                />
+                Guardar automáticamente cada video en Entregas
+              </label>
+              <p className="muted">{form.auto_publish ? 'Al terminar el render, el MP4, los subtítulos y los metadatos se copiarán automáticamente a Entregas.' : 'Los videos quedarán en tus proyectos para que los revises y los guardes manualmente.'}</p>
+            </>}
+            {form.destination === 'youtube' && <p className="muted">La producción puede automatizarse, pero la publicación en YouTube siempre queda pendiente: revisás el video terminado y aprobás cada subida manualmente. Nunca se publica por una regla programada.</p>}
             {form.destination === 'youtube' && persistenceConfigured === false && <p className="muted">Para activar YouTube automático necesitás almacenamiento persistente configurado. La publicación manual sigue disponible.</p>}
             {form.destination === 'youtube' && !youtubeReady && <p className="muted">El canal seleccionado todavía no tiene una cuenta de YouTube vinculada. Conectá la cuenta de Google correspondiente en <a href="#/cuentas">Cuentas</a>. No alcanza con conectar la cuenta de la otra fábrica.</p>}
             {form.destination === 'youtube' && linkedYoutubeAccount && <p className="muted">Este canal publicará exclusivamente en: <strong>{linkedYoutubeAccount.channel_title}</strong>.</p>}
