@@ -729,6 +729,11 @@ export default function Editor({ projectId, go }: Props) {
       </Card>
       </details>
 
+      {scenes.length > 0 && !canRender && (
+        <div className="msg">
+          Faltan narraciones en {scenes.filter((scene) => !scene.narration.trim()).length} escena(s). Completá el texto antes de renderizar.
+        </div>
+      )}
       <div className="grid two">
         <Card title="Línea de tiempo" sub="Cada bloque representa una escena. La duración es estimada a partir de la narración; elegí un bloque para editarlo.">
           {scenes.length === 0 ? <Empty>La línea de tiempo aparece cuando generás el guion.</Empty> : (
@@ -781,6 +786,7 @@ export default function Editor({ projectId, go }: Props) {
                         style={{ minWidth: 160 }}
                         onBlur={(e) => e.target.value !== scene.title && patchScene(scene, { title: e.target.value })}
                       />
+                      <Badge tone={scene.narration.trim() ? 'ok' : 'warn'}>{scene.narration.trim() ? 'Texto listo' : 'Texto pendiente'}</Badge>
                     </div>
                     <div className="row gap-8">
                       <button className="btn small ghost" onClick={() => move(scene, -1)} disabled={i === 0}>↑</button>
