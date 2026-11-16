@@ -48,6 +48,33 @@ class TimelineOverlayUploadTests(unittest.TestCase):
         self.assertEqual(execute.call_args_list[0].args[1][4], 2.0)
         touch.assert_called_once_with(3)
 
+    def test_uploads_audio_as_independent_timeline_clip(self):
+        overlay = {
+            "id": 72, "project_id": 3, "kind": "audio", "title": "audio",
+            "start_sec": 1.5, "duration_sec": 4.0, "volume": 1.0,
+        }
+        upload = UploadFile(
+            filename="audio.mp3",
+            file=io.BytesIO(b"fake-audio-source"),
+            headers=Headers({"content-type": "audio/mpeg"}),
+        )
+        with tempfile.TemporaryDirectory() as temp, \
+             patch("app.main.db.MEDIA_DIR", Path(temp) / "media"), \
+             patch("app.main.db.TMP_DIR", Path(temp) / "tmp"), \
+             patch("app.main.db.query_one", side_effect=[{"id": 3}, overlay]), \
+             patch("app.main.db.execute", side_effect=[72, 0]) as execute, \
+             patch("app.main._touch_project") as touch, \
+             patch("app.main.media.probe_duration", return_value=4.0):
+            result = asyncio.run(upload_timeline_overlay(3, upload, start_sec=1.5))
+            saved = list((Path(temp) / "media" / "overlays" / "3").glob("overlay-*.mp3"))
+            saved_size = saved[0].stat().st_size if saved else 0
+
+        self.assertEqual(result["kind"], "audio")
+        self.assertEqual(len(saved), 1)
+        self.assertGreater(saved_size, 0)
+        self.assertIn("timeline_overlays", execute.call_args_list[0].args[0])
+        touch.assert_called_once_with(3)
+
     def test_rejects_unsupported_overlay_file_types(self):
         upload = UploadFile(
             filename="script.txt",
