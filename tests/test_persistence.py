@@ -100,7 +100,7 @@ class PersistenceTests(unittest.TestCase):
                         with patch.object(persistence.db, "log"):
                             self.assertTrue(persistence.sync_pending_video(7, video))
             upload.assert_called_once_with(
-                "POST", "/storage/v1/object/private/pending/7.mp4", video, "video/mp4"
+                "POST", "/storage/v1/object/laburito-private-backups/pending/7.mp4", video, "video/mp4"
             )
 
     def test_pending_video_is_restored_when_local_file_is_missing(self):
