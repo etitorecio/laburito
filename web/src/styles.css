@@ -2646,3 +2646,18 @@ th {
   font-size: .76rem;
 }
 .scene-audio-preview audio { width: min(100%, 360px); height: 36px; }
+
+/* ---------- Creación guiada: primero el resultado, después los detalles ---------- */
+.creation-mode-switch{display:flex;gap:6px;padding:5px;border:1px solid var(--line);border-radius:12px;background:var(--bg-soft);width:fit-content;max-width:100%}
+.creation-mode-switch button{border:0;border-radius:8px;padding:9px 13px;background:transparent;color:var(--muted);font:inherit;font-weight:650;cursor:pointer}
+.creation-mode-switch button.active{background:var(--panel-2);color:var(--text);box-shadow:0 1px 5px rgba(0,0,0,.22)}
+.quick-format-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.quick-format{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-height:126px;padding:16px;border:1px solid var(--line);border-radius:13px;background:var(--panel-2);color:var(--text);text-align:left;cursor:pointer;font:inherit}
+.quick-format.active{border-color:var(--accent);background:linear-gradient(145deg,rgba(255,176,32,.13),var(--panel-2));box-shadow:inset 0 0 0 1px rgba(255,176,32,.2)}
+.quick-format-icon{font-size:1.7rem;color:var(--accent);line-height:1.1}
+.quick-format strong{font-size:1.02rem}
+.quick-format small{font-size:.78rem;line-height:1.35}
+.creation-submit{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding-top:8px}
+.creation-submit .btn.primary{min-height:48px;font-size:1rem}
+.creation-submit small{text-align:center}
+@media(max-width:520px){.quick-format-grid{gap:8px}.quick-format{padding:12px;min-height:118px}.creation-mode-switch{width:100%}.creation-mode-switch button{flex:1;padding:9px 6px;font-size:.85rem}}
