@@ -125,6 +125,9 @@ export default function Autopilot() {
   function update<K extends keyof typeof INITIAL>(key: K, value: (typeof INITIAL)[K]) {
     setForm((old) => {
       const next = { ...old, [key]: value };
+      if (key === 'destination' && value === 'youtube') {
+        next.auto_publish = false;
+      }
       if (key === 'video_type' && value === 'skeleton' && next.duration_target_sec > 420) {
         next.duration_target_sec = 420;
       }
@@ -659,7 +662,7 @@ export default function Autopilot() {
             <div className="card" style={{ marginTop: 12 }}>
               <strong>{form.name || 'Nuevo Autopiloto'} · {form.niche || 'Sin nicho'}</strong>
               <p>{form.videos_per_period} video(s) cada {form.period_days === 1 ? 'día' : form.period_days === 7 ? 'semana' : '30 días'}, a las {form.schedule_time} ({form.timezone}).</p>
-              <p>{form.duration_target_sec >= 60 ? Math.floor(form.duration_target_sec / 60) + ' min' : form.duration_target_sec + ' s'} · {form.aspect} · {form.resolution} · {form.destination === 'youtube' ? (form.auto_publish ? 'Autopublicación en YouTube' : 'Revisión manual antes de publicar en YouTube') : (form.auto_publish ? 'Entrega automática' : 'Guardar en Laburito')}.</p>
+              <p>{form.duration_target_sec >= 60 ? Math.floor(form.duration_target_sec / 60) + ' min' : form.duration_target_sec + ' s'} · {form.aspect} · {form.resolution} · {form.destination === 'youtube' ? 'Revisión manual obligatoria antes de publicar en YouTube' : (form.auto_publish ? 'Entrega automática' : 'Guardar en Laburito')}.</p>
               <p>Voz: {voiceOptions.find((v) => v.id === form.voice)?.label || form.voice} · Música: {form.music === 'auto' ? 'Automática' : form.music === 'ninguna' ? 'Sin música' : form.music}</p>
               <p>Tipo: {meta?.video_types.find((v) => v.id === form.video_type)?.label || form.video_type} · Estilo: {meta?.visual_styles.find((v) => v.id === form.visual_style)?.label || form.visual_style}{form.visual_style_prompt ? ' + personalizado' : ''} · Miniatura: {form.create_thumbnail ? 'Automática' : 'Desactivada'} · Subtítulos: {form.captions_enabled ? (meta?.caption_styles.find((x) => x.id === form.caption_style)?.label || form.caption_style) : 'Desactivados'}</p>
               <p className="muted">Generación local: 0 créditos de IA externos. No se usan servicios de IA pagos.</p>
