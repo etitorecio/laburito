@@ -145,6 +145,44 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     }
   }
 
+  async function createBlank() {
+    setError('');
+    setOk('');
+    if (!selectedChannel) {
+      setError('Elegí un canal válido antes de crear el proyecto.');
+      return;
+    }
+    if (!form.title.trim()) {
+      setError('Escribí un título para el proyecto vacío.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const { captions_enabled, characters, input_mode, script_text, ...projectForm } = form;
+      const created = await api.post<Project>('/api/projects', {
+        ...projectForm,
+        channel_id: selectedChannel.id,
+        topic: form.topic || form.title,
+        notes: (!captions_enabled || form.visual_style_prompt.trim() || !form.create_thumbnail || characters.trim() || (input_mode === 'script' && script_text.trim()))
+          ? '[LABURITO_META]' + JSON.stringify({
+              captions_enabled,
+              visual_style_prompt: form.visual_style_prompt.trim(),
+              create_thumbnail: form.create_thumbnail,
+              characters: characters.trim(),
+              script_text: input_mode === 'script' ? script_text.trim() : '',
+            })
+          : '',
+      });
+      setOk('Proyecto vacío creado. Agregá escenas manualmente o escribí tu guion desde el editor.');
+      await load();
+      go('editor', created.id);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function remove(project: Project) {
     if (!confirm(`¿Eliminar «${project.title}» y sus escenas?`)) return;
     try {
@@ -347,7 +385,10 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
           {meta && meta.external_templates.length > 0 && (
             <p className="muted">Los generadores externos de video IA no se incluyen: requerirían servicios con créditos. Los formatos desactivados no se presentan como disponibles.</p>
           )}
-          <button className="btn primary" onClick={create} disabled={busy || !selectedChannel || !form.title.trim()}>{busy ? 'Produciendo video…' : form.input_mode === 'script' ? 'Convertir guion y crear video' : 'Crear video desde la idea'}</button>
+          <div className="row wrap gap-8">
+            <button className="btn ghost" onClick={createBlank} disabled={busy || !selectedChannel || !form.title.trim()}>Empezar desde cero</button>
+            <button className="btn primary" onClick={create} disabled={busy || !selectedChannel || !form.title.trim()}>{busy ? 'Produciendo video…' : form.input_mode === 'script' ? 'Convertir guion y crear video' : 'Crear video desde la idea'}</button>
+          </div>
         </div>
       </Card>
 
