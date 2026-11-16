@@ -31,6 +31,7 @@ class NaturalCreateEndpointTests(unittest.TestCase):
         self.assertEqual(result["interpretation"]["template"], "frutinovela")
         self.assertEqual(create.call_args.args[0].template, "frutinovela")
         self.assertEqual(create.call_args.args[0].channel_id, 8)
+        self.assertIn('"characters": "Manzana, Banana, Pera y Naranja"', create.call_args.args[0].notes)
 
 
 if __name__ == "__main__":
