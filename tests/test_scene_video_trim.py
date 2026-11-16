@@ -33,7 +33,7 @@ class SceneVideoTrimTests(unittest.TestCase):
         self.assertIn("visual_trim_start_sec", columns)
         self.assertIn("visual_trim_end_sec", columns)
         self.assertIn("visual_source_duration_sec", columns)
-        self.assertEqual(version, "10")
+        self.assertEqual(version, "11")
         self.assertTrue(overlays_table)
         self.assertIn("volume", overlay_columns)
         self.assertTrue(history_table)
