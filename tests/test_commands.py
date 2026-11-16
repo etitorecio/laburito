@@ -14,7 +14,12 @@ class NaturalLanguageCommandTests(unittest.TestCase):
         result = interpret_prompt("haceme una historia de terror sobre un bosque")
         self.assertEqual(result["template"], "reddit_story")
         self.assertEqual(result["channel_name"], "Historias")
-        self.assertEqual(result["topic"], "un bosque")
+        self.assertEqual(result["topic"], "Historia de terror: un bosque")
+
+    def test_terror_without_subject_keeps_the_requested_genre(self):
+        result = interpret_prompt("haceme una historia de terror")
+        self.assertEqual(result["template"], "reddit_story")
+        self.assertEqual(result["topic"], "Historia de terror original")
 
     def test_frutinovela_uses_episodic_factory(self):
         result = interpret_prompt("haceme una frutinovela")
