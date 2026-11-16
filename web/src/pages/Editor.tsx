@@ -126,6 +126,8 @@ export default function Editor({ projectId, go }: Props) {
   const [overlayTextDraft, setOverlayTextDraft] = useState("");
   const [voiceDraft, setVoiceDraft] = useState("");
   const [voiceOverlayVoice, setVoiceOverlayVoice] = useState("");
+  const [voiceOverlaySpeed, setVoiceOverlaySpeed] = useState<number | null>(null);
+  const [voiceOverlayPitch, setVoiceOverlayPitch] = useState<number | null>(null);
   const [musicBedId, setMusicBedId] = useState("ambiente");
   const [sfxEffectId, setSfxEffectId] = useState("whoosh");
   const [draggedSceneId, setDraggedSceneId] = useState<number | null>(null);
@@ -545,8 +547,8 @@ export default function Editor({ projectId, go }: Props) {
         text,
         start_sec: previewElapsed,
         voice: voiceOverlayVoice || project?.voice || "es",
-        speed: project?.speed ?? 150,
-        pitch: project?.pitch ?? 45,
+        speed: voiceOverlaySpeed ?? project?.speed ?? 150,
+        pitch: voiceOverlayPitch ?? project?.pitch ?? 45,
         volume: 1,
       });
       setVoiceDraft("");
@@ -1296,7 +1298,9 @@ export default function Editor({ projectId, go }: Props) {
           </Card>
           <Card title="Generar voz en off" sub="Crea una pista de voz independiente con el motor local gratuito. Se inserta en el cabezal actual.">
             <Field label="Texto de la voz"><textarea rows={4} maxLength={12000} value={voiceDraft} onChange={(e) => setVoiceDraft(e.target.value)} placeholder="Escribí lo que querés que diga la voz…" /></Field>
-            <Field label="Voz para este clip"><VoicePicker options={voices} value={voiceOverlayVoice || project?.voice || "es"} onChange={setVoiceOverlayVoice} compact speed={project?.speed ?? 150} pitch={project?.pitch ?? 45} /></Field>
+            <Field label="Voz para este clip"><VoicePicker options={voices} value={voiceOverlayVoice || project?.voice || "es"} onChange={setVoiceOverlayVoice} compact speed={voiceOverlaySpeed ?? project?.speed ?? 150} pitch={voiceOverlayPitch ?? project?.pitch ?? 45} /></Field>
+            <Field label={"Velocidad: " + (voiceOverlaySpeed ?? project?.speed ?? 150)}><input type="range" min="80" max="220" step="5" value={voiceOverlaySpeed ?? project?.speed ?? 150} onChange={(e) => setVoiceOverlaySpeed(Number(e.target.value))} /></Field>
+            <Field label={"Tono: " + (voiceOverlayPitch ?? project?.pitch ?? 45)}><input type="range" min="0" max="99" step="1" value={voiceOverlayPitch ?? project?.pitch ?? 45} onChange={(e) => setVoiceOverlayPitch(Number(e.target.value))} /></Field>
             <button className="btn small primary" onClick={() => void createTimelineVoiceOverlay()} disabled={!voiceDraft.trim() || !!busy}>{busy === "create-voice-overlay" ? "Generando voz…" : "＋ Generar y añadir voz"}</button>
           </Card>
           <Card title="Generar música" sub="Camas musicales locales, sin créditos ni servicios pagos. Se añaden como clips independientes.">
