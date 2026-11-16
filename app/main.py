@@ -1072,7 +1072,16 @@ def create_from_prompt(payload: NaturalCreateIn):
         channel_id=channel_id,
         template=intent["template"],
         aspect=intent["aspect"],
-        notes="Orden original del usuario: " + intent["prompt"],
+        notes=(
+            "Orden original del usuario: " + intent["prompt"]
+            + (
+                "[LABURITO_META]" + json.dumps(
+                    {"characters": "Manzana, Banana, Pera y Naranja"},
+                    ensure_ascii=False,
+                )
+                if intent["template"] == "frutinovela" else ""
+            )
+        ),
     ))
     project_id = int(project["id"])
     try:
