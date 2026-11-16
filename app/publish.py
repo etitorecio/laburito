@@ -115,6 +115,8 @@ def ensure_schema() -> None:
         db.execute("ALTER TABLE projects ADD COLUMN auto_publish INTEGER NOT NULL DEFAULT 0")
     if "publish_destination" not in columns:
         db.execute("ALTER TABLE projects ADD COLUMN publish_destination TEXT NOT NULL DEFAULT 'entrega'")
+    # Desactiva configuraciones antiguas: toda subida requiere confirmación manual.
+    db.execute("UPDATE projects SET auto_publish=0 WHERE auto_publish<>0")
 
 
 def video_path(project) -> Path:
