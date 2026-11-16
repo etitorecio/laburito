@@ -123,6 +123,7 @@ export default function Editor({ projectId, go }: Props) {
   const [selectedOverlayId, setSelectedOverlayId] = useState<number | null>(null);
   const [draggedOverlayId, setDraggedOverlayId] = useState<number | null>(null);
   const [visualVariantIndex, setVisualVariantIndex] = useState<Record<number, number>>({});
+  const [overlayTextDraft, setOverlayTextDraft] = useState("");
   const [draggedSceneId, setDraggedSceneId] = useState<number | null>(null);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [previewElapsed, setPreviewElapsed] = useState(0);
@@ -485,6 +486,29 @@ export default function Editor({ projectId, go }: Props) {
     const seconds = Math.max(0, (event.clientX - rect.left) / timelineScale);
     void patchTimelineOverlay(clip, { start_sec: seconds });
     setDraggedOverlayId(null);
+  }
+
+  async function createTimelineTextOverlay() {
+    const text = overlayTextDraft.trim();
+    if (!text) return;
+    setBusy("create-text-overlay");
+    setError("");
+    setOk("");
+    try {
+      const clip = await api.post<TimelineOverlay>(`/api/projects/${projectId}/timeline-overlays/text`, {
+        text,
+        start_sec: previewElapsed,
+        duration_sec: 4,
+      });
+      setOverlayTextDraft("");
+      await load();
+      setSelectedOverlayId(clip.id);
+      setOk("Texto agregado como una capa independiente.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy("");
+    }
   }
 
   async function uploadTimelineOverlay(file: File) {
@@ -1021,7 +1045,7 @@ export default function Editor({ projectId, go }: Props) {
                       style={{ left: clip.start_sec * timelineScale, width: Math.max(34, clip.duration_sec * timelineScale), top: 6 }}
                       onClick={() => { setSelectedOverlayId(clip.id); setPreviewPlaying(false); setPreviewElapsed(clip.start_sec); }}
                       title={clip.title + " · " + fmtDuration(clip.start_sec) + " · " + fmtDuration(clip.duration_sec)}>
-                      {clip.kind === "image" ? "▧ " : "▶ "}{clip.title}
+                      {clip.kind === "image" ? "▧ " : clip.kind === "text" ? "T " : "▶ "}{clip.title}
                     </button>)}
                     {!overlays.some((clip) => clip.kind !== "audio") && <small className="muted">Imágenes y videos superpuestos de forma independiente.</small>}
                   </div>
@@ -1160,7 +1184,11 @@ export default function Editor({ projectId, go }: Props) {
           <Card title="Capa visual" sub={selectedOverlayId ? "Elemento independiente sobre la pista principal" : "Agregá una imagen o video para superponerlo sin reemplazar la escena."}>
             {(() => {
               const clip = overlays.find((item) => item.id === selectedOverlayId);
-              if (!clip) return <small className="muted">Seleccioná una capa en la pista CAPAS o usá «Añadir capa».</small>;
+              if (!clip) return <>
+                <small className="muted">Subí una imagen/video/audio o creá un texto superpuesto. Se insertará en la posición actual del cabezal.</small>
+                <Field label="Texto sobre el video"><input value={overlayTextDraft} maxLength={240} onChange={(e) => setOverlayTextDraft(e.target.value)} placeholder="Escribí el texto de la capa…" /></Field>
+                <button className="btn small primary" onClick={() => void createTimelineTextOverlay()} disabled={!overlayTextDraft.trim() || !!busy}>＋ Añadir texto</button>
+              </>;
               return <div className="editor-inspector-content">
                 <Field label="Nombre"><input defaultValue={clip.title} key={"overlay-title-" + clip.id + "-" + clip.updated_at} onBlur={(e) => e.target.value !== clip.title && void patchTimelineOverlay(clip, { title: e.target.value })} /></Field>
                 <div className="scene-trim-fields">
