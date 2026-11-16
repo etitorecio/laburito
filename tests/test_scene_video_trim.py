@@ -1,14 +1,37 @@
 import unittest
+import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
 from fastapi import HTTPException
 
+from app import db
 from app.main import ScenePatch, patch_scene
 from app.render import _visual_input_args
 
 
 class SceneVideoTrimTests(unittest.TestCase):
+    def test_database_migration_adds_source_trim_columns(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            with patch.multiple(
+                "app.db",
+                DATA_DIR=root,
+                DB_PATH=root / "test.sqlite3",
+                MEDIA_DIR=root / "media",
+                RENDER_DIR=root / "renders",
+                EXPORT_DIR=root / "exports",
+                MUSIC_DIR=root / "music",
+                TMP_DIR=root / "tmp",
+            ):
+                db.init_db()
+                columns = {row["name"] for row in db.query("PRAGMA table_info(scenes)")}
+                version = db.scalar("SELECT value FROM meta WHERE key='schema_version'")
+        self.assertIn("visual_trim_start_sec", columns)
+        self.assertIn("visual_trim_end_sec", columns)
+        self.assertIn("visual_source_duration_sec", columns)
+        self.assertEqual(version, "6")
+
     def test_video_input_uses_entire_source_when_trim_is_unset(self):
         args = _visual_input_args(Path("clip.mp4"), 30)
         self.assertEqual(args, ["-stream_loop", "-1", "-i", "clip.mp4"])
