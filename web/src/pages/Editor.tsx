@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
 import { api, fmtDuration, mediaUrl, type MediaResult, type Meta, type Project, type Scene, type TimelineOverlay } from '../api';
 import { Badge, Card, Empty, Field, Msg, Progress, statusTone } from '../ui';
 import type { Route } from '../routes';
@@ -457,7 +457,7 @@ export default function Editor({ projectId, go }: Props) {
     }
   }
 
-  function dropOverlayOnLane(event: React.DragEvent<HTMLDivElement>) {
+  function dropOverlayOnLane(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     if (draggedOverlayId === null) return;
     const clip = overlays.find((item) => item.id === draggedOverlayId);
