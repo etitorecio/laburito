@@ -215,6 +215,15 @@ def main() -> int:
             "smoke-video.mp4", "video/mp4", video_bytes,
         )
         check(status == 201 and (video_overlay or {}).get("kind") == "video", "capa de video independiente agregada", f"({status})")
+        status, trimmed_overlay, _ = call(
+            "PATCH", f"/api/timeline-overlays/{video_overlay['id']}",
+            {"source_start_sec": 0.2, "source_end_sec": 1.8},
+        )
+        check(
+            status == 200 and abs(float((trimmed_overlay or {}).get("source_start_sec") or 0) - 0.2) < 0.01,
+            "recorte de fuente de capa de video guardado",
+            f"({status})",
+        )
         scene_id = scenes[0]["id"]
         status, scene_video, _ = upload_media(
             f"/api/scenes/{scene_id}/media", "smoke-scene.mp4", "video/mp4", video_bytes,
@@ -263,6 +272,15 @@ def main() -> int:
         "smoke-audio.wav", "audio/wav", audio_buffer.getvalue(),
     )
     check(status == 201 and (audio_overlay or {}).get("kind") == "audio", "capa de audio independiente agregada", f"({status})")
+    status, trimmed_audio, _ = call(
+        "PATCH", f"/api/timeline-overlays/{audio_overlay['id']}",
+        {"source_start_sec": 0.1, "source_end_sec": 0.4},
+    )
+    check(
+        status == 200 and abs(float((trimmed_audio or {}).get("source_end_sec") or 0) - 0.4) < 0.01,
+        "recorte de fuente de capa de audio guardado",
+        f"({status})",
+    )
 
     status, text_overlay, _ = call(
         "POST",
