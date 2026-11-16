@@ -972,6 +972,8 @@ export default function Editor({ projectId, go }: Props) {
                 <audio key={clip.id} hidden autoPlay loop src={mediaUrl(clip.path)}
                   onLoadedMetadata={(event) => { event.currentTarget.volume = Math.max(0, Math.min(1, clip.volume ?? 1)); event.currentTarget.currentTime = Math.max(0, previewElapsed - clip.start_sec); }} />
               )}
+              {previewPlaying && previewScene?.audio_path && <audio key={"narration-" + previewScene.id} hidden autoPlay src={mediaUrl(previewScene.audio_path)}
+                onLoadedMetadata={(event) => { event.currentTarget.currentTime = previewSceneElapsed; }} />}
             </div>
             {activeScene && <div className="editor-preview-controls">
               <div className="editor-transport">
