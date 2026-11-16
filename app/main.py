@@ -1388,7 +1388,7 @@ def regenerate_scene_visual(scene_id: int, variant: int = 0):
         if item.get("url") and item.get("license") and item.get("provider") in {"Openverse", "Wikimedia Commons"}
     ]
     current_url = scene.get("visual_url") or ""
-    alternatives = [item for item in candidates if item.get("url") != current_url]
+    alternatives = [item for item in candidates if current_url not in {item.get("url") or "", item.get("page") or ""}]
     choices = alternatives or candidates
     if not choices:
         raise HTTPException(503, "No hay imágenes abiertas disponibles ahora. Probá con otra descripción o subí un recurso propio.")
