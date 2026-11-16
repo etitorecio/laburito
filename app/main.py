@@ -1721,7 +1721,7 @@ def create_timeline_sfx_overlay(project_id: int, payload: TimelineOverlaySfxIn):
         "click": ("Clic", "anoisesrc=color=white:amplitude=0.4:duration=0.14",
                   "highpass=f=2200,afade=t=out:st=0.01:d=0.13"),
         "riser": ("Subida", "anoisesrc=color=white:amplitude=0.2:duration=2.0",
-                  "highpass=f=250,lowpass=f=9000,volume='0.15+0.75*t/2',afade=t=out:st=1.7:d=0.3"),
+                  "highpass=f=250,lowpass=f=9000,volume='0.15+0.75*t/2':eval=frame,afade=t=out:st=1.7:d=0.3"),
     }
     if payload.effect not in presets:
         raise HTTPException(400, "Ese efecto no está disponible.")
