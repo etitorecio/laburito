@@ -919,7 +919,8 @@ def generate_script(project_id: int, replace: bool = True):
         raise HTTPException(404, "Proyecto inexistente")
     topic = (project.get("topic") or project.get("title") or "").strip()
     sources = db.query("SELECT * FROM sources WHERE project_id=?", (project_id,))
-    notes = db.query("SELECT * FROM research_notes WHERE niche=? ORDER BY id DESC LIMIT 8", (topic,))
+    # Cada proyecto investiga su propio tema; nunca reutilizar notas globales de otro video.
+    notes = []
     research_warning = None
     is_fiction = project.get("template") in {"frutinovela", "reddit_story"}
     metadata_marker = "[LABURITO_META]"
