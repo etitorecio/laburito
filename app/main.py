@@ -1107,50 +1107,86 @@ def regenerate(scene_id: int, variant: int = 0):
 
 
 @app.post("/api/scenes/{scene_id}/image", status_code=201)
+@app.post("/api/scenes/{scene_id}/media", status_code=201)
 async def upload_scene_image(scene_id: int, file: UploadFile = File(...)):
-    """Permite asignar una imagen propia/autorizada a una escena concreta."""
+    """Asigna una imagen o un clip de video propio/autorizado a una escena."""
     scene = db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))
     if not scene:
         raise HTTPException(404, "Escena inexistente")
     content_type = (file.content_type or "").lower()
     extension = Path(file.filename or "").suffix.lower()
-    if content_type not in {"image/jpeg", "image/png", "image/webp"} and extension not in {".jpg", ".jpeg", ".png", ".webp"}:
-        raise HTTPException(400, "Subí una imagen JPG, PNG o WebP.")
-    raw = await file.read(12 * 1024 * 1024 + 1)
+    image_types = {"image/jpeg", "image/png", "image/webp"}
+    image_exts = {".jpg", ".jpeg", ".png", ".webp"}
+    video_types = {"video/mp4", "video/quicktime", "video/webm", "video/x-matroska"}
+    video_exts = {".mp4", ".mov", ".webm", ".mkv"}
+    is_image = content_type in image_types or extension in image_exts
+    is_video = content_type in video_types or extension in video_exts
+    if not is_image and not is_video:
+        raise HTTPException(400, "Subí una imagen JPG/PNG/WebP o un video MP4/MOV/WebM/MKV.")
+    limit = 12 * 1024 * 1024 if is_image else 250 * 1024 * 1024
+    raw = await file.read(limit + 1)
     if not raw:
-        raise HTTPException(400, "La imagen está vacía.")
-    if len(raw) > 12 * 1024 * 1024:
-        raise HTTPException(413, "La imagen no puede superar 12 MB.")
-    try:
-        with Image.open(io.BytesIO(raw)) as source:
-            if source.width * source.height > 40_000_000:
-                raise HTTPException(413, "La imagen supera los 40 megapíxeles.")
-            image = source.convert("RGB")
-            image.thumbnail((3840, 3840), Image.Resampling.LANCZOS)
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(400, "El archivo no es una imagen válida.") from exc
+        raise HTTPException(400, "El archivo está vacío.")
+    if len(raw) > limit:
+        raise HTTPException(413, f"El archivo supera el límite de {limit // (1024 * 1024)} MB.")
 
     project_id = int(scene["project_id"])
     folder = db.MEDIA_DIR / "uploads" / str(project_id)
     folder.mkdir(parents=True, exist_ok=True)
-    target = folder / f"scene-{scene_id}-{time.time_ns()}.jpg"
-    image.save(target, format="JPEG", quality=92, optimize=True)
-    license_label = "Imagen propia/autorizada por el usuario"
+    stamp = time.time_ns()
+    if is_image:
+        try:
+            with Image.open(io.BytesIO(raw)) as source:
+                if source.width * source.height > 40_000_000:
+                    raise HTTPException(413, "La imagen supera los 40 megapíxeles.")
+                image = source.convert("RGB")
+                image.thumbnail((3840, 3840), Image.Resampling.LANCZOS)
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(400, "El archivo no es una imagen válida.") from exc
+        target = folder / f"scene-{scene_id}-{stamp}.jpg"
+        image.save(target, format="JPEG", quality=92, optimize=True)
+        asset_kind = "imagen"
+        visual_kind = "recurso"
+        label = "Imagen propia/autorizada por el usuario"
+    else:
+        source_path = db.TMP_DIR / f"scene-{scene_id}-{stamp}{extension}"
+        target = folder / f"scene-{scene_id}-{stamp}.mp4"
+        db.TMP_DIR.mkdir(parents=True, exist_ok=True)
+        source_path.write_bytes(raw)
+        try:
+            info = media.probe_video(source_path)
+            if not info.get("width") or not info.get("height") or float(info.get("duration") or 0) <= 0:
+                raise HTTPException(400, "El archivo no contiene un video válido.")
+            proc = media.run([
+                media.ffmpeg(), "-y", "-i", str(source_path), "-map", "0:v:0",
+                "-an", "-vf", "scale='min(1920,iw)':-2", "-c:v", "libx264",
+                "-preset", "veryfast", "-crf", "24", "-pix_fmt", "yuv420p",
+                "-movflags", "+faststart", str(target),
+            ], timeout=300)
+            if proc.returncode != 0 or not target.is_file() or target.stat().st_size < 1024:
+                detail = (proc.stderr or b"").decode("utf-8", "ignore")[-500:]
+                raise HTTPException(400, "No se pudo convertir el video: " + detail)
+        finally:
+            source_path.unlink(missing_ok=True)
+        asset_kind = "video"
+        visual_kind = "video_fondo"
+        label = "Video propio/autorizado por el usuario"
+
     db.execute(
-        "UPDATE scenes SET visual_path=?, visual_kind='recurso', visual_license=?, visual_author='Usuario', "
+        "UPDATE scenes SET visual_path=?, visual_kind=?, visual_license=?, visual_author='Usuario', "
         "visual_url='archivo local subido', updated_at=? WHERE id=?",
-        (str(target), license_label, db.now(), scene_id),
+        (str(target), visual_kind, label, db.now(), scene_id),
     )
     db.execute(
         "INSERT INTO assets(project_id,scene_id,kind,path,label,license,author,url,bytes,created_at) "
         "VALUES(?,?,?,?,?,?,?,?,?,?)",
-        (project_id, scene_id, "imagen", str(target), Path(file.filename or "Imagen propia").name,
-         license_label, "Usuario", "", target.stat().st_size, db.now()),
+        (project_id, scene_id, asset_kind, str(target), Path(file.filename or label).name,
+         label, "Usuario", "", target.stat().st_size, db.now()),
     )
     _touch_project(project_id)
-    return {"ok": True, "scene": db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))}
+    return {"ok": True, "media_type": asset_kind, "scene": db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))}
 
 
 @app.post("/api/scenes/{scene_id}/visual")
