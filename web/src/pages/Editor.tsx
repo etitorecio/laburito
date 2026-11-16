@@ -364,11 +364,13 @@ export default function Editor({ projectId, go }: Props) {
         after: entry.after,
         label: entry.label,
       });
+      return true;
     }).catch((e) => {
       setError("El cambio se guardó, pero no se pudo persistir su historial: " + (e as Error).message);
+      return false;
     });
-    historyQueueRef.current = persist;
-    await persist;
+    historyQueueRef.current = persist.then(() => undefined);
+    if (!(await persist)) return;
     const next = historyRef.current.slice(0, historyCursorRef.current);
     next.push(entry);
     historyRef.current = next.slice(-100);
