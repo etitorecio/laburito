@@ -38,11 +38,12 @@ class TimelineOverlayUploadTests(unittest.TestCase):
              patch("app.main.media.run", side_effect=fake_ffmpeg):
             result = asyncio.run(upload_timeline_overlay(3, upload, start_sec=2.0))
             saved = list((Path(temp) / "media" / "overlays" / "3").glob("overlay-*.mp4"))
+            saved_size = saved[0].stat().st_size if saved else 0
 
         self.assertEqual(result["id"], 71)
         self.assertEqual(result["kind"], "video")
         self.assertEqual(len(saved), 1)
-        self.assertGreater(saved[0].stat().st_size, 1024)
+        self.assertGreater(saved_size, 1024)
         self.assertIn("timeline_overlays", execute.call_args_list[0].args[0])
         self.assertEqual(execute.call_args_list[0].args[1][4], 2.0)
         touch.assert_called_once_with(3)
