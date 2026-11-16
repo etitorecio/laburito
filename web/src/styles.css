@@ -2836,3 +2836,6 @@ th {
 .scene-sfx-controls .field { margin: 0; }
 
 .editor-preview-caption .current-word { color: #ffe36e; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+
+.editor-shortcuts { color: var(--muted); font-size: .68rem; white-space: nowrap; }
+@media (max-width: 600px) { .editor-shortcuts { display: none; } }
