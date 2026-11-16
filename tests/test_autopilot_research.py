@@ -349,19 +349,28 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertIn("id IN", query.call_args_list[1].args[0])
         self.assertEqual(query.call_args_list[1].args[1], (501, 502))
 
-    def test_autopilot_allows_free_source_based_youtube_publication_without_ollama(self):
+    def test_legacy_youtube_autopilot_is_downgraded_to_manual_approval(self):
         rule = {"id": 10, "auto_publish": True, "cadence_hours": 24, "destination": "youtube", "privacy": "public", "channel_id": 10}
         with patch.object(autopilot, "get_rule", return_value=rule):
-            with patch("app.persistence.durable_storage_available", return_value=True):
-                with patch("app.publish.youtube_account_status", return_value={"channel_title": "Test channel"}):
-                    with patch.object(autopilot, "_create_project", return_value={"project_id": 78, "script_writer": "source-extract", "evidence_sources": 1}):
-                        with patch("app.publish.set_auto_publish") as set_publish:
-                            with patch("app.worker.enqueue", return_value=89):
-                                with patch.object(autopilot.db, "execute"):
-                                    with patch.object(autopilot.db, "now", return_value="now"):
-                                        result = autopilot.run_rule(10)
-        set_publish.assert_called_once_with(78, True, "youtube")
-        self.assertIsNone(result["publish_warning"])
+            with patch.object(autopilot, "_create_project", return_value={"project_id": 78, "script_writer": "source-extract", "evidence_sources": 1}):
+                with patch("app.publish.set_auto_publish") as set_publish:
+                    with patch("app.worker.enqueue", return_value=89):
+                        with patch.object(autopilot.db, "execute") as execute:
+                            with patch.object(autopilot.db, "now", return_value="now"):
+                                result = autopilot.run_rule(10)
+        set_publish.assert_not_called()
+        self.assertEqual(result["publish_warning"], "YouTube requiere aprobación manual; se desactivó la autopublicación de esta regla.")
+        self.assertTrue(any("auto_publish=0" in call.args[0] for call in execute.call_args_list))
+
+    def test_new_youtube_rule_defaults_to_manual_approval(self):
+        with patch.object(autopilot, "ensure_schema"):
+            with patch.object(autopilot, "_validate_factory_channel"):
+                with patch.object(autopilot, "_validate_auto_publish"):
+                    with patch.object(autopilot.db, "execute", return_value=11):
+                        with patch.object(autopilot, "get_rule", return_value={"id": 11, "auto_publish": 0, "destination": "youtube"}):
+                            with patch.object(autopilot.db, "now", return_value="now"):
+                                result = autopilot.create_rule({"niche": "ciencia"})
+        self.assertEqual(result["auto_publish"], 0)
 
     def test_api_accepts_complete_autopilot_schedule_and_editorial_settings(self):
         from app.main import AutopilotIn, AutopilotPatch
