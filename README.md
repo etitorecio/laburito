@@ -21,7 +21,7 @@ Reconstrucción libre y local de la experiencia de IATuber, para **Shorts y docu
 - **Cola persistente**: un trabajo a la vez, reanudable tras reinicio y con caché por escena (no repite trabajo).
 - **Entrega**: ZIP portable con MP4, SRT, VTT, guion en Markdown, fuentes/atribuciones en CSV, miniaturas, metadatos, capas editables de timeline, recursos originales subidos y usados e informe de calidad.
 - **Analítica**: importación del CSV real de YouTube Studio (no inventa métricas) y resumen con hipótesis.
-- **Autopiloto de videos**: configuración rápida de una sola pantalla para elegir tema, canal, formato y frecuencia; conserva un asistente avanzado de ocho pasos para ajustar voz, música, apariencia, subtítulos, calendario y tipo de producción. Hasta cinco pistas propias, rotación secuencial, volumen ajustable, miniaturas opcionales y referencia visual por análisis local de paleta. Configurá una vez y dejá la PC encendida para producir según el horario. Antes de publicar, valida el MP4 y conserva los errores en la cola. La subida a YouTube requiere aprobación manual, OAuth oficial y está sujeta a la cuota gratuita de Google; no se puede quitar esa cuota ni garantizar publicaciones ilimitadas.
+- **Autopiloto de videos**: configuración rápida de una sola pantalla para elegir tema, canal, formato y frecuencia; conserva un asistente avanzado de ocho pasos para ajustar voz, música, apariencia, subtítulos, calendario y tipo de producción. Hasta cinco pistas propias, rotación secuencial, volumen ajustable, miniaturas opcionales y referencia visual por análisis local de paleta. Configurá una vez y dejá la PC encendida para producir según el horario. Antes de publicar, valida el MP4 y conserva los errores en la cola. Por defecto los videos quedan para revisión; si activás explícitamente «Publicar automáticamente» en la regla, el worker los sube a YouTube al terminar, siempre que haya voz, evidencia cuando corresponde, OAuth válido y almacenamiento persistente. La cuota de Google sigue aplicando.
 - **Calendario**: programación editorial por canal.
 - **Biblioteca**: todo lo producido o descargado, con licencia y autor.
 - **Diagnóstico**: estado real de FFmpeg, fuentes, voz, base de datos, espacio y worker.
@@ -73,6 +73,8 @@ La imagen final usa Debian slim (glibc, necesaria para Piper/ONNX Runtime), inst
 | --- | --- |
 | `AITUBER_DATA_DIR` | Carpeta de datos (SQLite, medios, renders, exportaciones). Por defecto `./data`. |
 | `AITUBER_LOCAL_PERSISTENT` | Marcador de diagnóstico para un volumen local persistente (lo configura Docker Compose). |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Opcionales para persistencia en hosting efímero. La clave service-role va solo como secreto del servidor; nunca en el frontend ni en el chat. |
+| `SUPABASE_STORAGE_BUCKET` | Bucket privado de respaldos; por defecto `laburito-private-backups`. |
 | `PORT` | Puerto HTTP (por defecto `8080`). |
 | `PIPER_BIN`, `PIPER_MODEL` | Sobrescritura manual opcional de la instalación Piper; normalmente se instala automáticamente al iniciar. |
 | `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` | Credenciales OAuth de tipo aplicación web. La autorización de YouTube se guarda en la base local tras conectar la cuenta. |
@@ -120,6 +122,24 @@ cd web && npm run typecheck && npm run build
 ```
 
 La prueba E2E crea un directorio de datos temporal, verifica resolución, duración, subtítulos, reutilización de escenas y contenido del ZIP, e informa cualquier aviso real del render (por ejemplo, escenas sin voz si falta espeak-ng).
+
+## Despliegue web gratuito con AppJet
+
+La rama de producción es `appjet` y el proyecto se construye desde el `Dockerfile` del repositorio. En AppJet conectá `etitorecio/laburito`, elegí esa rama y desplegá el contenedor. La URL Edge real aparece en Settings / Overview.
+
+**Importante:** el disco del contenedor gratuito es efímero. Antes de usar la app con proyectos reales, configurá estas variables como secretos/variables del servidor en AppJet:
+
+- `SUPABASE_URL`: URL HTTPS del proyecto Supabase.
+- `SUPABASE_SERVICE_ROLE_KEY`: clave service-role, solo en el backend.
+- `SUPABASE_STORAGE_BUCKET`: opcional; usá el bucket privado `laburito-private-backups`.
+- `YOUTUBE_CLIENT_ID` y `YOUTUBE_CLIENT_SECRET`: opcionales hasta conectar YouTube.
+- `YOUTUBE_REDIRECT_URI`: opcional; si no se define, Laburito calcula el callback desde el dominio público.
+
+La primera sincronización crea/verifica el bucket privado. No lo hagas público: los respaldos SQLite contienen tokens OAuth. El plan gratuito de Supabase tiene cuotas y límites propios; revisalos y monitorealos, no son almacenamiento ilimitado.
+
+Para que el Autopiloto despierte la instancia cuando AppJet la duerma, agregá en GitHub → Settings → Secrets and variables → Actions → Variables la variable `LABURITO_URL` con la URL Edge completa. El workflow `.github/workflows/autopilot-wakeup.yml` consulta `/api/health` cada cinco minutos. Si falta esa variable, el workflow avisa y no llama a ninguna URL.
+
+Después del despliegue comprobá `https://TU-URL/api/health` y abrí la URL Edge desde el celular. No actives autopublicación de YouTube hasta que el diagnóstico muestre almacenamiento persistente y la cuenta esté conectada.
 
 ## Despliegue y uso real
 
