@@ -15,14 +15,14 @@ Estados:
 
 | Capacidad de AITuber | Estado Laburito | Evidencia / diferencia |
 |---|---|---|
-| Crear un video desde una idea breve | Parcial | Nuevo flujo `/api/create-from-prompt` y caja «Decilo y se hace» en Inicio. Interpreta comandos comunes, crea proyecto, genera guion y encola render. Parser determinista; no es un agente conversacional multimodal. |
+| Crear un video desde una idea breve | Parcial | Flujo «Decilo y se hace» en Inicio, con accesos de un toque para Short, Historia, Frutinovela y Documental, selector de canal opcional y envío directo al editor/cola. Interpreta comandos comunes, crea proyecto, genera guion y encola render. Parser determinista; no es un agente conversacional multimodal. |
 | Pegar un guion propio y convertirlo a video | Implementada | Endpoint de guion y pipeline de escenas existente. |
 | Shorts verticales | Implementada | Plantillas verticales, subtítulos, voz, visuales y render FFmpeg. |
 | Documentales largos | Parcial | Pipeline horizontal disponible, con duración limitada a 20 minutos; falta comparar calidad/variedad visual con el motor comercial. |
 | Frutinovelas episódicas | Implementada | Plantilla propia, personajes recurrentes, continuidad y cliffhangers. |
 | Historias estilo Reddit | Implementada | Fábrica interna y plantilla de ficción. |
 | Canales independientes | Implementada | Canales en SQLite, configuración e historial por canal; sin límite comercial de canales impuesto por Laburito. |
-| Autopiloto que descubre temas | Parcial | Reglas activas eligen temas nuevos por nicho, evitan repetición y consultan Wikipedia, OpenAlex y señales de Google Trends. La selección depende de un nicho configurado una vez; no publica automáticamente. |
+| Autopiloto que descubre temas | Parcial | Reglas activas eligen temas nuevos por nicho, evitan repetición y consultan Wikipedia, OpenAlex y señales de Google Trends. La configuración rápida hereda el nicho del canal elegido para reducir pasos. La selección depende de un nicho configurado una vez; no publica automáticamente. |
 | Scheduler/worker persistente | Parcial | Worker SQLite de un hilo, tick del autopiloto cada minuto, reintentos y recuperación de tareas interrumpidas. Local: requiere PC/proceso activo. Cloud: el workflow de wake-up requiere `LABURITO_URL` real y persistencia; esa URL todavía no está configurada. |
 | Voces multilingües y 1.300+ voces | Parcial | espeak-ng y Piper neural local, catálogo español. No iguala el catálogo comercial de 1.300+ voces ni ofrece clonación de voz. |
 | Clonación de voz | Ausente | No se integra un servicio pago de clonación. |
@@ -59,12 +59,12 @@ Referencias públicas consultadas:
 
 ## Próximas brechas prioritarias
 
-1. Verificar de extremo a extremo el nuevo flujo de orden natural, incluido MP4 real.
+1. Cerrar la prueba de extremo a extremo del flujo de orden natural con MP4 real y estado final correcto; la validación detectó y corrigió margen insuficiente de duración para historias.
 2. Desbloquear el scheduler cloud con URL real y almacenamiento persistente, sin sustituir la ejecución local gratuita.
 3. Mejorar el selector de temas y la continuidad de canales/series, con prevención de duplicados probada.
 4. Probar sincronía palabra por palabra y documentar exactamente el alcance.
 5. Evaluar alternativas open source para imágenes/avatares sin exigir GPU dedicada ni servicios pagos.
-6. Añadir una interfaz de revisión y regeneración de segmentos más directa desde Android.
+6. Seguir simplificando el flujo móvil: revisión y regeneración de segmentos con acciones directas, menos pantallas y valores por defecto inteligentes.
 7. Mantener bloqueada la publicación externa automática; cada video debe aprobarse individualmente.
 
 No declarar paridad total hasta cerrar las brechas o documentar explícitamente por qué una capacidad comercial no tiene sustituto gratuito/local equivalente.
