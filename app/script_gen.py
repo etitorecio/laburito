@@ -559,6 +559,20 @@ def blueprint(kind: str) -> list[dict]:
     return BLUEPRINTS.get(kind or "", DOCUMENTARY_BLUEPRINT)
 
 
+def _looks_spanish_text(value: str) -> bool:
+    """Evita narrar en inglés resúmenes académicos cuando el proyecto está en español."""
+    words = re.findall(r"[a-záéíóúñü]+", (value or "").lower())
+    if not words:
+        return False
+    common = {
+        "el", "la", "los", "las", "de", "del", "que", "en", "y", "o", "un", "una",
+        "unos", "unas", "por", "para", "con", "sin", "se", "es", "son", "fue", "como",
+        "al", "su", "sus", "también", "más", "entre", "sobre", "desde", "hasta", "pero",
+    }
+    hits = sum(1 for word in words if word in common)
+    return hits >= (1 if len(words) < 8 else max(2, round(len(words) * 0.025)))
+
+
 def _claims(notes: list[dict]) -> list[str]:
     out = []
     for note in notes:
@@ -584,7 +598,7 @@ def generate_script(
     sources: list[dict] | None = None,
 ) -> dict:
     """Devuelve escenas con narración, intención y búsqueda visual."""
-    notes = notes or []
+    notes = [note for note in (notes or []) if _looks_spanish_text(note.get("claim") or "")]
     sources = sources or []
     topic = (project.get("topic") or project.get("title") or "el tema").strip()
     kind = project.get("kind") or "short"
