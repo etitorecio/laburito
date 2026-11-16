@@ -59,6 +59,30 @@ class SceneVideoTrimTests(unittest.TestCase):
             self.assertIn("(main_w-overlay_w)*0.6000", filter_graph)
             self.assertIn("colorchannelmixer=aa=0.800", filter_graph)
 
+    def test_timeline_audio_layer_is_mixed_at_its_offset_and_volume(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            base = root / "base.mp4"
+            audio = root / "voiceover.wav"
+            output = root / "out.mp4"
+            base.write_bytes(b"base-video")
+            audio.write_bytes(b"audio-source")
+            def fake_ff(args):
+                output.write_bytes(b"rendered-audio-layer" * 100)
+            with patch("app.render._ff", side_effect=fake_ff) as ff:
+                result = _apply_timeline_overlays(
+                    base,
+                    [{"kind": "audio", "path": str(audio), "start_sec": 1.5, "duration_sec": 4,
+                      "volume": 0.75}],
+                    output, 1920, 1080, 12,
+                )
+            self.assertEqual(result, output)
+            command = ff.call_args.args[0]
+            graph = command[command.index("-filter_complex") + 1]
+            self.assertIn("volume=0.750,adelay=1500|1500[a1]", graph)
+            self.assertIn("amix=inputs=2:duration=first", graph)
+            self.assertIn("[aout]", command)
+
     def test_video_input_uses_entire_source_when_trim_is_unset(self):
         args = _visual_input_args(Path("clip.mp4"), 30)
         self.assertEqual(args, ["-stream_loop", "-1", "-i", "clip.mp4"])
