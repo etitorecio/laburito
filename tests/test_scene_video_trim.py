@@ -7,7 +7,7 @@ from fastapi import HTTPException
 
 from app import db
 from app.main import ScenePatch, patch_scene
-from app.render import _apply_timeline_overlays, _trim_visual_source, _visual_input_args
+from app.render import _apply_timeline_overlays, _trim_audio_source, _trim_visual_source, _visual_input_args
 
 
 class SceneVideoTrimTests(unittest.TestCase):
@@ -108,6 +108,27 @@ class SceneVideoTrimTests(unittest.TestCase):
         self.assertIn("-ss", command)
         self.assertEqual(command[command.index("-ss") + 1], "0.200")
         self.assertEqual(command[command.index("-t") + 1], "1.600")
+        self.assertGreater(trimmed_size, 1000)
+
+    def test_trimmed_audio_is_materialized_once_as_a_loopable_wav(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "source.mp3"
+            source.write_bytes(b"audio-source")
+            workdir = root / "overlay-trims"
+            def fake_ff(args):
+                Path(args[-1]).write_bytes(b"trimmed-audio" * 300)
+            with patch("app.render._ff", side_effect=fake_ff) as ff:
+                trimmed = _trim_audio_source(source, workdir, 1.0, 3.0, 5.0)
+                again = _trim_audio_source(source, workdir, 1.0, 3.0, 5.0)
+                trimmed_size = trimmed.stat().st_size
+
+        command = ff.call_args.args[0]
+        self.assertEqual(trimmed, again)
+        self.assertEqual(ff.call_count, 1)
+        self.assertEqual(command[command.index("-ss") + 1], "1.000")
+        self.assertEqual(command[command.index("-t") + 1], "2.000")
+        self.assertIn("pcm_s16le", command)
         self.assertGreater(trimmed_size, 1000)
 
     def test_video_input_uses_entire_source_when_trim_is_unset(self):
