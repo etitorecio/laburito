@@ -56,6 +56,9 @@ export interface Scene {
   visual_source_duration_sec?: number;
   audio_path?: string;
   audio_sec?: number;
+  sfx_path?: string;
+  sfx_start_sec?: number;
+  sfx_volume?: number;
   updated_at: string;
 }
 
