@@ -1114,10 +1114,12 @@ export default function Editor({ projectId, go }: Props) {
                   <Field label="Inicio (s)"><input type="number" min="0" step="0.1" defaultValue={clip.start_sec} key={"overlay-start-" + clip.id + "-" + clip.updated_at} onBlur={(e) => { const value = Math.max(0, Number(e.target.value) || 0); if (value !== clip.start_sec) void patchTimelineOverlay(clip, { start_sec: value }); }} /></Field>
                   <Field label="Duración (s)"><input type="number" min="0.1" max="3600" step="0.1" defaultValue={clip.duration_sec} key={"overlay-duration-" + clip.id + "-" + clip.updated_at} onBlur={(e) => { const value = Math.max(0.1, Number(e.target.value) || 0.1); if (value !== clip.duration_sec) void patchTimelineOverlay(clip, { duration_sec: value }); }} /></Field>
                 </div>
-                <Field label={"Ancho: " + Math.round(clip.width * 100) + "%"}><input type="range" min="0.05" max="1" step="0.01" value={clip.width} onChange={(e) => void patchTimelineOverlay(clip, { width: Number(e.target.value) })} /></Field>
-                <Field label={"Posición horizontal: " + Math.round(clip.x * 100) + "%"}><input type="range" min="0" max="1" step="0.01" value={clip.x} onChange={(e) => void patchTimelineOverlay(clip, { x: Number(e.target.value) })} /></Field>
-                <Field label={"Posición vertical: " + Math.round(clip.y * 100) + "%"}><input type="range" min="0" max="1" step="0.01" value={clip.y} onChange={(e) => void patchTimelineOverlay(clip, { y: Number(e.target.value) })} /></Field>
-                {clip.kind !== "audio" && <Field label={"Opacidad: " + Math.round(clip.opacity * 100) + "%"}><input type="range" min="0" max="1" step="0.05" value={clip.opacity} onChange={(e) => void patchTimelineOverlay(clip, { opacity: Number(e.target.value) })} /></Field>}
+                {clip.kind !== "audio" && <>
+                  <Field label={"Ancho: " + Math.round(clip.width * 100) + "%"}><input type="range" min="0.05" max="1" step="0.01" value={clip.width} onChange={(e) => void patchTimelineOverlay(clip, { width: Number(e.target.value) })} /></Field>
+                  <Field label={"Posición horizontal: " + Math.round(clip.x * 100) + "%"}><input type="range" min="0" max="1" step="0.01" value={clip.x} onChange={(e) => void patchTimelineOverlay(clip, { x: Number(e.target.value) })} /></Field>
+                  <Field label={"Posición vertical: " + Math.round(clip.y * 100) + "%"}><input type="range" min="0" max="1" step="0.01" value={clip.y} onChange={(e) => void patchTimelineOverlay(clip, { y: Number(e.target.value) })} /></Field>
+                  <Field label={"Opacidad: " + Math.round(clip.opacity * 100) + "%"}><input type="range" min="0" max="1" step="0.05" value={clip.opacity} onChange={(e) => void patchTimelineOverlay(clip, { opacity: Number(e.target.value) })} /></Field>
+                </>}
                 {clip.kind === "audio" && <Field label={"Volumen: " + Math.round((clip.volume ?? 1) * 100) + "%"}><input type="range" min="0" max="2" step="0.05" value={clip.volume ?? 1} onChange={(e) => void patchTimelineOverlay(clip, { volume: Number(e.target.value) })} /></Field>}
                 <div className="row gap-8">
                   <button className="btn small ghost" onClick={() => { setPreviewElapsed(clip.start_sec); setPreviewPlaying(false); }}>Ir al inicio</button>
