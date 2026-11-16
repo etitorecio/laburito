@@ -500,7 +500,7 @@ def delete_music(filename: str):
     return {"deleted": safe_name, "music_library": sorted(p.name for p in db.MUSIC_DIR.iterdir() if p.is_file())}
 
 
-CLIP_CATEGORIES = {"stock_footage", "minecraft", "subway"}
+CLIP_CATEGORIES = {"stock_footage", "minecraft", "subway", "background_video"}
 MAX_BACKGROUND_CLIP_BYTES = 150 * 1024 * 1024
 
 
@@ -538,8 +538,9 @@ async def upload_background_clip(
     if not rights_confirmed:
         raise HTTPException(400, "Confirmá que tenés derechos o permiso para usar este clip.")
     folder = _background_clip_folder(category)
-    if len(list(folder.glob("*.mp4"))) >= 5:
-        raise HTTPException(400, "Esta biblioteca ya tiene cinco clips. Quitá uno antes de agregar otro.")
+    clip_limit = 1 if category == "background_video" else 5
+    if len(list(folder.glob("*.mp4"))) >= clip_limit:
+        raise HTTPException(400, f"Esta biblioteca ya tiene {clip_limit} clip(s). Quitá uno antes de agregar otro.")
     original = Path(file.filename or "clip.mp4").name
     extension = Path(original).suffix.lower()
     if extension not in {".mp4", ".mov", ".webm", ".mkv"}:
