@@ -122,6 +122,8 @@ export default function Editor({ projectId, go }: Props) {
   const [draggedSceneId, setDraggedSceneId] = useState<number | null>(null);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [previewElapsed, setPreviewElapsed] = useState(0);
+  const [splitCursor, setSplitCursor] = useState(0);
+  const narrationRef = useRef<HTMLTextAreaElement | null>(null);
   const [results, setResults] = useState<MediaResult[]>([]);
   const [destinations, setDestinations] = useState<PublishDestination[]>([]);
   const [publications, setPublications] = useState<Publication[]>([]);
@@ -328,6 +330,31 @@ export default function Editor({ projectId, go }: Props) {
       setError((e as Error).message);
     } finally {
       setBusy('');
+    }
+  }
+
+  async function splitSceneAtCursor(scene: Scene) {
+    const narration = narrationRef.current?.value ?? scene.narration;
+    const splitAt = narrationRef.current?.selectionStart ?? splitCursor;
+    setBusy("split-" + scene.id);
+    setError("");
+    setOk("");
+    try {
+      const splitTime = (timelineStarts[activeSceneIndex] || 0) +
+        ((sceneDurations[activeSceneIndex] || 0) * (narration.length ? splitAt / narration.length : 0.5));
+      const result = await api.post<{ first: Scene; second: Scene }>(
+        "/api/scenes/" + scene.id + "/split",
+        { narration, split_at: splitAt },
+      );
+      await load();
+      setSelectedSceneId(result.second.id);
+      setPreviewElapsed(splitTime);
+      setPreviewPlaying(false);
+      setOk("Escena dividida en dos clips independientes.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy("");
     }
   }
 
@@ -920,7 +947,11 @@ export default function Editor({ projectId, go }: Props) {
                 </div>
               </div>
               <Field label="Nombre de escena"><input defaultValue={activeScene.title} key={"title-" + activeScene.id + "-" + activeScene.updated_at} onBlur={(e) => e.target.value !== activeScene.title && patchScene(activeScene, { title: e.target.value })} /></Field>
-              <Field label="Narración"><textarea className="editor-narration-input" defaultValue={activeScene.narration} key={"narration-" + activeScene.id + "-" + activeScene.updated_at} onBlur={(e) => e.target.value !== activeScene.narration && patchScene(activeScene, { narration: e.target.value })} /></Field>
+              <Field label="Narración"><textarea ref={narrationRef} className="editor-narration-input" defaultValue={activeScene.narration} key={"narration-" + activeScene.id + "-" + activeScene.updated_at} onSelect={(e) => setSplitCursor(e.currentTarget.selectionStart)} onBlur={(e) => e.target.value !== activeScene.narration && patchScene(activeScene, { narration: e.target.value })} /></Field>
+              <div className="row gap-8" style={{ flexWrap: "wrap" }}>
+                <button className="btn small ghost" onClick={() => void splitSceneAtCursor(activeScene)} disabled={!!busy || splitCursor <= 20 || splitCursor >= activeScene.narration.length - 20}>Dividir escena en el cursor</button>
+                <small className="muted">Ubicá el cursor en el punto donde querés crear el siguiente clip.</small>
+              </div>
               {activeScene.narration.trim() && <div className="scene-audio-preview"><span>Previsualizar voz</span><audio controls preload="none" src={"/api/scenes/" + activeScene.id + "/voice-preview?v=" + encodeURIComponent([activeScene.updated_at, project.voice, project.speed, project.pitch].join("-"))} /></div>}
               <Field label="Descripción del visual"><input defaultValue={activeScene.visual_query} key={"visual-" + activeScene.id + "-" + activeScene.updated_at} onBlur={(e) => e.target.value !== activeScene.visual_query && patchScene(activeScene, { visual_query: e.target.value })} /></Field>
               <Field label="Transición"><TransitionPicker options={meta?.transitions ?? [{ id: activeScene.transition, label: activeScene.transition }]} value={activeScene.transition || project.transition_default} onChange={(value) => void patchScene(activeScene, { transition: value })} compact /></Field>
