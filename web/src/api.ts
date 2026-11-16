@@ -48,6 +48,9 @@ export interface Scene {
   visual_license: string | null;
   visual_author: string | null;
   visual_url: string | null;
+  sfx_path?: string;
+  sfx_volume?: number;
+  sfx_start_sec?: number;
   updated_at: string;
 }
 
