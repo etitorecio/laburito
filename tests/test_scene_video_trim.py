@@ -30,7 +30,6 @@ class SceneVideoTrimTests(unittest.TestCase):
                 overlays_table = db.query_one("SELECT name FROM sqlite_master WHERE type='table' AND name='timeline_overlays'")
                 overlay_columns = {row["name"] for row in db.query("PRAGMA table_info(timeline_overlays)")}
                 history_table = db.query_one("SELECT name FROM sqlite_master WHERE type='table' AND name='editor_history'")
-                overlay_columns = {row["name"] for row in db.query("PRAGMA table_info(timeline_overlays)")}
         self.assertIn("visual_trim_start_sec", columns)
         self.assertIn("visual_trim_end_sec", columns)
         self.assertIn("visual_source_duration_sec", columns)
