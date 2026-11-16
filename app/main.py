@@ -1203,6 +1203,57 @@ def patch_scene(scene_id: int, payload: ScenePatch):
     return db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))
 
 
+@app.post("/api/scenes/{scene_id}/duplicate", status_code=201)
+def duplicate_scene(scene_id: int):
+    """Duplica el clip completo: visual, efecto, transición y fuentes."""
+    scene = db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))
+    if not scene:
+        raise HTTPException(404, "Escena inexistente")
+    stamp = db.now()
+    db.execute(
+        "UPDATE scenes SET idx=idx+1, updated_at=? WHERE project_id=? AND idx>?",
+        (stamp, scene["project_id"], scene["idx"]),
+    )
+    scene_data = {key: value for key, value in scene.items() if key != "id"}
+    scene_data.update({
+        "idx": int(scene["idx"]) + 1,
+        "title": (str(scene.get("title") or "Escena")[:100] + " (copia)"),
+        "audio_path": "",
+        "audio_sec": 0,
+        "status": "borrador",
+        "created_at": stamp,
+        "updated_at": stamp,
+    })
+    columns = list(scene_data)
+    new_scene_id = db.execute(
+        "INSERT INTO scenes(" + ",".join(columns) + ") VALUES(" +
+        ",".join("?" for _ in columns) + ")",
+        tuple(scene_data[key] for key in columns),
+    )
+    for asset in db.query("SELECT * FROM assets WHERE scene_id=? ORDER BY id", (scene_id,)):
+        asset_data = {key: value for key, value in asset.items() if key != "id"}
+        asset_data["scene_id"] = new_scene_id
+        asset_data["created_at"] = stamp
+        asset_columns = list(asset_data)
+        db.execute(
+            "INSERT INTO assets(" + ",".join(asset_columns) + ") VALUES(" +
+            ",".join("?" for _ in asset_columns) + ")",
+            tuple(asset_data[key] for key in asset_columns),
+        )
+    for source in db.query("SELECT * FROM sources WHERE scene_id=? ORDER BY id", (scene_id,)):
+        source_data = {key: value for key, value in source.items() if key != "id"}
+        source_data["scene_id"] = new_scene_id
+        source_data["created_at"] = stamp
+        source_columns = list(source_data)
+        db.execute(
+            "INSERT INTO sources(" + ",".join(source_columns) + ") VALUES(" +
+            ",".join("?" for _ in source_columns) + ")",
+            tuple(source_data[key] for key in source_columns),
+        )
+    _touch_project(scene["project_id"])
+    return db.query_one("SELECT * FROM scenes WHERE id=?", (new_scene_id,))
+
+
 @app.post("/api/scenes/{scene_id}/split", status_code=201)
 def split_scene(scene_id: int, payload: SceneSplitIn):
     """Divide una escena en dos en la posición de texto elegida en el editor."""
