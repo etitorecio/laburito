@@ -218,6 +218,8 @@ class TimelineOverlayPatch(BaseModel):
     title: str | None = None
     start_sec: float | None = None
     duration_sec: float | None = None
+    source_start_sec: float | None = None
+    source_end_sec: float | None = None
     x: float | None = None
     y: float | None = None
     width: float | None = None
@@ -1970,10 +1972,11 @@ async def upload_timeline_overlay(project_id: int, file: UploadFile = File(...),
             source.unlink(missing_ok=True)
         kind = "audio"
     overlay_id = db.execute(
-        "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,volume,created_at,updated_at) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,volume,source_start_sec,source_end_sec,source_duration_sec,created_at,updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (project_id, kind, str(target), Path(file.filename or "Capa").stem[:120],
-         max(0.0, float(start_sec)), min(max(duration, 0.1), 3600.0), 0.62, 0.62, 0.32, 1.0, 1.0, db.now(), db.now()),
+         max(0.0, float(start_sec)), min(max(duration, 0.1), 3600.0), 0.62, 0.62, 0.32, 1.0, 1.0,
+         0.0, 0.0, duration if kind in {"video", "audio"} else 0.0, db.now(), db.now()),
     )
     db.execute(
         "INSERT INTO assets(project_id,kind,path,label,bytes,created_at) VALUES(?,?,?,?,?,?)",
@@ -1998,6 +2001,13 @@ def patch_timeline_overlay(overlay_id: int, payload: TimelineOverlayPatch):
         raise HTTPException(400, "El tamaño o la opacidad de la capa no son válidos.")
     if not 0 <= float(candidate.get("volume", 1)) <= 2:
         raise HTTPException(400, "El volumen de la capa de audio debe estar entre 0 y 200%.")
+    source_start = float(candidate.get("source_start_sec") or 0)
+    source_end = float(candidate.get("source_end_sec") or 0)
+    source_duration = float(candidate.get("source_duration_sec") or 0)
+    if source_start < 0 or source_end < 0 or (source_duration and source_start >= source_duration):
+        raise HTTPException(400, "El inicio del recorte debe estar dentro del archivo original.")
+    if source_end and (source_end <= source_start or (source_duration and source_end > source_duration + 0.05)):
+        raise HTTPException(400, "El final del recorte debe ser posterior al inicio y no superar el archivo original.")
     if data:
         if overlay.get("kind") == "text" and "title" in data:
             text_path = Path(overlay["path"])
