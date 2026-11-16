@@ -611,7 +611,7 @@ export default function Autopilot() {
                 <option value="UTC">UTC</option>
               </select>
             </Field>
-            <p className="muted">El horario configura cuándo comienza la producción. YouTube: ' + (form.auto_publish ? 'publicación automática al terminar el render' : 'revisión manual antes de publicar') + '.</p>
+            <p className="muted">El horario configura cuándo comienza la producción. {form.auto_publish ? 'YouTube publicará automáticamente al terminar el render.' : 'La publicación en YouTube quedará pendiente de tu revisión manual.'}</p>
           </>}
 
           {step === 7 && <>
