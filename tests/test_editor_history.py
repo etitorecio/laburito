@@ -5,8 +5,10 @@ from unittest.mock import patch
 from app.main import (
     EditorHistoryIn,
     TimelineOverlayPatch,
+    ProjectPatch,
     ScenePatch,
     get_editor_history,
+    patch_project,
     record_editor_history,
     redo_editor_history,
     undo_editor_history,
@@ -63,6 +65,20 @@ class EditorHistoryTests(unittest.TestCase):
         self.assertIsInstance(patch_overlay.call_args.args[1], TimelineOverlayPatch)
         self.assertEqual(patch_overlay.call_args.args[1].volume, 0.8)
         self.assertIn("undone=0", execute.call_args.args[0])
+
+    def test_undo_applies_previous_project_settings(self):
+        entry = {
+            "id": 17, "target": "project", "target_id": 3,
+            "before_json": '{"music_volume":0.2}', "after_json": '{"music_volume":0.8}',
+            "label": "Proyecto", "undone": 0,
+        }
+        with patch("app.main.db.query_one", side_effect=[{"id": 3}, entry]), \
+             patch("app.main.patch_project", return_value={"id": 3}) as patch_project_mock, \
+             patch("app.main.db.execute"):
+            result = undo_editor_history(3)
+        self.assertTrue(result["ok"])
+        self.assertIsInstance(patch_project_mock.call_args.args[1], ProjectPatch)
+        self.assertEqual(patch_project_mock.call_args.args[1].music_volume, 0.2)
 
     def test_returns_history_cursor_and_available_directions(self):
         entries = [
