@@ -119,6 +119,13 @@ class ShortsContractTests(unittest.TestCase):
         with patch.object(publish.media, "probe_video", return_value=valid):
             self.assertEqual(publish._validate_autopilot_video(project, Path("manual.mp4")), valid)
 
+    def test_user_supplied_clip_formats_are_available_but_ai_video_is_not(self):
+        by_id = {item["id"]: item for item in options.VIDEO_TYPES}
+        for video_type in ("stock_footage", "minecraft", "subway"):
+            with self.subTest(video_type=video_type):
+                self.assertTrue(by_id[video_type]["available"])
+        self.assertFalse(by_id["full_motion_ai"]["available"])
+
     def test_gameplay_clip_minimums_match_the_product_contract(self):
         self.assertEqual(options.VIDEO_CLIP_MINIMUMS, {
             "stock_footage": 5,
