@@ -94,7 +94,6 @@ class SceneVideoTrimTests(unittest.TestCase):
             source = root / "source.mp4"
             source.write_bytes(b"video-source")
             scene_dir = root / "scene"
-            scene_dir.mkdir()
             def fake_ff(args):
                 Path(args[-1]).write_bytes(b"trimmed-video" * 300)
             with patch("app.render._ff", side_effect=fake_ff) as ff:
