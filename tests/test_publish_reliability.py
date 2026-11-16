@@ -8,11 +8,23 @@ from app import publish
 
 
 class PublishReliabilityTests(unittest.TestCase):
-    def test_unattended_publish_setting_is_rejected(self):
-        with patch.object(publish, "ensure_schema"):
-            with patch.object(publish.db, "query_one", return_value={"id": 12, "channel_id": 3}):
-                with self.assertRaisesRegex(publish.PublishError, "aprobación manual"):
-                    publish.set_auto_publish(12, True, "youtube")
+    def test_auto_publish_can_be_enabled_for_local_delivery(self):
+        with patch.object(publish, "ensure_schema"), \
+             patch.object(publish.db, "query_one", return_value={"id": 12, "channel_id": 3}), \
+             patch.object(publish.db, "execute") as execute, \
+             patch.object(publish.db, "now", return_value="now"), \
+             patch.object(publish, "auto_publish_settings", return_value={"enabled": True, "destination": "entrega"}):
+            result = publish.set_auto_publish(12, True, "entrega")
+        self.assertTrue(result["enabled"])
+        self.assertIn("auto_publish=?", execute.call_args.args[0])
+        self.assertEqual(execute.call_args.args[1], (1, "entrega", "now", 12))
+
+    def test_auto_publish_youtube_requires_durable_storage_and_linked_channel(self):
+        with patch.object(publish, "ensure_schema"), \
+             patch.object(publish.db, "query_one", return_value={"id": 12, "channel_id": 3}), \
+             patch.object(publish.persistence, "durable_storage_available", return_value=False):
+            with self.assertRaisesRegex(publish.PublishError, "almacenamiento persistente"):
+                publish.set_auto_publish(12, True, "youtube")
 
     def test_youtube_processing_failure_is_not_recorded_as_published(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -115,8 +115,6 @@ def ensure_schema() -> None:
         db.execute("ALTER TABLE projects ADD COLUMN auto_publish INTEGER NOT NULL DEFAULT 0")
     if "publish_destination" not in columns:
         db.execute("ALTER TABLE projects ADD COLUMN publish_destination TEXT NOT NULL DEFAULT 'entrega'")
-    # Desactiva configuraciones antiguas: toda subida requiere confirmación manual.
-    db.execute("UPDATE projects SET auto_publish=0 WHERE auto_publish<>0")
 
 
 def video_path(project) -> Path:
@@ -757,14 +755,19 @@ def set_auto_publish(project_id: int, enabled: bool, destination: str = "entrega
     project = db.query_one("SELECT * FROM projects WHERE id=?", (project_id,))
     if not project:
         raise PublishError(f"El proyecto {project_id} no existe.")
-    if enabled:
-        raise PublishError(
-            "La publicación automática está desactivada por seguridad. "
-            "El render se completa primero y la subida requiere aprobación manual: pulsá Publicar."
-        )
+    if enabled and destination == "youtube":
+        channel_id = _g(project, "channel_id")
+        if not channel_id:
+            raise PublishError("Asigná el proyecto a un canal antes de activar la autopublicación en YouTube.")
+        if not persistence.durable_storage_available():
+            raise PublishError("YouTube automático requiere almacenamiento persistente para no perder el video durante el proceso.")
+        try:
+            youtube_account_status(int(channel_id))
+        except PublishError as exc:
+            raise PublishError("Conectá y verificá la cuenta de YouTube de este canal antes de activar la autopublicación. " + str(exc)) from exc
     db.execute(
-        "UPDATE projects SET auto_publish=0, publish_destination=?, updated_at=? WHERE id=?",
-        (destination, db.now(), project_id),
+        "UPDATE projects SET auto_publish=?, publish_destination=?, updated_at=? WHERE id=?",
+        (1 if enabled else 0, destination, db.now(), project_id),
     )
     return auto_publish_settings(project_id)
 
@@ -784,7 +787,7 @@ def _enqueue(project_id: int, destination: str, calendar_id: int | None, privacy
 
 @router.get("/api/publish/destinations")
 def api_destinations():
-    return {"destinations": destinations(), "auto_publish_available": False}
+    return {"destinations": destinations(), "auto_publish_available": True}
 
 
 @router.post("/api/projects/{project_id}/publish", status_code=202)

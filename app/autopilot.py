@@ -79,8 +79,6 @@ FIELDS = [
 
 def ensure_schema() -> None:
     db.execute(SCHEMA)
-    # Las reglas históricas tampoco pueden publicar sin una aprobación explícita.
-    db.execute("UPDATE autopilot_rules SET auto_publish=0 WHERE auto_publish<>0")
     columns = {row["name"] for row in db.query("PRAGMA table_info(autopilot_rules)")}
     migrations = {
         "last_error": "TEXT",
@@ -740,12 +738,14 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
                 publish_warning = "Autopublicación no activada: " + str(exc)[:450]
                 db.log("error", "autopilot", f"No se pudo activar la auto-subida: {exc}")
                 # No cambiar el destino a entrega local: eso ocultaría el fallo de YouTube.
-    job_id = worker.enqueue(pid, "render_project", {"privacy": rule.get("privacy") or "unlisted"})
     next_run = _next_after_run(rule, force=force)
+    # Registrar el proyecto antes de despertarlo: el worker puede empezar
+    # inmediatamente y necesita leer la regla correcta para la autopublicación.
     db.execute(
         "UPDATE autopilot_rules SET last_run_at=?, last_project_id=?, next_run_at=?, last_error=?, updated_at=? WHERE id=?",
         (db.now(), pid, next_run, publish_warning, db.now(), rule_id),
     )
+    job_id = worker.enqueue(pid, "render_project", {"privacy": rule.get("privacy") or "unlisted"})
     return {"rule_id": rule_id, "project_id": pid, "job_id": job_id, "next_run_at": next_run, "forced": force, "publish_warning": publish_warning or None}
 
 

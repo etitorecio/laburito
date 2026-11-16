@@ -137,21 +137,27 @@ def run_job(job: dict) -> None:
                 on_progress=lambda pct, msg: _set_progress(job_id, pct, msg),
             )
             result["validation"] = _validate_render_result(result)
-            # La publicación es siempre una acción explícita del usuario.
-            # El Autopiloto puede producir y renderizar, pero nunca publicar por sí solo.
-            approval_message = (
-                "Render terminado y validado. Revisá el video y usá Publicar cuando quieras "
-                "autorizar la entrega o la subida a YouTube."
-            )
+            settings = _scheduled_publish_settings(int(project_id))
+            blocker = _auto_publish_blocker(result) if settings["enabled"] else ""
+            if settings["enabled"] and not blocker:
+                destination = settings["destination"]
+                publish_job_id = enqueue(
+                    int(project_id),
+                    "publish_project",
+                    {"destination": destination, "calendar_id": None, "privacy": settings["privacy"]},
+                )
+                approval_message = f"Render validado. Publicación automática en cola (tarea #{publish_job_id})."
+            elif blocker:
+                approval_message = blocker + " El video quedó disponible para revisión manual."
+            else:
+                approval_message = "Render terminado y validado. Revisá el video y usá Publicar cuando quieras."
             db.execute(
                 "UPDATE jobs SET message=?, updated_at=? WHERE id=?",
                 (approval_message, db.now(), job_id),
             )
-            db.log(
-                "info", "worker", approval_message, {"project_id": project_id}
-            )
-            # Completar el render después de encolar la publicación: así un reinicio
-            # no deja un MP4 terminado sin su tarea de subida.
+            db.log("info", "worker", approval_message, {"project_id": project_id})
+            # El trabajo de publicación queda encolado antes de cerrar el render;
+            # un reinicio no deja un MP4 terminado sin su siguiente paso.
             db.execute(
                 "UPDATE jobs SET status='completado', progress=100, result_json=?, finished_at=?, updated_at=? WHERE id=?",
                 (json.dumps(result, ensure_ascii=False), db.now(), db.now(), job_id),
