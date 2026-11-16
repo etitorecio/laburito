@@ -91,6 +91,32 @@ class WorkerReliabilityTests(unittest.TestCase):
             "destination": "youtube", "calendar_id": None, "privacy": "unlisted"
         })
 
+    def test_render_does_not_queue_autopublish_if_remote_mp4_backup_fails(self):
+        job = {
+            "id": 97, "project_id": 14, "kind": "render_project",
+            "payload_json": "{}", "attempts": 1,
+        }
+        statements = []
+        with patch.object(worker.render, "render_project", return_value={
+            "video": "/tmp/final_short.mp4",
+            "quality": {"tts_engines": ["espeak-ng"]},
+        }):
+            with patch.object(worker, "_validate_render_result", return_value={"path": "/tmp/final_short.mp4"}):
+                with patch.object(worker, "_scheduled_publish_settings", return_value={"enabled": True, "destination": "youtube", "privacy": "unlisted"}):
+                    with patch.object(worker.persistence, "configured", return_value=True):
+                        with patch.object(worker.persistence, "sync_pending_video", side_effect=RuntimeError("storage unavailable")):
+                            with patch.object(worker, "enqueue") as enqueue:
+                                with patch.object(worker.db, "execute", side_effect=lambda sql, params=(): statements.append((sql, params))):
+                                    with patch.object(worker.db, "now", return_value="now"):
+                                        with patch.object(worker.db, "log"):
+                                            worker.run_job(job)
+        enqueue.assert_not_called()
+        self.assertTrue(any(
+            "no se pudo respaldar el MP4" in params[0]
+            for sql, params in statements
+            if "UPDATE jobs SET message" in sql
+        ))
+
     def test_failed_youtube_publish_is_never_marked_completed(self):
         job = {
             "id": 91, "project_id": 12, "kind": "publish_project",
