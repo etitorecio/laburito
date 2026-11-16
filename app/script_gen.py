@@ -809,6 +809,55 @@ def regenerate_scene(scene: dict, project: dict, variant: int = 0) -> dict:
     }
 
 
+
+def regenerate_scene_with_ollama(
+    url: str, model: str, project: dict, scene: dict, variant: int = 0
+) -> dict:
+    """Regenera una sola escena con el modelo local, sin tocar las demás."""
+    original = str(scene.get("narration") or "").strip()
+    template_id = str(project.get("template") or "")
+    is_fiction = template_id in {"frutinovela", "reddit_story"}
+    brief = (
+        "Es ficción original. Conservá los personajes, sus relaciones y la continuidad. "
+        "Mejorá el ritmo, los detalles concretos y la tensión sin resolver toda la trama."
+        if is_fiction else
+        "Es documental. Conservá todos los hechos, nombres, fechas, cifras y matices del texto. "
+        "No agregues datos, causas, citas ni afirmaciones que no estén en el original. "
+        "Mejorá claridad oral, ritmo y precisión sin cambiar el significado."
+    )
+    prompt = (
+        "Reescribí únicamente esta escena de un video en español rioplatense natural. "
+        + brief
+        + " Evitá relleno, frases genéricas, repeticiones y tono robótico. "
+        "Mantené una longitud parecida al original (no más del doble ni menos de la mitad). "
+        "Devolvé solo JSON válido con esta forma: {\"narration\":\"...\"}.\n"
+        f"Título del proyecto: {project.get('title') or ''}\n"
+        f"Tema: {project.get('topic') or ''}\n"
+        f"Escena: {scene.get('title') or ''}\n"
+        f"Texto original: {original}"
+    )
+    raw = expand_with_ollama(url, model, prompt, timeout=180).strip()
+    if raw.startswith(chr(96) * 3):
+        raw = re.sub(r"^\x60{3}(?:json)?\s*|\s*\x60{3}$", "", raw, flags=re.IGNORECASE)
+    first, last = raw.find("{"), raw.rfind("}")
+    if first < 0 or last <= first:
+        raise RuntimeError("El modelo local no devolvió JSON válido para la escena.")
+    data = json.loads(raw[first:last + 1])
+    narration = str(data.get("narration") or "").strip() if isinstance(data, dict) else ""
+    if len(narration) < 40:
+        raise RuntimeError("El modelo local devolvió una escena vacía o demasiado corta.")
+    old_words = max(1, len(original.split()))
+    new_words = len(narration.split())
+    if new_words < max(8, round(old_words * 0.5)) or new_words > max(24, round(old_words * 2)):
+        raise RuntimeError("La escena regenerada se aleja demasiado de la duración original.")
+    return {
+        "narration": narration,
+        "status": "borrador",
+        "note": "Escena regenerada con modelo local Qwen/Ollama; revisá el resultado antes de renderizar.",
+        "writer": "ollama-local-scene",
+    }
+
+
 def ollama_available(url: str) -> bool:
     if not url:
         return False
