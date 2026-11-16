@@ -33,7 +33,7 @@ class TimelineOverlayUploadTests(unittest.TestCase):
              patch("app.main.db.TMP_DIR", Path(temp) / "tmp"), \
              patch("app.main.db.query_one", side_effect=[{"id": 3}, overlay]), \
              patch("app.main.db.execute", side_effect=[71, 0]) as execute, \
-             patch("app.main.db._touch_project") as touch, \
+             patch("app.main._touch_project") as touch, \
              patch("app.main.media.probe_video", return_value={"width": 1280, "height": 720, "duration": 6.0}), \
              patch("app.main.media.run", side_effect=fake_ffmpeg):
             result = asyncio.run(upload_timeline_overlay(3, upload, start_sec=2.0))
