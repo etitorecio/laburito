@@ -1642,9 +1642,10 @@ async def upload_timeline_overlay(project_id: int, file: UploadFile = File(...),
         source.parent.mkdir(parents=True, exist_ok=True)
         source.write_bytes(raw)
         try:
-            duration = float(media.probe_duration(source) or 0)
-            if duration <= 0:
-                raise HTTPException(400, "El archivo no contiene audio válido.")
+            audio_info = media.probe_audio(source)
+            duration = float(audio_info.get("duration") or 0)
+            if not audio_info.get("codec") or duration <= 0:
+                raise HTTPException(400, "El archivo no contiene un stream de audio válido.")
             target = folder / f"overlay-{stamp}{extension}"
             shutil.copy2(source, target)
         finally:
