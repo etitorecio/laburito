@@ -139,14 +139,18 @@ def run_job(job: dict) -> None:
             result["validation"] = _validate_render_result(result)
             settings = _scheduled_publish_settings(int(project_id))
             blocker = _auto_publish_blocker(result) if settings["enabled"] else ""
-            # En hosting efímero, guardar primero el MP4 en Storage. La copia
-            # SQLite sola no conserva los archivos que referencia la base.
-            if settings["enabled"] and not blocker and persistence.configured():
+            # Guardar el MP4 final en Storage también cuando queda para revisión
+            # manual: de otro modo SQLite conservaría una ruta a un archivo efímero.
+            video_backup_error = ""
+            if persistence.configured():
                 try:
                     persistence.sync_pending_video(int(project_id), result["video"])
                 except Exception as exc:
-                    blocker = f"Publicación automática retenida: no se pudo respaldar el MP4 en almacenamiento persistente ({exc})."
-                    db.log("error", "persistence", blocker, {"project_id": int(project_id)})
+                    video_backup_error = str(exc)
+                    db.log("error", "persistence", f"No se pudo respaldar el MP4 final: {exc}",
+                           {"project_id": int(project_id)})
+            if settings["enabled"] and video_backup_error and not blocker:
+                blocker = f"Publicación automática retenida: no se pudo respaldar el MP4 en almacenamiento persistente ({video_backup_error})."
             if settings["enabled"] and not blocker:
                 destination = settings["destination"]
                 publish_job_id = enqueue(
@@ -159,6 +163,10 @@ def run_job(job: dict) -> None:
                 approval_message = blocker + " El video quedó disponible para revisión manual."
             else:
                 approval_message = "Render terminado y validado. Revisá el video y usá Publicar cuando quieras."
+                if persistence.configured() and not video_backup_error:
+                    approval_message += " Copia del MP4 guardada en almacenamiento persistente."
+                elif video_backup_error:
+                    approval_message += " ATENCIÓN: el MP4 no pudo respaldarse; descargalo antes de reemplazar el contenedor."
             db.execute(
                 "UPDATE jobs SET message=?, updated_at=? WHERE id=?",
                 (approval_message, db.now(), job_id),
