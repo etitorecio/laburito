@@ -758,7 +758,7 @@ export default function Editor({ projectId, go }: Props) {
                     <div className="row gap-8">
                       <button className="btn small ghost" onClick={() => move(scene, -1)} disabled={i === 0}>↑</button>
                       <button className="btn small ghost" onClick={() => move(scene, 1)} disabled={i === scenes.length - 1}>↓</button>
-                      <button className="btn small ghost" onClick={() => regenerate(scene)}>Regenerar</button>
+                      <button className="btn small ghost" onClick={() => regenerate(scene)} disabled={busy === `regenerate-${scene.id}`}>{busy === `regenerate-${scene.id}` ? 'Regenerando…' : 'Regenerar'}</button>
                       <button className="btn small danger" onClick={() => removeScene(scene)}>×</button>
                     </div>
                   </div>
