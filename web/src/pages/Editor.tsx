@@ -407,6 +407,8 @@ export default function Editor({ projectId, go }: Props) {
   }
 
   const scenes = project.scenes ?? [];
+  const activeScene = scenes.find((scene) => scene.id === selectedSceneId) ?? scenes[0] ?? null;
+  const activeSceneIndex = activeScene ? scenes.findIndex((scene) => scene.id === activeScene.id) : -1;
   const canRender = scenes.length > 0 && scenes.every((scene) => Boolean(scene.narration.trim()));
   const words = scenes.reduce((acc, s) => acc + (s.narration || '').trim().split(/\s+/).filter(Boolean).length, 0);
   const quality = project.quality ?? {};
@@ -712,145 +714,102 @@ export default function Editor({ projectId, go }: Props) {
       </Card>
       </details>
 
-      {scenes.length > 0 && !canRender && (
-        <div className="msg">
-          Faltan narraciones en {scenes.filter((scene) => !scene.narration.trim()).length} escena(s). Completá el texto antes de renderizar.
-        </div>
-      )}
-      <div className="grid two">
-        <Card title="Línea de tiempo" sub="Cada bloque representa una escena. La duración es estimada a partir de la narración; elegí un bloque para editarlo.">
-          {scenes.length === 0 ? <Empty>La línea de tiempo aparece cuando generás el guion.</Empty> : (
-            <div className="editor-timeline" aria-label="Línea de tiempo de escenas">
-              {scenes.map((scene, index) => {
-                const sceneWords = (scene.narration || '').trim().split(/\s+/).filter(Boolean).length;
-                const estimatedSeconds = Math.max(2, sceneWords / 2.4);
-                const totalEstimated = scenes.reduce((sum, item) => sum + Math.max(2, (item.narration || '').trim().split(/\s+/).filter(Boolean).length / 2.4), 0);
-                const width = Math.max(9, (estimatedSeconds / Math.max(1, totalEstimated)) * 100);
-                return (
-                  <button
-                    type="button"
-                    key={scene.id}
-                    className={`editor-timeline-item ${selectedSceneId === scene.id || (!selectedSceneId && index === 0) ? 'active' : ''} ${draggedSceneId === scene.id ? 'dragging' : ''}`}
-                    style={{ flexBasis: width + '%' }}
-                    draggable
-                    onDragStart={() => setDraggedSceneId(scene.id)}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={(event) => { event.preventDefault(); if (draggedSceneId !== null) void reorderScene(draggedSceneId, scene.id); }}
-                    onDragEnd={() => setDraggedSceneId(null)}
-                    onClick={() => {
-                      setSelectedSceneId(scene.id);
-                      document.getElementById('scene-' + scene.id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }}
-                    title={scene.title + ' · ~' + Math.round(estimatedSeconds) + ' s'}
-                  >
-                    {scene.visual_path && (/\.(mp4|mov|webm|mkv)$/i.test(scene.visual_path)
-                      ? <video className="editor-timeline-thumb" src={mediaUrl(scene.visual_path)} muted playsInline preload="metadata" />
-                      : <img className="editor-timeline-thumb" src={mediaUrl(scene.visual_path)} alt="" loading="lazy" />)}
-                    <strong>{index + 1}. {scene.title}</strong>
-                    <small>~{Math.round(estimatedSeconds)} s</small>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </Card>
 
-        <Card title="Escenas" sub="Editá la narración; se guarda al salir del campo. El orden define el montaje.">
-          {scenes.length === 0 ? (
-            <Empty>Sin escenas. Generá el guion para crear la estructura narrativa.</Empty>
-          ) : (
-            <div>
-              {scenes.map((scene, i) => (
-                <div id={`scene-${scene.id}`} className={`scene ${selectedSceneId === scene.id ? 'selected' : ''}`} key={scene.id}>
-                  <div className="scene-head">
-                    <div className="row center gap-8">
-                      <span className="scene-index">{i + 1}</span>
-                      <input
-                        defaultValue={scene.title}
-                        key={`title-${scene.id}-${scene.updated_at}`}
-                        style={{ minWidth: 160 }}
-                        onBlur={(e) => e.target.value !== scene.title && patchScene(scene, { title: e.target.value })}
-                      />
-                      <Badge tone={scene.narration.trim() ? 'ok' : 'warn'}>{scene.narration.trim() ? 'Texto listo' : 'Texto pendiente'}</Badge>
-                    </div>
-                    <div className="row gap-8">
-                      <button className="btn small ghost" onClick={() => move(scene, -1)} disabled={i === 0}>↑</button>
-                      <button className="btn small ghost" onClick={() => move(scene, 1)} disabled={i === scenes.length - 1}>↓</button>
-                      <button className="btn small ghost" onClick={() => regenerate(scene)} disabled={busy === `regenerate-${scene.id}`}>{busy === `regenerate-${scene.id}` ? 'Regenerando…' : 'Regenerar'}</button>
-                      <button className="btn small danger" onClick={() => removeScene(scene)}>×</button>
-                    </div>
-                  </div>
-                  {scene.visual_path && (/\.(mp4|mov|webm|mkv)$/i.test(scene.visual_path)
-                    ? <video className="scene-visual-preview" src={mediaUrl(scene.visual_path)} controls muted playsInline preload="metadata" />
-                    : <img className="scene-visual-preview" src={mediaUrl(scene.visual_path)} alt={`Visual de ${scene.title}`} loading="lazy" />)}
-                  <textarea
-                    defaultValue={scene.narration}
-                    key={`narration-${scene.id}-${scene.updated_at}`}
-                    onBlur={(e) => e.target.value !== scene.narration && patchScene(scene, { narration: e.target.value })}
-                  />
-                  {scene.narration.trim() && (
-                    <div className="scene-audio-preview">
-                      <span>Escuchar esta narración</span>
-                      <audio controls preload="none" src={`/api/scenes/${scene.id}/voice-preview?v=${encodeURIComponent([scene.updated_at, project.voice, project.speed, project.pitch].join('-'))}`} />
-                    </div>
-                  )}
-                  <div className="row" style={{ marginTop: 8 }}>
-                    <Field label="Búsqueda visual">
-                      <input
-                        defaultValue={scene.visual_query}
-                        key={`visual-${scene.id}-${scene.updated_at}`}
-                        onBlur={(e) => e.target.value !== scene.visual_query && patchScene(scene, { visual_query: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Movimiento de esta escena">
-                      <TransitionPicker
-                        options={meta?.transitions ?? [{ id: scene.transition, label: scene.transition }]}
-                        value={scene.transition || project.transition_default}
-                        onChange={(value) => void patchScene(scene, { transition: value })}
-                        compact
-                      />
-                    </Field>
-                  </div>
-                  <div className="row gap-8">
-                    <button className="btn small ghost" onClick={() => searchVisual(scene)}>Buscar imagen con licencia</button>
-                    <Field label="Subir imagen propia o autorizada">
-                      <input type="file" accept="image/jpeg,image/png,image/webp" disabled={!!busy} onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) void uploadSceneImage(scene, file);
-                        e.target.value = '';
-                      }} />
-                    </Field>
-                    {scene.visual_path ? (
-                      <Badge tone="ok">{scene.visual_url === 'archivo local subido' ? 'imagen propia' : scene.visual_kind === 'recurso' ? 'recurso externo' : 'tarjeta generada'}</Badge>
-                    ) : (
-                      <Badge tone="warn">tarjeta visual automática</Badge>
-                    )}
-                    {scene.visual_license && <small>{scene.visual_license}</small>}
-                  </div>
-                  {searchFor === scene.id && (
-                    <div className="mt-12">
-                      <div className="thumbs">
-                        {results.map((r, idx) => (
-                          <figure key={`${r.url}-${idx}`}>
-                            {r.thumb ? <img src={r.thumb} alt={r.title} loading="lazy" /> : <div className="shot" />}
-                            <figcaption>
-                              {r.license || 'licencia a verificar'}
-                              <br />
-                              <button className="btn small ghost" onClick={() => applyVisual(scene, r)} disabled={busy === `visual-${scene.id}`}>
-                                Usar
-                              </button>
-                            </figcaption>
-                          </figure>
-                        ))}
-                      </div>
-                      {results.length === 0 && <small>Sin resultados todavía.</small>}
-                    </div>
-                  )}
-                </div>
-              ))}
+      {scenes.length > 0 && !canRender && <div className="msg">Faltan narraciones en {scenes.filter((scene) => !scene.narration.trim()).length} escena(s). Completá el texto antes de renderizar.</div>}
+      <section className="editor-workspace">
+        <div className="editor-workspace-main">
+          <Card title="Vista previa" sub={activeScene ? "Escena " + (activeSceneIndex + 1) + " de " + scenes.length + " · " + activeScene.title : "Vista previa de escena"}>
+            <div className={"editor-preview-stage " + (project.aspect === "9:16" ? "portrait" : project.aspect === "1:1" ? "square" : "")}>
+              {activeScene?.visual_path ? (/\.(mp4|mov|webm|mkv)$/i.test(activeScene.visual_path)
+                ? <video src={mediaUrl(activeScene.visual_path)} controls muted playsInline preload="metadata" />
+                : <img src={mediaUrl(activeScene.visual_path)} alt={activeScene.title} />)
+                : <div className="editor-preview-empty"><span>✦</span><strong>Tu escena está lista para ilustrar</strong><small>Buscá un recurso con licencia o subí tu propio material.</small></div>}
             </div>
-          )}
-        </Card>
+            {activeScene && <div className="editor-preview-controls">
+              <span>{activeScene.narration.trim().split(/\s+/).filter(Boolean).length} palabras · ~{fmtDuration(Math.max(2, activeScene.narration.trim().split(/\s+/).filter(Boolean).length / 2.4))}</span>
+              <div className="row gap-8">
+                <button className="btn small ghost" onClick={() => activeSceneIndex > 0 && setSelectedSceneId(scenes[activeSceneIndex - 1].id)} disabled={activeSceneIndex <= 0}>← Anterior</button>
+                <button className="btn small ghost" onClick={() => activeSceneIndex < scenes.length - 1 && setSelectedSceneId(scenes[activeSceneIndex + 1].id)} disabled={activeSceneIndex >= scenes.length - 1}>Siguiente →</button>
+              </div>
+            </div>}
+          </Card>
+          <Card title="Línea de tiempo" sub="Arrastrá los clips de video para cambiar el orden. Seleccioná cualquier bloque para editarlo.">
+            {scenes.length === 0 ? <Empty>Generá un guion o agregá una escena para empezar.</Empty> : <div className="editor-multitrack">
+              {[
+                { id: "visual", label: "VIDEO" },
+                { id: "voice", label: "VOZ" },
+                { id: "captions", label: "SUBTÍTULOS" },
+              ].map((track) => <div className="editor-track" key={track.id}>
+                <div className="editor-track-label">{track.label}</div>
+                <div className="editor-track-lane">
+                  {scenes.map((scene, index) => {
+                    const wordsInScene = (scene.narration || "").trim().split(/\s+/).filter(Boolean).length;
+                    const seconds = Math.max(2, wordsInScene / 2.4);
+                    const width = Math.max(120, seconds * 2.2);
+                    return <button type="button" key={scene.id}
+                      className={"editor-track-clip " + track.id + (activeScene?.id === scene.id ? " active" : "") + (draggedSceneId === scene.id ? " dragging" : "")}
+                      style={{ flex: "0 0 " + width + "px" }}
+                      draggable={track.id === "visual"}
+                      onDragStart={() => setDraggedSceneId(scene.id)}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={(event) => { event.preventDefault(); if (draggedSceneId !== null) void reorderScene(draggedSceneId, scene.id); }}
+                      onDragEnd={() => setDraggedSceneId(null)}
+                      onClick={() => setSelectedSceneId(scene.id)}
+                      title={scene.title + " · aprox. " + Math.round(seconds) + " s"}>
+                      {track.id === "visual" ? <>{scene.visual_path && <img src={mediaUrl(scene.visual_path)} alt="" />}<span>{index + 1}. {scene.title}</span></>
+                        : track.id === "voice" ? <span>▰ Voz {index + 1} · {Math.round(seconds)}s</span>
+                        : <span>{captionsEnabled ? "▤ Texto " + (index + 1) : "Subtítulos desactivados"}</span>}
+                    </button>;
+                  })}
+                </div>
+              </div>)}
+              <div className="editor-track">
+                <div className="editor-track-label">MÚSICA</div>
+                <div className="editor-track-lane"><div className={"editor-music-clip " + (project.music === "ninguna" ? "muted" : "")}>
+                  <span>♫ {project.music === "ninguna" ? "Sin música" : project.music === "auto" ? "Pista automática" : project.music}</span>
+                  <small>{Math.round((project.music_volume ?? 0.12) * 100)}% volumen</small>
+                </div></div>
+              </div>
+            </div>}
+            <div className="editor-timeline-footer"><span>{scenes.length} clips</span><span>{fmtDuration(totalChars / 14)} de narración estimada</span><button className="btn small" onClick={addScene} disabled={!!busy}>＋ Agregar escena</button></div>
+          </Card>
+        </div>
+        <aside className="editor-inspector">
+          <Card title="Editar escena" sub={activeScene ? "Escena " + (activeSceneIndex + 1) + " · los cambios se guardan al salir del campo" : "Seleccioná una escena"}>
+            {!activeScene ? <Empty>Todavía no hay escenas.</Empty> : <div className="editor-inspector-content">
+              <div className="scene-head">
+                <Badge tone={activeScene.narration.trim() ? "ok" : "warn"}>{activeScene.narration.trim() ? "Texto listo" : "Texto pendiente"}</Badge>
+                <div className="row gap-8">
+                  <button className="btn small ghost" onClick={() => move(activeScene, -1)} disabled={activeSceneIndex <= 0}>←</button>
+                  <button className="btn small ghost" onClick={() => move(activeScene, 1)} disabled={activeSceneIndex >= scenes.length - 1}>→</button>
+                  <button className="btn small ghost" onClick={() => regenerate(activeScene)} disabled={busy === "regenerate-" + activeScene.id}>{busy === "regenerate-" + activeScene.id ? "Regenerando…" : "Regenerar"}</button>
+                  <button className="btn small danger" onClick={() => removeScene(activeScene)}>Eliminar</button>
+                </div>
+              </div>
+              <Field label="Nombre de escena"><input defaultValue={activeScene.title} key={"title-" + activeScene.id + "-" + activeScene.updated_at} onBlur={(e) => e.target.value !== activeScene.title && patchScene(activeScene, { title: e.target.value })} /></Field>
+              <Field label="Narración"><textarea className="editor-narration-input" defaultValue={activeScene.narration} key={"narration-" + activeScene.id + "-" + activeScene.updated_at} onBlur={(e) => e.target.value !== activeScene.narration && patchScene(activeScene, { narration: e.target.value })} /></Field>
+              {activeScene.narration.trim() && <div className="scene-audio-preview"><span>Previsualizar voz</span><audio controls preload="none" src={"/api/scenes/" + activeScene.id + "/voice-preview?v=" + encodeURIComponent([activeScene.updated_at, project.voice, project.speed, project.pitch].join("-"))} /></div>}
+              <Field label="Descripción del visual"><input defaultValue={activeScene.visual_query} key={"visual-" + activeScene.id + "-" + activeScene.updated_at} onBlur={(e) => e.target.value !== activeScene.visual_query && patchScene(activeScene, { visual_query: e.target.value })} /></Field>
+              <Field label="Transición"><TransitionPicker options={meta?.transitions ?? [{ id: activeScene.transition, label: activeScene.transition }]} value={activeScene.transition || project.transition_default} onChange={(value) => void patchScene(activeScene, { transition: value })} compact /></Field>
+              <div className="row gap-8">
+                <button className="btn small ghost" onClick={() => searchVisual(activeScene)}>Buscar visual con licencia</button>
+                <label className="btn small ghost">Subir archivo<input type="file" accept="image/jpeg,image/png,image/webp" disabled={!!busy} hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadSceneImage(activeScene, file); e.target.value = ""; }} /></label>
+              </div>
+              {activeScene.visual_license && <small className="muted">{activeScene.visual_license} · {activeScene.visual_author || "autor no identificado"}</small>}
+              {searchFor === activeScene.id && <div className="thumbs">{results.map((item, index) => <figure key={item.url + "-" + index}>
+                {item.thumb ? <img src={item.thumb} alt={item.title} loading="lazy" /> : <div className="shot" />}
+                <figcaption>{item.title} · {item.license || "licencia a verificar"}<button className="btn small ghost" onClick={() => applyVisual(activeScene, item)} disabled={busy === "visual-" + activeScene.id}>Usar</button></figcaption>
+              </figure>)}{results.length === 0 && <small>Sin resultados todavía.</small>}</div>}
+            </div>}
+          </Card>
+          <Card title="Entrega" sub="Revisá el resultado completo antes de descargarlo.">
+            {project.status === "renderizado" ? <div className="stack">
+              <video controls preload="metadata" className={project.aspect === "9:16" ? "preview vertical" : "preview"} src={"/api/projects/" + projectId + "/video"} />
+              <a className="btn primary" href={"/api/projects/" + projectId + "/video"} download={"video-" + projectId + ".mp4"}>Descargar MP4</a>
+            </div> : <Empty>El video final aparecerá después del render.</Empty>}
+          </Card>
+        </aside>
+      </section>
 
         <div className="stack">
           <Card title="Vídeo renderizado" sub="Vista previa del último render completado.">
