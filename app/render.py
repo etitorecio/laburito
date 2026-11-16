@@ -725,6 +725,65 @@ def _concat(list_file: Path, out_path: Path, extra: list[str] | None = None) -> 
     _ff(["-f", "concat", "-safe", "0", "-i", str(list_file), "-c", "copy", *(extra or []), str(out_path)])
 
 
+def _apply_timeline_overlays(
+    base_video: Path,
+    overlays: list[dict],
+    output_path: Path,
+    canvas_width: int,
+    canvas_height: int,
+    total_duration: float,
+) -> Path:
+    """Compone capas visuales independientes sobre el montaje principal."""
+    usable = []
+    for clip in overlays:
+        path = Path(clip.get("path") or "")
+        start = max(0.0, float(clip.get("start_sec") or 0))
+        duration = max(0.0, float(clip.get("duration_sec") or 0))
+        if path.is_file() and duration > 0 and start < total_duration:
+            usable.append((clip, path, start, min(duration, total_duration - start)))
+    if not usable:
+        return base_video
+
+    args = ["-i", str(base_video)]
+    filters = []
+    current = "[0:v]"
+    for index, (clip, path, start, duration) in enumerate(usable, start=1):
+        is_video = str(clip.get("kind") or "").lower() == "video"
+        args.extend(
+            ["-stream_loop", "-1", "-t", f"{duration:.3f}", "-i", str(path)]
+            if is_video else ["-loop", "1", "-t", f"{duration:.3f}", "-i", str(path)]
+        )
+        layer_width = max(2, int(canvas_width * max(0.05, min(1.0, float(clip.get("width") or 0.32)))))
+        layer_width -= layer_width % 2
+        x = max(0.0, min(1.0, float(clip.get("x") or 0)))
+        y = max(0.0, min(1.0, float(clip.get("y") or 0)))
+        opacity = max(0.0, min(1.0, float(clip.get("opacity") if clip.get("opacity") is not None else 1)))
+        end = start + duration
+        filters.append(
+            f"[{index}:v]scale={layer_width}:-2,format=rgba,"
+            f"colorchannelmixer=aa={opacity:.3f},setpts=PTS-STARTPTS+{start:.3f}/TB[ov{index}]"
+        )
+        next_label = f"[v{index}]"
+        filters.append(
+            f"{current}[ov{index}]overlay="
+            f"x='(main_w-overlay_w)*{x:.4f}':y='(main_h-overlay_h)*{y:.4f}':"
+            f"enable='between(t,{start:.3f},{end:.3f})':eof_action=pass{next_label}"
+        )
+        current = next_label
+    args.extend([
+        "-filter_complex", ";".join(filters),
+        "-map", current, "-map", "0:a?",
+        "-t", f"{total_duration:.3f}",
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "24",
+        "-pix_fmt", "yuv420p", "-c:a", "copy", "-movflags", "+faststart",
+        str(output_path),
+    ])
+    _ff(args)
+    if not output_path.is_file() or output_path.stat().st_size < 1024:
+        raise RuntimeError("No se pudieron componer las capas visuales de la línea de tiempo.")
+    return output_path
+
+
 def _music_track(project: dict | None = None) -> Path | None:
     """Música de fondo elegida en el proyecto (biblioteca, cama generada o ninguna)."""
     choice = ((project or {}).get("music") or "auto").strip()
@@ -899,6 +958,12 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
             "-movflags", "+faststart", str(final),
         ]
     )
+
+    overlay_clips = db.query("SELECT * FROM timeline_overlays WHERE project_id=? ORDER BY start_sec,id", (project_id,))
+    if overlay_clips:
+        overlaid = workdir / f"final_{suffix}_overlays.mp4"
+        _apply_timeline_overlays(final, overlay_clips, overlaid, width, height, float(info.get("duration") or actual_duration))
+        final = overlaid
 
     progress(96, "Subtítulos y miniatura")
     cues_global: list[dict] = []
