@@ -62,6 +62,7 @@ export interface Source {
   accessed_at: string;
   attribution: string;
   kind: string;
+  notes?: string;
 }
 
 export interface Job {
