@@ -905,7 +905,7 @@ export default function Editor({ projectId, go }: Props) {
                 : <img src={mediaUrl(previewScene.visual_path)} alt={previewScene.title} />)
                 : <div className="editor-preview-empty"><span>✦</span><strong>Tu escena está lista para ilustrar</strong><small>Buscá un recurso con licencia o subí tu propio material.</small></div>}
               {captionsEnabled && previewCaptionWords.length > 0 && <div className="editor-preview-caption">{previewCaptionWords.map((word, index) => <span key={previewCaptionStart + index} className={previewCaptionStart + index === previewWordIndex ? "current-word" : ""}>{word} </span>)}</div>}
-              {overlays.filter((clip) => previewElapsed >= clip.start_sec && previewElapsed < clip.start_sec + clip.duration_sec).map((clip) => {
+              {overlays.filter((clip) => clip.kind !== "audio" && previewElapsed >= clip.start_sec && previewElapsed < clip.start_sec + clip.duration_sec).map((clip) => {
                 const overlayStyle = { left: (clip.x * 100) + "%", top: (clip.y * 100) + "%", width: (clip.width * 100) + "%", opacity: clip.opacity };
                 return clip.kind === "video"
                   ? <video key={clip.id} className="editor-preview-overlay" src={mediaUrl(clip.path)} muted loop autoPlay playsInline style={overlayStyle} />
@@ -983,7 +983,7 @@ export default function Editor({ projectId, go }: Props) {
                       style={{ left: clip.start_sec * timelineScale, width: Math.max(34, clip.duration_sec * timelineScale), top: 6 }}
                       onClick={() => { setSelectedOverlayId(clip.id); setPreviewPlaying(false); setPreviewElapsed(clip.start_sec); }}
                       title={clip.title + " · " + fmtDuration(clip.start_sec) + " · " + fmtDuration(clip.duration_sec)}>
-                      {clip.kind === "image" ? "▧ " : "▶ "}{clip.title}
+                      {clip.kind === "image" ? "▧ " : clip.kind === "audio" ? "♫ " : "▶ "}{clip.title}
                     </button>)}
                     {!overlays.length && <small className="muted">Capas visuales independientes: agregá imágenes o videos superpuestos.</small>}
                   </div>
@@ -1005,7 +1005,7 @@ export default function Editor({ projectId, go }: Props) {
               <label className="editor-timeline-zoom">Zoom <input type="range" min="0.5" max="2.5" step="0.1" value={timelineZoom} onChange={(e) => setTimelineZoom(Number(e.target.value))} /></label>
               <button className="btn small" onClick={addScene} disabled={!!busy}>＋ Agregar escena</button>
               <label className="btn small ghost">＋ Añadir capa
-                <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm,video/x-matroska" hidden disabled={!!busy} onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadTimelineOverlay(file); e.target.value = ""; }} />
+                <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm,video/x-matroska,audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/flac,.mp3,.wav,.ogg,.m4a,.flac" hidden disabled={!!busy} onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadTimelineOverlay(file); e.target.value = ""; }} />
               </label>
             </div>
           </Card>
@@ -1117,7 +1117,8 @@ export default function Editor({ projectId, go }: Props) {
                 <Field label={"Ancho: " + Math.round(clip.width * 100) + "%"}><input type="range" min="0.05" max="1" step="0.01" value={clip.width} onChange={(e) => void patchTimelineOverlay(clip, { width: Number(e.target.value) })} /></Field>
                 <Field label={"Posición horizontal: " + Math.round(clip.x * 100) + "%"}><input type="range" min="0" max="1" step="0.01" value={clip.x} onChange={(e) => void patchTimelineOverlay(clip, { x: Number(e.target.value) })} /></Field>
                 <Field label={"Posición vertical: " + Math.round(clip.y * 100) + "%"}><input type="range" min="0" max="1" step="0.01" value={clip.y} onChange={(e) => void patchTimelineOverlay(clip, { y: Number(e.target.value) })} /></Field>
-                <Field label={"Opacidad: " + Math.round(clip.opacity * 100) + "%"}><input type="range" min="0" max="1" step="0.05" value={clip.opacity} onChange={(e) => void patchTimelineOverlay(clip, { opacity: Number(e.target.value) })} /></Field>
+                {clip.kind !== "audio" && <Field label={"Opacidad: " + Math.round(clip.opacity * 100) + "%"}><input type="range" min="0" max="1" step="0.05" value={clip.opacity} onChange={(e) => void patchTimelineOverlay(clip, { opacity: Number(e.target.value) })} /></Field>}
+                {clip.kind === "audio" && <Field label={"Volumen: " + Math.round((clip.volume ?? 1) * 100) + "%"}><input type="range" min="0" max="2" step="0.05" value={clip.volume ?? 1} onChange={(e) => void patchTimelineOverlay(clip, { volume: Number(e.target.value) })} /></Field>}
                 <div className="row gap-8">
                   <button className="btn small ghost" onClick={() => { setPreviewElapsed(clip.start_sec); setPreviewPlaying(false); }}>Ir al inicio</button>
                   <button className="btn small danger" onClick={() => void removeTimelineOverlay(clip)}>Eliminar capa</button>
