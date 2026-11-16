@@ -6,6 +6,7 @@ import Channels from './pages/Channels';
 import Calendar from './pages/Calendar';
 import Projects from './pages/Projects';
 import Editor from './pages/Editor';
+import EditorHub from './pages/EditorHub';
 import Queue from './pages/Queue';
 import Library from './pages/Library';
 import Analytics from './pages/Analytics';
@@ -120,7 +121,7 @@ export default function App() {
         {route === 'canales' && <Channels />}
         {route === 'calendario' && <Calendar go={go} />}
         {route === 'proyectos' && <Projects go={go} />}
-        {route === 'editor' && (projectId ? <Editor projectId={projectId} go={go} /> : <Projects go={go} />)}
+        {route === 'editor' && (projectId ? <Editor projectId={projectId} go={go} /> : <EditorHub go={go} />)}
         {route === 'cola' && <Queue go={go} />}
         {route === 'biblioteca' && <Library />}
         {route === 'analitica' && <Analytics />}
