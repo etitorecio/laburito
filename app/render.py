@@ -733,25 +733,30 @@ def _apply_timeline_overlays(
     canvas_height: int,
     total_duration: float,
 ) -> Path:
-    """Compone capas visuales independientes sobre el montaje principal."""
+    """Compone capas visuales y de audio independientes sobre el montaje principal."""
     usable = []
     for clip in overlays:
         path = Path(clip.get("path") or "")
         start = max(0.0, float(clip.get("start_sec") or 0))
         duration = max(0.0, float(clip.get("duration_sec") or 0))
-        if path.is_file() and duration > 0 and start < total_duration:
-            usable.append((clip, path, start, min(duration, total_duration - start)))
+        kind = str(clip.get("kind") or "").lower()
+        if path.is_file() and duration > 0 and start < total_duration and kind in {"image", "video", "audio"}:
+            usable.append((clip, path, start, min(duration, total_duration - start), kind))
     if not usable:
         return base_video
 
+    visual_clips = [item for item in usable if item[4] in {"image", "video"}]
+    audio_clips = [item for item in usable if item[4] == "audio"]
     args = ["-i", str(base_video)]
     filters = []
     current = "[0:v]"
-    for index, (clip, path, start, duration) in enumerate(usable, start=1):
-        is_video = str(clip.get("kind") or "").lower() == "video"
+
+    for clip, path, start, duration, kind in visual_clips:
+        input_index = len(args)  # replaced below with the actual FFmpeg input index
+        input_index = 1 + sum(1 for item in visual_clips[:visual_clips.index((clip, path, start, duration, kind))])
         args.extend(
             ["-stream_loop", "-1", "-t", f"{duration:.3f}", "-i", str(path)]
-            if is_video else ["-loop", "1", "-t", f"{duration:.3f}", "-i", str(path)]
+            if kind == "video" else ["-loop", "1", "-t", f"{duration:.3f}", "-i", str(path)]
         )
         layer_width = max(2, int(canvas_width * max(0.05, min(1.0, float(clip.get("width") or 0.32)))))
         layer_width -= layer_width % 2
@@ -760,27 +765,45 @@ def _apply_timeline_overlays(
         opacity = max(0.0, min(1.0, float(clip.get("opacity") if clip.get("opacity") is not None else 1)))
         end = start + duration
         filters.append(
-            f"[{index}:v]scale={layer_width}:-2,format=rgba,"
-            f"colorchannelmixer=aa={opacity:.3f},setpts=PTS-STARTPTS+{start:.3f}/TB[ov{index}]"
+            f"[{input_index}:v]scale={layer_width}:-2,format=rgba,"
+            f"colorchannelmixer=aa={opacity:.3f},setpts=PTS-STARTPTS+{start:.3f}/TB[ov{input_index}]"
         )
-        next_label = f"[v{index}]"
+        next_label = f"[v{input_index}]"
         filters.append(
-            f"{current}[ov{index}]overlay="
+            f"{current}[ov{input_index}]overlay="
             f"x='(main_w-overlay_w)*{x:.4f}':y='(main_h-overlay_h)*{y:.4f}':"
             f"enable='between(t,{start:.3f},{end:.3f})':eof_action=pass{next_label}"
         )
         current = next_label
-    args.extend([
-        "-filter_complex", ";".join(filters),
-        "-map", current, "-map", "0:a?",
-        "-t", f"{total_duration:.3f}",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "24",
-        "-pix_fmt", "yuv420p", "-c:a", "copy", "-movflags", "+faststart",
-        str(output_path),
-    ])
+
+    audio_labels = ["[0:a]"]
+    for clip, path, start, duration, _kind in audio_clips:
+        input_index = 1 + len(visual_clips) + audio_clips.index((clip, path, start, duration, _kind))
+        args.extend(["-stream_loop", "-1", "-t", f"{duration:.3f}", "-i", str(path)])
+        volume = max(0.0, min(2.0, float(clip.get("volume") if clip.get("volume") is not None else 1)))
+        delay_ms = max(0, int(start * 1000))
+        label = f"[a{input_index}]"
+        filters.append(
+            f"[{input_index}:a]volume={volume:.3f},adelay={delay_ms}|{delay_ms}{label}"
+        )
+        audio_labels.append(label)
+
+    if audio_clips:
+        filters.append(
+            "".join(audio_labels)
+            + f"amix=inputs={len(audio_labels)}:duration=first:dropout_transition=0[aout]"
+        )
+
+    args.extend(["-filter_complex", ";".join(filters)])
+    args.extend(["-map", current if visual_clips else "0:v"])
+    args.extend(["-map", "[aout]" if audio_clips else "0:a?"])
+    args.extend(["-t", f"{total_duration:.3f}", "-c:v", "libx264", "-preset", "veryfast", "-crf", "24",
+                 "-pix_fmt", "yuv420p"])
+    args.extend(["-c:a", "aac", "-b:a", "192k"] if audio_clips else ["-c:a", "copy"])
+    args.extend(["-movflags", "+faststart", str(output_path)])
     _ff(args)
     if not output_path.is_file() or output_path.stat().st_size < 1024:
-        raise RuntimeError("No se pudieron componer las capas visuales de la línea de tiempo.")
+        raise RuntimeError("No se pudieron componer las capas de la línea de tiempo.")
     return output_path
 
 
