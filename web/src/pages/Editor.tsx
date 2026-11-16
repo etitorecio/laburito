@@ -816,6 +816,12 @@ export default function Editor({ projectId, go }: Props) {
                     key={`narration-${scene.id}-${scene.updated_at}`}
                     onBlur={(e) => e.target.value !== scene.narration && patchScene(scene, { narration: e.target.value })}
                   />
+                  {scene.narration.trim() && (
+                    <div className="scene-audio-preview">
+                      <span>Escuchar esta narración</span>
+                      <audio controls preload="none" src={`/api/scenes/${scene.id}/voice-preview?v=${encodeURIComponent([scene.updated_at, project.voice, project.speed, project.pitch].join('-'))}`} />
+                    </div>
+                  )}
                   <div className="row" style={{ marginTop: 8 }}>
                     <Field label="Búsqueda visual">
                       <input
