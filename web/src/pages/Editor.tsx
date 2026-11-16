@@ -131,6 +131,8 @@ export default function Editor({ projectId, go }: Props) {
   const [publishDest, setPublishDest] = useState('entrega');
   const timer = useRef<number | null>(null);
 
+  useEffect(() => { setSplitCursor(0); }, [selectedSceneId]);
+
   const load = useCallback(async () => {
     try {
       setProject(await api.get<Project>(`/api/projects/${projectId}`));
