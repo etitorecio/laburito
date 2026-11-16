@@ -524,6 +524,7 @@ export default function Editor({ projectId, go }: Props) {
   const scenes = project.scenes ?? [];
   const activeScene = scenes.find((scene) => scene.id === selectedSceneId) ?? scenes[0] ?? null;
   const activeSceneIndex = activeScene ? scenes.findIndex((scene) => scene.id === activeScene.id) : -1;
+  const activeNarrationLength = activeScene ? (narrationRef.current?.value.length ?? activeScene.narration.length) : 0;
   const canRender = scenes.length > 0 && scenes.every((scene) => Boolean(scene.narration.trim()));
   const words = scenes.reduce((acc, s) => acc + (s.narration || '').trim().split(/\s+/).filter(Boolean).length, 0);
   const quality = project.quality ?? {};
@@ -953,7 +954,7 @@ export default function Editor({ projectId, go }: Props) {
               <Field label="Nombre de escena"><input defaultValue={activeScene.title} key={"title-" + activeScene.id + "-" + activeScene.updated_at} onBlur={(e) => e.target.value !== activeScene.title && patchScene(activeScene, { title: e.target.value })} /></Field>
               <Field label="Narración"><textarea ref={narrationRef} className="editor-narration-input" defaultValue={activeScene.narration} key={"narration-" + activeScene.id + "-" + activeScene.updated_at} onSelect={(e) => setSplitCursor(e.currentTarget.selectionStart)} onBlur={(e) => { if (skipNarrationBlurRef.current) { skipNarrationBlurRef.current = false; return; } if (e.target.value !== activeScene.narration) void patchScene(activeScene, { narration: e.target.value }); }} /></Field>
               <div className="row gap-8" style={{ flexWrap: "wrap" }}>
-                <button className="btn small ghost" onPointerDown={() => { skipNarrationBlurRef.current = true; }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") skipNarrationBlurRef.current = true; }} onClick={() => void splitSceneAtCursor(activeScene)} disabled={!!busy || splitCursor <= 20 || splitCursor >= activeScene.narration.length - 20}>Dividir escena en el cursor</button>
+                <button className="btn small ghost" onPointerDown={() => { skipNarrationBlurRef.current = true; }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") skipNarrationBlurRef.current = true; }} onClick={() => void splitSceneAtCursor(activeScene)} disabled={!!busy || splitCursor <= 20 || splitCursor >= activeNarrationLength - 20}>Dividir escena en el cursor</button>
                 <small className="muted">Ubicá el cursor en el punto donde querés crear el siguiente clip.</small>
               </div>
               {activeScene.narration.trim() && <div className="scene-audio-preview"><span>Previsualizar voz</span><audio controls preload="none" src={"/api/scenes/" + activeScene.id + "/voice-preview?v=" + encodeURIComponent([activeScene.updated_at, project.voice, project.speed, project.pitch].join("-"))} /></div>}
