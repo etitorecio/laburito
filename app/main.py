@@ -24,7 +24,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from PIL import Image, ImageDraw, ImageFont, ImageStat
 
-from . import autopilot, db, media, options, persistence, publish, render, script_gen, skeleton, tts, worker, topic_engine
+from . import autopilot, commands, db, media, options, persistence, publish, render, script_gen, skeleton, tts, worker, topic_engine
 
 APP_VERSION = "1.1.0"
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
@@ -129,6 +129,11 @@ class ProjectIn(BaseModel):
     fps: int | None = None
     music: str = "auto"
     music_volume: float | None = None
+
+
+class NaturalCreateIn(BaseModel):
+    prompt: str
+    channel_id: int | None = None
 
 
 class ProjectDuplicateIn(BaseModel):
@@ -1035,6 +1040,64 @@ def create_project(payload: ProjectIn):
     )
     db.log("info", "projects", f"Proyecto creado: {payload.title}", {"id": pid})
     return _project_full(pid)
+
+
+@app.post("/api/create-from-prompt", status_code=202)
+def create_from_prompt(payload: NaturalCreateIn):
+    """Convierte una orden breve en un proyecto guionado y deja el render en la cola."""
+    try:
+        intent = commands.interpret_prompt(payload.prompt)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+    channel_id = payload.channel_id
+    if channel_id is not None:
+        if not db.query_one("SELECT id FROM channels WHERE id=?", (channel_id,)):
+            raise HTTPException(404, "El canal seleccionado no existe.")
+    else:
+        if intent.get("channel_name"):
+            channel = db.query_one(
+                "SELECT id FROM channels WHERE lower(trim(name))=lower(?) LIMIT 1",
+                (intent["channel_name"],),
+            )
+        else:
+            channel = None
+        if not channel:
+            channel = db.query_one("SELECT id FROM channels ORDER BY id LIMIT 1")
+        channel_id = int(channel["id"]) if channel else None
+
+    project = create_project(ProjectIn(
+        title=intent["title"],
+        topic=intent["topic"],
+        channel_id=channel_id,
+        template=intent["template"],
+        aspect=intent["aspect"],
+        notes="Orden original del usuario: " + intent["prompt"],
+    ))
+    project_id = int(project["id"])
+    try:
+        script_result = generate_script(project_id, replace=True)
+    except Exception as exc:
+        db.log("error", "commands", f"No se pudo completar el guion de la orden: {exc}", {"project_id": project_id})
+        raise HTTPException(
+            503,
+            f"El proyecto quedó guardado como borrador, pero no se pudo completar el guion: {exc}",
+        ) from exc
+
+    job_id = worker.enqueue(project_id, "render_project", {})
+    db.log(
+        "info", "commands", "Orden natural convertida en producción completa",
+        {"project_id": project_id, "job_id": job_id, "template": intent["template"]},
+    )
+    return {
+        "ok": True,
+        "prompt": intent["prompt"],
+        "interpretation": intent,
+        "project_id": project_id,
+        "job_id": job_id,
+        "status": "en_cola",
+        "warnings": script_result.get("warnings", []),
+    }
 
 
 @app.get("/api/projects/{project_id}/music-preview")
