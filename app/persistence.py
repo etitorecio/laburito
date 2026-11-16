@@ -8,6 +8,7 @@ al navegador.
 from __future__ import annotations
 
 import gzip
+import http.client
 import json
 import os
 import sqlite3
@@ -72,6 +73,38 @@ def _request(method: str, path: str, body: bytes | None = None,
     headers.update(extra_headers or {})
     request = urllib.request.Request(base + path, data=body, headers=headers, method=method)
     return urllib.request.urlopen(request, timeout=90)
+
+
+def _stream_request_file(method: str, path: str, file_path: Path,
+                        content_type: str = "application/octet-stream") -> None:
+    """Sube un archivo por bloques sin cargar el MP4 completo en memoria."""
+    base, key, _bucket = _settings()
+    parsed = urllib.parse.urlsplit(base)
+    if parsed.scheme != "https" or not parsed.hostname or not key:
+        raise RuntimeError("Configurá SUPABASE_URL con HTTPS y SUPABASE_SERVICE_ROLE_KEY.")
+    size = file_path.stat().st_size
+    connection = http.client.HTTPSConnection(parsed.hostname, parsed.port, timeout=90)
+    request_path = (parsed.path.rstrip("/") + path) or "/"
+    try:
+        connection.putrequest(method, request_path)
+        connection.putheader("apikey", key)
+        connection.putheader("Authorization", f"Bearer {key}")
+        connection.putheader("Content-Type", content_type)
+        connection.putheader("Content-Length", str(size))
+        connection.putheader("x-upsert", "true")
+        connection.endheaders()
+        with file_path.open("rb") as source:
+            while True:
+                chunk = source.read(1024 * 1024)
+                if not chunk:
+                    break
+                connection.send(chunk)
+        response = connection.getresponse()
+        detail = response.read().decode("utf-8", "replace")[:300]
+        if response.status < 200 or response.status >= 300:
+            raise RuntimeError(f"Supabase rechazó la carga del archivo ({response.status}): {detail}")
+    finally:
+        connection.close()
 
 
 def _ensure_bucket() -> None:
@@ -148,11 +181,7 @@ def sync_pending_video(project_id: int, video_path: str | Path) -> bool:
         raise RuntimeError("No se puede respaldar el Short: el MP4 final no existe o está vacío.")
     _ensure_bucket()
     object_path = _storage_object_path(f"pending/{int(project_id)}.mp4")
-    with _request(
-        "POST", object_path, video.read_bytes(), "video/mp4",
-        extra_headers={"x-upsert": "true"},
-    ) as response:
-        response.read()
+    _stream_request_file("POST", object_path, video, "video/mp4")
     db.log("info", "persistence", "MP4 pendiente respaldado en Supabase Storage.",
            {"project_id": int(project_id), "bytes": video.stat().st_size})
     return True
