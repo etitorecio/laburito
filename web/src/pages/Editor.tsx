@@ -127,6 +127,7 @@ export default function Editor({ projectId, go }: Props) {
   const [voiceDraft, setVoiceDraft] = useState("");
   const [voiceOverlayVoice, setVoiceOverlayVoice] = useState("");
   const [musicBedId, setMusicBedId] = useState("ambiente");
+  const [sfxEffectId, setSfxEffectId] = useState("whoosh");
   const [draggedSceneId, setDraggedSceneId] = useState<number | null>(null);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [previewElapsed, setPreviewElapsed] = useState(0);
@@ -489,6 +490,26 @@ export default function Editor({ projectId, go }: Props) {
     const seconds = Math.max(0, (event.clientX - rect.left) / timelineScale);
     void patchTimelineOverlay(clip, { start_sec: seconds });
     setDraggedOverlayId(null);
+  }
+
+  async function createTimelineSfxOverlay() {
+    setBusy("create-sfx-overlay");
+    setError("");
+    setOk("");
+    try {
+      const clip = await api.post<TimelineOverlay>(`/api/projects/${projectId}/timeline-overlays/sfx`, {
+        effect: sfxEffectId,
+        start_sec: previewElapsed,
+        volume: 0.8,
+      });
+      await load();
+      setSelectedOverlayId(clip.id);
+      setOk("Efecto de sonido generado localmente y añadido a la pista.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy("");
+    }
   }
 
   async function createTimelineMusicOverlay() {
@@ -1283,6 +1304,16 @@ export default function Editor({ projectId, go }: Props) {
               {(meta?.music_beds ?? []).map((bed) => <option key={bed.id} value={bed.id}>{bed.label}</option>)}
             </select></Field>
             <button className="btn small primary" onClick={() => void createTimelineMusicOverlay()} disabled={!!busy}>{busy === "create-music-overlay" ? "Generando música…" : "＋ Generar y añadir música"}</button>
+          </Card>
+          <Card title="Efectos de sonido" sub="Generación local por síntesis, sin créditos ni servicios externos.">
+            <Field label="Efecto"><select value={sfxEffectId} onChange={(e) => setSfxEffectId(e.target.value)}>
+              <option value="whoosh">Barrido</option>
+              <option value="impact">Impacto</option>
+              <option value="chime">Campanilla</option>
+              <option value="click">Clic</option>
+              <option value="riser">Subida</option>
+            </select></Field>
+            <button className="btn small primary" onClick={() => void createTimelineSfxOverlay()} disabled={!!busy}>{busy === "create-sfx-overlay" ? "Generando efecto…" : "＋ Generar y añadir efecto"}</button>
           </Card>
         </aside>
       </section>
