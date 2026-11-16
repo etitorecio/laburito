@@ -275,7 +275,7 @@ export default function Editor({ projectId, go }: Props) {
     }
   }
 
-  const [voices, setVoices] = useState<{ id: string; label: string; available?: boolean }[]>([]);
+  const [voices, setVoices] = useState<Meta['voices']>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
 
   // Voces y catálogos realmente utilizables en este servidor (espeak-ng/Piper, FFmpeg).
