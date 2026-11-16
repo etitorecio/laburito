@@ -52,6 +52,17 @@ class SceneVideoTrimTests(unittest.TestCase):
         args = _visual_input_args(Path("still.png"), 25, 3.0, 8.0)
         self.assertEqual(args, ["-loop", "1", "-framerate", "25", "-i", "still.png"])
 
+    def test_editing_narration_invalidates_stale_rendered_voice_duration(self):
+        scene = {"id": 7, "project_id": 3, "narration": "Texto anterior", "audio_path": "old.wav", "audio_sec": 5}
+        updated = {**scene, "narration": "Texto nuevo", "audio_path": "", "audio_sec": 0}
+        with patch("app.main.db.query_one", side_effect=[scene, updated]), \
+             patch("app.main.db.execute") as execute, \
+             patch("app.main._touch_project"):
+            result = patch_scene(7, ScenePatch(narration="Texto nuevo"))
+        self.assertEqual(result["audio_sec"], 0)
+        self.assertEqual(result["audio_path"], "")
+        self.assertIn("audio_sec", execute.call_args.args[0])
+
     def test_patch_rejects_negative_trim_values(self):
         scene = {"id": 7, "project_id": 3, "visual_trim_start_sec": 0, "visual_trim_end_sec": 0}
         with patch("app.main.db.query_one", return_value=scene):
