@@ -59,7 +59,7 @@ const TEMPLATES = [
   {
     icon: '🎵',
     title: 'Vídeos con música',
-    desc: 'Mezcla automática de pistas libres con la voz y el ritmo de tus escenas, sin reclamaciones.',
+    desc: 'Mezcla pistas libres o propias con la voz y el ritmo de tus escenas. Las licencias se registran; no se puede garantizar que una plataforma nunca reclame un recurso.',
     tags: ['Música', 'Mezcla', 'Libre'],
     grad: 'linear-gradient(135deg,#9d174d,#be185d)',
   },
@@ -169,7 +169,7 @@ const FAQ = [
   },
   {
     q: '¿Necesito tarjeta de crédito o créditos?',
-    a: 'No. Esta instancia es gratuita y no usa créditos: el render lo hace FFmpeg en el mismo servidor donde corre la app.',
+    a: 'El software no cobra créditos ni suscripciones. Para evitar pagar hosting, ejecutalo en tu propia PC; el render consume sus recursos. Los servicios externos y la publicación en YouTube mantienen sus propias condiciones y cuotas.',
   },
   {
     q: '¿Cuánto tarda en renderizar un vídeo?',
@@ -193,7 +193,7 @@ const FAQ = [
   },
   {
     q: '¿Puedo publicar en YouTube, TikTok e Instagram?',
-    a: 'La integración automática disponible es YouTube mediante OAuth. Para TikTok e Instagram podés exportar el MP4 y publicarlo manualmente; no hay integración directa con esas plataformas todavía.',
+    a: 'La publicación automática disponible es YouTube mediante OAuth y está sujeta a la cuota gratuita de Google. Para TikTok, Instagram y Facebook se exporta el MP4 y se publica manualmente; todavía no hay integración directa.',
   },
   {
     q: '¿Hay una API?',
@@ -282,7 +282,7 @@ export default function Landing({ go }: { go: Go }) {
         <p className="lp-fineprint">Sin tarjeta de crédito · Sin APIs de IA pagas · Herramientas libres</p>
 
         <div className="lp-platforms">
-          <span>Crear para</span>
+          <span>Exportar para · publicación manual salvo YouTube</span>
           {PLATFORMS.map((p) => (
             <span className="lp-chip" key={p}>
               {p}
@@ -335,7 +335,7 @@ export default function Landing({ go }: { go: Go }) {
       <section className="lp-section lp-center">
         <p className="lp-eyebrow">Cómo funciona</p>
         <h2 className="lp-h2">De idea a video en minutos</h2>
-        <p className="lp-lead">Tres pasos. Sin timeline, sin plugins, sin exportar a mano.</p>
+        <p className="lp-lead">Tres pasos. Editor por escenas, render local y exportación lista para revisar.</p>
         <div className="lp-steps">
           {STEPS.map((s, i) => (
             <article className="lp-step" key={s.title}>
@@ -422,13 +422,13 @@ export default function Landing({ go }: { go: Go }) {
               <span className="lp-dotp" style={{ background: '#4ade80' }} />
               <div>
                 <div className="t">Documental · Ruta de la Seda</div>
-                <div className="s">1080x1920 · 12:04 · 214 MB</div>
+                <div className="s">Ejemplo de exportación</div>
               </div>
               <span className="lp-st">listo</span>
             </div>
             <div className="lp-mock-foot">
-              <span>3 canales de muestra</span>
-              <span>18 vídeos de muestra</span>
+              <span>Datos de ejemplo</span>
+              <span>Estados ilustrativos</span>
               <span>0 créditos externos</span>
             </div>
           </div>
@@ -511,7 +511,7 @@ export default function Landing({ go }: { go: Go }) {
                 <button onClick={() => scrollTo('plantillas')}>Plantillas</button>
               </li>
               <li>
-                <button onClick={() => scrollTo('precios')}>Precios</button>
+                <button onClick={() => scrollTo('costo')}>Costo cero</button>
               </li>
               <li>
                 <button onClick={() => scrollTo('autopilot')}>Piloto automático</button>
