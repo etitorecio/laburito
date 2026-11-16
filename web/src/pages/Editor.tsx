@@ -402,6 +402,31 @@ export default function Editor({ projectId, go }: Props) {
     }
   }
 
+  async function uploadSceneSound(scene: Scene, file: File) {
+    setBusy("upload-sound-" + scene.id);
+    setError("");
+    setOk("");
+    try {
+      await api.upload("/api/scenes/" + scene.id + "/sound", file);
+      setOk("Efecto de sonido agregado a la escena.");
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function removeSceneSound(scene: Scene) {
+    try {
+      await api.del("/api/scenes/" + scene.id + "/sound");
+      setOk("Efecto de sonido quitado.");
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
   async function applyVisual(scene: Scene, item: MediaResult) {
     setBusy(`visual-${scene.id}`);
     try {
@@ -816,6 +841,7 @@ export default function Editor({ projectId, go }: Props) {
                   { id: "visual", label: "VIDEO" },
                   { id: "voice", label: "VOZ" },
                   { id: "captions", label: "SUBTÍTULOS" },
+                  { id: "sfx", label: "EFECTOS" },
                 ].map((track) => <div className="editor-track" key={track.id}>
                   <div className="editor-track-label">{track.label}</div>
                   <div className="editor-track-lane" style={{ width: timelineWidth }}>
@@ -834,7 +860,8 @@ export default function Editor({ projectId, go }: Props) {
                         title={scene.title + " · " + fmtDuration(seconds) + " · inicio " + fmtDuration(timelineStarts[index])}>
                         {track.id === "visual" ? <>{scene.visual_path && (/\.(mp4|mov|webm|mkv)$/i.test(scene.visual_path) ? <video src={mediaUrl(scene.visual_path)} muted playsInline preload="metadata" /> : <img src={mediaUrl(scene.visual_path)} alt="" />)}<span>{index + 1}. {scene.title}</span></>
                           : track.id === "voice" ? <span>▰ Voz {index + 1} · {fmtDuration(seconds)}</span>
-                          : <span>{captionsEnabled ? "▤ Texto " + (index + 1) : "Subtítulos desactivados"}</span>}
+                          : track.id === "captions" ? <span>{captionsEnabled ? "▤ Texto " + (index + 1) : "Subtítulos desactivados"}</span>
+                        : <span>{scene.sfx_path ? "♫ Efecto " + (index + 1) : "Sin efecto"}</span>}
                       </button>;
                     })}
                   </div>
@@ -871,6 +898,24 @@ export default function Editor({ projectId, go }: Props) {
               {activeScene.narration.trim() && <div className="scene-audio-preview"><span>Previsualizar voz</span><audio controls preload="none" src={"/api/scenes/" + activeScene.id + "/voice-preview?v=" + encodeURIComponent([activeScene.updated_at, project.voice, project.speed, project.pitch].join("-"))} /></div>}
               <Field label="Descripción del visual"><input defaultValue={activeScene.visual_query} key={"visual-" + activeScene.id + "-" + activeScene.updated_at} onBlur={(e) => e.target.value !== activeScene.visual_query && patchScene(activeScene, { visual_query: e.target.value })} /></Field>
               <Field label="Transición"><TransitionPicker options={meta?.transitions ?? [{ id: activeScene.transition, label: activeScene.transition }]} value={activeScene.transition || project.transition_default} onChange={(value) => void patchScene(activeScene, { transition: value })} compact /></Field>
+              <div className="scene-sfx-controls">
+                <div className="row gap-8" style={{ justifyContent: "space-between" }}>
+                  <strong>Efecto de sonido</strong>
+                  {activeScene.sfx_path && <button className="btn small danger" onClick={() => void removeSceneSound(activeScene)}>Quitar</button>}
+                </div>
+                {activeScene.sfx_path ? <audio controls preload="none" src={mediaUrl(activeScene.sfx_path)} /> : <small className="muted">Sin efecto asignado a esta escena.</small>}
+                {activeScene.sfx_path && <>
+                  <Field label={"Volumen del efecto: " + Math.round((activeScene.sfx_volume ?? 0.8) * 100) + "%"}>
+                    <input type="range" min="0" max="2" step="0.05" value={activeScene.sfx_volume ?? 0.8} onChange={(e) => void patchScene(activeScene, { sfx_volume: Number(e.target.value) })} />
+                  </Field>
+                  <Field label={"Inicio del efecto: " + (activeScene.sfx_start_sec ?? 0).toFixed(1) + " s"}>
+                    <input type="range" min="0" max="20" step="0.1" value={activeScene.sfx_start_sec ?? 0} onChange={(e) => void patchScene(activeScene, { sfx_start_sec: Number(e.target.value) })} />
+                  </Field>
+                </>}
+                <label className="btn small ghost">＋ Subir efecto de sonido
+                  <input type="file" accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/flac,.mp3,.wav,.ogg,.m4a,.flac" hidden disabled={!!busy} onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadSceneSound(activeScene, file); e.target.value = ""; }} />
+                </label>
+              </div>
               <div className="row gap-8">
                 <button className="btn small ghost" onClick={() => searchVisual(activeScene)}>Buscar visual con licencia</button>
                 <label className="btn small ghost">Subir imagen o video<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm,video/x-matroska" disabled={!!busy} hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadSceneImage(activeScene, file); e.target.value = ""; }} /></label>
