@@ -1675,7 +1675,15 @@ def delete_timeline_overlay(overlay_id: int):
     if not overlay:
         raise HTTPException(404, "Capa inexistente")
     path = Path(overlay.get("path") or "")
-    if path.is_file() and str(path).startswith(str(db.DATA_DIR)):
+    shared_overlays = db.scalar(
+        "SELECT COUNT(*) FROM timeline_overlays WHERE path=? AND id<>?",
+        (overlay.get("path") or "", overlay_id), 0,
+    )
+    shared_assets = db.scalar(
+        "SELECT COUNT(*) FROM assets WHERE path=? AND project_id<>?",
+        (overlay.get("path") or "", overlay["project_id"]), 0,
+    )
+    if not shared_overlays and not shared_assets and path.is_file() and str(path).startswith(str(db.DATA_DIR)):
         path.unlink(missing_ok=True)
     db.execute("DELETE FROM assets WHERE project_id=? AND path=?", (overlay["project_id"], overlay.get("path") or ""))
     db.execute("DELETE FROM timeline_overlays WHERE id=?", (overlay_id,))
