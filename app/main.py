@@ -1198,6 +1198,9 @@ def patch_scene(scene_id: int, payload: ScenePatch):
     if not scene:
         raise HTTPException(404, "Escena inexistente")
     data = payload.model_dump(exclude_none=True)
+    if "narration" in data and data["narration"] != scene.get("narration"):
+        data["audio_path"] = ""
+        data["audio_sec"] = 0
     trim_start = float(data.get("visual_trim_start_sec", scene.get("visual_trim_start_sec") or 0))
     trim_end = float(data.get("visual_trim_end_sec", scene.get("visual_trim_end_sec") or 0))
     if trim_start < 0 or trim_end < 0:
