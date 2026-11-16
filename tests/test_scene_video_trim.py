@@ -99,6 +99,7 @@ class SceneVideoTrimTests(unittest.TestCase):
             with patch("app.render._ff", side_effect=fake_ff) as ff:
                 trimmed = _trim_visual_source(source, scene_dir, 0.2, 1.8, 2.0)
                 again = _trim_visual_source(source, scene_dir, 0.2, 1.8, 2.0)
+                trimmed_size = trimmed.stat().st_size
 
         command = ff.call_args.args[0]
         self.assertEqual(trimmed, again)
@@ -106,7 +107,7 @@ class SceneVideoTrimTests(unittest.TestCase):
         self.assertIn("-ss", command)
         self.assertEqual(command[command.index("-ss") + 1], "0.200")
         self.assertEqual(command[command.index("-t") + 1], "1.600")
-        self.assertGreater(trimmed.stat().st_size, 1000)
+        self.assertGreater(trimmed_size, 1000)
 
     def test_video_input_uses_entire_source_when_trim_is_unset(self):
         args = _visual_input_args(Path("clip.mp4"), 30)
