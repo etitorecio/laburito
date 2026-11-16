@@ -539,7 +539,7 @@ export default function Autopilot() {
 
           {step === 5 && <>
 <h3>Elegí dónde guardar o publicar tus videos</h3>
-            <p className="muted">Podés guardar cada video en tu biblioteca local sin conectar ninguna cuenta, o autorizar YouTube para publicarlo automáticamente cuando termine. La conexión se configura una sola vez en Ajustes.</p>
+            <p className="muted">Podés producir y guardar cada video automáticamente en tu biblioteca. Si elegís YouTube, el render queda listo para revisar y cada publicación requiere tu aprobación explícita.</p>
             <Field label="Estilo de título automático">
               <select value={form.title_style} onChange={(e) => update('title_style', e.target.value)}>
                 <option value="automatico">Mantener el título del tema</option>
@@ -577,7 +577,7 @@ export default function Autopilot() {
               <p className="muted">{form.auto_publish ? 'Al terminar el render, el MP4, los subtítulos y los metadatos se copiarán automáticamente a Entregas.' : 'Los videos quedarán en tus proyectos para que los revises y los guardes manualmente.'}</p>
             </>}
             {form.destination === 'youtube' && <p className="muted">La producción puede automatizarse, pero la publicación en YouTube siempre queda pendiente: revisás el video terminado y aprobás cada subida manualmente. Nunca se publica por una regla programada.</p>}
-            {form.destination === 'youtube' && persistenceConfigured === false && <p className="muted">Para activar YouTube automático necesitás almacenamiento persistente configurado. La publicación manual sigue disponible.</p>}
+            {form.destination === 'youtube' && persistenceConfigured === false && <p className="muted">Para conservar el video terminado y poder publicarlo después, necesitás almacenamiento persistente configurado. La aprobación manual sigue disponible.</p>}
             {form.destination === 'youtube' && !youtubeReady && <p className="muted">El canal seleccionado todavía no tiene una cuenta de YouTube vinculada. Conectá la cuenta de Google correspondiente en <a href="#/cuentas">Cuentas</a>. No alcanza con conectar la cuenta de la otra fábrica.</p>}
             {form.destination === 'youtube' && linkedYoutubeAccount && <p className="muted">Este canal publicará exclusivamente en: <strong>{linkedYoutubeAccount.channel_title}</strong>.</p>}
             {form.destination === 'youtube' && destinationInfo && <p className="muted">{destinationInfo.note}{destinationInfo.missing_env.length ? ' Faltan: ' + destinationInfo.missing_env.join(', ') + '.' : ''}</p>}
@@ -601,7 +601,7 @@ export default function Autopilot() {
               <small>Podés ajustar la duración con precisión. El tiempo final puede variar según la narración.</small>
             </Field>
             {form.video_type === 'skeleton' && <p className="muted">Skeleton admite hasta 7 minutos. Si habías elegido una duración mayor, se ajustó automáticamente a ese límite.</p>}
-            <Field label="Hora de producción/publicación">
+            <Field label="Hora de producción">
               <input type="time" value={form.schedule_time} onChange={(e) => update('schedule_time', e.target.value)} />
             </Field>
             <Field label="Zona horaria">
@@ -615,7 +615,7 @@ export default function Autopilot() {
                 <option value="UTC">UTC</option>
               </select>
             </Field>
-            <p className="muted">El horario configura cuándo comienza la producción. {form.auto_publish ? 'YouTube publicará automáticamente al terminar el render.' : 'La publicación en YouTube quedará pendiente de tu revisión manual.'}</p>
+            <p className="muted">El horario configura cuándo comienza la producción. Si el destino es YouTube, el video queda pendiente de tu revisión y aprobación manual.</p>
           </>}
 
           {step === 7 && <>
