@@ -361,10 +361,20 @@ export default function Editor({ projectId, go }: Props) {
 
   async function patchScene(scene: Scene, patch: Partial<Scene>) {
     try {
+      const before: Record<string, unknown> = {};
+      const after: Record<string, unknown> = {};
+      for (const key of Object.keys(patch)) {
+        const nextValue = (patch as Record<string, unknown>)[key];
+        const previousValue = (scene as unknown as Record<string, unknown>)[key];
+        if (nextValue === undefined || JSON.stringify(previousValue) === JSON.stringify(nextValue)) continue;
+        before[key] = previousValue;
+        after[key] = nextValue;
+      }
       const updated = await api.patch<Scene>(`/api/scenes/${scene.id}`, patch);
       setProject((prev) =>
         prev ? { ...prev, scenes: (prev.scenes ?? []).map((s) => (s.id === updated.id ? updated : s)) } : prev,
       );
+      recordHistory({ target: "scene", id: scene.id, before, after, label: scene.title || "escena" });
     } catch (e) {
       setError((e as Error).message);
     }
@@ -665,8 +675,18 @@ export default function Editor({ projectId, go }: Props) {
 
   async function patchTimelineOverlay(clip: TimelineOverlay, patch: Partial<TimelineOverlay>) {
     try {
+      const before: Record<string, unknown> = {};
+      const after: Record<string, unknown> = {};
+      for (const key of Object.keys(patch)) {
+        const nextValue = (patch as Record<string, unknown>)[key];
+        const previousValue = (clip as unknown as Record<string, unknown>)[key];
+        if (nextValue === undefined || JSON.stringify(previousValue) === JSON.stringify(nextValue)) continue;
+        before[key] = previousValue;
+        after[key] = nextValue;
+      }
       const updated = await api.patch<TimelineOverlay>(`/api/timeline-overlays/${clip.id}`, patch);
       setOverlays((current) => current.map((item) => item.id === clip.id ? updated : item));
+      recordHistory({ target: "overlay", id: clip.id, before, after, label: clip.title || "capa" });
       setOk("Capa guardada.");
     } catch (e) {
       setError((e as Error).message);
