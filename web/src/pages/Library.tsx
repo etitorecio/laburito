@@ -19,7 +19,7 @@ export default function Library() {
     void load();
   }, []);
 
-  const filtered = assets.filter((a) => !filter || a.kind.includes(filter));
+  const filtered = assets.filter((a) => !filter || (filter === 'imagen' ? ['imagen', 'miniatura', 'thumbnail'].includes(a.kind) : a.kind.includes(filter)));
   const images = filtered.filter((a) => ['imagen', 'miniatura', 'thumbnail'].includes(a.kind));
   const files = filtered.filter((a) => !['imagen', 'miniatura', 'thumbnail'].includes(a.kind));
 
