@@ -169,6 +169,16 @@ class SceneSplitIn(BaseModel):
     split_at: int
 
 
+class TimelineOverlayPatch(BaseModel):
+    title: str | None = None
+    start_sec: float | None = None
+    duration_sec: float | None = None
+    x: float | None = None
+    y: float | None = None
+    width: float | None = None
+    opacity: float | None = None
+
+
 class NicheIn(BaseModel):
     name: str
     demand: int = 0
@@ -1548,6 +1558,115 @@ def reorder_scenes(project_id: int, ids: list[int] = Body(..., embed=True)):
 @app.delete("/api/scenes/{scene_id}")
 def delete_scene(scene_id: int):
     db.execute("DELETE FROM scenes WHERE id=?", (scene_id,))
+    return {"ok": True}
+
+
+@app.get("/api/projects/{project_id}/timeline-overlays")
+def list_timeline_overlays(project_id: int):
+    if not db.query_one("SELECT id FROM projects WHERE id=?", (project_id,)):
+        raise HTTPException(404, "Proyecto inexistente")
+    return db.query("SELECT * FROM timeline_overlays WHERE project_id=? ORDER BY start_sec,id", (project_id,))
+
+
+@app.post("/api/projects/{project_id}/timeline-overlays/upload", status_code=201)
+async def upload_timeline_overlay(project_id: int, file: UploadFile = File(...), start_sec: float = 0):
+    if not db.query_one("SELECT id FROM projects WHERE id=?", (project_id,)):
+        raise HTTPException(404, "Proyecto inexistente")
+    extension = Path(file.filename or "").suffix.lower()
+    content_type = (file.content_type or "").lower()
+    image_exts = {".jpg", ".jpeg", ".png", ".webp"}
+    video_exts = {".mp4", ".mov", ".webm", ".mkv"}
+    if extension not in image_exts | video_exts:
+        raise HTTPException(400, "La capa admite imágenes JPG/PNG/WebP o videos MP4/MOV/WebM/MKV.")
+    limit = 12 * 1024 * 1024 if extension in image_exts else 250 * 1024 * 1024
+    raw = await file.read(limit + 1)
+    if not raw:
+        raise HTTPException(400, "El archivo está vacío.")
+    if len(raw) > limit:
+        raise HTTPException(413, f"El archivo supera el límite de {limit // (1024 * 1024)} MB.")
+    folder = db.MEDIA_DIR / "overlays" / str(project_id)
+    folder.mkdir(parents=True, exist_ok=True)
+    stamp = time.time_ns()
+    if extension in image_exts:
+        try:
+            with Image.open(io.BytesIO(raw)) as source:
+                if source.width * source.height > 40_000_000:
+                    raise HTTPException(413, "La imagen supera los 40 megapíxeles.")
+                image = source.convert("RGBA")
+                image.thumbnail((3840, 3840), Image.Resampling.LANCZOS)
+                target = folder / f"overlay-{stamp}.png"
+                image.save(target, format="PNG", optimize=True)
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(400, "La imagen no es válida.") from exc
+        kind = "image"
+        duration = 5.0
+    else:
+        source = db.TMP_DIR / f"overlay-{stamp}{extension}"
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_bytes(raw)
+        try:
+            info = media.probe_video(source)
+            duration = float(info.get("duration") or 0)
+            if not info.get("width") or not info.get("height") or duration <= 0:
+                raise HTTPException(400, "El archivo no contiene un video válido.")
+            target = folder / f"overlay-{stamp}.mp4"
+            proc = media.run([
+                media.ffmpeg(), "-y", "-i", str(source), "-map", "0:v:0", "-an",
+                "-vf", "scale='min(1920,iw)':-2", "-c:v", "libx264", "-preset", "veryfast",
+                "-crf", "24", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(target),
+            ], timeout=300)
+            if proc.returncode != 0 or not target.is_file() or target.stat().st_size < 1024:
+                detail = (proc.stderr or b"").decode("utf-8", "ignore")[-500:]
+                raise HTTPException(400, "No se pudo convertir el video: " + detail)
+        finally:
+            source.unlink(missing_ok=True)
+        kind = "video"
+    overlay_id = db.execute(
+        "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,created_at,updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+        (project_id, kind, str(target), Path(file.filename or "Capa").stem[:120],
+         max(0.0, float(start_sec)), min(max(duration, 0.1), 3600.0), 0.62, 0.62, 0.32, 1.0, db.now(), db.now()),
+    )
+    db.execute(
+        "INSERT INTO assets(project_id,kind,path,label,bytes,created_at) VALUES(?,?,?,?,?,?)",
+        (project_id, "capa_" + kind, str(target), Path(file.filename or "Capa").name, target.stat().st_size, db.now()),
+    )
+    _touch_project(project_id)
+    return db.query_one("SELECT * FROM timeline_overlays WHERE id=?", (overlay_id,))
+
+
+@app.patch("/api/timeline-overlays/{overlay_id}")
+def patch_timeline_overlay(overlay_id: int, payload: TimelineOverlayPatch):
+    overlay = db.query_one("SELECT * FROM timeline_overlays WHERE id=?", (overlay_id,))
+    if not overlay:
+        raise HTTPException(404, "Capa inexistente")
+    data = payload.model_dump(exclude_none=True)
+    candidate = {**overlay, **data}
+    if float(candidate["start_sec"]) < 0 or not 0 < float(candidate["duration_sec"]) <= 3600:
+        raise HTTPException(400, "La posición debe ser positiva y la duración debe estar entre 0 y 3600 segundos.")
+    if not 0 <= float(candidate["x"]) <= 1 or not 0 <= float(candidate["y"]) <= 1:
+        raise HTTPException(400, "La posición de la capa debe estar dentro del lienzo.")
+    if not 0.05 <= float(candidate["width"]) <= 1 or not 0 <= float(candidate["opacity"]) <= 1:
+        raise HTTPException(400, "El tamaño o la opacidad de la capa no son válidos.")
+    if data:
+        sets = ", ".join(f"{key}=?" for key in data)
+        db.execute(f"UPDATE timeline_overlays SET {sets},updated_at=? WHERE id=?", (*data.values(), db.now(), overlay_id))
+        _touch_project(overlay["project_id"])
+    return db.query_one("SELECT * FROM timeline_overlays WHERE id=?", (overlay_id,))
+
+
+@app.delete("/api/timeline-overlays/{overlay_id}")
+def delete_timeline_overlay(overlay_id: int):
+    overlay = db.query_one("SELECT * FROM timeline_overlays WHERE id=?", (overlay_id,))
+    if not overlay:
+        raise HTTPException(404, "Capa inexistente")
+    path = Path(overlay.get("path") or "")
+    if path.is_file() and str(path).startswith(str(db.DATA_DIR)):
+        path.unlink(missing_ok=True)
+    db.execute("DELETE FROM timeline_overlays WHERE id=?", (overlay_id,))
+    _touch_project(overlay["project_id"])
     return {"ok": True}
 
 
