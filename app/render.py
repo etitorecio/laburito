@@ -1060,6 +1060,29 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
     )
 
     overlay_clips = db.query("SELECT * FROM timeline_overlays WHERE project_id=? ORDER BY start_sec,id", (project_id,))
+    channel_id = project.get("channel_id")
+    if channel_id:
+        channel = db.query_one("SELECT watermark_path, watermark_enabled, watermark_position, watermark_scale, watermark_opacity FROM channels WHERE id=?", (channel_id,))
+        if channel and channel.get("watermark_enabled") and Path(channel.get("watermark_path") or "").is_file():
+            positions = {
+                "top_left": (0.03, 0.04),
+                "top_right": (0.97, 0.04),
+                "bottom_left": (0.03, 0.96),
+                "bottom_right": (0.97, 0.96),
+                "center": (0.5, 0.5),
+            }
+            x, y = positions.get(channel.get("watermark_position"), positions["bottom_right"])
+            overlay_clips.append({
+                "kind": "image",
+                "path": channel["watermark_path"],
+                "title": "Marca de agua del canal",
+                "start_sec": 0,
+                "duration_sec": float(actual_duration),
+                "x": x,
+                "y": y,
+                "width": float(channel.get("watermark_scale") or 0.12),
+                "opacity": float(channel.get("watermark_opacity") or 0.85),
+            })
     if overlay_clips:
         overlaid = workdir / f"final_{suffix}_overlays.mp4"
         _apply_timeline_overlays(final, overlay_clips, overlaid, width, height, float(actual_duration))
