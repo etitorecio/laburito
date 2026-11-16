@@ -148,10 +148,9 @@ export default function Editor({ projectId, go }: Props) {
 
   const load = useCallback(async () => {
     try {
-      const [nextProject, nextOverlays] = await Promise.all([
-        api.get<Project>(`/api/projects/${projectId}`),
-        api.get<TimelineOverlay[]>(`/api/projects/${projectId}/timeline-overlays`),
-      ]);
+      const nextProject = await api.get<Project>(`/api/projects/${projectId}`);
+      const nextOverlays = nextProject.timeline_overlays
+        ?? await api.get<TimelineOverlay[]>(`/api/projects/${projectId}/timeline-overlays`);
       setProject(nextProject);
       setOverlays(nextOverlays);
       setSelectedOverlayId((current) => current && nextOverlays.some((clip) => clip.id === current) ? current : null);
