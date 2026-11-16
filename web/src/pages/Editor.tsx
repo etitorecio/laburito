@@ -756,7 +756,7 @@ export default function Editor({ projectId, go }: Props) {
                       onDragEnd={() => setDraggedSceneId(null)}
                       onClick={() => setSelectedSceneId(scene.id)}
                       title={scene.title + " · aprox. " + Math.round(seconds) + " s"}>
-                      {track.id === "visual" ? <>{scene.visual_path && <img src={mediaUrl(scene.visual_path)} alt="" />}<span>{index + 1}. {scene.title}</span></>
+                      {track.id === "visual" ? <>{scene.visual_path && (/\.(mp4|mov|webm|mkv)$/i.test(scene.visual_path) ? <video src={mediaUrl(scene.visual_path)} muted playsInline preload="metadata" /> : <img src={mediaUrl(scene.visual_path)} alt="" />)}<span>{index + 1}. {scene.title}</span></>
                         : track.id === "voice" ? <span>▰ Voz {index + 1} · {Math.round(seconds)}s</span>
                         : <span>{captionsEnabled ? "▤ Texto " + (index + 1) : "Subtítulos desactivados"}</span>}
                     </button>;
@@ -793,7 +793,7 @@ export default function Editor({ projectId, go }: Props) {
               <Field label="Transición"><TransitionPicker options={meta?.transitions ?? [{ id: activeScene.transition, label: activeScene.transition }]} value={activeScene.transition || project.transition_default} onChange={(value) => void patchScene(activeScene, { transition: value })} compact /></Field>
               <div className="row gap-8">
                 <button className="btn small ghost" onClick={() => searchVisual(activeScene)}>Buscar visual con licencia</button>
-                <label className="btn small ghost">Subir archivo<input type="file" accept="image/jpeg,image/png,image/webp" disabled={!!busy} hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadSceneImage(activeScene, file); e.target.value = ""; }} /></label>
+                <label className="btn small ghost">Subir imagen o video<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm,video/x-matroska" disabled={!!busy} hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadSceneImage(activeScene, file); e.target.value = ""; }} /></label>
               </div>
               {activeScene.visual_license && <small className="muted">{activeScene.visual_license} · {activeScene.visual_author || "autor no identificado"}</small>}
               {searchFor === activeScene.id && <div className="thumbs">{results.map((item, index) => <figure key={item.url + "-" + index}>
