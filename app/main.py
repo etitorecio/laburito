@@ -1373,6 +1373,58 @@ def regenerate(scene_id: int, variant: int = 0):
     return {"ok": True, "note": result["note"], "scene": db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))}
 
 
+@app.post("/api/scenes/{scene_id}/regenerate-visual")
+def regenerate_scene_visual(scene_id: int, variant: int = 0):
+    """Busca y asigna una imagen alternativa con licencia desde fuentes abiertas."""
+    scene = db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))
+    if not scene:
+        raise HTTPException(404, "Escena inexistente")
+    query = (scene.get("visual_query") or scene.get("title") or "").strip()
+    if not query:
+        raise HTTPException(400, "La escena necesita una descripción visual.")
+    found = media.search_media(query, "all")
+    candidates = [
+        item for item in (found.get("results") or [])
+        if item.get("url") and item.get("license") and item.get("provider") in {"Openverse", "Wikimedia Commons"}
+    ]
+    current_url = scene.get("visual_url") or ""
+    alternatives = [item for item in candidates if item.get("url") != current_url]
+    choices = alternatives or candidates
+    if not choices:
+        raise HTTPException(503, "No hay imágenes abiertas disponibles ahora. Probá con otra descripción o subí un recurso propio.")
+    selected = choices[max(0, int(variant)) % len(choices)]
+    try:
+        stored = media.download_asset(selected["url"], db.MEDIA_DIR / "library" / str(scene["project_id"]))
+    except Exception as exc:
+        raise HTTPException(400, f"No se pudo descargar la alternativa visual: {exc}") from exc
+    if not str(stored.get("content_type") or "").startswith("image/"):
+        Path(stored["path"]).unlink(missing_ok=True)
+        raise HTTPException(400, "La fuente devolvió un recurso que no es una imagen.")
+    license_name = selected.get("license") or "Ver licencia original"
+    author = selected.get("author") or "Desconocido"
+    page = selected.get("page") or selected["url"]
+    db.execute(
+        "UPDATE scenes SET visual_path=?,visual_kind='recurso',visual_license=?,visual_author=?,visual_url=?,"
+        "visual_source_duration_sec=0,visual_trim_start_sec=0,visual_trim_end_sec=0,updated_at=? WHERE id=?",
+        (stored["path"], license_name, author, page, db.now(), scene_id),
+    )
+    db.execute(
+        "INSERT INTO assets(project_id,scene_id,kind,path,label,license,author,url,bytes,created_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?)",
+        (scene["project_id"], scene_id, "imagen", stored["path"], selected.get("title") or "Visual alternativo",
+         license_name, author, page, stored["bytes"], db.now()),
+    )
+    db.execute(
+        "INSERT INTO sources(project_id,scene_id,title,url,author,license,accessed_at,attribution,kind,created_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?)",
+        (scene["project_id"], scene_id, selected.get("title") or "Visual alternativo", page, author,
+         license_name, db.now(), f"{author} · {license_name}", "imagen", db.now()),
+    )
+    _touch_project(scene["project_id"])
+    return {"ok": True, "scene": db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,)),
+            "source": selected, "alternatives": len(choices)}
+
+
 @app.post("/api/scenes/{scene_id}/image", status_code=201)
 @app.post("/api/scenes/{scene_id}/media", status_code=201)
 async def upload_scene_image(scene_id: int, file: UploadFile = File(...)):
