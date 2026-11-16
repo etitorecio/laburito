@@ -214,6 +214,10 @@ class TimelineOverlayTextIn(BaseModel):
     opacity: float = 1
 
 
+class TimelineOverlaySplitIn(BaseModel):
+    at_sec: float
+
+
 class TimelineOverlayPatch(BaseModel):
     title: str | None = None
     start_sec: float | None = None
@@ -1984,6 +1988,41 @@ async def upload_timeline_overlay(project_id: int, file: UploadFile = File(...),
     )
     _touch_project(project_id)
     return db.query_one("SELECT * FROM timeline_overlays WHERE id=?", (overlay_id,))
+
+
+@app.post("/api/timeline-overlays/{overlay_id}/split", status_code=201)
+def split_timeline_overlay(overlay_id: int, payload: TimelineOverlaySplitIn):
+    overlay = db.query_one("SELECT * FROM timeline_overlays WHERE id=?", (overlay_id,))
+    if not overlay:
+        raise HTTPException(404, "Capa inexistente")
+    at_sec = float(payload.at_sec)
+    start = float(overlay.get("start_sec") or 0)
+    duration = float(overlay.get("duration_sec") or 0)
+    if not start < at_sec < start + duration:
+        raise HTTPException(400, "El cabezal debe estar dentro del clip para dividirlo.")
+    left_duration = at_sec - start
+    right_duration = duration - left_duration
+    source_start = float(overlay.get("source_start_sec") or 0)
+    source_end = float(overlay.get("source_end_sec") or 0)
+    source_duration = float(overlay.get("source_duration_sec") or 0)
+    source_limit = source_end if source_end > source_start else source_duration
+    source_window = source_limit - source_start if source_limit > source_start else 0
+    right_source_start = source_start
+    if overlay.get("kind") in {"video", "audio"} and source_window > 0:
+        right_source_start = source_start + (left_duration % source_window)
+    db.execute(
+        "UPDATE timeline_overlays SET duration_sec=?,updated_at=? WHERE id=?",
+        (left_duration, db.now(), overlay_id),
+    )
+    new_id = db.execute(
+        "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,volume,source_start_sec,source_end_sec,source_duration_sec,created_at,updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (overlay["project_id"], overlay["kind"], overlay["path"], overlay["title"], at_sec, right_duration,
+         overlay["x"], overlay["y"], overlay["width"], overlay["opacity"], overlay.get("volume", 1),
+         right_source_start, source_end, source_duration, db.now(), db.now()),
+    )
+    _touch_project(overlay["project_id"])
+    return db.query_one("SELECT * FROM timeline_overlays WHERE id=?", (new_id,))
 
 
 @app.patch("/api/timeline-overlays/{overlay_id}")
