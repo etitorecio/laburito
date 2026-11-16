@@ -127,14 +127,15 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
       setOk('1/3 · Proyecto creado. Escribiendo el guion y preparando las escenas…');
       const scriptResult = await api.post<{ warnings?: string[] }>('/api/projects/' + created.id + '/script?replace=true');
       const researchFailure = (scriptResult.warnings || []).find((warning) => warning.startsWith('No se pudo completar la investigación automática:'));
-      if (researchFailure) throw new Error(researchFailure + ' El borrador quedó guardado para que puedas retomarlo.');
       const researchNote = (scriptResult.warnings || []).some((warning) => warning.includes('Investigación integrada'))
         ? ' Investigación del tema incorporada automáticamente.'
-        : '';
+        : researchFailure
+          ? ' La investigación automática no estuvo disponible; el guion se produjo con la información local disponible.'
+          : '';
       setOk('2/3 · Guion listo.' + researchNote + ' Montando voz, imágenes, subtítulos y música…');
       await api.post('/api/projects/' + created.id + '/render');
       setForm({ ...form, title: '', topic: '', script_text: '' });
-      setOk('3/3 · Producción enviada al render. Podés seguir el progreso y descargar el MP4 en el editor.');
+      setOk('3/3 · Producción enviada al render. Podés seguir el progreso y descargar el MP4 en el editor.' + (researchFailure ? ' Aviso: la investigación automática falló, pero la producción continuó.' : ''));
       await load();
       go('editor', created.id);
     } catch (e) {
