@@ -622,6 +622,7 @@ def _trim_visual_source(
     source = max(0.0, float(source_duration or 0))
     if start <= 0 and end <= 0:
         return visual
+    scene_dir.mkdir(parents=True, exist_ok=True)
     window_end = end if end > start else source if source > start else 0
     try:
         stat = visual.stat()
