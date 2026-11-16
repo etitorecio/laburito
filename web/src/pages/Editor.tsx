@@ -985,7 +985,7 @@ export default function Editor({ projectId, go }: Props) {
                       title={clip.title + " · " + fmtDuration(clip.start_sec) + " · " + fmtDuration(clip.duration_sec)}>
                       {clip.kind === "image" ? "▧ " : clip.kind === "audio" ? "♫ " : "▶ "}{clip.title}
                     </button>)}
-                    {!overlays.length && <small className="muted">Capas visuales independientes: agregá imágenes o videos superpuestos.</small>}
+                    {!overlays.length && <small className="muted">Capas independientes: imágenes, videos y audio en pistas propias.</small>}
                   </div>
                 </div>
                 <div className="editor-track">
