@@ -9,7 +9,7 @@ from unittest.mock import patch
 from fastapi import HTTPException
 from starlette.datastructures import Headers, UploadFile
 
-from app.main import upload_timeline_overlay
+from app.main import TimelineOverlayTextIn, create_timeline_text_overlay, upload_timeline_overlay
 
 
 class TimelineOverlayUploadTests(unittest.TestCase):
@@ -72,6 +72,29 @@ class TimelineOverlayUploadTests(unittest.TestCase):
         self.assertEqual(result["kind"], "audio")
         self.assertEqual(len(saved), 1)
         self.assertGreater(saved_size, 0)
+        self.assertIn("timeline_overlays", execute.call_args_list[0].args[0])
+        touch.assert_called_once_with(3)
+
+    def test_creates_editable_text_overlay_as_transparent_png(self):
+        overlay = {
+            "id": 81, "project_id": 3, "kind": "text", "title": "Texto de prueba",
+            "start_sec": 2.0, "duration_sec": 5.0,
+        }
+        with tempfile.TemporaryDirectory() as temp, \
+             patch("app.main.db.MEDIA_DIR", Path(temp) / "media"), \
+             patch("app.main.db.query_one", side_effect=[{"id": 3}, overlay]), \
+             patch("app.main.db.execute", side_effect=[81, 0]) as execute, \
+             patch("app.main._touch_project") as touch:
+            result = create_timeline_text_overlay(
+                3, TimelineOverlayTextIn(text="Texto de prueba", start_sec=2, duration_sec=5)
+            )
+            image_path = Path(result["path"])
+            exists = image_path.is_file()
+            image_size = image_path.stat().st_size if exists else 0
+
+        self.assertEqual(result["kind"], "text")
+        self.assertTrue(exists)
+        self.assertGreater(image_size, 1000)
         self.assertIn("timeline_overlays", execute.call_args_list[0].args[0])
         touch.assert_called_once_with(3)
 
