@@ -23,7 +23,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from PIL import Image, ImageStat
 
-from . import autopilot, db, media, options, persistence, publish, render, script_gen, skeleton, tts, worker
+from . import autopilot, db, media, options, persistence, publish, render, script_gen, skeleton, tts, worker, topic_engine
 
 APP_VERSION = "1.1.0"
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
@@ -917,8 +917,11 @@ def generate_script(project_id: int, replace: bool = True):
     project = db.query_one("SELECT * FROM projects WHERE id=?", (project_id,))
     if not project:
         raise HTTPException(404, "Proyecto inexistente")
-    notes = db.query("SELECT * FROM research_notes ORDER BY id DESC")
+    topic = (project.get("topic") or project.get("title") or "").strip()
     sources = db.query("SELECT * FROM sources WHERE project_id=?", (project_id,))
+    notes = db.query("SELECT * FROM research_notes WHERE niche=? ORDER BY id DESC LIMIT 8", (topic,))
+    research_warning = None
+    is_fiction = project.get("template") in {"frutinovela", "reddit_story"}
     metadata_marker = "[LABURITO_META]"
     project_metadata = {}
     if metadata_marker in (project.get("notes") or ""):
@@ -929,6 +932,32 @@ def generate_script(project_id: int, replace: bool = True):
         except (TypeError, ValueError, json.JSONDecodeError):
             project_metadata = {}
     custom_script = str(project_metadata.get("script_text") or "").strip()
+    if not custom_script and not is_fiction and not notes:
+        try:
+            research = topic_engine.research_specific_topic(topic)
+            notes = research["notes"]
+            for note in notes:
+                db.execute(
+                    "INSERT INTO research_notes(niche,claim,evidence_level,source_url,accessed_at,methodology,created_at) "
+                    "VALUES(?,?,?,?,?,?,?)",
+                    (topic, note["claim"], note["evidence_level"], note["source_url"], db.now(),
+                     note["methodology"], db.now()),
+                )
+            if not any((source.get("url") or "") == research["url"] for source in sources):
+                db.execute(
+                    "INSERT INTO sources(project_id,title,url,author,license,accessed_at,attribution,kind,notes,created_at) "
+                    "VALUES(?,?,?,?,?,?,?,?,?,?)",
+                    (project_id, research["source_title"], research["url"], "Wikipedia contributors",
+                     "CC BY-SA 4.0", db.now(), "Wikipedia contributors · CC BY-SA 4.0",
+                     "investigacion", "Fuente introductoria; el guion debe contrastarse antes de publicar.", db.now()),
+                )
+            sources = db.query("SELECT * FROM sources WHERE project_id=?", (project_id,))
+            db.log("info", "research", "Investigación automática integrada al guion", {
+                "project_id": project_id, "academic_sources": len(research.get("academic_sources") or []),
+            })
+        except Exception as exc:
+            research_warning = f"No se pudo completar la investigación automática: {exc}"
+            db.log("warn", "research", research_warning, {"project_id": project_id})
     if project.get("template") == "frutinovela" and project.get("channel_id"):
         previous = db.query_one(
             "SELECT id,title,topic,notes FROM projects "
@@ -992,7 +1021,12 @@ def generate_script(project_id: int, replace: bool = True):
     db.execute_many(statements)
     _touch_project(project_id)
     db.log("info", "script", f"Guion generado para proyecto {project_id}", {"scenes": len(script["scenes"])})
-    return {"ok": True, "warnings": script["warnings"], "project": _project_full(project_id)}
+    warnings = list(script.get("warnings") or [])
+    if research_warning:
+        warnings.append(research_warning)
+    elif notes and not is_fiction and not custom_script:
+        warnings.append("Investigación integrada al proyecto: las fuentes quedaron registradas automáticamente.")
+    return {"ok": True, "warnings": warnings, "project": _project_full(project_id)}
 
 
 @app.post("/api/projects/{project_id}/scenes", status_code=201)
