@@ -758,6 +758,23 @@ export default function Editor({ projectId, go }: Props) {
     }
   }
 
+  async function splitTimelineOverlay(clip: TimelineOverlay) {
+    if (!(previewElapsed > clip.start_sec && previewElapsed < clip.start_sec + clip.duration_sec)) return;
+    setBusy("split-overlay");
+    setError("");
+    setOk("");
+    try {
+      const created = await api.post<TimelineOverlay>(`/api/timeline-overlays/${clip.id}/split`, { at_sec: previewElapsed });
+      await load();
+      setSelectedOverlayId(created.id);
+      setOk("Clip dividido en la posición del cabezal.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy("");
+    }
+  }
+
   async function removeTimelineOverlay(clip: TimelineOverlay) {
     try {
       await api.del(`/api/timeline-overlays/${clip.id}`);
@@ -1456,6 +1473,7 @@ export default function Editor({ projectId, go }: Props) {
                 </>}
                 <div className="row gap-8">
                   <button className="btn small ghost" onClick={() => { setPreviewElapsed(clip.start_sec); setPreviewPlaying(false); }}>Ir al inicio</button>
+                  <button className="btn small ghost" onClick={() => void splitTimelineOverlay(clip)} disabled={!!busy || !(previewElapsed > clip.start_sec && previewElapsed < clip.start_sec + clip.duration_sec)} title="Dividir en la posición del cabezal">Dividir</button>
                   <button className="btn small ghost" onClick={() => setSelectedOverlayId(null)}>＋ Nueva capa de texto</button>
                   <button className="btn small danger" onClick={() => void removeTimelineOverlay(clip)}>Eliminar capa</button>
                 </div>
