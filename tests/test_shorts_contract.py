@@ -141,7 +141,7 @@ class ShortsContractTests(unittest.TestCase):
             self.assertEqual(second, clip)
             self.assertEqual(kind1, "video_fondo")
             self.assertEqual(kind2, "video_fondo")
-            self.assertEqual(info1["mode"], "repetir debajo de toda la narración")
+            self.assertEqual(info1["mode"], "reutilizar el mismo clip en cada escena")
             self.assertEqual(info2["provider"], "biblioteca_local")
 
     def test_gameplay_clip_minimums_match_the_product_contract(self):
