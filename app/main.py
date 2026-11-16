@@ -177,6 +177,7 @@ class TimelineOverlayPatch(BaseModel):
     y: float | None = None
     width: float | None = None
     opacity: float | None = None
+    volume: float | None = None
 
 
 class NicheIn(BaseModel):
@@ -1588,9 +1589,10 @@ async def upload_timeline_overlay(project_id: int, file: UploadFile = File(...),
     content_type = (file.content_type or "").lower()
     image_exts = {".jpg", ".jpeg", ".png", ".webp"}
     video_exts = {".mp4", ".mov", ".webm", ".mkv"}
-    if extension not in image_exts | video_exts:
-        raise HTTPException(400, "La capa admite imágenes JPG/PNG/WebP o videos MP4/MOV/WebM/MKV.")
-    limit = 12 * 1024 * 1024 if extension in image_exts else 250 * 1024 * 1024
+    audio_exts = {".mp3", ".wav", ".ogg", ".m4a", ".flac"}
+    if extension not in image_exts | video_exts | audio_exts:
+        raise HTTPException(400, "La capa admite imágenes, videos o audio MP3/WAV/OGG/M4A/FLAC.")
+    limit = 12 * 1024 * 1024 if extension in image_exts else 100 * 1024 * 1024 if extension in audio_exts else 250 * 1024 * 1024
     raw = await file.read(limit + 1)
     if not raw:
         raise HTTPException(400, "El archivo está vacío.")
@@ -1635,11 +1637,24 @@ async def upload_timeline_overlay(project_id: int, file: UploadFile = File(...),
         finally:
             source.unlink(missing_ok=True)
         kind = "video"
+    else:
+        source = db.TMP_DIR / f"overlay-{stamp}{extension}"
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_bytes(raw)
+        try:
+            duration = float(media.probe_duration(source) or 0)
+            if duration <= 0:
+                raise HTTPException(400, "El archivo no contiene audio válido.")
+            target = folder / f"overlay-{stamp}{extension}"
+            shutil.copy2(source, target)
+        finally:
+            source.unlink(missing_ok=True)
+        kind = "audio"
     overlay_id = db.execute(
-        "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,created_at,updated_at) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,volume,created_at,updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (project_id, kind, str(target), Path(file.filename or "Capa").stem[:120],
-         max(0.0, float(start_sec)), min(max(duration, 0.1), 3600.0), 0.62, 0.62, 0.32, 1.0, db.now(), db.now()),
+         max(0.0, float(start_sec)), min(max(duration, 0.1), 3600.0), 0.62, 0.62, 0.32, 1.0, 1.0, db.now(), db.now()),
     )
     db.execute(
         "INSERT INTO assets(project_id,kind,path,label,bytes,created_at) VALUES(?,?,?,?,?,?)",
@@ -1662,6 +1677,8 @@ def patch_timeline_overlay(overlay_id: int, payload: TimelineOverlayPatch):
         raise HTTPException(400, "La posición de la capa debe estar dentro del lienzo.")
     if not 0.05 <= float(candidate["width"]) <= 1 or not 0 <= float(candidate["opacity"]) <= 1:
         raise HTTPException(400, "El tamaño o la opacidad de la capa no son válidos.")
+    if not 0 <= float(candidate.get("volume", 1)) <= 2:
+        raise HTTPException(400, "El volumen de la capa de audio debe estar entre 0 y 200%.")
     if data:
         sets = ", ".join(f"{key}=?" for key in data)
         db.execute(f"UPDATE timeline_overlays SET {sets},updated_at=? WHERE id=?", (*data.values(), db.now(), overlay_id))
