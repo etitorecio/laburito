@@ -1120,7 +1120,10 @@ export default function Editor({ projectId, go }: Props) {
                   <Field label={"Posición vertical: " + Math.round(clip.y * 100) + "%"}><input type="range" min="0" max="1" step="0.01" value={clip.y} onChange={(e) => void patchTimelineOverlay(clip, { y: Number(e.target.value) })} /></Field>
                   <Field label={"Opacidad: " + Math.round(clip.opacity * 100) + "%"}><input type="range" min="0" max="1" step="0.05" value={clip.opacity} onChange={(e) => void patchTimelineOverlay(clip, { opacity: Number(e.target.value) })} /></Field>
                 </>}
-                {clip.kind === "audio" && <Field label={"Volumen: " + Math.round((clip.volume ?? 1) * 100) + "%"}><input type="range" min="0" max="2" step="0.05" value={clip.volume ?? 1} onChange={(e) => void patchTimelineOverlay(clip, { volume: Number(e.target.value) })} /></Field>}
+                {clip.kind === "audio" && <>
+                  <Field label={"Volumen: " + Math.round((clip.volume ?? 1) * 100) + "%"}><input type="range" min="0" max="2" step="0.05" value={clip.volume ?? 1} onChange={(e) => void patchTimelineOverlay(clip, { volume: Number(e.target.value) })} /></Field>
+                  <audio controls preload="metadata" src={mediaUrl(clip.path)} />
+                </>}
                 <div className="row gap-8">
                   <button className="btn small ghost" onClick={() => { setPreviewElapsed(clip.start_sec); setPreviewPlaying(false); }}>Ir al inicio</button>
                   <button className="btn small danger" onClick={() => void removeTimelineOverlay(clip)}>Eliminar capa</button>
