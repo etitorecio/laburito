@@ -990,6 +990,18 @@ def duplicate_project(project_id: int):
             tuple(asset_data[key] for key in columns),
         )
 
+    for overlay in db.query("SELECT * FROM timeline_overlays WHERE project_id=? ORDER BY start_sec,id", (project_id,)):
+        overlay_data = {key: value for key, value in overlay.items() if key != "id"}
+        overlay_data["project_id"] = new_project_id
+        overlay_data["created_at"] = stamp
+        overlay_data["updated_at"] = stamp
+        columns = list(overlay_data)
+        db.execute(
+            "INSERT INTO timeline_overlays(" + ",".join(columns) + ") VALUES(" +
+            ",".join("?" for _ in columns) + ")",
+            tuple(overlay_data[key] for key in columns),
+        )
+
     db.log("info", "projects", f"Proyecto duplicado: {original.get('title')}", {
         "source_project_id": project_id, "project_id": new_project_id,
     })
@@ -1665,6 +1677,7 @@ def delete_timeline_overlay(overlay_id: int):
     path = Path(overlay.get("path") or "")
     if path.is_file() and str(path).startswith(str(db.DATA_DIR)):
         path.unlink(missing_ok=True)
+    db.execute("DELETE FROM assets WHERE project_id=? AND path=?", (overlay["project_id"], overlay.get("path") or ""))
     db.execute("DELETE FROM timeline_overlays WHERE id=?", (overlay_id,))
     _touch_project(overlay["project_id"])
     return {"ok": True}
