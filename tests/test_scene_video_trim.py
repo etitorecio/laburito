@@ -30,7 +30,8 @@ class SceneVideoTrimTests(unittest.TestCase):
         self.assertIn("visual_trim_start_sec", columns)
         self.assertIn("visual_trim_end_sec", columns)
         self.assertIn("visual_source_duration_sec", columns)
-        self.assertEqual(version, "6")
+        self.assertEqual(version, "7")
+        self.assertTrue(db.query_one("SELECT name FROM sqlite_master WHERE type='table' AND name='timeline_overlays'"))
 
     def test_video_input_uses_entire_source_when_trim_is_unset(self):
         args = _visual_input_args(Path("clip.mp4"), 30)
