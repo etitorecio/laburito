@@ -10,11 +10,14 @@ Sale con código 0 solo si el MP4 final se genera y se sirve.
 """
 from __future__ import annotations
 
+import io
 import json
 import sys
 import time
 import urllib.error
 import urllib.request
+
+from PIL import Image
 
 BASE = (sys.argv[1] if len(sys.argv) > 1 else "").rstrip("/")
 if not BASE:
@@ -48,6 +51,32 @@ def call(method: str, path: str, payload: dict | None = None, raw: bool = False)
             if raw:
                 return resp.status, body, resp.headers
             return resp.status, (json.loads(body) if body else None), resp.headers
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", "ignore")[:300]
+        return exc.code, {"error": detail}, exc.headers
+
+
+def upload_png(path: str, filename: str, png_bytes: bytes):
+    boundary = "----AITuberLibreSmokeBoundary"
+    body = (
+        f"--{boundary}\r\n"
+        f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'
+        "Content-Type: image/png\r\n\r\n"
+    ).encode() + png_bytes + f"\r\n--{boundary}--\r\n".encode()
+    req = urllib.request.Request(
+        BASE + path,
+        data=body,
+        method="POST",
+        headers={
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Accept": "application/json",
+            "User-Agent": "AITuberLibre-Smoke/1.0 (+https://appjet.local)",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            payload = resp.read()
+            return resp.status, (json.loads(payload) if payload else None), resp.headers
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", "ignore")[:300]
         return exc.code, {"error": detail}, exc.headers
@@ -153,6 +182,16 @@ def main() -> int:
     check(len(scenes) > 0, "escenas creadas", f"({len(scenes)})")
     if not scenes:
         return 1
+
+    # Añade una imagen independiente superpuesta para comprobar el montaje multicapa real.
+    overlay_buffer = io.BytesIO()
+    Image.new("RGBA", (320, 180), (255, 190, 40, 220)).save(overlay_buffer, format="PNG")
+    status, overlay, _ = upload_png(
+        f"/api/projects/{project_id}/timeline-overlays/upload?start_sec=1.0",
+        "smoke-overlay.png",
+        overlay_buffer.getvalue(),
+    )
+    check(status == 201 and bool((overlay or {}).get("id")), "capa visual independiente agregada", f"({status})")
 
     status, job, _ = call("POST", f"/api/projects/{project_id}/render")
     check(status in (200, 202), "render encolado", f"({status})")
