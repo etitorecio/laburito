@@ -91,12 +91,19 @@ export default function Autopilot() {
         api.get<{ accounts: { id: number; account: { channel_title: string } | null }[] }>('/api/youtube/accounts'),
       ]);
       setData(result);
-      setForm((current) => ({
-        ...current,
-        channel_id: current.channel_id && result.channels.some((c) => c.id === Number(current.channel_id))
+      setForm((current) => {
+        const channelId = current.channel_id && result.channels.some((c) => c.id === Number(current.channel_id))
           ? current.channel_id
-          : String(result.channels[0]?.id ?? ''),
-      }));
+          : String(result.channels[0]?.id ?? '');
+        const selectedChannel = result.channels.find((channel) => channel.id === Number(channelId));
+        return {
+          ...current,
+          channel_id: channelId,
+          // La configuración rápida no obliga a volver a escribir el tema:
+          // toma el nicho del canal y usa su nombre como último respaldo.
+          niche: current.niche.trim() || selectedChannel?.topic || selectedChannel?.name || '',
+        };
+      });
       setMeta(m);
       setOllamaAvailable(diagnostics.ollama.available);
       setYoutubeAccounts(accountData.accounts);
@@ -125,6 +132,10 @@ export default function Autopilot() {
   function update<K extends keyof typeof INITIAL>(key: K, value: (typeof INITIAL)[K]) {
     setForm((old) => {
       const next = { ...old, [key]: value };
+      if (key === 'channel_id') {
+        const selectedChannel = data?.channels.find((channel) => channel.id === Number(value));
+        if (selectedChannel) next.niche = selectedChannel.topic || selectedChannel.name;
+      }
       if (key === 'destination' && value === 'youtube') {
         next.auto_publish = false;
       }
