@@ -249,6 +249,7 @@ _MIGRATIONS: dict[int, list[str]] = {
         "ALTER TABLE timeline_overlays ADD COLUMN source_start_sec REAL NOT NULL DEFAULT 0",
         "ALTER TABLE timeline_overlays ADD COLUMN source_end_sec REAL NOT NULL DEFAULT 0",
         "ALTER TABLE timeline_overlays ADD COLUMN source_duration_sec REAL NOT NULL DEFAULT 0",
+        "UPDATE timeline_overlays SET source_duration_sec=duration_sec WHERE kind IN ('video','audio') AND source_duration_sec=0",
     ],
 }
 
