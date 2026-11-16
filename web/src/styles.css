@@ -2770,3 +2770,25 @@ th {
 @media (max-width: 640px) { .idea-suggestions { grid-template-columns: 1fr; } }
 
 .editor-hub-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+
+
+/* Línea de tiempo multipista con regla y escala temporal compartida. */
+.editor-timeline-shell { width: 100%; overflow-x: auto; padding-bottom: 5px; scrollbar-width: thin; }
+.editor-ruler-row { display: grid; grid-template-columns: 88px max-content; gap: 8px; min-width: max-content; align-items: end; margin-bottom: 5px; }
+.editor-ruler { position: relative; height: 25px; border-bottom: 1px solid var(--line); background: repeating-linear-gradient(90deg, transparent 0, transparent 89px, rgba(147,164,189,.08) 90px); }
+.editor-ruler-tick { position: absolute; bottom: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; transform: translateX(-1px); color: var(--muted); font-size: .64rem; white-space: nowrap; }
+.editor-ruler-tick i { display: block; width: 1px; height: 7px; background: #61718a; }
+.editor-ruler-end { position: absolute; right: 0; bottom: 2px; color: var(--muted); font-size: .64rem; transform: translateX(100%); padding-left: 4px; white-space: nowrap; }
+.editor-multitrack { width: max-content; min-width: 100%; overflow: visible; }
+.editor-track { grid-template-columns: 88px max-content; }
+.editor-track-lane { width: max-content; min-width: 0; overflow: visible; gap: 0; padding: 4px 0; border: 0; border-radius: 0; background: transparent; }
+.editor-track-clip { min-width: 0; border-radius: 5px; border-right-width: 2px; }
+.editor-track-clip + .editor-track-clip { margin-left: 2px; }
+.editor-track-clip.visual { background: #26354b; }
+.editor-track-clip.voice { background: #174b46; }
+.editor-track-clip.captions { background: #46315e; }
+.editor-music-clip { box-sizing: border-box; min-width: 0; }
+@media (max-width: 600px) {
+  .editor-ruler-row, .editor-track { grid-template-columns: 70px max-content; }
+  .editor-track-clip { font-size: .66rem; padding: 4px; }
+}
