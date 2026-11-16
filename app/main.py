@@ -1509,7 +1509,8 @@ def set_scene_visual(scene_id: int, payload: VisualIn):
     except Exception as exc:
         raise HTTPException(400, f"No se pudo descargar el recurso: {exc}") from exc
     db.execute(
-        "UPDATE scenes SET visual_path=?, visual_kind='recurso', visual_license=?, visual_author=?, visual_url=?, updated_at=? WHERE id=?",
+        "UPDATE scenes SET visual_path=?, visual_kind='recurso', visual_license=?, visual_author=?, visual_url=?, "
+        "visual_source_duration_sec=0, visual_trim_start_sec=0, visual_trim_end_sec=0, updated_at=? WHERE id=?",
         (stored["path"], payload.license, payload.author, payload.page or payload.url, db.now(), scene_id),
     )
     db.execute(
