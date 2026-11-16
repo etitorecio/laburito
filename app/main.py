@@ -1204,6 +1204,9 @@ def patch_scene(scene_id: int, payload: ScenePatch):
         raise HTTPException(400, "Los puntos de recorte no pueden ser negativos.")
     if trim_end and trim_end <= trim_start:
         raise HTTPException(400, "El final del recorte debe ser posterior al inicio.")
+    source_duration = float(scene.get("visual_source_duration_sec") or 0)
+    if source_duration > 0 and (trim_start >= source_duration or (trim_end and trim_end > source_duration)):
+        raise HTTPException(400, f"El recorte debe quedar dentro del video original ({source_duration:.1f} s).")
     if data:
         sets = ", ".join(f"{k}=?" for k in data)
         db.execute(f"UPDATE scenes SET {sets}, updated_at=? WHERE id=?", (*data.values(), db.now(), scene_id))
