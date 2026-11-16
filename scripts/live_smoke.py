@@ -213,6 +213,13 @@ def main() -> int:
     )
     check(status == 201 and (audio_overlay or {}).get("kind") == "audio", "capa de audio independiente agregada", f"({status})")
 
+    status, text_overlay, _ = call(
+        "POST",
+        f"/api/projects/{project_id}/timeline-overlays/text",
+        {"text": "PRUEBA DE CAPAS", "start_sec": 1.2, "duration_sec": 2.0},
+    )
+    check(status == 201 and (text_overlay or {}).get("kind") == "text", "capa de texto independiente agregada", f"({status})")
+
     status, job, _ = call("POST", f"/api/projects/{project_id}/render")
     check(status in (200, 202), "render encolado", f"({status})")
     job_id = (job or {}).get("id") or ((job or {}).get("job") or {}).get("id")
