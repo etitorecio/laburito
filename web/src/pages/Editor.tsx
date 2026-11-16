@@ -1207,6 +1207,7 @@ export default function Editor({ projectId, go }: Props) {
                 </>}
                 <div className="row gap-8">
                   <button className="btn small ghost" onClick={() => { setPreviewElapsed(clip.start_sec); setPreviewPlaying(false); }}>Ir al inicio</button>
+                  <button className="btn small ghost" onClick={() => setSelectedOverlayId(null)}>＋ Nueva capa de texto</button>
                   <button className="btn small danger" onClick={() => void removeTimelineOverlay(clip)}>Eliminar capa</button>
                 </div>
               </div>;
