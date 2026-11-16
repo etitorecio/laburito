@@ -2187,7 +2187,8 @@ def delete_timeline_overlay(overlay_id: int):
         path.unlink(missing_ok=True)
     db.execute("DELETE FROM editor_history WHERE project_id=? AND target='overlay' AND target_id=?",
                (overlay["project_id"], overlay_id))
-    db.execute("DELETE FROM assets WHERE project_id=? AND path=?", (overlay["project_id"], overlay.get("path") or ""))
+    if not shared_overlays:
+        db.execute("DELETE FROM assets WHERE project_id=? AND path=?", (overlay["project_id"], overlay.get("path") or ""))
     db.execute("DELETE FROM timeline_overlays WHERE id=?", (overlay_id,))
     _touch_project(overlay["project_id"])
     return {"ok": True}
