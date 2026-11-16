@@ -908,9 +908,15 @@ export default function Editor({ projectId, go }: Props) {
               {overlays.filter((clip) => clip.kind !== "audio" && previewElapsed >= clip.start_sec && previewElapsed < clip.start_sec + clip.duration_sec).map((clip) => {
                 const overlayStyle = { left: (clip.x * 100) + "%", top: (clip.y * 100) + "%", width: (clip.width * 100) + "%", opacity: clip.opacity };
                 return clip.kind === "video"
-                  ? <video key={clip.id} className="editor-preview-overlay" src={mediaUrl(clip.path)} muted loop autoPlay playsInline style={overlayStyle} />
+                  ? <video key={clip.id} className="editor-preview-overlay" src={mediaUrl(clip.path)} muted loop autoPlay={previewPlaying} playsInline style={overlayStyle}
+                      onLoadedMetadata={(event) => { event.currentTarget.currentTime = Math.max(0, previewElapsed - clip.start_sec); if (!previewPlaying) event.currentTarget.pause(); }}
+                      onTimeUpdate={(event) => { if (!previewPlaying) event.currentTarget.pause(); else { const expected = Math.max(0, previewElapsed - clip.start_sec); if (Math.abs(event.currentTarget.currentTime - expected) > 1) event.currentTarget.currentTime = expected; } }} />
                   : <img key={clip.id} className="editor-preview-overlay" src={mediaUrl(clip.path)} alt={clip.title} style={overlayStyle} />;
               })}
+              {previewPlaying && overlays.filter((clip) => clip.kind === "audio" && previewElapsed >= clip.start_sec && previewElapsed < clip.start_sec + clip.duration_sec).map((clip) =>
+                <audio key={clip.id} hidden autoPlay loop src={mediaUrl(clip.path)} volume={Math.max(0, Math.min(1, clip.volume ?? 1))}
+                  onLoadedMetadata={(event) => { event.currentTarget.currentTime = Math.max(0, previewElapsed - clip.start_sec); }} />
+              )}
             </div>
             {activeScene && <div className="editor-preview-controls">
               <div className="editor-transport">
