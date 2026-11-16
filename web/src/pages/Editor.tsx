@@ -775,7 +775,9 @@ export default function Editor({ projectId, go }: Props) {
                     }}
                     title={scene.title + ' · ~' + Math.round(estimatedSeconds) + ' s'}
                   >
-                    {scene.visual_path && <img className="editor-timeline-thumb" src={mediaUrl(scene.visual_path)} alt="" loading="lazy" />}
+                    {scene.visual_path && (/\\.(mp4|mov|webm|mkv)$/i.test(scene.visual_path)
+                      ? <video className="editor-timeline-thumb" src={mediaUrl(scene.visual_path)} muted playsInline preload="metadata" />
+                      : <img className="editor-timeline-thumb" src={mediaUrl(scene.visual_path)} alt="" loading="lazy" />)}
                     <strong>{index + 1}. {scene.title}</strong>
                     <small>~{Math.round(estimatedSeconds)} s</small>
                   </button>
@@ -810,7 +812,9 @@ export default function Editor({ projectId, go }: Props) {
                       <button className="btn small danger" onClick={() => removeScene(scene)}>×</button>
                     </div>
                   </div>
-                  {scene.visual_path && <img className="scene-visual-preview" src={mediaUrl(scene.visual_path)} alt={`Visual de ${scene.title}`} loading="lazy" />}
+                  {scene.visual_path && (/\\.(mp4|mov|webm|mkv)$/i.test(scene.visual_path)
+                    ? <video className="scene-visual-preview" src={mediaUrl(scene.visual_path)} controls muted playsInline preload="metadata" />
+                    : <img className="scene-visual-preview" src={mediaUrl(scene.visual_path)} alt={`Visual de ${scene.title}`} loading="lazy" />)}
                   <textarea
                     defaultValue={scene.narration}
                     key={`narration-${scene.id}-${scene.updated_at}`}
