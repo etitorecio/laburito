@@ -244,6 +244,12 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
               <input value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })} placeholder="Qué pasó con el transporte eléctrico" />
             </Field>
           </div>
+          {easyMode && <Field label="Canal">
+            <select value={form.channel_id} onChange={(e) => setForm({ ...form, channel_id: e.target.value })}>
+              <option value="">Seleccioná un canal…</option>
+              {channels.map((channel) => <option key={channel.id} value={channel.id}>{channel.name}</option>)}
+            </select>
+          </Field>}
           {!easyMode && <div className="row">
             <Field label="Plantilla de contenido" hint={activeTemplate?.description}>
               <select value={form.template} onChange={(e) => applyTemplate(e.target.value)}>
