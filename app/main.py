@@ -1780,10 +1780,10 @@ def create_timeline_sfx_overlay(project_id: int, payload: TimelineOverlaySfxIn):
         target.unlink(missing_ok=True)
         raise HTTPException(503, f"No se pudo generar el efecto local: {exc}") from exc
     overlay_id = db.execute(
-        "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,volume,created_at,updated_at) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,volume,source_start_sec,source_end_sec,source_duration_sec,created_at,updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (project_id, "audio", str(target), label, payload.start_sec, duration, 0.62, 0.62, 0.32, 1.0,
-         payload.volume, db.now(), db.now()),
+         payload.volume, 0.0, 0.0, duration, db.now(), db.now()),
     )
     db.execute(
         "INSERT INTO assets(project_id,kind,path,label,bytes,created_at) VALUES(?,?,?,?,?,?)",
@@ -1811,10 +1811,10 @@ def create_timeline_music_overlay(project_id: int, payload: TimelineOverlayMusic
         raise HTTPException(503, f"No se pudo generar la música local: {exc}") from exc
     bed = next((item for item in options.MUSIC_BEDS if item["id"] == payload.bed_id), options.MUSIC_BEDS[0])
     overlay_id = db.execute(
-        "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,volume,created_at,updated_at) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,volume,source_start_sec,source_end_sec,source_duration_sec,created_at,updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (project_id, "audio", str(music_path), bed["label"], payload.start_sec,
-         min(payload.duration_sec, 3600), 0.62, 0.62, 0.32, 1.0, payload.volume, db.now(), db.now()),
+         min(payload.duration_sec, 3600), 0.62, 0.62, 0.32, 1.0, payload.volume, 0.0, 0.0, duration, db.now(), db.now()),
     )
     db.execute(
         "INSERT INTO assets(project_id,kind,path,label,bytes,created_at) VALUES(?,?,?,?,?,?)",
@@ -1853,10 +1853,10 @@ def create_timeline_voice_overlay(project_id: int, payload: TimelineOverlayVoice
         raise HTTPException(503, f"No se pudo generar la voz en off local: {exc}") from exc
     title = (text[:72] + "…") if len(text) > 72 else text
     overlay_id = db.execute(
-        "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,volume,created_at,updated_at) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,volume,source_start_sec,source_end_sec,source_duration_sec,created_at,updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (project_id, "audio", str(target), title, payload.start_sec, min(duration, 3600),
-         0.62, 0.62, 0.32, 1.0, payload.volume, db.now(), db.now()),
+         0.62, 0.62, 0.32, 1.0, payload.volume, 0.0, 0.0, duration, db.now(), db.now()),
     )
     db.execute(
         "INSERT INTO assets(project_id,kind,path,label,bytes,created_at) VALUES(?,?,?,?,?,?)",
