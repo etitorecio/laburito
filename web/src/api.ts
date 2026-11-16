@@ -51,6 +51,8 @@ export interface Scene {
   sfx_path?: string;
   sfx_volume?: number;
   sfx_start_sec?: number;
+  visual_trim_start_sec?: number;
+  visual_trim_end_sec?: number;
   updated_at: string;
 }
 
