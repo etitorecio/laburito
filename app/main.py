@@ -843,6 +843,11 @@ def list_projects():
         "FROM projects p LEFT JOIN channels c ON c.id=p.channel_id ORDER BY p.id DESC"
     )
     for row in rows:
+        custom_thumbnail = db.query_one(
+            "SELECT path FROM assets WHERE project_id=? AND kind='thumbnail' ORDER BY id DESC LIMIT 1",
+            (row["id"],),
+        )
+        row["thumbnail_path"] = custom_thumbnail.get("path") if custom_thumbnail else ""
         row["job"] = db.query_one(
             "SELECT id, status, progress, message FROM jobs WHERE project_id=? ORDER BY id DESC LIMIT 1", (row["id"],)
         )
