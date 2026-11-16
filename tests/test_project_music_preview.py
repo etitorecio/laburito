@@ -18,7 +18,7 @@ class ProjectMusicPreviewTests(unittest.TestCase):
                  patch("app.main.render._music_track", return_value=music):
                 response = project_music_preview(5)
         self.assertIsInstance(response, FileResponse)
-        self.assertEqual(response.path, str(music))
+        self.assertEqual(Path(response.path), music)
         self.assertEqual(response.media_type, "audio/wav")
 
     def test_returns_not_found_when_project_has_no_music(self):
