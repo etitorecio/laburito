@@ -21,7 +21,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Explain the one-time URL configuration
-        run: echo "::notice::Configurá la variable de repositorio LABURITO_URL con la URL Edge real de AppJet (rama appjet); no se usará el endpoint dev."
+        run: |
+          echo "::error::Falta LABURITO_URL. Configurá la URL Edge real de AppJet (rama appjet) para habilitar el chequeo del despliegue real."
+          exit 1
 
   wake-app:
     if: ${{ vars.LABURITO_URL != '' }}
