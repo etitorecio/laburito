@@ -313,6 +313,12 @@ export default function Autopilot() {
                 <button type="button" className={form.template === 'longform' ? 'quick-format active' : 'quick-format'} onClick={() => chooseTemplate('longform')}>
                   <span className="quick-format-icon">▭</span><strong>Documentales</strong><small>Horizontales · videos largos</small>
                 </button>
+                <button type="button" className={form.template === 'reddit_story' ? 'quick-format active' : 'quick-format'} onClick={() => chooseTemplate('reddit_story')}>
+                  <span className="quick-format-icon">◉</span><strong>Historias</strong><small>Relatos y terror · verticales</small>
+                </button>
+                <button type="button" className={form.template === 'frutinovela' ? 'quick-format active' : 'quick-format'} onClick={() => chooseTemplate('frutinovela')}>
+                  <span className="quick-format-icon">♡</span><strong>Frutinovela</strong><small>Serie episódica · vertical</small>
+                </button>
               </div>
             </Field>
             <div className="row">
