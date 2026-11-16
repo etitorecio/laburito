@@ -529,11 +529,11 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(result["channel_title"], "Canal de prueba")
         self.assertEqual(request.call_args.args[0].get_header("Authorization"), "Bearer access-token")
 
-    def test_youtube_autopublish_requires_durable_storage(self):
+    def test_youtube_autopublish_requires_manual_approval_even_without_storage(self):
         with patch.object(publish, "ensure_schema"):
             with patch.object(publish.db, "query_one", return_value={"id": 1, "channel_id": 10}):
                 with patch.object(publish.persistence, "durable_storage_available", return_value=False):
-                    with self.assertRaisesRegex(publish.PublishError, "almacenamiento persistente"):
+                    with self.assertRaisesRegex(publish.PublishError, "aprobación manual"):
                         publish.set_auto_publish(1, True, "youtube")
 
     def test_youtube_autopublish_is_rejected_until_manual_approval(self):
