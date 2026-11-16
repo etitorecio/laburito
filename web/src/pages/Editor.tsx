@@ -1185,16 +1185,27 @@ export default function Editor({ projectId, go }: Props) {
               {captionsEnabled && previewCaptionWords.length > 0 && <div className="editor-preview-caption">{previewCaptionWords.map((word, index) => <span key={previewCaptionStart + index} className={previewCaptionStart + index === previewWordIndex ? "current-word" : ""}>{word} </span>)}</div>}
               {overlays.filter((clip) => clip.kind !== "audio" && previewElapsed >= clip.start_sec && previewElapsed < clip.start_sec + clip.duration_sec).map((clip) => {
                 const overlayStyle = { left: (clip.x * (1 - clip.width) * 100) + "%", top: (clip.y * 100) + "%", width: (clip.width * 100) + "%", opacity: clip.opacity };
+                const sourceStart = clip.source_start_sec ?? 0;
+                const sourceLimit = (clip.source_end_sec ?? 0) > sourceStart ? clip.source_end_sec : (clip.source_duration_sec ?? 0) > sourceStart ? clip.source_duration_sec : 0;
+                const sourceWindow = sourceLimit > sourceStart ? sourceLimit - sourceStart : 0;
+                const clipElapsed = Math.max(0, previewElapsed - clip.start_sec);
+                const expectedSourceTime = sourceWindow > 0 ? sourceStart + (clipElapsed % sourceWindow) : sourceStart + clipElapsed;
                 return clip.kind === "video"
-                  ? <video key={clip.id} className="editor-preview-overlay" src={mediaUrl(clip.path)} muted loop autoPlay={previewPlaying} playsInline style={overlayStyle}
-                      onLoadedMetadata={(event) => { event.currentTarget.currentTime = Math.max(0, previewElapsed - clip.start_sec); if (!previewPlaying) event.currentTarget.pause(); }}
-                      onTimeUpdate={(event) => { if (!previewPlaying) event.currentTarget.pause(); else { const expected = Math.max(0, previewElapsed - clip.start_sec); if (Math.abs(event.currentTarget.currentTime - expected) > 1) event.currentTarget.currentTime = expected; } }} />
+                  ? <video key={clip.id} className="editor-preview-overlay" src={mediaUrl(clip.path)} muted loop={!sourceWindow} autoPlay={previewPlaying} playsInline style={overlayStyle}
+                      onLoadedMetadata={(event) => { event.currentTarget.currentTime = expectedSourceTime; if (!previewPlaying) event.currentTarget.pause(); }}
+                      onTimeUpdate={(event) => { if (!previewPlaying) event.currentTarget.pause(); else if (sourceWindow > 0 && event.currentTarget.currentTime >= sourceLimit) event.currentTarget.currentTime = sourceStart; else if (Math.abs(event.currentTarget.currentTime - expectedSourceTime) > 1) event.currentTarget.currentTime = expectedSourceTime; }} />
                   : <img key={clip.id} className="editor-preview-overlay" src={mediaUrl(clip.path) + (clip.kind === "text" ? "?v=" + encodeURIComponent(clip.updated_at) : "")} alt={clip.title} style={overlayStyle} />;
               })}
-              {previewPlaying && overlays.filter((clip) => clip.kind === "audio" && previewElapsed >= clip.start_sec && previewElapsed < clip.start_sec + clip.duration_sec).map((clip) =>
-                <audio key={clip.id} hidden autoPlay loop src={mediaUrl(clip.path)}
-                  onLoadedMetadata={(event) => { event.currentTarget.volume = Math.max(0, Math.min(1, clip.volume ?? 1)); event.currentTarget.currentTime = Math.max(0, previewElapsed - clip.start_sec); }} />
-              )}
+              {previewPlaying && overlays.filter((clip) => clip.kind === "audio" && previewElapsed >= clip.start_sec && previewElapsed < clip.start_sec + clip.duration_sec).map((clip) => {
+                const sourceStart = clip.source_start_sec ?? 0;
+                const sourceLimit = (clip.source_end_sec ?? 0) > sourceStart ? clip.source_end_sec : (clip.source_duration_sec ?? 0) > sourceStart ? clip.source_duration_sec : 0;
+                const sourceWindow = sourceLimit > sourceStart ? sourceLimit - sourceStart : 0;
+                const clipElapsed = Math.max(0, previewElapsed - clip.start_sec);
+                const expectedSourceTime = sourceWindow > 0 ? sourceStart + (clipElapsed % sourceWindow) : sourceStart + clipElapsed;
+                return <audio key={clip.id} hidden autoPlay loop={!sourceWindow} src={mediaUrl(clip.path)}
+                  onLoadedMetadata={(event) => { event.currentTarget.volume = Math.max(0, Math.min(1, clip.volume ?? 1)); event.currentTarget.currentTime = expectedSourceTime; }}
+                  onTimeUpdate={(event) => { if (sourceWindow > 0 && event.currentTarget.currentTime >= sourceLimit) event.currentTarget.currentTime = sourceStart; else if (Math.abs(event.currentTarget.currentTime - expectedSourceTime) > 1) event.currentTarget.currentTime = expectedSourceTime; }} />;
+              })}
               {previewPlaying && previewScene?.audio_path && <audio key={"narration-" + previewScene.id} hidden autoPlay src={mediaUrl(previewScene.audio_path)}
                 onLoadedMetadata={(event) => { event.currentTarget.currentTime = previewSceneElapsed; }} />}
               {previewPlaying && previewScene?.sfx_path && previewSceneElapsed >= (previewScene.sfx_start_sec ?? 0) && <audio key={"sfx-" + previewScene.id} hidden autoPlay src={mediaUrl(previewScene.sfx_path)}
