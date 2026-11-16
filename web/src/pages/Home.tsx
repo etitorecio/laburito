@@ -15,6 +15,8 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
   const [projects, setProjects] = useState<Project[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [error, setError] = useState('');
+  const [prompt, setPrompt] = useState('');
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -53,6 +55,38 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
           <div className="showcase-card showcase-doc"><small>DOCUMENTAL · 16:9</small><span className="showcase-symbol">◈</span><strong>Secretos de la historia</strong><em>12:40</em></div>
           <div className="showcase-card showcase-series"><small>SERIE · EPISODIOS</small><span className="showcase-symbol">♡</span><strong>Frutinovela</strong><em>EP. 04</em></div>
         </div>
+      </section>
+
+      <section className="studio-section" aria-label="Crear video con una instrucción">
+        <div className="studio-section-head"><div><span className="studio-eyebrow">DECILO Y SE HACE</span><h3>¿Qué video querés que haga?</h3><p>Escribí una orden simple. Laburito prepara el guion y deja el render trabajando en segundo plano.</p></div></div>
+        <form className="studio-prompt-form" onSubmit={async (event) => {
+          event.preventDefault();
+          if (!prompt.trim() || creating) return;
+          setCreating(true); setError('');
+          try {
+            const result = await api.post<{ project_id: number; job_id: number; status: string }>('/api/create-from-prompt', { prompt: prompt.trim() });
+            setPrompt('');
+            go('editor', result.project_id);
+          } catch (e) {
+            setError((e as Error).message);
+          } finally {
+            setCreating(false);
+          }
+        }}>
+          <textarea
+            value={prompt}
+            onChange={(event) => setPrompt(event.target.value)}
+            rows={2}
+            maxLength={1000}
+            placeholder="Ej.: Haceme un short sobre la historia de Nirvana…"
+            aria-label="Describí el video que querés crear"
+            style={{ width: '100%', minHeight: 76, resize: 'vertical' }}
+          />
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+            <small className="muted">También entiende historias de terror, documentales y frutinovelas.</small>
+            <button className="studio-primary" type="submit" disabled={creating || !prompt.trim()}>{creating ? 'Preparando…' : 'Crear video →'}</button>
+          </div>
+        </form>
       </section>
 
       <section className="studio-stats">
