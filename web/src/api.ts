@@ -59,6 +59,22 @@ export interface Scene {
   updated_at: string;
 }
 
+export interface TimelineOverlay {
+  id: number;
+  project_id: number;
+  kind: 'image' | 'video';
+  path: string;
+  title: string;
+  start_sec: number;
+  duration_sec: number;
+  x: number;
+  y: number;
+  width: number;
+  opacity: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Source {
   id: number;
   project_id: number | null;
