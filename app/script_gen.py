@@ -1035,7 +1035,7 @@ def rewrite_with_ollama(url: str, model: str, project: dict, script: dict, notes
             for note in source_notes
         )
     )
-    raw = expand_with_ollama(url, model, prompt, timeout=timeout, num_predict=4096 if is_longform else 2048)
+    raw = expand_with_ollama(url, model, prompt, timeout=timeout, num_predict=6144 if is_longform else 2048)
     cleaned = raw.strip()
     if cleaned.startswith(chr(96) * 3):
         cleaned = re.sub(r"^\x60{3}(?:json)?\s*|\s*\x60{3}$", "", cleaned, flags=re.IGNORECASE)
