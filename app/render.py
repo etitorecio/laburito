@@ -1056,7 +1056,7 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
         "thumbnail_generated": bool(Path(thumb).exists()),
         "music": bool(music),
         "timeline_layers": {
-            "visual": sum(1 for clip in overlay_clips if clip.get("kind") in {"image", "video"}),
+            "visual": sum(1 for clip in overlay_clips if clip.get("kind") in {"image", "video", "text"}),
             "audio": sum(1 for clip in overlay_clips if clip.get("kind") == "audio"),
         },
         "warnings": warnings,
