@@ -20,8 +20,8 @@ export default function Library() {
   }, []);
 
   const filtered = assets.filter((a) => !filter || a.kind.includes(filter));
-  const images = filtered.filter((a) => ['imagen', 'miniatura'].includes(a.kind));
-  const files = filtered.filter((a) => !['imagen', 'miniatura'].includes(a.kind));
+  const images = filtered.filter((a) => ['imagen', 'miniatura', 'thumbnail'].includes(a.kind));
+  const files = filtered.filter((a) => !['imagen', 'miniatura', 'thumbnail'].includes(a.kind));
 
   return (
     <div className="stack">
