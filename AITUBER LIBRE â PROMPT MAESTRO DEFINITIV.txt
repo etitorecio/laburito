@@ -449,3 +449,43 @@ Prioridades:
 8. Escalabilidad futura.
 
 NO ME VENDAS HUMO. CONSTRUÍ, EJECUTÁ, COMPROBÁ, CORREGÍ Y DOCUMENTÁ.
+
+---
+
+ANEXO DE PRODUCTO — PARIDAD FUNCIONAL Y AUTOMATIZACIÓN REAL (2026-11-16)
+
+Este anexo amplía y precisa el objetivo; no reemplaza ni reduce ningún requisito anterior.
+
+DOS MODOS OBLIGATORIOS E INDEPENDIENTES
+
+A. CREACIÓN POR ORDEN NATURAL (“DECILO Y SE HACE”)
+- El usuario debe poder escribir una instrucción breve y cotidiana, por ejemplo “haceme un short sobre X”, “haceme una historia de terror” o “haceme una frutinovela”.
+- Sin abrir un asistente de ocho pasos, Laburito debe interpretar el formato y el tema, asignar el canal apropiado o permitir elegirlo, investigar cuando corresponda, escribir el guion, crear escenas, voz, visuales, subtítulos, música/sonido permitido, renderizar, validar y dejar el video en la cola/biblioteca.
+- El cliente no debe fingir que el render terminó: mostrar el proyecto y el estado real de la tarea, progreso, logs, fallos, reintentos y acceso a regeneración/edición.
+- Una orden con un formato explícito (“short”, “documental”, “frutinovela”) tiene prioridad sobre palabras ambiguas del tema (“la historia de…” no convierte un short en un relato).
+- El trabajo audiovisual pesado se procesa en el worker persistente; la interfaz móvil puede cerrarse sin cancelar el trabajo.
+
+B. PILOTO AUTOMÁTICO CONTINUO
+- El usuario configura una vez un canal/regla: nicho o tema, formato, frecuencia, estilo, voz y límites editoriales. Luego puede dejarlo activado; no debe pedir un tema ni una orden nueva para cada video.
+- El sistema descubre temas nuevos y no repetidos, selecciona ideas dentro del nicho, registra fuentes y señales, produce el proyecto completo y lo agrega a la cola/biblioteca según la frecuencia.
+- Cada canal/regla mantiene configuración e historial independientes. Historias y Frutinovelas deben seguir siendo fábricas internas con continuidad de personajes/episodios.
+- El worker y el scheduler deben ser persistentes, recuperar trabajos tras reinicio, limitar concurrencia para hardware modesto, reintentar fallos transitorios y exponer su estado real.
+- En instalación local gratuita, el proceso trabaja mientras la PC está encendida y Laburito/Docker permanece activo. En AppJet/cloud, el scheduler externo requiere la URL real del despliegue y almacenamiento persistente; nunca apuntar silenciosamente a una URL de preview.
+- Activar una regla significa producción automática. Nunca significa autorización para publicar externamente.
+
+SEGURIDAD DE PUBLICACIÓN
+- La producción, render, exportación y entrega local pueden automatizarse.
+- Cada publicación externa, especialmente YouTube, requiere aprobación explícita por video inmediatamente antes de subirlo. Bloquear autopublicación en UI, API, reglas antiguas, worker y tareas programadas.
+- No conectar cuentas, usar credenciales, desplegar ni publicar contenido real sin autorización del usuario.
+
+PARIDAD AITUBER.APP
+- Mantener una matriz viva por función con estado implementada/parcial/ausente/bloqueada y evidencia verificable.
+- Auditar: creación desde idea/guion, formatos y plantillas, canales, autopilot, calendario, voces y clonación, modos visuales (imágenes IA, video IA, stock, fondo, avatares/personajes), música, subtítulos sincronizados, edición y regeneración por escena, transiciones, miniaturas/SEO, render/calidad/exportación, biblioteca, cola, analítica, publicación multired, API/MCP y colaboración.
+- No confundir paridad de interfaz con paridad del motor. AITuber ofrece funciones dependientes de modelos/servicios y créditos comerciales. La versión de cero pesos debe implementar la mejor alternativa libre/local viable y documentar claramente toda diferencia de calidad, variedad, idiomas, velocidad, resolución o integración. No afirmar equivalencia donde no existe.
+- No introducir cuotas comerciales, suscripciones, pruebas que cobren ni dependencias pagas. Servicios externos gratuitos deben ser opcionales y con límites/costes transparentes.
+
+VALIDACIÓN DE PRODUCTO
+- Probar ambas rutas: orden natural → proyecto/guion/escenas → render MP4 → validación → biblioteca/cola; y piloto activado → descubrimiento de tema → producción programada → render → entrega local.
+- Probar reinicio durante espera y durante render, reanudación, aislamiento de canales, prevención de temas duplicados y bloqueo de autopublicación.
+- La evidencia de CI debe corresponder al último commit probado. Leer los logs de cualquier fallo y repetir tras corregirlo.
+- No declarar finalizado por una compilación aislada ni por la existencia de endpoints sin una prueba de extremo a extremo.
