@@ -2924,3 +2924,5 @@ th {
   box-shadow: 0 5px 18px rgba(0,0,0,.35);
   pointer-events: none;
 }
+
+.editor-overlay-clip.audio { background: linear-gradient(135deg, #6b4c1d, #8a5725); border-color: rgba(255,190,90,.55); }
