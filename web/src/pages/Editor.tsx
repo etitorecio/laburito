@@ -159,6 +159,7 @@ export default function Editor({ projectId, go }: Props) {
   const timer = useRef<number | null>(null);
   const overlayPointerDragRef = useRef<{ id: number; offsetX: number; pointerId: number } | null>(null);
   const scenePointerDragRef = useRef<{ id: number; pointerId: number } | null>(null);
+  const sceneSuppressClickRef = useRef(false);
 
   useEffect(() => { setSplitCursor(0); }, [selectedSceneId]);
 
@@ -1281,7 +1282,7 @@ export default function Editor({ projectId, go }: Props) {
                       const width = seconds * timelineScale;
                       return <button type="button" key={scene.id}
                         className={"editor-track-clip " + track.id + (previewScene?.id === scene.id ? " active" : "") + (draggedSceneId === scene.id ? " dragging" : "")}
-                        style={{ flex: "0 0 " + width + "px", width }}
+                        style={{ flex: "0 0 " + width + "px", width, touchAction: track.id === "visual" ? "none" : "pan-x" }}
                         draggable={false}
                         data-scene-clip={track.id === "visual" ? "true" : undefined}
                         data-scene-id={track.id === "visual" ? scene.id : undefined}
@@ -1296,12 +1297,12 @@ export default function Editor({ projectId, go }: Props) {
                           if (track.id !== "visual" || !drag || drag.id !== scene.id || drag.pointerId !== event.pointerId) return;
                           const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-scene-clip='true']");
                           const targetId = Number(target?.dataset.sceneId || 0);
-                          if (targetId && targetId !== scene.id) void reorderScene(scene.id, targetId);
+                          if (targetId && targetId !== scene.id) { sceneSuppressClickRef.current = true; void reorderScene(scene.id, targetId); }
                           scenePointerDragRef.current = null;
                           setDraggedSceneId(null);
                         }}
                         onPointerCancel={() => { if (scenePointerDragRef.current?.id === scene.id) { scenePointerDragRef.current = null; setDraggedSceneId(null); } }}
-                        onClick={() => { setSelectedSceneId(scene.id); setPreviewPlaying(false); setPreviewElapsed(timelineStarts[index]); }}
+                        onClick={() => { if (sceneSuppressClickRef.current) { sceneSuppressClickRef.current = false; return; } setSelectedSceneId(scene.id); setPreviewPlaying(false); setPreviewElapsed(timelineStarts[index]); }}
                         title={scene.title + " · " + fmtDuration(seconds) + " · inicio " + fmtDuration(timelineStarts[index])}>
                         {track.id === "visual" ? <>{scene.visual_path && (/\.(mp4|mov|webm|mkv)$/i.test(scene.visual_path) ? <video src={mediaUrl(scene.visual_path)} muted playsInline preload="metadata" /> : <img src={mediaUrl(scene.visual_path)} alt="" />)}<span>{index + 1}. {scene.title}</span></>
                           : track.id === "voice" ? <span>▰ Voz {index + 1} · {fmtDuration(seconds)}</span>
