@@ -288,9 +288,9 @@ VIDEO_TYPES = [
     {"id": "moving_images", "label": "Imágenes con movimiento", "description": "Fotos de archivo con paneo y zoom, procesadas localmente.", "available": True},
     {"id": "full_motion_ai", "label": "Video IA de movimiento completo", "description": "Generación de clips IA; no hay un modelo local viable para este equipo todavía.", "available": False},
     {"id": "skeleton", "label": "Esqueleto animado", "description": "Skeleton Video 2.5D generado localmente; sin IA ni créditos.", "available": True},
-    {"id": "stock_footage", "label": "Videos de archivo", "description": "Cinco clips reales de archivo propios o autorizados, alternados automáticamente.", "available": False},
-    {"id": "minecraft", "label": "Gameplay de Minecraft", "description": "Biblioteca de clips propios o autorizados; requiere al menos uno y permite hasta cinco en rotación.", "available": False},
-    {"id": "subway", "label": "Gameplay de Subway Surfers", "description": "Biblioteca de clips propios o autorizados; requiere al menos uno y permite hasta cinco en rotación.", "available": False},
+    {"id": "stock_footage", "label": "Videos de archivo", "description": "Cinco clips reales de archivo propios o autorizados, alternados automáticamente.", "available": True},
+    {"id": "minecraft", "label": "Gameplay de Minecraft", "description": "Biblioteca de clips propios o autorizados; requiere al menos uno y permite hasta cinco en rotación.", "available": True},
+    {"id": "subway", "label": "Gameplay de Subway Surfers", "description": "Biblioteca de clips propios o autorizados; requiere al menos uno y permite hasta cinco en rotación.", "available": True},
 ]
 VIDEO_TYPE_IDS = {item["id"] for item in VIDEO_TYPES}
 VIDEO_CLIP_MINIMUMS = {"stock_footage": 5, "minecraft": 1, "subway": 1}
