@@ -1933,7 +1933,8 @@ def delete_timeline_overlay(overlay_id: int):
         "SELECT COUNT(*) FROM assets WHERE path=? AND project_id<>?",
         (overlay.get("path") or "", overlay["project_id"]), 0,
     )
-    if not shared_overlays and not shared_assets and path.is_file() and str(path).startswith(str(db.DATA_DIR)):
+    overlay_root = db.MEDIA_DIR / "overlays"
+    if not shared_overlays and not shared_assets and path.is_file() and str(path).startswith(str(overlay_root)):
         path.unlink(missing_ok=True)
     db.execute("DELETE FROM assets WHERE project_id=? AND path=?", (overlay["project_id"], overlay.get("path") or ""))
     db.execute("DELETE FROM timeline_overlays WHERE id=?", (overlay_id,))
