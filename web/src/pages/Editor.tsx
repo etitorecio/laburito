@@ -368,6 +368,21 @@ export default function Editor({ projectId, go }: Props) {
     }
   }
 
+  async function uploadSceneImage(scene: Scene, file: File) {
+    setBusy(`upload-visual-${scene.id}`);
+    setError('');
+    setOk('');
+    try {
+      await api.upload(`/api/scenes/${scene.id}/image`, file);
+      setOk('Imagen asignada a la escena. Se guardó como recurso local.');
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy('');
+    }
+  }
+
   async function applyVisual(scene: Scene, item: MediaResult) {
     setBusy(`visual-${scene.id}`);
     try {
@@ -820,6 +835,13 @@ export default function Editor({ projectId, go }: Props) {
                   </div>
                   <div className="row gap-8">
                     <button className="btn small ghost" onClick={() => searchVisual(scene)}>Buscar imagen con licencia</button>
+                    <Field label="Subir imagen propia o autorizada">
+                      <input type="file" accept="image/jpeg,image/png,image/webp" disabled={!!busy} onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) void uploadSceneImage(scene, file);
+                        e.target.value = '';
+                      }} />
+                    </Field>
                     {scene.visual_path ? (
                       <Badge tone="ok">imagen propia: {scene.visual_kind === 'recurso' ? 'recurso externo' : 'tarjeta generada'}</Badge>
                     ) : (
