@@ -118,7 +118,7 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
       <section className="studio-section">
         <div className="studio-section-head"><div><span className="studio-eyebrow">EMPEZÁ A PRODUCIR</span><h3>¿Qué querés hacer hoy?</h3></div></div>
         <div className="studio-quick-grid">
-          {QUICK.map((item) => <button className={'studio-quick '+item.tone} key={item.title} onClick={() => go(item.route)}><span className="quick-icon">{item.icon}</span><span><strong>{item.title}</strong><small>{item.desc}</small></span><b>↗</b></button>)}
+          {QUICK.map((item) => <button className={'studio-quick '+item.tone} key={item.title} onClick={() => item.title === 'Crear un video' ? promptRef.current?.focus() : go(item.route)}><span className="quick-icon">{item.icon}</span><span><strong>{item.title}</strong><small>{item.desc}</small></span><b>↗</b></button>)}
         </div>
       </section>
 
