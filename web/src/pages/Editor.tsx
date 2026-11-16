@@ -417,6 +417,17 @@ export default function Editor({ projectId, go }: Props) {
   const thumbnailEnabled = thumbnailEnabledFromNotes(project.notes || '');
   const warnings = Array.isArray(quality.warnings) ? (quality.warnings as string[]) : [];
   const totalChars = scenes.reduce((acc, s) => acc + (s.narration || '').length, 0);
+  // La línea de tiempo usa una escala temporal común para todas las pistas.
+  const sceneDurations = scenes.map((scene) =>
+    Math.max(2, (scene.narration || '').trim().split(/\\s+/).filter(Boolean).length / 2.4),
+  );
+  const timelineScale = 18;
+  const timelineStarts = sceneDurations.map((_, index) =>
+    sceneDurations.slice(0, index).reduce((sum, duration) => sum + duration, 0),
+  );
+  const timelineDuration = sceneDurations.reduce((sum, duration) => sum + duration, 0);
+  const timelineWidth = Math.max(240, timelineDuration * timelineScale);
+  const rulerStep = timelineDuration > 180 ? 30 : timelineDuration > 90 ? 15 : 5;
 
   return (
     <div className="stack">
@@ -733,45 +744,59 @@ export default function Editor({ projectId, go }: Props) {
               </div>
             </div>}
           </Card>
-          <Card title="Línea de tiempo" sub="Arrastrá los clips de video para cambiar el orden. Seleccioná cualquier bloque para editarlo.">
-            {scenes.length === 0 ? <Empty>Generá un guion o agregá una escena para empezar.</Empty> : <div className="editor-multitrack">
-              {[
-                { id: "visual", label: "VIDEO" },
-                { id: "voice", label: "VOZ" },
-                { id: "captions", label: "SUBTÍTULOS" },
-              ].map((track) => <div className="editor-track" key={track.id}>
-                <div className="editor-track-label">{track.label}</div>
-                <div className="editor-track-lane">
-                  {scenes.map((scene, index) => {
-                    const wordsInScene = (scene.narration || "").trim().split(/\s+/).filter(Boolean).length;
-                    const seconds = Math.max(2, wordsInScene / 2.4);
-                    const width = Math.max(120, seconds * 2.2);
-                    return <button type="button" key={scene.id}
-                      className={"editor-track-clip " + track.id + (activeScene?.id === scene.id ? " active" : "") + (draggedSceneId === scene.id ? " dragging" : "")}
-                      style={{ flex: "0 0 " + width + "px" }}
-                      draggable={track.id === "visual"}
-                      onDragStart={() => setDraggedSceneId(scene.id)}
-                      onDragOver={(event) => event.preventDefault()}
-                      onDrop={(event) => { event.preventDefault(); if (draggedSceneId !== null) void reorderScene(draggedSceneId, scene.id); }}
-                      onDragEnd={() => setDraggedSceneId(null)}
-                      onClick={() => setSelectedSceneId(scene.id)}
-                      title={scene.title + " · aprox. " + Math.round(seconds) + " s"}>
-                      {track.id === "visual" ? <>{scene.visual_path && (/\.(mp4|mov|webm|mkv)$/i.test(scene.visual_path) ? <video src={mediaUrl(scene.visual_path)} muted playsInline preload="metadata" /> : <img src={mediaUrl(scene.visual_path)} alt="" />)}<span>{index + 1}. {scene.title}</span></>
-                        : track.id === "voice" ? <span>▰ Voz {index + 1} · {Math.round(seconds)}s</span>
-                        : <span>{captionsEnabled ? "▤ Texto " + (index + 1) : "Subtítulos desactivados"}</span>}
-                    </button>;
-                  })}
+          <Card title="Línea de tiempo" sub="Pistas sincronizadas por duración estimada. Arrastrá los clips de video para reordenar; tocá cualquier bloque para editar esa escena.">
+            {scenes.length === 0 ? <Empty>Generá un guion o agregá una escena para empezar.</Empty> : <div className="editor-timeline-shell">
+              <div className="editor-ruler-row">
+                <div className="editor-track-label">TIEMPO</div>
+                <div className="editor-ruler" style={{ width: timelineWidth }}>
+                  {Array.from({ length: Math.floor(timelineDuration / rulerStep) + 1 }, (_, tick) => tick * rulerStep).map((second) => (
+                    <span className="editor-ruler-tick" key={second} style={{ left: second * timelineScale }}>
+                      <i />{fmtDuration(second)}
+                    </span>
+                  ))}
+                  <span className="editor-ruler-end">{fmtDuration(timelineDuration)}</span>
                 </div>
-              </div>)}
-              <div className="editor-track">
-                <div className="editor-track-label">MÚSICA</div>
-                <div className="editor-track-lane"><div className={"editor-music-clip " + (project.music === "ninguna" ? "muted" : "")}>
-                  <span>♫ {project.music === "ninguna" ? "Sin música" : project.music === "auto" ? "Pista automática" : project.music}</span>
-                  <small>{Math.round((project.music_volume ?? 0.12) * 100)}% volumen</small>
-                </div></div>
+              </div>
+              <div className="editor-multitrack">
+                {[
+                  { id: "visual", label: "VIDEO" },
+                  { id: "voice", label: "VOZ" },
+                  { id: "captions", label: "SUBTÍTULOS" },
+                ].map((track) => <div className="editor-track" key={track.id}>
+                  <div className="editor-track-label">{track.label}</div>
+                  <div className="editor-track-lane" style={{ width: timelineWidth }}>
+                    {scenes.map((scene, index) => {
+                      const seconds = sceneDurations[index];
+                      const width = seconds * timelineScale;
+                      return <button type="button" key={scene.id}
+                        className={"editor-track-clip " + track.id + (activeScene?.id === scene.id ? " active" : "") + (draggedSceneId === scene.id ? " dragging" : "")}
+                        style={{ flex: "0 0 " + width + "px", width }}
+                        draggable={track.id === "visual"}
+                        onDragStart={() => setDraggedSceneId(scene.id)}
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={(event) => { event.preventDefault(); if (draggedSceneId !== null) void reorderScene(draggedSceneId, scene.id); }}
+                        onDragEnd={() => setDraggedSceneId(null)}
+                        onClick={() => setSelectedSceneId(scene.id)}
+                        title={scene.title + " · " + fmtDuration(seconds) + " · inicio " + fmtDuration(timelineStarts[index])}>
+                        {track.id === "visual" ? <>{scene.visual_path && (/\.(mp4|mov|webm|mkv)$/i.test(scene.visual_path) ? <video src={mediaUrl(scene.visual_path)} muted playsInline preload="metadata" /> : <img src={mediaUrl(scene.visual_path)} alt="" />)}<span>{index + 1}. {scene.title}</span></>
+                          : track.id === "voice" ? <span>▰ Voz {index + 1} · {fmtDuration(seconds)}</span>
+                          : <span>{captionsEnabled ? "▤ Texto " + (index + 1) : "Subtítulos desactivados"}</span>}
+                      </button>;
+                    })}
+                  </div>
+                </div>)}
+                <div className="editor-track">
+                  <div className="editor-track-label">MÚSICA</div>
+                  <div className="editor-track-lane" style={{ width: timelineWidth }}>
+                    <div className={"editor-music-clip " + (project.music === "ninguna" ? "muted" : "")} style={{ width: timelineWidth, flex: "0 0 " + timelineWidth + "px" }}>
+                      <span>♫ {project.music === "ninguna" ? "Sin música" : project.music === "auto" ? "Pista automática" : project.music}</span>
+                      <small>{Math.round((project.music_volume ?? 0.12) * 100)}% volumen · {fmtDuration(timelineDuration)}</small>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>}
-            <div className="editor-timeline-footer"><span>{scenes.length} clips</span><span>{fmtDuration(totalChars / 14)} de narración estimada</span><button className="btn small" onClick={addScene} disabled={!!busy}>＋ Agregar escena</button></div>
+            <div className="editor-timeline-footer"><span>{scenes.length} clips · {fmtDuration(timelineDuration)} totales estimados</span><span>Escena activa: {activeSceneIndex >= 0 ? activeSceneIndex + 1 : "—"}</span><button className="btn small" onClick={addScene} disabled={!!busy}>＋ Agregar escena</button></div>
           </Card>
         </div>
         <aside className="editor-inspector">
