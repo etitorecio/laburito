@@ -88,7 +88,7 @@ class TimelineOverlayUploadTests(unittest.TestCase):
             result = create_timeline_text_overlay(
                 3, TimelineOverlayTextIn(text="Texto de prueba", start_sec=2, duration_sec=5)
             )
-            image_path = Path(result["path"])
+            image_path = Path(execute.call_args_list[0].args[1][2])
             exists = image_path.is_file()
             image_size = image_path.stat().st_size if exists else 0
 
