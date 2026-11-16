@@ -38,7 +38,7 @@ class DocumentaryScriptTests(unittest.TestCase):
         self.assertEqual(len(result["scenes"]), 10)
         args, kwargs = expand.call_args
         self.assertIn("DOCUMENTAL HORIZONTAL DE FORMATO LARGO", args[2])
-        self.assertIn("1200 segundos", args[2]) if False else None
+        self.assertIn("Duración total objetivo: 600 segundos", args[2])
         self.assertEqual(kwargs["timeout"], 900)
         self.assertEqual(kwargs["num_predict"], 4096)
 
