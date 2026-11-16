@@ -267,7 +267,7 @@ def research_specific_topic(topic: str) -> dict:
         "source_url": url, "methodology": "Extracto introductorio de Wikipedia; contrastar con fuentes independientes.",
     }]
     notes.extend({
-        "niche": topic, "claim": item["abstract"], "evidence_level": "resumen académico",
+        "niche": topic, "title": item["title"], "claim": item["abstract"], "evidence_level": "resumen académico",
         "source_url": item["url"],
         "methodology": "Resumen bibliográfico OpenAlex; no sustituye la lectura del estudio original.",
     } for item in academic)
