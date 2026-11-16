@@ -1030,6 +1030,53 @@ def regenerate(scene_id: int, variant: int = 0):
     return {"ok": True, "note": result["note"], "scene": db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))}
 
 
+@app.post("/api/scenes/{scene_id}/image", status_code=201)
+async def upload_scene_image(scene_id: int, file: UploadFile = File(...)):
+    """Permite asignar una imagen propia/autorizada a una escena concreta."""
+    scene = db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))
+    if not scene:
+        raise HTTPException(404, "Escena inexistente")
+    content_type = (file.content_type or "").lower()
+    extension = Path(file.filename or "").suffix.lower()
+    if content_type not in {"image/jpeg", "image/png", "image/webp"} and extension not in {".jpg", ".jpeg", ".png", ".webp"}:
+        raise HTTPException(400, "Subí una imagen JPG, PNG o WebP.")
+    raw = await file.read(12 * 1024 * 1024 + 1)
+    if not raw:
+        raise HTTPException(400, "La imagen está vacía.")
+    if len(raw) > 12 * 1024 * 1024:
+        raise HTTPException(413, "La imagen no puede superar 12 MB.")
+    try:
+        with Image.open(io.BytesIO(raw)) as source:
+            if source.width * source.height > 40_000_000:
+                raise HTTPException(413, "La imagen supera los 40 megapíxeles.")
+            image = source.convert("RGB")
+            image.thumbnail((3840, 3840), Image.Resampling.LANCZOS)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(400, "El archivo no es una imagen válida.") from exc
+
+    project_id = int(scene["project_id"])
+    folder = db.MEDIA_DIR / "uploads" / str(project_id)
+    folder.mkdir(parents=True, exist_ok=True)
+    target = folder / f"scene-{scene_id}-{time.time_ns()}.jpg"
+    image.save(target, format="JPEG", quality=92, optimize=True)
+    license_label = "Imagen propia/autorizada por el usuario"
+    db.execute(
+        "UPDATE scenes SET visual_path=?, visual_kind='recurso', visual_license=?, visual_author='Usuario', "
+        "visual_url='archivo local subido', updated_at=? WHERE id=?",
+        (str(target), license_label, db.now(), scene_id),
+    )
+    db.execute(
+        "INSERT INTO assets(project_id,scene_id,kind,path,label,license,author,url,bytes,created_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?)",
+        (project_id, scene_id, "imagen", str(target), Path(file.filename or "Imagen propia").name,
+         license_label, "Usuario", "", target.stat().st_size, db.now()),
+    )
+    _touch_project(project_id)
+    return {"ok": True, "scene": db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))}
+
+
 @app.post("/api/scenes/{scene_id}/visual")
 def set_scene_visual(scene_id: int, payload: VisualIn):
     scene = db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))
