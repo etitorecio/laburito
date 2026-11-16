@@ -126,6 +126,7 @@ export default function Editor({ projectId, go }: Props) {
   const [overlayTextDraft, setOverlayTextDraft] = useState("");
   const [voiceDraft, setVoiceDraft] = useState("");
   const [voiceOverlayVoice, setVoiceOverlayVoice] = useState("");
+  const [musicBedId, setMusicBedId] = useState("ambiente");
   const [draggedSceneId, setDraggedSceneId] = useState<number | null>(null);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [previewElapsed, setPreviewElapsed] = useState(0);
@@ -488,6 +489,28 @@ export default function Editor({ projectId, go }: Props) {
     const seconds = Math.max(0, (event.clientX - rect.left) / timelineScale);
     void patchTimelineOverlay(clip, { start_sec: seconds });
     setDraggedOverlayId(null);
+  }
+
+  async function createTimelineMusicOverlay() {
+    setBusy("create-music-overlay");
+    setError("");
+    setOk("");
+    try {
+      const duration = Math.max(5, Math.min(3600, timelineDuration - previewElapsed || 45));
+      const clip = await api.post<TimelineOverlay>(`/api/projects/${projectId}/timeline-overlays/music`, {
+        bed_id: musicBedId,
+        start_sec: previewElapsed,
+        duration_sec: duration,
+        volume: 0.35,
+      });
+      await load();
+      setSelectedOverlayId(clip.id);
+      setOk("Música local generada y añadida a la pista de audio.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy("");
+    }
   }
 
   async function createTimelineVoiceOverlay() {
@@ -1254,6 +1277,12 @@ export default function Editor({ projectId, go }: Props) {
             <Field label="Texto de la voz"><textarea rows={4} maxLength={12000} value={voiceDraft} onChange={(e) => setVoiceDraft(e.target.value)} placeholder="Escribí lo que querés que diga la voz…" /></Field>
             <Field label="Voz para este clip"><VoicePicker options={voices} value={voiceOverlayVoice || project?.voice || "es"} onChange={setVoiceOverlayVoice} compact speed={project?.speed ?? 150} pitch={project?.pitch ?? 45} /></Field>
             <button className="btn small primary" onClick={() => void createTimelineVoiceOverlay()} disabled={!voiceDraft.trim() || !!busy}>{busy === "create-voice-overlay" ? "Generando voz…" : "＋ Generar y añadir voz"}</button>
+          </Card>
+          <Card title="Generar música" sub="Camas musicales locales, sin créditos ni servicios pagos. Se añaden como clips independientes.">
+            <Field label="Estilo musical"><select value={musicBedId} onChange={(e) => setMusicBedId(e.target.value)}>
+              {(meta?.music_beds ?? []).map((bed) => <option key={bed.id} value={bed.id}>{bed.label}</option>)}
+            </select></Field>
+            <button className="btn small primary" onClick={() => void createTimelineMusicOverlay()} disabled={!!busy}>{busy === "create-music-overlay" ? "Generando música…" : "＋ Generar y añadir música"}</button>
           </Card>
         </aside>
       </section>
