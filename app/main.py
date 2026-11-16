@@ -152,6 +152,12 @@ class ScenePatch(BaseModel):
     visual_query: str | None = None
     transition: str | None = None
 
+class SceneIn(BaseModel):
+    title: str = "Nueva escena"
+    narration: str = ""
+    visual_query: str = ""
+    transition: str = "corte"
+
 
 class NicheIn(BaseModel):
     name: str
@@ -952,6 +958,25 @@ def generate_script(project_id: int, replace: bool = True):
     _touch_project(project_id)
     db.log("info", "script", f"Guion generado para proyecto {project_id}", {"scenes": len(script["scenes"])})
     return {"ok": True, "warnings": script["warnings"], "project": _project_full(project_id)}
+
+
+@app.post("/api/projects/{project_id}/scenes", status_code=201)
+def create_scene(project_id: int, payload: SceneIn):
+    project = db.query_one("SELECT id FROM projects WHERE id=?", (project_id,))
+    if not project:
+        raise HTTPException(404, "Proyecto inexistente")
+    next_idx = int(db.scalar(
+        "SELECT COALESCE(MAX(idx), -1) + 1 FROM scenes WHERE project_id=?",
+        (project_id,), 0,
+    ))
+    scene_id = db.execute(
+        "INSERT INTO scenes(project_id,idx,title,narration,visual_query,transition,status,created_at,updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?)",
+        (project_id, next_idx, payload.title.strip() or f"Escena {next_idx + 1}",
+         payload.narration, payload.visual_query, payload.transition, "borrador", db.now(), db.now()),
+    )
+    _touch_project(project_id)
+    return db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))
 
 
 @app.patch("/api/scenes/{scene_id}")
