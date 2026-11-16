@@ -6,7 +6,7 @@ from unittest.mock import patch
 from fastapi import HTTPException
 
 from app import db
-from app.main import SceneSplitIn, split_scene
+from app.main import SceneSplitIn, duplicate_scene, split_scene
 
 
 class SceneSplitTests(unittest.TestCase):
@@ -28,6 +28,39 @@ class SceneSplitTests(unittest.TestCase):
             (project_id, 0, "Escena original", narration, "Tema", "/tmp/visual.jpg", "fundido", "renderizada", stamp, stamp),
         )
         return project_id, scene_id, narration
+
+    def test_duplicate_preserves_scene_visual_sound_and_assets(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            with patch.multiple(
+                "app.db",
+                DB_PATH=root / "app.sqlite3",
+                DATA_DIR=root,
+                MEDIA_DIR=root / "media",
+                RENDER_DIR=root / "renders",
+                EXPORT_DIR=root / "exports",
+                MUSIC_DIR=root / "music",
+                TMP_DIR=root / "tmp",
+            ):
+                project_id, scene_id, narration = self.make_database(root)
+                db.execute(
+                    "UPDATE scenes SET visual_path=?, visual_kind=?, sfx_path=?, sfx_volume=?, sfx_start_sec=? WHERE id=?",
+                    ("/tmp/clip.mp4", "video_fondo", "/tmp/effect.wav", 0.7, 1.2, scene_id),
+                )
+                db.execute(
+                    "INSERT INTO assets(project_id,scene_id,kind,path,label,license,author,url,bytes,created_at) "
+                    "VALUES(?,?,?,?,?,?,?,?,?,?)",
+                    (project_id, scene_id, "video", "/tmp/clip.mp4", "Clip", "Usuario", "Usuario", "", 123, db.now()),
+                )
+                created = duplicate_scene(scene_id)
+                self.assertEqual(created["narration"], narration)
+                self.assertEqual(created["visual_path"], "/tmp/clip.mp4")
+                self.assertEqual(created["sfx_path"], "/tmp/effect.wav")
+                self.assertEqual(created["sfx_volume"], 0.7)
+                self.assertEqual(created["audio_path"], "")
+                assets = db.query("SELECT * FROM assets WHERE scene_id=?", (created["id"],))
+                self.assertEqual(len(assets), 1)
+                self.assertEqual(assets[0]["path"], "/tmp/clip.mp4")
 
     def test_split_creates_two_ordered_editable_scenes(self):
         with tempfile.TemporaryDirectory() as temp:
