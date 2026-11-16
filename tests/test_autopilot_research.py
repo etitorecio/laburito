@@ -357,6 +357,7 @@ class AutopilotResearchTests(unittest.TestCase):
                     with patch("app.worker.enqueue", return_value=89):
                         with patch.object(autopilot.db, "execute") as execute:
                             with patch.object(autopilot.db, "now", return_value="now"):
+                            with patch.object(autopilot.db, "log"):
                                 result = autopilot.run_rule(10)
         set_publish.assert_not_called()
         self.assertEqual(result["publish_warning"], "YouTube requiere aprobación manual; se desactivó la autopublicación de esta regla.")
