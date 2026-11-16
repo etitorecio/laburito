@@ -8,7 +8,6 @@ from app.main import (
     ProjectPatch,
     ScenePatch,
     get_editor_history,
-    patch_project,
     record_editor_history,
     redo_editor_history,
     undo_editor_history,
