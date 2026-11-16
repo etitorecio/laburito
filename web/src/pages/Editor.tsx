@@ -492,8 +492,14 @@ export default function Editor({ projectId, go }: Props) {
   );
   const timelineDuration = sceneDurations.reduce((sum, duration) => sum + duration, 0);
   const timelineWidth = Math.max(240, timelineDuration * timelineScale);
-  const previewSceneIndex = Math.max(0, timelineStarts.findIndex((start, index) => previewElapsed >= start && previewElapsed < start + sceneDurations[index]));
+  const rawPreviewSceneIndex = timelineStarts.findIndex((start, index) => previewElapsed >= start && previewElapsed < start + sceneDurations[index]);
+  const previewSceneIndex = rawPreviewSceneIndex >= 0 ? rawPreviewSceneIndex : Math.max(0, scenes.length - 1);
   const previewScene = scenes[previewSceneIndex] ?? activeScene;
+  const previewWords = (previewScene?.narration || '').trim().split(/\\s+/).filter(Boolean);
+  const previewSceneElapsed = Math.max(0, previewElapsed - (timelineStarts[previewSceneIndex] || 0));
+  const previewWordIndex = Math.min(Math.max(0, previewWords.length - 1), Math.floor((previewSceneElapsed / Math.max(0.1, sceneDurations[previewSceneIndex] || 1)) * previewWords.length));
+  const previewCaptionStart = Math.max(0, previewWordIndex - 2);
+  const previewCaptionWords = previewWords.slice(previewCaptionStart, previewCaptionStart + 5);
   const rulerStep = timelineDuration > 180 ? 30 : timelineDuration > 90 ? 15 : 5;
 
   return (
@@ -802,7 +808,7 @@ export default function Editor({ projectId, go }: Props) {
                 ? <video src={mediaUrl(previewScene.visual_path)} controls muted playsInline preload="metadata" />
                 : <img src={mediaUrl(previewScene.visual_path)} alt={previewScene.title} />)
                 : <div className="editor-preview-empty"><span>✦</span><strong>Tu escena está lista para ilustrar</strong><small>Buscá un recurso con licencia o subí tu propio material.</small></div>}
-              {captionsEnabled && previewScene?.narration?.trim() && <div className="editor-preview-caption">{previewScene.narration.trim().split(/\\s+/).slice(0, 12).join(" ")}</div>}
+              {captionsEnabled && previewCaptionWords.length > 0 && <div className="editor-preview-caption">{previewCaptionWords.map((word, index) => <span key={previewCaptionStart + index} className={previewCaptionStart + index === previewWordIndex ? "current-word" : ""}>{word} </span>)}</div>}
             </div>
             {activeScene && <div className="editor-preview-controls">
               <div className="editor-transport">
