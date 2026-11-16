@@ -184,7 +184,7 @@ def ensure_visual(project: dict, scene: dict) -> tuple[Path, str, dict]:
             "title": f"Esqueleto animado · {action}",
             "provider": "skeleton_local",
         }
-    if video_type in {"stock_footage", "minecraft", "subway"}:
+    if video_type in {"stock_footage", "minecraft", "subway", "background_video"}:
         clip_dir = db.DATA_DIR / "background_clips" / video_type
         clips = sorted(clip_dir.glob("*.mp4")) if clip_dir.exists() else []
         required = options.VIDEO_CLIP_MINIMUMS[video_type]
@@ -195,13 +195,14 @@ def ensure_visual(project: dict, scene: dict) -> tuple[Path, str, dict]:
             )
         scene_index = int(scene.get("idx") or 0)
         project_index = int(project.get("id") or 0)
-        chosen = clips[(project_index + scene_index) % len(clips)]
+        chosen = clips[0] if video_type == "background_video" else clips[(project_index + scene_index) % len(clips)]
         return chosen, "video_fondo", {
             "license": "Clip propio o autorizado; derechos confirmados al cargar",
             "author": "Biblioteca local del usuario",
             "url": f"local://background-clips/{video_type}/{chosen.name}",
             "title": chosen.name,
             "provider": "biblioteca_local",
+            "mode": "repetir debajo de toda la narración" if video_type == "background_video" else "rotación de clips por escena",
         }
     existing = (scene.get("visual_path") or "").strip()
     if existing and Path(existing).exists() and Path(existing).suffix.lower() not in {".mp4", ".mov", ".webm", ".mkv"}:
