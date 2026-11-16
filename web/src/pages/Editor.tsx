@@ -122,6 +122,7 @@ export default function Editor({ projectId, go }: Props) {
   const [draggedSceneId, setDraggedSceneId] = useState<number | null>(null);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [previewElapsed, setPreviewElapsed] = useState(0);
+  const [timelineZoom, setTimelineZoom] = useState(1);
   const [splitCursor, setSplitCursor] = useState(0);
   const narrationRef = useRef<HTMLTextAreaElement | null>(null);
   const skipNarrationBlurRef = useRef(false);
@@ -532,7 +533,7 @@ export default function Editor({ projectId, go }: Props) {
   const sceneDurations = scenes.map((scene) =>
     Math.max(2, (scene.narration || '').trim().split(/\s+/).filter(Boolean).length / 2.4),
   );
-  const timelineScale = 18;
+  const timelineScale = 18 * timelineZoom;
   const timelineStarts = sceneDurations.map((_, index) =>
     sceneDurations.slice(0, index).reduce((sum, duration) => sum + duration, 0),
   );
@@ -930,7 +931,12 @@ export default function Editor({ projectId, go }: Props) {
                 </div>
               </div>
             </div>}
-            <div className="editor-timeline-footer"><span>{scenes.length} clips · {fmtDuration(timelineDuration)} totales estimados</span><span>Escena activa: {activeSceneIndex >= 0 ? activeSceneIndex + 1 : "—"}</span><button className="btn small" onClick={addScene} disabled={!!busy}>＋ Agregar escena</button></div>
+            <div className="editor-timeline-footer">
+              <span>{scenes.length} clips · {fmtDuration(timelineDuration)} totales estimados</span>
+              <span>Escena activa: {activeSceneIndex >= 0 ? activeSceneIndex + 1 : "—"}</span>
+              <label className="editor-timeline-zoom">Zoom <input type="range" min="0.5" max="2.5" step="0.1" value={timelineZoom} onChange={(e) => setTimelineZoom(Number(e.target.value))} /></label>
+              <button className="btn small" onClick={addScene} disabled={!!busy}>＋ Agregar escena</button>
+            </div>
           </Card>
         </div>
         <aside className="editor-inspector">
