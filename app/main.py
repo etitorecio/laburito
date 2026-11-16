@@ -154,6 +154,8 @@ class ScenePatch(BaseModel):
     transition: str | None = None
     sfx_volume: float | None = None
     sfx_start_sec: float | None = None
+    visual_trim_start_sec: float | None = None
+    visual_trim_end_sec: float | None = None
 
 class SceneIn(BaseModel):
     title: str = "Nueva escena"
@@ -1196,6 +1198,12 @@ def patch_scene(scene_id: int, payload: ScenePatch):
     if not scene:
         raise HTTPException(404, "Escena inexistente")
     data = payload.model_dump(exclude_none=True)
+    trim_start = float(data.get("visual_trim_start_sec", scene.get("visual_trim_start_sec") or 0))
+    trim_end = float(data.get("visual_trim_end_sec", scene.get("visual_trim_end_sec") or 0))
+    if trim_start < 0 or trim_end < 0:
+        raise HTTPException(400, "Los puntos de recorte no pueden ser negativos.")
+    if trim_end and trim_end <= trim_start:
+        raise HTTPException(400, "El final del recorte debe ser posterior al inicio.")
     if data:
         sets = ", ".join(f"{k}=?" for k in data)
         db.execute(f"UPDATE scenes SET {sets}, updated_at=? WHERE id=?", (*data.values(), db.now(), scene_id))
