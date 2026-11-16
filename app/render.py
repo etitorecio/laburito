@@ -561,7 +561,13 @@ def _mix_scene_audio(
     return voice_wav
 
 
-def _visual_input_args(visual: Path, fps: int, trim_start: float = 0.0, trim_end: float = 0.0) -> list[str]:
+def _visual_input_args(
+    visual: Path,
+    fps: int,
+    trim_start: float = 0.0,
+    trim_end: float = 0.0,
+    source_duration: float = 0.0,
+) -> list[str]:
     """Construye argumentos de entrada FFmpeg respetando el fragmento elegido."""
     is_video = visual.suffix.lower() in {".mp4", ".mov", ".webm", ".mkv"}
     if not is_video:
@@ -571,8 +577,9 @@ def _visual_input_args(visual: Path, fps: int, trim_start: float = 0.0, trim_end
     args = ["-stream_loop", "-1"]
     if start:
         args.extend(["-ss", f"{start:.3f}"])
-    if end > start:
-        args.extend(["-t", f"{end - start:.3f}"])
+    window_end = end if end > start else (float(source_duration or 0) if start and source_duration > start else 0)
+    if window_end > start:
+        args.extend(["-t", f"{window_end - start:.3f}"])
     args.extend(["-i", str(visual)])
     return args
 
@@ -674,6 +681,7 @@ def render_scene(
             fps,
             scene.get("visual_trim_start_sec") or 0,
             scene.get("visual_trim_end_sec") or 0,
+            scene.get("visual_source_duration_sec") or 0,
         )
         _ff(
             [
