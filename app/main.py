@@ -152,6 +152,8 @@ class ScenePatch(BaseModel):
     narration: str | None = None
     visual_query: str | None = None
     transition: str | None = None
+    sfx_volume: float | None = None
+    sfx_start_sec: float | None = None
 
 class SceneIn(BaseModel):
     title: str = "Nueva escena"
@@ -1308,6 +1310,75 @@ async def upload_scene_image(scene_id: int, file: UploadFile = File(...)):
     )
     _touch_project(project_id)
     return {"ok": True, "media_type": asset_kind, "scene": db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))}
+
+
+@app.post("/api/scenes/{scene_id}/sound", status_code=201)
+async def upload_scene_sound(scene_id: int, file: UploadFile = File(...)):
+    """Carga un efecto de sonido local para una escena."""
+    scene = db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))
+    if not scene:
+        raise HTTPException(404, "Escena inexistente")
+    content_type = (file.content_type or "").lower()
+    extension = Path(file.filename or "").suffix.lower()
+    allowed_types = {"audio/mpeg", "audio/wav", "audio/x-wav", "audio/ogg", "audio/mp4", "audio/flac"}
+    allowed_exts = {".mp3", ".wav", ".ogg", ".m4a", ".flac"}
+    if content_type not in allowed_types and extension not in allowed_exts:
+        raise HTTPException(400, "Subí un audio MP3, WAV, OGG, M4A o FLAC.")
+    raw = await file.read(50 * 1024 * 1024 + 1)
+    if not raw:
+        raise HTTPException(400, "El audio está vacío.")
+    if len(raw) > 50 * 1024 * 1024:
+        raise HTTPException(413, "El audio no puede superar 50 MB.")
+    project_id = int(scene["project_id"])
+    folder = db.MEDIA_DIR / "uploads" / str(project_id)
+    folder.mkdir(parents=True, exist_ok=True)
+    stamp = time.time_ns()
+    source_path = db.TMP_DIR / f"scene-{scene_id}-{stamp}{extension}"
+    target = folder / f"scene-{scene_id}-sfx-{stamp}.wav"
+    db.TMP_DIR.mkdir(parents=True, exist_ok=True)
+    source_path.write_bytes(raw)
+    try:
+        probe = media.run([
+            media.ffprobe(), "-v", "error", "-select_streams", "a:0",
+            "-show_entries", "stream=codec_name", "-of", "json", str(source_path),
+        ], timeout=60)
+        try:
+            audio_streams = json.loads(probe.stdout.decode("utf-8") or "{}").get("streams", [])
+        except json.JSONDecodeError:
+            audio_streams = []
+        if probe.returncode != 0 or not audio_streams:
+            raise HTTPException(400, "El archivo no contiene una pista de audio válida.")
+        proc = media.run([
+            media.ffmpeg(), "-y", "-i", str(source_path), "-vn", "-ac", "2", "-ar", "44100",
+            "-c:a", "pcm_s16le", str(target),
+        ], timeout=180)
+        if proc.returncode != 0 or not target.is_file() or target.stat().st_size < 1024:
+            detail = (proc.stderr or b"").decode("utf-8", "ignore")[-400:]
+            raise HTTPException(400, "No se pudo convertir el efecto de sonido: " + detail)
+    finally:
+        source_path.unlink(missing_ok=True)
+    db.execute(
+        "UPDATE scenes SET sfx_path=?, sfx_volume=0.8, sfx_start_sec=0, updated_at=? WHERE id=?",
+        (str(target), db.now(), scene_id),
+    )
+    db.execute(
+        "INSERT INTO assets(project_id,scene_id,kind,path,label,license,author,url,bytes,created_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?)",
+        (project_id, scene_id, "efecto_sonido", str(target), Path(file.filename or "Efecto de sonido").name,
+         "Archivo propio/autorizado por el usuario", "Usuario", "", target.stat().st_size, db.now()),
+    )
+    _touch_project(project_id)
+    return {"ok": True, "scene": db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))}
+
+
+@app.delete("/api/scenes/{scene_id}/sound")
+def delete_scene_sound(scene_id: int):
+    scene = db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))
+    if not scene:
+        raise HTTPException(404, "Escena inexistente")
+    db.execute("UPDATE scenes SET sfx_path='', updated_at=? WHERE id=?", (db.now(), scene_id))
+    _touch_project(scene["project_id"])
+    return {"ok": True}
 
 
 @app.post("/api/scenes/{scene_id}/visual")
