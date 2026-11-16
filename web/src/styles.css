@@ -2661,3 +2661,68 @@ th {
 .creation-submit .btn.primary{min-height:48px;font-size:1rem}
 .creation-submit small{text-align:center}
 @media(max-width:520px){.quick-format-grid{gap:8px}.quick-format{padding:12px;min-height:118px}.creation-mode-switch{width:100%}.creation-mode-switch button{flex:1;padding:9px 6px;font-size:.85rem}}
+
+
+/* AITuber-style editing workspace: preview, inspector and layered timeline. */
+.editor-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(300px, .9fr);
+  gap: 14px;
+  align-items: start;
+}
+.editor-workspace-main, .editor-inspector { min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.editor-inspector { position: sticky; top: 14px; }
+.editor-preview-stage {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 280px;
+  max-height: 560px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: radial-gradient(circle at 50% 40%, #202b40, #070b13 72%);
+}
+.editor-preview-stage img, .editor-preview-stage video {
+  display: block;
+  width: 100%;
+  max-height: 560px;
+  object-fit: contain;
+  border-radius: 10px;
+}
+.editor-preview-stage.portrait { min-height: 420px; }
+.editor-preview-stage.portrait img, .editor-preview-stage.portrait video { height: min(68vh, 620px); width: auto; max-width: 100%; }
+.editor-preview-stage.square img, .editor-preview-stage.square video { aspect-ratio: 1; object-fit: contain; }
+.editor-preview-empty { display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 36px 18px; text-align: center; color: var(--muted); }
+.editor-preview-empty span { font-size: 2.5rem; color: var(--accent); }
+.editor-preview-empty strong { color: var(--text); }
+.editor-preview-controls, .editor-timeline-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 12px; color: var(--muted); font-size: .82rem; }
+.editor-multitrack { display: flex; flex-direction: column; gap: 9px; overflow-x: auto; padding-bottom: 6px; }
+.editor-track { display: grid; grid-template-columns: 88px minmax(0,1fr); gap: 8px; min-width: 0; }
+.editor-track-label { display: flex; align-items: center; color: var(--muted); font-size: .68rem; font-weight: 800; letter-spacing: .08em; }
+.editor-track-lane { display: flex; gap: 5px; min-height: 62px; padding: 5px; border: 1px solid var(--line); border-radius: 9px; background: rgba(0,0,0,.18); overflow-x: auto; }
+.editor-track-clip { position: relative; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; gap: 4px; min-width: 120px; min-height: 50px; overflow: hidden; padding: 5px 7px; border: 1px solid rgba(255,255,255,.12); border-radius: 7px; background: #26354b; color: #f5f7fc; text-align: left; font: inherit; font-size: .72rem; cursor: pointer; }
+.editor-track-clip img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .38; pointer-events: none; }
+.editor-track-clip span { position: relative; z-index: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.editor-track-clip.voice { background: #174b46; border-color: rgba(68,211,180,.32); }
+.editor-track-clip.captions { background: #46315e; border-color: rgba(190,150,255,.3); }
+.editor-track-clip.active { outline: 2px solid var(--accent); outline-offset: -2px; }
+.editor-track-clip.dragging { opacity: .45; }
+.editor-music-clip { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex: 1; min-width: 220px; padding: 8px 12px; border: 1px solid rgba(255,176,32,.3); border-radius: 7px; background: repeating-linear-gradient(135deg, rgba(255,176,32,.17) 0 8px, rgba(255,176,32,.08) 8px 16px); color: var(--text); font-size: .78rem; }
+.editor-music-clip small { color: var(--muted); }
+.editor-music-clip.muted { opacity: .45; filter: grayscale(1); }
+.editor-inspector-content { display: flex; flex-direction: column; gap: 10px; }
+.editor-narration-input { min-height: 210px; }
+.editor-inspector .scene-head { flex-wrap: wrap; }
+.editor-inspector .scene-head .row { flex-wrap: wrap; }
+.editor-inspector audio { width: 100%; }
+@media (max-width: 980px) {
+  .editor-workspace { grid-template-columns: minmax(0,1fr); }
+  .editor-inspector { position: static; }
+}
+@media (max-width: 600px) {
+  .editor-track { grid-template-columns: 70px minmax(0,1fr); }
+  .editor-preview-stage { min-height: 210px; }
+  .editor-preview-stage.portrait { min-height: 340px; }
+  .editor-preview-controls { align-items: flex-start; flex-direction: column; }
+  .editor-timeline-footer { align-items: flex-start; }
+}
