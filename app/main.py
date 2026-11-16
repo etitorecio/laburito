@@ -1616,7 +1616,7 @@ async def upload_timeline_overlay(project_id: int, file: UploadFile = File(...),
             raise HTTPException(400, "La imagen no es válida.") from exc
         kind = "image"
         duration = 5.0
-    else:
+    elif extension in video_exts:
         source = db.TMP_DIR / f"overlay-{stamp}{extension}"
         source.parent.mkdir(parents=True, exist_ok=True)
         source.write_bytes(raw)
