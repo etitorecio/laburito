@@ -404,7 +404,10 @@ export default function Editor({ projectId, go }: Props) {
     <div className="stack">
       <Msg error={error} ok={ok} />
       {!['frutinovela', 'reddit_story'].includes(project.template) && (
-        <ProjectResearch projectId={projectId} topic={project.topic || project.title} />
+        <details className="editor-settings">
+          <summary><strong>Investigación y fuentes</strong><span>Consultar evidencia y recursos del tema</span></summary>
+          <ProjectResearch projectId={projectId} topic={project.topic || project.title} />
+        </details>
       )}
 
 
