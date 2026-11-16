@@ -957,54 +957,83 @@ def rewrite_fiction_with_ollama(url: str, model: str, project: dict, script: dic
 
 
 def rewrite_with_ollama(url: str, model: str, project: dict, script: dict, notes: list[dict]) -> dict:
-    """Reescribe el guion con un modelo Ollama local, usando solo la evidencia recuperada."""
+    """Reescribe el guion con evidencia y ajusta la extensión al formato real."""
     source_notes = [
         note for note in notes
         if note.get("source_url") and len((note.get("claim") or "")) >= 300
     ][:5]
     if not source_notes:
         raise RuntimeError("No hay fuentes documentales suficientes para redactar el guion.")
+
     scenes = script.get("scenes") or []
+    if not scenes:
+        raise RuntimeError("El esquema del guion no contiene escenas.")
+
+    target_seconds = int(project.get("duration_target_sec") or 600)
+    is_longform = target_seconds > 180 and project.get("kind") != "short"
+    if is_longform:
+        target_seconds = max(480, min(1200, target_seconds))
+        min_words = round(target_seconds * 1.8)
+        max_words = round(target_seconds * 2.35)
+        format_brief = (
+            "Es un DOCUMENTAL HORIZONTAL DE FORMATO LARGO para YouTube. No es un Short ni un resumen. "
+            "Construí un arco documental completo: pregunta inicial, contexto, antecedentes, protagonistas, "
+            "desarrollo cronológico o causal, punto de inflexión, consecuencias, debates y conclusión. "
+            "Cada escena debe aportar información nueva, ejemplos concretos y transiciones narrativas. "
+            "No inventes datos, fechas, nombres, citas ni relaciones causales que no aparezcan en las fuentes. "
+            "Si la evidencia no alcanza para una afirmación, explicá el límite en vez de rellenar."
+        )
+        target_label = f"entre {min_words} y {max_words} palabras para aproximadamente {target_seconds // 60} minutos"
+        timeout = 900
+    else:
+        target_seconds = max(15, min(180, target_seconds))
+        min_words = max(70, round(target_seconds * 1.8))
+        max_words = max(min_words + 20, round(target_seconds * 2.4))
+        format_brief = (
+            "Es un YouTube Short vertical, autónomo y dinámico. Abrí con un hook inmediato, desarrollá "
+            "una sola idea central y cerrá con una conclusión o pregunta concreta."
+        )
+        target_label = f"entre {min_words} y {max_words} palabras para aproximadamente {target_seconds} segundos"
+        timeout = 300
+
     outline = [
         {
             "idx": scene.get("idx"),
             "title": scene.get("title"),
+            "purpose": scene.get("purpose"),
             "duration_target_sec": scene.get("duration_target_sec"),
         }
         for scene in scenes
     ]
     prompt = (
-        "Escribí un guion audiovisual original en español para un canal de YouTube. "
-        "Usá exclusivamente los datos del material de referencia: no inventes personas, fechas, cifras, "
-        "causas ni citas. Parafraseá; no copies párrafos. Si falta información, omitila. "
-        "La primera escena debe enganchar en los primeros 1-2 segundos, las siguientes deben desarrollar una progresión clara y el cierre "
-        "debe dejar una idea o pregunta concreta. Evitá relleno, repeticiones y frases genéricas. "
-        "Es un YouTube Short vertical: escribí para retención, oralidad natural y edición dinámica. "
-        "No uses introducciones del tipo 'hoy vamos a hablar de'. No inventes un giro si las fuentes no lo respaldan. "
-        "El guion debe sonar humano, específico y fácil de entender al escucharlo una sola vez. "
-        "Respetá exactamente la cantidad y el orden de escenas del esquema. "
-        "Devolvé únicamente JSON válido con esta forma: {\"scenes\":[{\"idx\":0,\"narration\":\"...\"}]}.\n\n"
+        "Escribí un guion audiovisual original en español rioplatense natural. "
+        + format_brief + " "
+        "Usá exclusivamente los datos del material de referencia para las afirmaciones factuales: "
+        "parafraseá, contrastá coincidencias y discrepancias y no copies párrafos. "
+        "Evitá frases genéricas, repeticiones, explicaciones meta y relleno. "
+        f"La narración completa debe tener {target_label}. "
+        "Respetá exactamente la cantidad y el orden de escenas del esquema. Distribuí la extensión "
+        "proporcionalmente a la duración de cada escena; ninguna escena debe quedar como una frase de resumen. "
+        "Desarrollá los hechos con contexto, explicación y consecuencias, sin repetir una idea para alcanzar "
+        "la cantidad de palabras. Devolvé únicamente JSON válido con esta forma: "
+        "{\"scenes\":[{\"idx\":0,\"narration\":\"...\"}]}\n\n"
         f"Tema: {project.get('topic') or project.get('title')}\n"
-        f"Duración total objetivo: {project.get('duration_target_sec')} segundos\n"
-        f"Público objetivo: {project.get('audience', 'Público general')}\n"
-        f"Tono: {project.get('tone', 'Dinámico y cercano')}\n"
-        f"Tipo de gancho: {project.get('hook_style', 'Dato sorprendente')}\n"
-        f"Cierre/CTA: {project.get('cta', 'Hacé una pregunta concreta al final')}\n"
-        f"Pilares de contenido preferidos: {project.get('content_pillars', 'Elegir los más interesantes dentro del nicho')}\n"
-        f"Temas que hay que evitar: {project.get('avoid_topics', 'Ninguno indicado')}\n"
+        f"Título: {project.get('title') or ''}\n"
+        f"Duración total objetivo: {target_seconds} segundos\n"
+        f"Público: {project.get('audience', 'Público general')}\n"
+        f"Tono: {project.get('tone', 'Documental y riguroso')}\n"
         f"Esquema: {json.dumps(outline, ensure_ascii=False)}\n"
-        "Material de referencia (cada bloque incluye su fuente; contrastá coincidencias y discrepancias):\n"
+        "MATERIAL DE REFERENCIA (no agregues hechos externos):\n"
         + "\n\n".join(
             f"FUENTE: {note.get('source_url', '')}\nCONTENIDO: {(note.get('claim') or '')[:5000]}"
             for note in source_notes
         )
     )
-    raw = expand_with_ollama(url, model, prompt, timeout=240)
+    raw = expand_with_ollama(url, model, prompt, timeout=timeout)
     cleaned = raw.strip()
     if cleaned.startswith(chr(96) * 3):
         cleaned = re.sub(r"^\x60{3}(?:json)?\s*|\s*\x60{3}$", "", cleaned, flags=re.IGNORECASE)
-    first = cleaned.find("{")
-    last = cleaned.rfind("}")
+    first, last = cleaned.find("{"), cleaned.rfind("}")
     if first < 0 or last <= first:
         raise RuntimeError("Ollama no devolvió un JSON reconocible.")
     data = json.loads(cleaned[first:last + 1])
@@ -1016,15 +1045,25 @@ def rewrite_with_ollama(url: str, model: str, project: dict, script: dict, notes
     for scene in scenes:
         item = by_idx.get(int(scene.get("idx", -1)))
         narration = str((item or {}).get("narration") or "").strip()
-        if len(narration) < 35:
+        if len(narration) < 80:
             raise RuntimeError(f"Ollama dejó vacía o demasiado corta la escena {scene.get('idx')}.")
         rewritten.append({**scene, "narration": narration})
+
+    total_words = sum(len(str(scene.get("narration") or "").split()) for scene in rewritten)
+    if total_words < round(min_words * 0.8):
+        raise RuntimeError(
+            f"Ollama devolvió {total_words} palabras; para {target_seconds} segundos se requieren "
+            f"al menos {round(min_words * 0.8)}. Se conserva el borrador de respaldo."
+        )
+    if is_longform and total_words > round(max_words * 1.2):
+        raise RuntimeError("Ollama excedió la extensión prevista; se conserva el borrador de respaldo.")
+
     return {
         **script,
         "scenes": rewritten,
         "warnings": [
             *script.get("warnings", []),
-            "Guion reescrito con un modelo Ollama local; contrastá cada afirmación con las fuentes antes de publicar.",
+            "Guion reescrito con Ollama local a partir de las fuentes del proyecto; verificá afirmaciones y atribuciones antes de publicar.",
         ],
         "writer": "ollama-local",
         "evidence_sources": len(source_notes),
