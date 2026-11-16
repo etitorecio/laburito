@@ -974,6 +974,8 @@ export default function Editor({ projectId, go }: Props) {
               )}
               {previewPlaying && previewScene?.audio_path && <audio key={"narration-" + previewScene.id} hidden autoPlay src={mediaUrl(previewScene.audio_path)}
                 onLoadedMetadata={(event) => { event.currentTarget.currentTime = previewSceneElapsed; }} />}
+              {previewPlaying && previewScene?.sfx_path && previewSceneElapsed >= (previewScene.sfx_start_sec ?? 0) && <audio key={"sfx-" + previewScene.id} hidden autoPlay src={mediaUrl(previewScene.sfx_path)}
+                onLoadedMetadata={(event) => { event.currentTarget.volume = Math.max(0, Math.min(1, previewScene.sfx_volume ?? 0.8)); event.currentTarget.currentTime = Math.max(0, previewSceneElapsed - (previewScene.sfx_start_sec ?? 0)); }} />}
               {previewPlaying && project.music && !["none", "ninguna", "sin_musica"].includes(project.music) && <audio key={"music-" + project.id} hidden autoPlay loop src={`/api/projects/${project.id}/music-preview`}
                 onLoadedMetadata={(event) => { event.currentTarget.volume = Math.max(0, Math.min(1, project.music_volume ?? 0.3)); event.currentTarget.currentTime = event.currentTarget.duration > 0 ? previewElapsed % event.currentTarget.duration : 0; }} />}
             </div>
