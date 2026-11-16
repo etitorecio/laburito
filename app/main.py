@@ -947,7 +947,7 @@ def project_music_preview(project_id: int):
         ".mp3": "audio/mpeg", ".wav": "audio/wav", ".ogg": "audio/ogg",
         ".m4a": "audio/mp4", ".flac": "audio/flac",
     }.get(suffix, "application/octet-stream")
-    return FileResponse(music_path, media_type=media_type, filename=Path(music_path).name,
+    return FileResponse(music_path, media_type=media_type,
                         headers={"Cache-Control": "private, max-age=300"})
 
 
