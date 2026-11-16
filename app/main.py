@@ -943,14 +943,23 @@ def generate_script(project_id: int, replace: bool = True):
                     (topic, note["claim"], note["evidence_level"], note["source_url"], db.now(),
                      note["methodology"], db.now()),
                 )
-            if not any((source.get("url") or "") == research["url"] for source in sources):
+            known_urls = {source.get("url") or "" for source in sources}
+            for note in notes:
+                source_url = note.get("source_url") or ""
+                if not source_url or source_url in known_urls:
+                    continue
+                is_academic = note.get("evidence_level") == "resumen académico"
+                source_title = note.get("title") or research["source_title"]
+                author = "OpenAlex / autores de la publicación" if is_academic else "Wikipedia contributors"
+                license_text = "Resumen bibliográfico; consultar publicación original" if is_academic else "CC BY-SA 4.0"
                 db.execute(
                     "INSERT INTO sources(project_id,title,url,author,license,accessed_at,attribution,kind,notes,created_at) "
                     "VALUES(?,?,?,?,?,?,?,?,?,?)",
-                    (project_id, research["source_title"], research["url"], "Wikipedia contributors",
-                     "CC BY-SA 4.0", db.now(), "Wikipedia contributors · CC BY-SA 4.0",
-                     "investigacion", "Fuente introductoria; el guion debe contrastarse antes de publicar.", db.now()),
+                    (project_id, source_title, source_url, author, license_text, db.now(),
+                     author + " · " + license_text, "investigacion",
+                     note.get("methodology") or "Fuente recuperada automáticamente para este guion.", db.now()),
                 )
+                known_urls.add(source_url)
             sources = db.query("SELECT * FROM sources WHERE project_id=?", (project_id,))
             db.log("info", "research", "Investigación automática integrada al guion", {
                 "project_id": project_id, "academic_sources": len(research.get("academic_sources") or []),
