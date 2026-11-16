@@ -562,6 +562,43 @@ def _mix_scene_audio(
     return voice_wav
 
 
+def _trim_audio_source(
+    audio: Path,
+    workdir: Path,
+    trim_start: float = 0.0,
+    trim_end: float = 0.0,
+    source_duration: float = 0.0,
+) -> Path:
+    """Materializa un fragmento de audio para poder repetirlo sin salir del rango elegido."""
+    start = max(0.0, float(trim_start or 0))
+    end = max(0.0, float(trim_end or 0))
+    source = max(0.0, float(source_duration or 0))
+    if start <= 0 and end <= 0:
+        return audio
+    window_end = end if end > start else source if source > start else 0
+    try:
+        stat = audio.stat()
+        signature = f"{audio}:{stat.st_size}:{stat.st_mtime_ns}:{start:.3f}:{window_end:.3f}"
+    except OSError:
+        signature = f"{audio}:{start:.3f}:{window_end:.3f}"
+    workdir.mkdir(parents=True, exist_ok=True)
+    trimmed = workdir / f"audio-trim-{_h(signature)[:16]}.wav"
+    if trimmed.is_file() and trimmed.stat().st_size > 1000:
+        return trimmed
+    args = []
+    if start > 0:
+        args.extend(["-ss", f"{start:.3f}"])
+    args.extend(["-i", str(audio)])
+    if window_end > start:
+        args.extend(["-t", f"{window_end - start:.3f}"])
+    args.extend(["-vn", "-ac", "2", "-ar", "44100", "-c:a", "pcm_s16le", str(trimmed)])
+    _ff(args)
+    if not trimmed.is_file() or trimmed.stat().st_size <= 1000:
+        trimmed.unlink(missing_ok=True)
+        raise RuntimeError("No se pudo preparar el fragmento recortado del audio.")
+    return trimmed
+
+
 def _visual_input_args(visual: Path, fps: int) -> list[str]:
     """Prepara imágenes estáticas o clips ya recortados y listos para repetirse."""
     is_video = visual.suffix.lower() in {".mp4", ".mov", ".webm", ".mkv"}
@@ -779,9 +816,16 @@ def _apply_timeline_overlays(
     filters = []
     current = "[0:v]"
 
+    trim_dir = output_path.parent / "overlay-trims"
     for input_index, (clip, path, start, duration, kind) in enumerate(visual_clips, start=1):
+        visual_source = _trim_visual_source(
+            path, trim_dir,
+            clip.get("source_start_sec") or 0,
+            clip.get("source_end_sec") or 0,
+            clip.get("source_duration_sec") or 0,
+        ) if kind == "video" else path
         args.extend(
-            ["-stream_loop", "-1", "-t", f"{duration:.3f}", "-i", str(path)]
+            ["-stream_loop", "-1", "-t", f"{duration:.3f}", "-i", str(visual_source)]
             if kind == "video" else ["-loop", "1", "-t", f"{duration:.3f}", "-i", str(path)]
         )
         layer_width = max(2, int(canvas_width * max(0.05, min(1.0, float(clip.get("width") or 0.32)))))
@@ -805,7 +849,13 @@ def _apply_timeline_overlays(
     audio_labels = ["[0:a]"]
     for audio_index, (clip, path, start, duration, _kind) in enumerate(audio_clips):
         input_index = 1 + len(visual_clips) + audio_index
-        args.extend(["-stream_loop", "-1", "-t", f"{duration:.3f}", "-i", str(path)])
+        audio_source = _trim_audio_source(
+            path, trim_dir,
+            clip.get("source_start_sec") or 0,
+            clip.get("source_end_sec") or 0,
+            clip.get("source_duration_sec") or 0,
+        )
+        args.extend(["-stream_loop", "-1", "-t", f"{duration:.3f}", "-i", str(audio_source)])
         volume = max(0.0, min(2.0, float(clip.get("volume") if clip.get("volume") is not None else 1)))
         delay_ms = max(0, int(start * 1000))
         label = f"[a{input_index}]"
