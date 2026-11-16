@@ -106,12 +106,12 @@ def _validate_render_result(result: dict) -> dict:
 
 
 def _scheduled_publish_settings(project_id: int) -> dict:
-    """Recupera el destino de la regla si falla la lectura de la configuración del proyecto."""
+    """Permite entregas locales automáticas, pero nunca publica en YouTube sin revisión humana."""
     row = db.query_one(
         "SELECT auto_publish, destination, privacy FROM autopilot_rules WHERE last_project_id=? ORDER BY id DESC LIMIT 1",
         (project_id,),
     )
-    if not row or not bool(row.get("auto_publish")):
+    if not row or not bool(row.get("auto_publish")) or row.get("destination") == "youtube":
         return {"enabled": False, "destination": "youtube", "privacy": "unlisted"}
     destination = row.get("destination") or "youtube"
     if destination not in ("youtube", "entrega"):
