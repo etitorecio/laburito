@@ -71,6 +71,7 @@ export default function Autopilot() {
   const [data, setData] = useState<Options | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [ollamaAvailable, setOllamaAvailable] = useState<boolean | null>(null);
+  const [youtubeAccounts, setYoutubeAccounts] = useState<{ id: number; account: { channel_title: string } | null }[]>([]);
   const [persistenceConfigured, setPersistenceConfigured] = useState<boolean | null>(null);
   const [persistenceNote, setPersistenceNote] = useState('');
   const [form, setForm] = useState(INITIAL);
@@ -83,10 +84,11 @@ export default function Autopilot() {
 
   async function load() {
     try {
-      const [result, m, diagnostics] = await Promise.all([
+      const [result, m, diagnostics, accountData] = await Promise.all([
         api.get<Options>('/api/autopilot'),
         api.get<Meta>('/api/meta'),
         api.get<Diagnostics>('/api/diagnostics'),
+        api.get<{ accounts: { id: number; account: { channel_title: string } | null }[] }>('/api/youtube/accounts'),
       ]);
       setData(result);
       setForm((current) => ({
@@ -97,6 +99,7 @@ export default function Autopilot() {
       }));
       setMeta(m);
       setOllamaAvailable(diagnostics.ollama.available);
+      setYoutubeAccounts(accountData.accounts);
       setPersistenceConfigured(diagnostics.persistence.configured || !!diagnostics.persistence.local_persistent);
       setPersistenceNote(diagnostics.persistence.note);
     } catch (e) {
@@ -114,6 +117,8 @@ export default function Autopilot() {
     () => data?.templates ?? meta?.templates ?? [],
     [data, meta],
   );
+  const linkedYoutubeAccount = youtubeAccounts.find((account) => account.id === Number(form.channel_id))?.account ?? null;
+  const youtubeReady = Boolean(linkedYoutubeAccount);
   const selectedTemplate = templates.find((t) => t.id === form.template);
   const selectedChannel = data?.channels.find((channel) => channel.id === Number(form.channel_id)) ?? null;
 
