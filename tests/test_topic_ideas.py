@@ -19,6 +19,16 @@ class TopicIdeaFinderTests(unittest.TestCase):
         self.assertEqual(ideas[0]["summary"], "Una historia breve.")
         self.assertTrue(ideas[0]["url"].startswith("https://es.wikipedia.org/wiki/"))
 
+    def test_idea_search_still_works_when_trends_are_unavailable(self):
+        with patch.object(topic_engine, "trending_searches", side_effect=RuntimeError("offline")), \
+             patch.object(topic_engine, "_get", return_value={
+                 "query": {"search": [
+                     {"title": "Historia de los videojuegos", "snippet": "Los videojuegos <b>cambiaron</b> la cultura."}
+                 ]}
+             }):
+            ideas = topic_engine.suggest_topics("videojuegos", limit=1)
+        self.assertEqual(ideas[0]["title"], "Historia de los videojuegos")
+
     def test_requires_a_niche(self):
         with self.assertRaisesRegex(ValueError, "nicho"):
             topic_engine.suggest_topics("  ")
