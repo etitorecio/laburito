@@ -124,6 +124,10 @@ class ProjectIn(BaseModel):
     music_volume: float | None = None
 
 
+class ProjectDuplicateIn(BaseModel):
+    title: str | None = None
+
+
 class ProjectPatch(BaseModel):
     title: str | None = None
     topic: str | None = None
@@ -990,7 +994,7 @@ def get_project(project_id: int):
 
 
 @app.post("/api/projects/{project_id}/duplicate", status_code=201)
-def duplicate_project(project_id: int):
+def duplicate_project(project_id: int, payload: ProjectDuplicateIn | None = None):
     """Duplica un proyecto editable, conservando guion, recursos y ajustes."""
     original = db.query_one("SELECT * FROM projects WHERE id=?", (project_id,))
     if not original:
@@ -1000,7 +1004,8 @@ def duplicate_project(project_id: int):
         key: value for key, value in original.items()
         if key not in {"id"}
     }
-    project_data["title"] = (str(original.get("title") or "Video")[:110] + " (copia)")
+    requested_title = (payload.title or "").strip() if payload else ""
+    project_data["title"] = requested_title[:120] or (str(original.get("title") or "Video")[:110] + " (copia)")
     project_data["status"] = "borrador"
     project_data["quality_json"] = "{}"
     project_data["created_at"] = stamp
