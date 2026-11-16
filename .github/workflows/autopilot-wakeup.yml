@@ -22,8 +22,8 @@ jobs:
     steps:
       - name: Explain the one-time URL configuration
         run: |
-          echo "::error::Falta LABURITO_URL. Configurá la URL Edge real de AppJet (rama appjet) para habilitar el chequeo del despliegue real."
-          exit 1
+          echo "::warning::Falta LABURITO_URL. El chequeo cloud queda omitido; configurá la URL Edge real de AppJet (rama appjet) para habilitar el despertador externo. La ejecución local no depende de esta variable."
+          exit 0
 
   wake-app:
     if: ${{ vars.LABURITO_URL != '' }}
