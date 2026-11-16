@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, mediaUrl, type Diagnostics, type Project, type Channel } from '../api';
 import { Badge, Empty, Progress, statusTone } from '../ui';
 import type { Route } from '../routes';
@@ -17,6 +17,8 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
   const [error, setError] = useState('');
   const [prompt, setPrompt] = useState('');
   const [creating, setCreating] = useState(false);
+  const [channelId, setChannelId] = useState('');
+  const promptRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     Promise.all([
@@ -45,7 +47,7 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
           <h2>De una idea a tu próximo <span>video.</span></h2>
           <p>Creá Shorts y videos largos, organizá todos tus canales y producí contenido desde un solo lugar.</p>
           <div className="studio-hero-actions">
-            <button className="studio-primary" onClick={() => go('proyectos')}>＋ Crear video</button>
+            <button className="studio-primary" onClick={() => promptRef.current?.focus()}>＋ Crear video</button>
             <button className="studio-secondary" onClick={() => go('autopilot')}>Configurar autopiloto ↗</button>
           </div>
           <div className="studio-trust"><span>✓ Sin créditos pagos</span><span>✓ Herramientas libres</span><span>✓ Tus canales, tu control</span></div>
@@ -59,12 +61,21 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
 
       <section className="studio-section" aria-label="Crear video con una instrucción">
         <div className="studio-section-head"><div><span className="studio-eyebrow">DECILO Y SE HACE</span><h3>¿Qué video querés que haga?</h3><p>Escribí una orden simple. Laburito prepara el guion y deja el render trabajando en segundo plano.</p></div></div>
+        <div className="studio-prompt-presets" aria-label="Elegir un tipo de video">
+          <button type="button" onClick={() => { setPrompt('Haceme un short sobre '); promptRef.current?.focus(); }}>▯ <span>Short</span></button>
+          <button type="button" onClick={() => { setPrompt('Haceme una historia de terror'); promptRef.current?.focus(); }}>◉ <span>Historia</span></button>
+          <button type="button" onClick={() => { setPrompt('Haceme una frutinovela'); promptRef.current?.focus(); }}>♡ <span>Frutinovela</span></button>
+          <button type="button" onClick={() => { setPrompt('Haceme un documental sobre '); promptRef.current?.focus(); }}>▭ <span>Documental</span></button>
+        </div>
         <form className="studio-prompt-form" onSubmit={async (event) => {
           event.preventDefault();
           if (!prompt.trim() || creating) return;
           setCreating(true); setError('');
           try {
-            const result = await api.post<{ project_id: number; job_id: number; status: string }>('/api/create-from-prompt', { prompt: prompt.trim() });
+            const result = await api.post<{ project_id: number; job_id: number; status: string }>('/api/create-from-prompt', {
+              prompt: prompt.trim(),
+              channel_id: channelId ? Number(channelId) : null,
+            });
             setPrompt('');
             go('editor', result.project_id);
           } catch (e) {
@@ -74,6 +85,7 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
           }
         }}>
           <textarea
+            ref={promptRef}
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
             rows={2}
@@ -82,10 +94,17 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
             aria-label="Describí el video que querés crear"
             style={{ width: '100%', minHeight: 76, resize: 'vertical' }}
           />
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
-            <small className="muted">También entiende historias de terror, documentales y frutinovelas.</small>
-            <button className="studio-primary" type="submit" disabled={creating || !prompt.trim()}>{creating ? 'Preparando…' : 'Crear video →'}</button>
+          <div className="studio-prompt-controls">
+            <label>
+              <span>Canal</span>
+              <select value={channelId} onChange={(event) => setChannelId(event.target.value)}>
+                <option value="">Automático según el formato</option>
+                {channels.map((channel) => <option key={channel.id} value={channel.id}>{channel.name}</option>)}
+              </select>
+            </label>
+            <button className="studio-primary" type="submit" disabled={creating || !prompt.trim()}>{creating ? 'Preparando tu video…' : 'Crear video →'}</button>
           </div>
+          <small className="muted">No tenés que elegir voz, imágenes ni edición: Laburito usa la configuración del canal y prepara la producción automáticamente.</small>
         </form>
       </section>
 
