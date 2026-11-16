@@ -2835,6 +2835,13 @@ def publish_project(project_id: int, payload: publish.PublishIn):
             publish.youtube_account_status(int(project["channel_id"]))
         except publish.PublishError as exc:
             raise HTTPException(400, "La cuenta de YouTube de este canal no está conectada o no se pudo verificar: " + str(exc)) from exc
+    # Si el contenedor usa almacenamiento remoto, respaldar el MP4 antes
+    # de encolar la publicación. SQLite no incluye los binarios del render.
+    if persistence.configured():
+        try:
+            persistence.sync_pending_video(project_id, publish.video_path(project))
+        except Exception as exc:
+            raise HTTPException(503, f"No se pudo respaldar el MP4 antes de publicar: {exc}") from exc
     job_id = worker.enqueue(
         project_id,
         "publish_project",
