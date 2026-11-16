@@ -224,6 +224,15 @@ def main() -> int:
             "recorte de fuente de capa de video guardado",
             f"({status})",
         )
+        status, split_overlay, _ = call(
+            "POST", f"/api/timeline-overlays/{video_overlay['id']}/split",
+            {"at_sec": 2.5},
+        )
+        check(
+            status == 201 and abs(float((split_overlay or {}).get("start_sec") or 0) - 2.5) < 0.01,
+            "capa de video dividida en el cabezal",
+            f"({status})",
+        )
         scene_id = scenes[0]["id"]
         status, scene_video, _ = upload_media(
             f"/api/scenes/{scene_id}/media", "smoke-scene.mp4", "video/mp4", video_bytes,
