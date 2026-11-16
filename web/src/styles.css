@@ -2726,3 +2726,7 @@ th {
   .editor-preview-controls { align-items: flex-start; flex-direction: column; }
   .editor-timeline-footer { align-items: flex-start; }
 }
+
+
+.editor-track-clip video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .42; pointer-events: none; }
+.editor-inspector .btn input[type="file"] { display: none; }
