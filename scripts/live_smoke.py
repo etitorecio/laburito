@@ -220,6 +220,20 @@ def main() -> int:
     )
     check(status == 201 and (text_overlay or {}).get("kind") == "text", "capa de texto independiente agregada", f"({status})")
 
+    status, music_overlay, _ = call(
+        "POST",
+        f"/api/projects/{project_id}/timeline-overlays/music",
+        {"bed_id": "ambiente", "start_sec": 0.2, "duration_sec": 5.0, "volume": 0.2},
+    )
+    check(status == 201 and (music_overlay or {}).get("kind") == "audio", "música local independiente generada", f"({status})")
+
+    status, sfx_overlay, _ = call(
+        "POST",
+        f"/api/projects/{project_id}/timeline-overlays/sfx",
+        {"effect": "chime", "start_sec": 0.8, "volume": 0.4},
+    )
+    check(status == 201 and (sfx_overlay or {}).get("kind") == "audio", "efecto local independiente generado", f"({status})")
+
     status, job, _ = call("POST", f"/api/projects/{project_id}/render")
     check(status in (200, 202), "render encolado", f"({status})")
     job_id = (job or {}).get("id") or ((job or {}).get("job") or {}).get("id")
