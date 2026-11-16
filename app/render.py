@@ -19,7 +19,7 @@ import threading
 import zipfile
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
 from . import db, media, options, tts
 
@@ -837,9 +837,20 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
     thumb = workdir / f"miniatura_{suffix}.jpg"
     if _thumbnail_enabled(project):
         try:
-            media.make_thumbnail(final, thumb, project.get("title") or "AITuber Libre", thumb_w, thumb_h)
+            custom = db.query_one(
+                "SELECT path FROM assets WHERE project_id=? AND kind='thumbnail' ORDER BY id DESC LIMIT 1",
+                (project_id,),
+            )
+            custom_path = Path(custom["path"]) if custom and custom.get("path") else None
+            if custom_path and custom_path.is_file():
+                with Image.open(custom_path) as source:
+                    ImageOps.fit(source.convert("RGB"), (thumb_w, thumb_h), method=Image.Resampling.LANCZOS).save(
+                        thumb, format="JPEG", quality=94, optimize=True
+                    )
+            else:
+                media.make_thumbnail(final, thumb, project.get("title") or "AITuber Libre", thumb_w, thumb_h)
         except Exception as exc:
-            warnings.append(f"No se pudo generar la miniatura: {exc}")
+            warnings.append(f"No se pudo preparar la miniatura: {exc}")
     else:
         if thumb.exists():
             thumb.unlink()
