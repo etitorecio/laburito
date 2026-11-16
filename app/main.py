@@ -392,6 +392,45 @@ async def analyze_visual_style_reference(file: UploadFile = File(...)):
     return {"visual_style_prompt": f"{palette}, {light}, {contrast_text}, {color_text}", "analysis": "Paleta y luz calculadas localmente; no se subió la imagen a ningún servicio externo."}
 
 
+@app.post("/api/projects/{project_id}/thumbnail", status_code=201)
+async def upload_project_thumbnail(project_id: int, file: UploadFile = File(...)):
+    """Guarda una miniatura personalizada para el proyecto."""
+    project = db.query_one("SELECT id, aspect, resolution FROM projects WHERE id=?", (project_id,))
+    if not project:
+        raise HTTPException(404, "Proyecto inexistente")
+    content_type = (file.content_type or "").lower()
+    extension = Path(file.filename or "").suffix.lower()
+    if content_type not in {"image/jpeg", "image/png", "image/webp"} and extension not in {".jpg", ".jpeg", ".png", ".webp"}:
+        raise HTTPException(400, "Subí una miniatura JPG, PNG o WebP.")
+    raw = await file.read(12 * 1024 * 1024 + 1)
+    if not raw:
+        raise HTTPException(400, "La imagen está vacía.")
+    if len(raw) > 12 * 1024 * 1024:
+        raise HTTPException(413, "La miniatura no puede superar 12 MB.")
+    try:
+        with Image.open(io.BytesIO(raw)) as source:
+            if source.width * source.height > 40_000_000:
+                raise HTTPException(413, "La miniatura supera los 40 megapíxeles.")
+            image = source.convert("RGB")
+            image.thumbnail((3840, 3840), Image.Resampling.LANCZOS)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(400, "El archivo no es una imagen válida.") from exc
+    folder = db.MEDIA_DIR / "uploads" / str(project_id)
+    folder.mkdir(parents=True, exist_ok=True)
+    target = folder / f"thumbnail-{time.time_ns()}.jpg"
+    image.save(target, format="JPEG", quality=94, optimize=True)
+    db.execute(
+        "INSERT INTO assets(project_id,scene_id,kind,path,label,license,author,url,bytes,created_at) "
+        "VALUES(?,NULL,'thumbnail',?,?,?,?,?,?,?)",
+        (project_id, str(target), Path(file.filename or "Miniatura").name,
+         "Imagen propia/autorizada por el usuario", "Usuario", "", target.stat().st_size, db.now()),
+    )
+    _touch_project(project_id)
+    return {"ok": True, "path": str(target)}
+
+
 @app.post("/api/music/upload")
 async def upload_music(file: UploadFile = File(...)):
     """Guarda una pista propia para usarla como música de fondo en los videos."""
