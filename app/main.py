@@ -102,6 +102,13 @@ class ChannelIn(BaseModel):
     cadence: str = "semanal"
 
 
+class ChannelWatermarkIn(BaseModel):
+    enabled: bool = True
+    position: str = "bottom_right"
+    scale: float = 0.12
+    opacity: float = 0.85
+
+
 class ProjectIn(BaseModel):
     title: str
     topic: str = ""
@@ -908,6 +915,59 @@ def update_channel(channel_id: int, payload: ChannelIn):
 @app.delete("/api/channels/{channel_id}")
 def delete_channel(channel_id: int):
     db.execute("DELETE FROM channels WHERE id=?", (channel_id,))
+    return {"ok": True}
+
+
+@app.post("/api/channels/{channel_id}/watermark", status_code=201)
+async def upload_channel_watermark(channel_id: int, file: UploadFile = File(...)):
+    channel = db.query_one("SELECT id FROM channels WHERE id=?", (channel_id,))
+    if not channel:
+        raise HTTPException(404, "Canal inexistente")
+    if file.content_type not in {"image/png", "image/jpeg", "image/webp"}:
+        raise HTTPException(400, "El logo debe ser PNG, JPG o WebP.")
+    raw = await file.read(12 * 1024 * 1024 + 1)
+    if len(raw) > 12 * 1024 * 1024:
+        raise HTTPException(400, "El logo supera el límite de 12 MB.")
+    try:
+        image = Image.open(io.BytesIO(raw)).convert("RGBA")
+        image.thumbnail((1200, 1200), Image.Resampling.LANCZOS)
+    except Exception as exc:
+        raise HTTPException(400, "El archivo no es una imagen válida.") from exc
+    folder = db.DATA_DIR / "channels" / str(channel_id)
+    folder.mkdir(parents=True, exist_ok=True)
+    target = folder / "watermark.png"
+    image.save(target, format="PNG", optimize=True)
+    db.execute("UPDATE channels SET watermark_path=?, watermark_enabled=1, updated_at=? WHERE id=?",
+               (str(target), db.now(), channel_id))
+    return db.query_one("SELECT * FROM channels WHERE id=?", (channel_id,))
+
+
+@app.put("/api/channels/{channel_id}/watermark")
+def update_channel_watermark(channel_id: int, payload: ChannelWatermarkIn):
+    if not db.query_one("SELECT id FROM channels WHERE id=?", (channel_id,)):
+        raise HTTPException(404, "Canal inexistente")
+    positions = {"top_left", "top_right", "bottom_left", "bottom_right", "center"}
+    if payload.position not in positions:
+        raise HTTPException(400, "Posición de marca de agua inválida.")
+    scale = max(0.04, min(0.35, float(payload.scale)))
+    opacity = max(0.1, min(1.0, float(payload.opacity)))
+    db.execute(
+        "UPDATE channels SET watermark_enabled=?, watermark_position=?, watermark_scale=?, watermark_opacity=?, updated_at=? WHERE id=?",
+        (int(payload.enabled), payload.position, scale, opacity, db.now(), channel_id),
+    )
+    return db.query_one("SELECT * FROM channels WHERE id=?", (channel_id,))
+
+
+@app.delete("/api/channels/{channel_id}/watermark")
+def delete_channel_watermark(channel_id: int):
+    channel = db.query_one("SELECT watermark_path FROM channels WHERE id=?", (channel_id,))
+    if not channel:
+        raise HTTPException(404, "Canal inexistente")
+    path = Path(channel.get("watermark_path") or "")
+    if path.is_file():
+        path.unlink(missing_ok=True)
+    db.execute("UPDATE channels SET watermark_path='', watermark_enabled=0, updated_at=? WHERE id=?",
+               (db.now(), channel_id))
     return {"ok": True}
 
 
