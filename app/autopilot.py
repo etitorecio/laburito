@@ -309,6 +309,9 @@ def _clean(data: dict) -> dict:
         clean["enabled"] = 1 if data["enabled"] else 0
     if "auto_publish" in data and data["auto_publish"] is not None:
         clean["auto_publish"] = 1 if data["auto_publish"] else 0
+    # YouTube siempre queda detrás de una aprobación manual explícita.
+    if clean.get("destination", data.get("destination", "entrega")) == "youtube":
+        clean["auto_publish"] = 0
     if "next_run_at" in data and data["next_run_at"] is not None:
         clean["next_run_at"] = str(data["next_run_at"])[:40]
     return clean
