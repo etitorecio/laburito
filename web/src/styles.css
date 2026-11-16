@@ -2862,3 +2862,7 @@ th {
 }
 
 .editor-ruler { cursor: crosshair; }
+
+
+.editor-timeline-zoom { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: .78rem; }
+.editor-timeline-zoom input { width: 104px; accent-color: var(--accent); }
