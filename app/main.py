@@ -1729,15 +1729,20 @@ def create_timeline_sfx_overlay(project_id: int, payload: TimelineOverlaySfxIn):
     folder = db.MEDIA_DIR / "overlays" / str(project_id)
     folder.mkdir(parents=True, exist_ok=True)
     target = folder / f"sfx-{payload.effect}-{time.time_ns()}.wav"
-    proc = media.run([
-        media.ffmpeg(), "-y", "-f", "lavfi", "-i", source, "-af", filters,
-        "-ar", "44100", "-ac", "2", "-c:a", "pcm_s16le", str(target),
-    ], timeout=60)
-    if proc.returncode != 0 or not target.is_file() or target.stat().st_size < 1024:
+    try:
+        proc = media.run([
+            media.ffmpeg(), "-y", "-f", "lavfi", "-i", source, "-af", filters,
+            "-ar", "44100", "-ac", "2", "-c:a", "pcm_s16le", str(target),
+        ], timeout=60)
+        if proc.returncode != 0 or not target.is_file() or target.stat().st_size < 1024:
+            detail = (proc.stderr or b"").decode("utf-8", "ignore")[-300:]
+            raise RuntimeError(detail or "FFmpeg no pudo crear el archivo.")
+        duration = float(media.probe_audio(target).get("duration") or 0)
+        if duration <= 0:
+            raise RuntimeError("El efecto generado no contiene audio.")
+    except Exception as exc:
         target.unlink(missing_ok=True)
-        detail = (proc.stderr or b"").decode("utf-8", "ignore")[-300:]
-        raise HTTPException(503, "No se pudo generar el efecto local: " + detail)
-    duration = float(media.probe_audio(target).get("duration") or 0)
+        raise HTTPException(503, f"No se pudo generar el efecto local: {exc}") from exc
     overlay_id = db.execute(
         "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,volume,created_at,updated_at) "
         "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
