@@ -701,17 +701,16 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
     if not rule:
         raise ValueError("Regla inexistente")
     _validate_factory_channel(rule)
-    # Verificar YouTube antes de consumir recursos creando y renderizando un Short.
+    publish_warning = ""
+    # Migración defensiva: reglas antiguas tampoco pueden saltarse la aprobación humana.
     if rule.get("auto_publish") and (rule.get("destination") or "entrega") == "youtube":
-        try:
-            _validate_auto_publish(rule)
-        except (publish.PublishError, ValueError) as exc:
-            message = "Autopublicación pausada: " + str(exc)
-            db.execute(
-                "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE id=?",
-                (message[:500], db.now(), rule_id),
-            )
-            raise ValueError(message) from exc
+        publish_warning = "YouTube requiere aprobación manual; se desactivó la autopublicación de esta regla."
+        db.execute(
+            "UPDATE autopilot_rules SET auto_publish=0, last_error=?, updated_at=? WHERE id=?",
+            (publish_warning, db.now(), rule_id),
+        )
+        rule["auto_publish"] = 0
+        db.log("warn", "autopilot", publish_warning, {"rule_id": rule_id})
     try:
         project_result = _create_project(rule)
         pid = int(project_result["project_id"])
@@ -724,7 +723,6 @@ def run_rule(rule_id: int, force: bool = False) -> dict:
             (str(exc)[:500], db.now(), rule_id),
         )
         raise
-    publish_warning = ""
     if rule.get("auto_publish"):
         destination = rule.get("destination") or "entrega"
         # No exigir Ollama: el Autopiloto debe funcionar sin instalar un
