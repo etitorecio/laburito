@@ -61,7 +61,7 @@ class DocumentaryScriptTests(unittest.TestCase):
         self.assertIn("DOCUMENTAL HORIZONTAL DE FORMATO LARGO", args[2])
         self.assertIn("Duración total objetivo: 600 segundos", args[2])
         self.assertEqual(kwargs["timeout"], 900)
-        self.assertEqual(kwargs["num_predict"], 4096)
+        self.assertEqual(kwargs["num_predict"], 6144)
 
     def test_longform_rejects_a_short_summary(self):
         scenes = [{"idx": i, "title": f"Escena {i}", "duration_target_sec": 60} for i in range(10)]
