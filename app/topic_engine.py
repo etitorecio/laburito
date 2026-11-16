@@ -311,3 +311,39 @@ def research_topic(
     result["academic_sources"] = academic
     result["note_ids"] = note_ids
     return result
+
+
+def suggest_topics(niche: str, limit: int = 10) -> list[dict]:
+    """Sugiere temas documentables con resultados reales de Wikipedia, sin inventarlos."""
+    niche = re.sub(r"\\s+", " ", (niche or "").strip())
+    if not niche:
+        raise ValueError("Escribí un nicho o tema para buscar ideas.")
+    limit = max(1, min(10, int(limit)))
+    trend_signals = _relevant_trends(niche, "", trending_searches())
+    terms = [niche, niche + " historia", niche + " descubrimientos"]
+    terms.extend(niche + " " + item["title"] for item in trend_signals[:2])
+    found: list[dict] = []
+    seen: set[str] = set()
+    for term in terms:
+        data = _get({
+            "action": "query", "list": "search", "srsearch": term,
+            "srnamespace": 0, "srlimit": max(8, limit), "format": "json",
+        })
+        for item in data.get("query", {}).get("search", []):
+            title = re.sub(r"\\s+", " ", (item.get("title") or "").strip())
+            key = _normal(title)
+            if not title or key in seen or key == _normal(niche):
+                continue
+            seen.add(key)
+            snippet = re.sub(r"<[^>]+>", " ", item.get("snippet") or "")
+            snippet = re.sub(r"\\s+", " ", snippet).strip()
+            found.append({
+                "title": title,
+                "topic": title,
+                "summary": snippet,
+                "url": "https://es.wikipedia.org/wiki/" + urllib.parse.quote(title.replace(" ", "_")),
+                "source": "Wikipedia",
+            })
+            if len(found) >= limit:
+                return found
+    return found
