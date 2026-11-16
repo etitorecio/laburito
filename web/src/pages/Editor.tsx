@@ -183,7 +183,7 @@ export default function Editor({ projectId, go }: Props) {
     const tick = window.setInterval(() => {
       setPreviewElapsed((elapsed) => {
         const currentScenes = project?.scenes ?? [];
-        const total = currentScenes.reduce((sum, scene) => sum + Math.max(2, (scene.narration || '').trim().split(/\s+/).filter(Boolean).length / 2.4), 0);
+        const total = currentScenes.reduce((sum, scene) => sum + Math.max(2, Number(scene.audio_sec) || (scene.narration || '').trim().split(/\s+/).filter(Boolean).length / 2.4), 0);
         if (elapsed + 0.25 >= total) {
           setPreviewPlaying(false);
           return total;
@@ -204,7 +204,7 @@ export default function Editor({ projectId, go }: Props) {
       } else if (event.code === 'ArrowLeft' || event.code === 'ArrowRight') {
         event.preventDefault();
         const direction = event.code === 'ArrowRight' ? 1 : -1;
-        const total = (project?.scenes ?? []).reduce((sum, scene) => sum + Math.max(2, (scene.narration || '').trim().split(/\s+/).filter(Boolean).length / 2.4), 0);
+        const total = (project?.scenes ?? []).reduce((sum, scene) => sum + Math.max(2, Number(scene.audio_sec) || (scene.narration || '').trim().split(/\s+/).filter(Boolean).length / 2.4), 0);
         setPreviewPlaying(false);
         setPreviewElapsed((elapsed) => Math.max(0, Math.min(total, elapsed + direction)));
       }
