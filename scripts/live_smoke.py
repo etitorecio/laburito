@@ -377,6 +377,36 @@ def main() -> int:
     _, _, _ = call("DELETE", f"/api/projects/{project_id}")
     call("DELETE", f"/api/channels/{channel_id}")
 
+    # Prueba la ruta principal "decilo y se hace": una orden natural debe
+    # crear proyecto + guion + escenas y terminar en un MP4 sin pasos manuales.
+    status, natural, _ = call(
+        "POST", "/api/create-from-prompt",
+        {"prompt": "haceme una historia de terror"},
+    )
+    check(status == 202, "orden natural aceptada", f"({status})")
+    natural_project_id = (natural or {}).get("project_id") if isinstance(natural, dict) else None
+    natural_job_id = (natural or {}).get("job_id") if isinstance(natural, dict) else None
+    check(bool(natural_project_id and natural_job_id), "orden natural devuelve proyecto y tarea")
+    if natural_project_id and natural_job_id:
+        natural_project = (natural or {}).get("interpretation") or {}
+        check(natural_project.get("template") == "reddit_story", "la orden natural elige Historias", str(natural_project.get("template")))
+        natural_deadline = time.time() + 460
+        natural_state = ""
+        while time.time() < natural_deadline:
+            time.sleep(5)
+            _, jobs, _ = call("GET", "/api/jobs")
+            rows = jobs if isinstance(jobs, list) else (jobs or {}).get("jobs", [])
+            row = next((item for item in rows if item.get("id") == natural_job_id or item.get("project_id") == natural_project_id), None)
+            if row:
+                natural_state = str(row.get("status") or "")
+                if natural_state in {"listo", "error", "cancelado", "done", "failed", "completado"}:
+                    break
+        check(natural_state in {"listo", "done", "completado"}, "orden natural completa el render", f"({natural_state or 'sin estado'})")
+        natural_status, natural_mp4, _ = call("GET", f"/api/projects/{natural_project_id}/video", raw=True)
+        check(natural_status == 200, "orden natural entrega MP4", f"({natural_status})")
+        check(len(natural_mp4) > 10_000, "MP4 de orden natural contiene video", f"({len(natural_mp4)} bytes)")
+        call("DELETE", f"/api/projects/{natural_project_id}")
+
     if FAILS:
         print("\nFallos:")
         for item in FAILS:
