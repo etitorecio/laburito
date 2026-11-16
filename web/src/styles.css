@@ -2926,3 +2926,5 @@ th {
 }
 
 .editor-overlay-clip.audio { background: linear-gradient(135deg, #6b4c1d, #8a5725); border-color: rgba(255,190,90,.55); }
+
+.editor-overlay-lane.audio-lane { background: rgba(120,75,25,.12); border-color: rgba(255,190,90,.22); }
