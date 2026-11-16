@@ -642,6 +642,57 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertIn("Ficción original", result["warnings"][0])
 
 
+    def test_manual_video_creation_integrates_research_and_saves_project_sources(self):
+        project = {
+            "id": 991, "title": "Historia del cine", "topic": "Historia del cine",
+            "kind": "short", "template": "shorts", "notes": "",
+        }
+        research = {
+            "topic": "Historia del cine",
+            "title": "Historia del cine",
+            "url": "https://es.wikipedia.org/wiki/Historia_del_cine",
+            "source_title": "Historia del cine — Wikipedia",
+            "notes": [
+                {
+                    "niche": "Historia del cine", "title": "Historia del cine — Wikipedia",
+                    "claim": "Un extracto introductorio documentado. " * 20,
+                    "evidence_level": "orientación",
+                    "source_url": "https://es.wikipedia.org/wiki/Historia_del_cine",
+                    "methodology": "Fuente introductoria; contrastar con estudios.",
+                },
+                {
+                    "niche": "Historia del cine", "title": "Estudio académico",
+                    "claim": "Un resumen académico sobre el tema. " * 20,
+                    "evidence_level": "resumen académico",
+                    "source_url": "https://doi.org/10.0000/cinema",
+                    "methodology": "Resumen OpenAlex; consultar publicación.",
+                },
+            ],
+            "academic_sources": [{"title": "Estudio académico"}],
+        }
+        script = {"scenes": [{
+            "idx": 0, "title": "Inicio", "narration": "Narración basada en las fuentes.",
+            "visual_query": "Historia del cine", "transition": "fundido",
+        }], "warnings": []}
+        with patch.object(main_app.db, "query_one", return_value=project):
+            with patch.object(main_app.db, "query", return_value=[]):
+                with patch.object(topic_engine, "research_specific_topic", return_value=research):
+                    with patch.object(script_gen, "generate_script", return_value=script):
+                        with patch.object(main_app.db, "execute", return_value=1) as execute:
+                            with patch.object(main_app.db, "execute_many"):
+                                with patch.object(main_app.db, "scalar", return_value=-1):
+                                    with patch.object(main_app.db, "now", return_value="2026-11-16T00:00:00Z"):
+                                        with patch.object(main_app.db, "log"):
+                                            with patch.object(main_app, "_touch_project"):
+                                                with patch.object(main_app, "_project_full", return_value=project):
+                                                    result = main_app.generate_script(991)
+
+        inserts = [call.args[0] for call in execute.call_args_list]
+        self.assertEqual(sum("INSERT INTO research_notes" in sql for sql in inserts), 2)
+        self.assertEqual(sum("INSERT INTO sources" in sql for sql in inserts), 2)
+        self.assertTrue(any("Estudio académico" in str(call.args[1]) for call in execute.call_args_list))
+        self.assertTrue(any("Investigación integrada" in warning for warning in result["warnings"]))
+
     def test_specific_topic_research_returns_scoped_wikipedia_and_academic_evidence(self):
         def fake_get(params):
             if params.get("list") == "search":
