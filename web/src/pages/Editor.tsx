@@ -914,8 +914,8 @@ export default function Editor({ projectId, go }: Props) {
                   : <img key={clip.id} className="editor-preview-overlay" src={mediaUrl(clip.path)} alt={clip.title} style={overlayStyle} />;
               })}
               {previewPlaying && overlays.filter((clip) => clip.kind === "audio" && previewElapsed >= clip.start_sec && previewElapsed < clip.start_sec + clip.duration_sec).map((clip) =>
-                <audio key={clip.id} hidden autoPlay loop src={mediaUrl(clip.path)} volume={Math.max(0, Math.min(1, clip.volume ?? 1))}
-                  onLoadedMetadata={(event) => { event.currentTarget.currentTime = Math.max(0, previewElapsed - clip.start_sec); }} />
+                <audio key={clip.id} hidden autoPlay loop src={mediaUrl(clip.path)}
+                  onLoadedMetadata={(event) => { event.currentTarget.volume = Math.max(0, Math.min(1, clip.volume ?? 1)); event.currentTarget.currentTime = Math.max(0, previewElapsed - clip.start_sec); }} />
               )}
             </div>
             {activeScene && <div className="editor-preview-controls">
