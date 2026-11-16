@@ -2834,3 +2834,5 @@ th {
 .scene-sfx-controls { display: flex; flex-direction: column; gap: 9px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); }
 .scene-sfx-controls audio { width: 100%; }
 .scene-sfx-controls .field { margin: 0; }
+
+.editor-preview-caption .current-word { color: #ffe36e; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
