@@ -760,7 +760,7 @@ def set_auto_publish(project_id: int, enabled: bool, destination: str = "entrega
     if enabled:
         raise PublishError(
             "La publicación automática está desactivada por seguridad. "
-            "El render se completa primero y la subida requiere que pulses Publicar."
+            "El render se completa primero y la subida requiere aprobación manual: pulsá Publicar."
         )
     db.execute(
         "UPDATE projects SET auto_publish=0, publish_destination=?, updated_at=? WHERE id=?",
