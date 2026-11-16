@@ -137,6 +137,7 @@ export interface Project {
   scenes_count?: number;
   scenes?: Scene[];
   sources?: Source[];
+  timeline_overlays?: TimelineOverlay[];
   jobs?: Job[];
   job?: Pick<Job, 'id' | 'status' | 'progress' | 'message'> | null;
 }
