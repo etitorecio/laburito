@@ -960,7 +960,7 @@ export default function Editor({ projectId, go }: Props) {
               </div>
               {activeScene.narration.trim() && <div className="scene-audio-preview"><span>Previsualizar voz</span><audio controls preload="none" src={"/api/scenes/" + activeScene.id + "/voice-preview?v=" + encodeURIComponent([activeScene.updated_at, project.voice, project.speed, project.pitch].join("-"))} /></div>}
               <Field label="Descripción del visual"><input defaultValue={activeScene.visual_query} key={"visual-" + activeScene.id + "-" + activeScene.updated_at} onBlur={(e) => e.target.value !== activeScene.visual_query && patchScene(activeScene, { visual_query: e.target.value })} /></Field>
-              {activeScene.visual_path && /\\.(mp4|mov|webm|mkv)$/i.test(activeScene.visual_path) && <div className="scene-trim-controls">
+              {activeScene.visual_path && /\.(mp4|mov|webm|mkv)$/i.test(activeScene.visual_path) && <div className="scene-trim-controls">
                 <strong>Recortar clip de video</strong>
                 <small className="muted">Elegí qué fragmento del archivo original se usa en esta escena. Dejá el final en 0 para usar el resto del clip.</small>
                 <div className="scene-trim-fields">
