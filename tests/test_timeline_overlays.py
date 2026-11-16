@@ -9,7 +9,7 @@ from unittest.mock import patch
 from fastapi import HTTPException
 from starlette.datastructures import Headers, UploadFile
 
-from app.main import TimelineOverlayMusicIn, TimelineOverlayPatch, TimelineOverlaySfxIn, TimelineOverlayTextIn, TimelineOverlayVoiceIn, create_timeline_music_overlay, create_timeline_sfx_overlay, create_timeline_text_overlay, create_timeline_voice_overlay, patch_timeline_overlay, upload_timeline_overlay
+from app.main import TimelineOverlayMusicIn, TimelineOverlayPatch, TimelineOverlaySfxIn, TimelineOverlaySplitIn, TimelineOverlayTextIn, TimelineOverlayVoiceIn, create_timeline_music_overlay, create_timeline_sfx_overlay, create_timeline_text_overlay, create_timeline_voice_overlay, patch_timeline_overlay, split_timeline_overlay, upload_timeline_overlay
 
 
 class TimelineOverlayUploadTests(unittest.TestCase):
@@ -171,6 +171,24 @@ class TimelineOverlayUploadTests(unittest.TestCase):
         self.assertTrue(exists)
         self.assertGreater(image_size, 1000)
         self.assertIn("timeline_overlays", execute.call_args_list[0].args[0])
+        touch.assert_called_once_with(3)
+
+    def test_splits_video_overlay_at_playhead_and_preserves_source_loop_position(self):
+        overlay = {
+            "id": 82, "project_id": 3, "kind": "video", "path": "/tmp/clip.mp4",
+            "title": "Clip", "start_sec": 2, "duration_sec": 10,
+            "source_start_sec": 1, "source_end_sec": 5, "source_duration_sec": 10,
+            "x": 0.5, "y": 0.5, "width": 0.5, "opacity": 1, "volume": 1,
+        }
+        right = {**overlay, "id": 99, "start_sec": 8, "duration_sec": 4, "source_start_sec": 3}
+        with patch("app.main.db.query_one", side_effect=[overlay, right]), \
+             patch("app.main.db.execute", side_effect=[0, 99]) as execute, \
+             patch("app.main._touch_project") as touch:
+            result = split_timeline_overlay(82, TimelineOverlaySplitIn(at_sec=8))
+        self.assertEqual(result["start_sec"], 8)
+        self.assertEqual(result["duration_sec"], 4)
+        self.assertEqual(result["source_start_sec"], 3)
+        self.assertEqual(execute.call_args_list[0].args[1][0], 6)
         touch.assert_called_once_with(3)
 
     def test_rejects_source_trim_end_before_start(self):
