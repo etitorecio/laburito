@@ -341,8 +341,19 @@ export default function Editor({ projectId, go }: Props) {
     }
   }
 
-  function recordHistory(entry: EditorHistoryEntry) {
+  async function recordHistory(entry: EditorHistoryEntry) {
     if (historyReplayRef.current || !Object.keys(entry.after).length) return;
+    try {
+      await api.post(`/api/projects/${projectId}/history`, {
+        target: entry.target,
+        target_id: entry.id,
+        before: entry.before,
+        after: entry.after,
+        label: entry.label,
+      });
+    } catch (e) {
+      setError("El cambio se guardó, pero no se pudo persistir su historial: " + (e as Error).message);
+    }
     const next = historyRef.current.slice(0, historyCursorRef.current);
     next.push(entry);
     historyRef.current = next.slice(-100);
@@ -351,25 +362,16 @@ export default function Editor({ projectId, go }: Props) {
   }
 
   async function replayHistory(direction: "undo" | "redo") {
-    const index = direction === "undo" ? historyCursorRef.current - 1 : historyCursorRef.current;
-    const entry = historyRef.current[index];
+    const entry = direction === "undo"
+      ? historyRef.current[historyCursorRef.current - 1]
+      : historyRef.current[historyCursorRef.current];
     if (!entry) return;
     historyReplayRef.current = true;
     setBusy(direction);
     setError("");
     try {
-      const patch = direction === "undo" ? entry.before : entry.after;
-      if (entry.target === "scene") {
-        const updated = await api.patch<Scene>(`/api/scenes/${entry.id}`, patch);
-        setProject((prev) => prev
-          ? { ...prev, scenes: (prev.scenes ?? []).map((scene) => scene.id === updated.id ? updated : scene) }
-          : prev);
-      } else {
-        const updated = await api.patch<TimelineOverlay>(`/api/timeline-overlays/${entry.id}`, patch);
-        setOverlays((current) => current.map((clip) => clip.id === updated.id ? updated : clip));
-      }
-      historyCursorRef.current += direction === "undo" ? -1 : 1;
-      setHistoryVersion((version) => version + 1);
+      await api.post(`/api/projects/${projectId}/history/${direction}`, {});
+      await load();
       setOk(direction === "undo" ? `Deshecho: ${entry.label}` : `Rehecho: ${entry.label}`);
     } catch (e) {
       setError((e as Error).message);
@@ -402,7 +404,7 @@ export default function Editor({ projectId, go }: Props) {
       setProject((prev) =>
         prev ? { ...prev, scenes: (prev.scenes ?? []).map((s) => (s.id === updated.id ? updated : s)) } : prev,
       );
-      recordHistory({ target: "scene", id: scene.id, before, after, label: scene.title || "escena" });
+      await recordHistory({ target: "scene", id: scene.id, before, after, label: scene.title || "escena" });
     } catch (e) {
       setError((e as Error).message);
     }
@@ -714,7 +716,7 @@ export default function Editor({ projectId, go }: Props) {
       }
       const updated = await api.patch<TimelineOverlay>(`/api/timeline-overlays/${clip.id}`, patch);
       setOverlays((current) => current.map((item) => item.id === clip.id ? updated : item));
-      recordHistory({ target: "overlay", id: clip.id, before, after, label: clip.title || "capa" });
+      await recordHistory({ target: "overlay", id: clip.id, before, after, label: clip.title || "capa" });
       setOk("Capa guardada.");
     } catch (e) {
       setError((e as Error).message);
