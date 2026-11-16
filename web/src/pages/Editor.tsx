@@ -905,6 +905,12 @@ export default function Editor({ projectId, go }: Props) {
                 : <img src={mediaUrl(previewScene.visual_path)} alt={previewScene.title} />)
                 : <div className="editor-preview-empty"><span>✦</span><strong>Tu escena está lista para ilustrar</strong><small>Buscá un recurso con licencia o subí tu propio material.</small></div>}
               {captionsEnabled && previewCaptionWords.length > 0 && <div className="editor-preview-caption">{previewCaptionWords.map((word, index) => <span key={previewCaptionStart + index} className={previewCaptionStart + index === previewWordIndex ? "current-word" : ""}>{word} </span>)}</div>}
+              {overlays.filter((clip) => previewElapsed >= clip.start_sec && previewElapsed < clip.start_sec + clip.duration_sec).map((clip) => {
+                const overlayStyle = { left: (clip.x * 100) + "%", top: (clip.y * 100) + "%", width: (clip.width * 100) + "%", opacity: clip.opacity };
+                return clip.kind === "video"
+                  ? <video key={clip.id} className="editor-preview-overlay" src={mediaUrl(clip.path)} muted loop autoPlay playsInline style={overlayStyle} />
+                  : <img key={clip.id} className="editor-preview-overlay" src={mediaUrl(clip.path)} alt={clip.title} style={overlayStyle} />;
+              })}
             </div>
             {activeScene && <div className="editor-preview-controls">
               <div className="editor-transport">
