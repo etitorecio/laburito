@@ -17,6 +17,9 @@ import time
 import wave
 import math
 import struct
+import subprocess
+import tempfile
+import os
 import urllib.error
 import urllib.request
 
@@ -196,6 +199,23 @@ def main() -> int:
         overlay_buffer.getvalue(),
     )
     check(status == 201 and bool((overlay or {}).get("id")), "capa visual independiente agregada", f"({status})")
+
+    with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as video_file:
+        video_path = video_file.name
+    try:
+        subprocess.run(
+            ["ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=cyan:s=320x180:d=2",
+             "-c:v", "libx264", "-pix_fmt", "yuv420p", video_path],
+            capture_output=True, timeout=30, check=True,
+        )
+        with open(video_path, "rb") as source_video:
+            status, video_overlay, _ = upload_media(
+                f"/api/projects/{project_id}/timeline-overlays/upload?start_sec=1.5",
+                "smoke-video.mp4", "video/mp4", source_video.read(),
+            )
+        check(status == 201 and (video_overlay or {}).get("kind") == "video", "capa de video independiente agregada", f"({status})")
+    finally:
+        os.unlink(video_path)
 
     audio_buffer = io.BytesIO()
     with wave.open(audio_buffer, "wb") as wav_file:
