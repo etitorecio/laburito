@@ -71,6 +71,33 @@ def probe_duration(path: str | Path) -> float:
         return 0.0
 
 
+def probe_audio(path: str | Path) -> dict:
+    """Devuelve metadatos del primer stream de audio o un diccionario vacío."""
+    proc = run(
+        [
+            ffprobe(), "-v", "error", "-select_streams", "a:0",
+            "-show_entries", "stream=codec_name,channels,sample_rate",
+            "-show_entries", "format=duration",
+            "-of", "json", str(path),
+        ],
+        timeout=60,
+    )
+    try:
+        data = json.loads(proc.stdout.decode() or "{}")
+    except (json.JSONDecodeError, AttributeError):
+        return {}
+    stream = (data.get("streams") or [{}])[0]
+    duration = float((data.get("format") or {}).get("duration") or 0)
+    if not stream.get("codec_name"):
+        return {}
+    return {
+        "codec": stream.get("codec_name"),
+        "channels": stream.get("channels"),
+        "sample_rate": stream.get("sample_rate"),
+        "duration": duration,
+    }
+
+
 def probe_video(path: str | Path) -> dict:
     proc = run(
         [
