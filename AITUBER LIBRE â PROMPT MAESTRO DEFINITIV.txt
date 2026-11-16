@@ -489,3 +489,23 @@ VALIDACIÓN DE PRODUCTO
 - Probar reinicio durante espera y durante render, reanudación, aislamiento de canales, prevención de temas duplicados y bloqueo de autopublicación.
 - La evidencia de CI debe corresponder al último commit probado. Leer los logs de cualquier fallo y repetir tras corregirlo.
 - No declarar finalizado por una compilación aislada ni por la existencia de endpoints sin una prueba de extremo a extremo.
+
+
+ANEXO PRIORITARIO — EXPERIENCIA DE USO TIPO AITUBER (2026-11-16)
+
+ESTA ES LA PRIORIDAD DE PRODUCTO MÁS IMPORTANTE DESPUÉS DE QUE TODO FUNCIONE: LABURITO DEBE SER LO MÁS PARECIDO POSIBLE A AITUBER.APP Y, SOBRE TODO, IGUAL DE FÁCIL DE ENTENDER Y USAR. No alcanza con tener muchas funciones escondidas en pantallas técnicas.
+
+- La primera pantalla debe dejar claro cómo crear un video. El flujo habitual debe ser: elegir un formato o escribir una idea en lenguaje natural, tocar “Crear” y ver el progreso real.
+- Ofrecer accesos directos/presets visuales para Shorts, historias, documentales y Frutinovelas. Un usuario nuevo debe poder empezar sin leer documentación ni conocer términos como TTS, render, aspect ratio, codecs, workers o modelos.
+- Usar valores predeterminados inteligentes por canal y formato: voz, subtítulos, música, visuales, duración, proporción y calidad. El usuario no debe volver a elegir esas opciones para cada video.
+- Permitir que el sistema elija automáticamente el canal correcto por formato; ofrecer selector de canal opcional, no obligatorio. Historias y Frutinovela deben dirigirse a sus fábricas/canales correspondientes.
+- El flujo de creación normal no debe abrir el editor avanzado ni obligar a recorrer un wizard. Crear primero; revisar/editar después si el usuario quiere.
+- Mantener un camino rápido para principiantes y ocultar la complejidad detrás de “Ajustes avanzados”. Las opciones avanzadas nunca deben bloquear una producción estándar.
+- El piloto automático debe poder activarse con pocos datos y una sola confirmación. Aprovechar el nombre, temática e identidad ya guardados en el canal para completar automáticamente el nicho y los valores recomendados.
+- La pantalla de inicio debe mostrar claramente qué está produciendo el sistema, qué terminó, qué requiere atención y dónde revisar el resultado. No mostrar progreso ficticio ni estados ambiguos.
+- En Android: botones grandes, controles táctiles, formularios cortos, navegación simple, evitar tablas anchas y no requerir edición fina para crear/publicar.
+- Cada error debe explicar en lenguaje cotidiano qué pasó y ofrecer una acción concreta para continuar o reintentar. No mostrar trazas técnicas al usuario común.
+- Mantener biblioteca, cola, calendario, canales, analítica y ajustes accesibles, pero sin competir visualmente con la acción principal de crear.
+- Diseñar las pantallas y flujos comparando continuamente la experiencia pública de AITuber: cantidad de pasos, claridad de etiquetas, jerarquía visual, valores por defecto, previsualizaciones, estados y acciones principales. No copiar marca ni recursos protegidos.
+- Antes de agregar una opción nueva, preguntar internamente si hace más fácil o más difícil crear un video. Si complica el camino principal, ubicarla en ajustes avanzados.
+- La paridad se evalúa tanto por capacidades reales como por facilidad de uso. Una función existente pero difícil de encontrar o utilizar no cuenta como experiencia equivalente.
