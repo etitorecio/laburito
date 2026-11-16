@@ -585,6 +585,47 @@ def _visual_input_args(
     return args
 
 
+def _trim_visual_source(
+    visual: Path,
+    scene_dir: Path,
+    trim_start: float = 0.0,
+    trim_end: float = 0.0,
+    source_duration: float = 0.0,
+) -> Path:
+    """Materializa el fragmento de video una vez para poder repetirlo durante toda la escena."""
+    if visual.suffix.lower() not in {".mp4", ".mov", ".webm", ".mkv"}:
+        return visual
+    start = max(0.0, float(trim_start or 0))
+    end = max(0.0, float(trim_end or 0))
+    source = max(0.0, float(source_duration or 0))
+    if start <= 0 and end <= 0:
+        return visual
+    window_end = end if end > start else source if source > start else 0
+    try:
+        stat = visual.stat()
+        signature = f"{visual}:{stat.st_size}:{stat.st_mtime_ns}:{start:.3f}:{window_end:.3f}"
+    except OSError:
+        signature = f"{visual}:{start:.3f}:{window_end:.3f}"
+    trimmed = scene_dir / f"visual-trim-{_h(signature)[:16]}.mp4"
+    if trimmed.is_file() and trimmed.stat().st_size > 1000:
+        return trimmed
+    args = []
+    if start > 0:
+        args.extend(["-ss", f"{start:.3f}"])
+    args.extend(["-i", str(visual)])
+    if window_end > start:
+        args.extend(["-t", f"{window_end - start:.3f}"])
+    args.extend([
+        "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
+        "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(trimmed),
+    ])
+    _ff(args)
+    if not trimmed.is_file() or trimmed.stat().st_size <= 1000:
+        trimmed.unlink(missing_ok=True)
+        raise RuntimeError("No se pudo preparar el fragmento recortado del video.")
+    return trimmed
+
+
 def render_scene(
     project: dict,
     scene: dict,
@@ -677,13 +718,14 @@ def render_scene(
         filters.extend(_motion_filters(transition, width, height, duration, fps))
         if cues:
             filters.append(_drawtext_chain(cues, font, width, height, style))
-        input_args = _visual_input_args(
+        render_visual = _trim_visual_source(
             visual_path,
-            fps,
+            seg_dir,
             scene.get("visual_trim_start_sec") or 0,
             scene.get("visual_trim_end_sec") or 0,
             scene.get("visual_source_duration_sec") or 0,
         )
+        input_args = _visual_input_args(render_visual, fps)
         _ff(
             [
                 *input_args,
