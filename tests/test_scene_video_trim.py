@@ -112,20 +112,12 @@ class SceneVideoTrimTests(unittest.TestCase):
         args = _visual_input_args(Path("clip.mp4"), 30)
         self.assertEqual(args, ["-stream_loop", "-1", "-i", "clip.mp4"])
 
-    def test_video_input_uses_selected_source_window(self):
-        args = _visual_input_args(Path("clip.mov"), 30, 2.25, 7.75)
-        self.assertEqual(args, ["-stream_loop", "-1", "-ss", "2.250", "-t", "5.500", "-i", "clip.mov"])
+    def test_materialized_trimmed_video_loops_without_an_input_duration_cap(self):
+        args = _visual_input_args(Path("trimmed.mp4"), 25)
+        self.assertEqual(args, ["-stream_loop", "-1", "-i", "trimmed.mp4"])
 
-    def test_video_input_can_start_at_offset_without_end_limit(self):
-        args = _visual_input_args(Path("clip.webm"), 25, 3.0, 0)
-        self.assertEqual(args, ["-stream_loop", "-1", "-ss", "3.000", "-i", "clip.webm"])
-
-    def test_start_only_trim_loops_the_remaining_source_window(self):
-        args = _visual_input_args(Path("clip.webm"), 25, 3.0, 0, 12.0)
-        self.assertEqual(args, ["-stream_loop", "-1", "-ss", "3.000", "-t", "9.000", "-i", "clip.webm"])
-
-    def test_still_images_do_not_receive_video_trim_arguments(self):
-        args = _visual_input_args(Path("still.png"), 25, 3.0, 8.0)
+    def test_still_images_use_a_static_loop_input(self):
+        args = _visual_input_args(Path("still.png"), 25)
         self.assertEqual(args, ["-loop", "1", "-framerate", "25", "-i", "still.png"])
 
     def test_editing_narration_invalidates_stale_rendered_voice_duration(self):
