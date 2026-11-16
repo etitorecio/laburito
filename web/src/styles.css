@@ -2730,3 +2730,30 @@ th {
 
 .editor-track-clip video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .42; pointer-events: none; }
 .editor-inspector .btn input[type="file"] { display: none; }
+
+
+.editor-hub { max-width: 1100px; }
+.editor-hub-projects { display: flex; flex-direction: column; gap: 7px; }
+.editor-hub-project { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel-2); color: var(--text); text-align: left; cursor: pointer; }
+.editor-hub-project:hover { border-color: var(--accent); background: rgba(255,176,32,.06); }
+.editor-hub-thumb { display: grid; place-items: center; flex: 0 0 58px; height: 42px; border-radius: 7px; background: linear-gradient(135deg,#263b57,#121d2c); color: var(--accent); }
+.editor-hub-thumb.portrait { flex-basis: 34px; height: 52px; margin: 0 12px; }
+.editor-hub-project-info { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 3px; }
+.editor-hub-project-info strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.editor-hub-project-info small { color: var(--muted); }
+.editor-hub-formats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.editor-hub-format { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 190px; padding: 18px 10px; border: 1px solid var(--line); border-radius: 13px; background: var(--panel-2); color: var(--text); cursor: pointer; }
+.editor-hub-format:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-2px); }
+.editor-hub-format:disabled { opacity: .5; cursor: wait; }
+.editor-hub-format span { display: grid; place-items: center; height: 86px; color: var(--accent); font-size: 4rem; line-height: 1; }
+.editor-hub-format.tall span { font-size: 4.2rem; }
+.editor-hub-format.square span { font-size: 4.4rem; }
+.editor-hub-format.wide span { font-size: 5rem; }
+.editor-hub-format small { color: var(--muted); text-align: center; }
+@media (max-width: 600px) {
+  .editor-hub-formats { grid-template-columns: 1fr; }
+  .editor-hub-format { min-height: 125px; }
+  .editor-hub-format span { height: 54px; font-size: 3rem !important; }
+  .editor-hub-project { gap: 8px; }
+  .editor-hub-project .badge { display: none; }
+}
