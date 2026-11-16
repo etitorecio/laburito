@@ -907,6 +907,76 @@ def get_project(project_id: int):
     return _project_full(project_id)
 
 
+@app.post("/api/projects/{project_id}/duplicate", status_code=201)
+def duplicate_project(project_id: int):
+    """Duplica un proyecto editable, conservando guion, recursos y ajustes."""
+    original = db.query_one("SELECT * FROM projects WHERE id=?", (project_id,))
+    if not original:
+        raise HTTPException(404, "Proyecto inexistente")
+    stamp = db.now()
+    project_data = {
+        key: value for key, value in original.items()
+        if key not in {"id"}
+    }
+    project_data["title"] = (str(original.get("title") or "Video")[:110] + " (copia)")
+    project_data["status"] = "borrador"
+    project_data["quality_json"] = "{}"
+    project_data["created_at"] = stamp
+    project_data["updated_at"] = stamp
+    project_columns = list(project_data)
+    new_project_id = db.execute(
+        "INSERT INTO projects(" + ",".join(project_columns) + ") VALUES(" +
+        ",".join("?" for _ in project_columns) + ")",
+        tuple(project_data[key] for key in project_columns),
+    )
+
+    scene_map: dict[int, int] = {}
+    for scene in db.query("SELECT * FROM scenes WHERE project_id=? ORDER BY idx,id", (project_id,)):
+        scene_data = {key: value for key, value in scene.items() if key not in {"id"}}
+        scene_data["project_id"] = new_project_id
+        scene_data["audio_path"] = ""
+        scene_data["audio_sec"] = 0
+        scene_data["status"] = "borrador"
+        scene_data["created_at"] = stamp
+        scene_data["updated_at"] = stamp
+        columns = list(scene_data)
+        new_scene_id = db.execute(
+            "INSERT INTO scenes(" + ",".join(columns) + ") VALUES(" +
+            ",".join("?" for _ in columns) + ")",
+            tuple(scene_data[key] for key in columns),
+        )
+        scene_map[int(scene["id"])] = new_scene_id
+
+    for source in db.query("SELECT * FROM sources WHERE project_id=? ORDER BY id", (project_id,)):
+        source_data = {key: value for key, value in source.items() if key not in {"id"}}
+        source_data["project_id"] = new_project_id
+        source_data["scene_id"] = scene_map.get(int(source["scene_id"])) if source.get("scene_id") else None
+        source_data["created_at"] = stamp
+        columns = list(source_data)
+        db.execute(
+            "INSERT INTO sources(" + ",".join(columns) + ") VALUES(" +
+            ",".join("?" for _ in columns) + ")",
+            tuple(source_data[key] for key in columns),
+        )
+
+    for asset in db.query("SELECT * FROM assets WHERE project_id=? ORDER BY id", (project_id,)):
+        asset_data = {key: value for key, value in asset.items() if key not in {"id"}}
+        asset_data["project_id"] = new_project_id
+        asset_data["scene_id"] = scene_map.get(int(asset["scene_id"])) if asset.get("scene_id") else None
+        asset_data["created_at"] = stamp
+        columns = list(asset_data)
+        db.execute(
+            "INSERT INTO assets(" + ",".join(columns) + ") VALUES(" +
+            ",".join("?" for _ in columns) + ")",
+            tuple(asset_data[key] for key in columns),
+        )
+
+    db.log("info", "projects", f"Proyecto duplicado: {original.get('title')}", {
+        "source_project_id": project_id, "project_id": new_project_id,
+    })
+    return _project_full(new_project_id)
+
+
 @app.patch("/api/projects/{project_id}")
 def patch_project(project_id: int, payload: ProjectPatch):
     current_project = db.query_one("SELECT id, template, channel_id FROM projects WHERE id=?", (project_id,))
