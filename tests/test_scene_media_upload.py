@@ -10,7 +10,7 @@ from fastapi import HTTPException
 from PIL import Image
 from starlette.datastructures import Headers, UploadFile
 
-from app.main import upload_scene_image
+from app.main import upload_scene_image, upload_scene_sound
 
 
 class SceneImageUploadTests(unittest.TestCase):
@@ -62,6 +62,35 @@ class SceneImageUploadTests(unittest.TestCase):
             self.assertEqual(result["media_type"], "video")
             self.assertEqual(execute.call_args_list[0].args[1][1], "video_fondo")
             saved = list((Path(temp) / "media" / "uploads" / "3").glob("scene-7-*.mp4"))
+            self.assertEqual(len(saved), 1)
+            self.assertGreater(saved[0].stat().st_size, 100)
+            touch.assert_called_once_with(3)
+
+    def test_uploads_scene_sound_effect_as_normalized_wav(self):
+        upload = UploadFile(
+            filename="impacto.mp3",
+            file=io.BytesIO(b"fake-audio-source"),
+            headers=Headers({"content-type": "audio/mpeg"}),
+        )
+        calls = {"count": 0}
+        def fake_media_run(command, timeout=900):
+            calls["count"] += 1
+            if "ffprobe" in command[0]:
+                return subprocess.CompletedProcess(command, 0, b'{"streams":[{"codec_name":"mp3"}]}', b"")
+            Path(command[-1]).write_bytes(b"normalized-wav" * 200)
+            return subprocess.CompletedProcess(command, 0, b"", b"")
+        with tempfile.TemporaryDirectory() as temp, \
+             patch("app.main.db.MEDIA_DIR", Path(temp) / "media"), \
+             patch("app.main.db.TMP_DIR", Path(temp) / "tmp"), \
+             patch("app.main.db.query_one", side_effect=[{"id": 7, "project_id": 3}, {"id": 7, "project_id": 3}]), \
+             patch("app.main.db.execute") as execute, \
+             patch("app.main._touch_project") as touch, \
+             patch("app.main.media.run", side_effect=fake_media_run):
+            result = asyncio.run(upload_scene_sound(7, upload))
+            self.assertTrue(result["ok"])
+            self.assertEqual(calls["count"], 2)
+            self.assertIn("sfx_path", execute.call_args_list[0].args[0])
+            saved = list((Path(temp) / "media" / "uploads" / "3").glob("scene-7-sfx-*.wav"))
             self.assertEqual(len(saved), 1)
             self.assertGreater(saved[0].stat().st_size, 100)
             touch.assert_called_once_with(3)
