@@ -1014,7 +1014,9 @@ def generate_script(project_id: int, replace: bool = True):
                 )
             db.log("info", "script", "Guion procesado con Ollama local", {"project_id": project_id})
         except Exception as exc:
-            db.log("warn", "script", f"Ollama no pudo reescribir el guion; se conserva el borrador local: {exc}")
+            warning = f"Ollama no pudo completar la reescritura del guion; se conserva el borrador local para que puedas editarlo: {exc}"
+            db.log("warn", "script", warning, {"project_id": project_id})
+            script.setdefault("warnings", []).append(warning)
     if replace:
         db.execute("DELETE FROM scenes WHERE project_id=?", (project_id,))
     base = 0 if replace else db.scalar("SELECT COALESCE(MAX(idx), -1) FROM scenes WHERE project_id=?", (project_id,), -1) + 1
