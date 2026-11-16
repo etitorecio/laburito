@@ -891,12 +891,26 @@ export default function Editor({ projectId, go }: Props) {
             )}
           </Card>
 
-          <Card title="Miniatura" sub="Se genera en el render; podés descargarla del ZIP.">
-            {project.status === 'renderizado' ? (
+          <Card title="Miniatura" sub="Subí tu portada o usá la miniatura automática. La imagen personalizada se aplica al próximo render.">
+            {project.thumbnail_path ? (
+              <img className="shot" alt="Miniatura personalizada" src={mediaUrl(project.thumbnail_path)} />
+            ) : project.status === 'renderizado' ? (
               <img className="shot" alt="Miniatura del proyecto" src={mediaUrl(`renders/${projectId}/thumb.jpg`)} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-            ) : (
-              <Empty>La miniatura aparece después del primer render.</Empty>
-            )}
+            ) : <Empty>La miniatura automática se prepara al renderizar.</Empty>}
+            <label className="btn small ghost" style={{ marginTop: 10 }}>
+              Subir miniatura personalizada
+              <input type="file" accept="image/jpeg,image/png,image/webp" hidden disabled={!!busy} onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setBusy('thumbnail-upload'); setError(''); setOk('');
+                try {
+                  await api.upload(`/api/projects/${projectId}/thumbnail`, file);
+                  await load();
+                  setOk('Miniatura guardada. Se usará en el próximo render.');
+                } catch (uploadError) { setError((uploadError as Error).message); }
+                finally { setBusy(''); e.target.value = ''; }
+              }} />
+            </label>
           </Card>
         </div>
     </div>
