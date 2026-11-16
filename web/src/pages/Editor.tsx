@@ -905,6 +905,7 @@ export default function Editor({ projectId, go }: Props) {
                 setBusy('thumbnail-upload'); setError(''); setOk('');
                 try {
                   await api.upload(`/api/projects/${projectId}/thumbnail`, file);
+                  await patchProject({ notes: notesWithThumbnailSetting(project.notes || '', true) });
                   await load();
                   setOk('Miniatura guardada. Se usará en el próximo render.');
                 } catch (uploadError) { setError((uploadError as Error).message); }
