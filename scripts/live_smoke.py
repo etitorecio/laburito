@@ -209,11 +209,26 @@ def main() -> int:
             capture_output=True, timeout=30, check=True,
         )
         with open(video_path, "rb") as source_video:
-            status, video_overlay, _ = upload_media(
-                f"/api/projects/{project_id}/timeline-overlays/upload?start_sec=1.5",
-                "smoke-video.mp4", "video/mp4", source_video.read(),
-            )
+            video_bytes = source_video.read()
+        status, video_overlay, _ = upload_media(
+            f"/api/projects/{project_id}/timeline-overlays/upload?start_sec=1.5",
+            "smoke-video.mp4", "video/mp4", video_bytes,
+        )
         check(status == 201 and (video_overlay or {}).get("kind") == "video", "capa de video independiente agregada", f"({status})")
+        scene_id = scenes[0]["id"]
+        status, scene_video, _ = upload_media(
+            f"/api/scenes/{scene_id}/media", "smoke-scene.mp4", "video/mp4", video_bytes,
+        )
+        check(status == 201, "video fuente de escena subido", f"({status})")
+        status, trimmed_scene, _ = call(
+            "PATCH", f"/api/scenes/{scene_id}",
+            {"visual_trim_start_sec": 0.2, "visual_trim_end_sec": 1.8},
+        )
+        check(
+            status == 200 and abs(float((trimmed_scene or {}).get("visual_source_duration_sec") or 0) - 2.0) < 0.5,
+            "recorte de entrada/salida guardado contra la duración original",
+            f"({status})",
+        )
     finally:
         os.unlink(video_path)
 
