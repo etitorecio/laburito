@@ -901,11 +901,14 @@ export default function Editor({ projectId, go }: Props) {
                     <div className="grow">
                       <h4>{s.title || 'Sin título'}</h4>
                       <div className="meta">
+                        <span>{s.kind === 'investigacion' ? 'Investigación del tema' : 'Recurso visual'}</span>
+                        <span>·</span>
                         <span>{s.author || 'autor desconocido'}</span>
                         <span>·</span>
                         <span>{s.license || 'licencia a verificar'}</span>
-                        {s.url && <a href={s.url} target="_blank" rel="noreferrer">ver</a>}
+                        {s.url && <a href={s.url} target="_blank" rel="noreferrer">ver fuente</a>}
                       </div>
+                      {s.notes && <p className="muted">{s.notes}</p>}
                     </div>
                   </div>
                 ))}
