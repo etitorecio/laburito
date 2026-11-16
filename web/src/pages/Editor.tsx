@@ -839,7 +839,7 @@ export default function Editor({ projectId, go }: Props) {
                   }
                 }}>{previewPlaying ? "Ⅱ Pausar" : "▶ Reproducir"}</button>
                 <input aria-label="Posición de reproducción" type="range" min="0" max={Math.max(1, timelineDuration)} step="0.1" value={Math.min(previewElapsed, timelineDuration)} onChange={(e) => { setPreviewElapsed(Number(e.target.value)); setPreviewPlaying(false); }} />
-                <small>{fmtDuration(previewElapsed)} / {fmtDuration(timelineDuration)}</small>
+                <small>{fmtDuration(previewElapsed)} / {fmtDuration(timelineDuration)}</small><span className="editor-shortcuts">Espacio: reproducir · ←/→: avanzar 1 s</span>
               </div>
               <span>{previewScene?.title ?? activeScene.title} · {activeScene.narration.trim().split(/\s+/).filter(Boolean).length} palabras</span>
               <div className="row gap-8">
