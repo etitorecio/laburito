@@ -162,6 +162,11 @@ class SceneIn(BaseModel):
     transition: str = "corte"
 
 
+class SceneSplitIn(BaseModel):
+    narration: str
+    split_at: int
+
+
 class NicheIn(BaseModel):
     name: str
     demand: int = 0
@@ -1196,6 +1201,56 @@ def patch_scene(scene_id: int, payload: ScenePatch):
         db.execute(f"UPDATE scenes SET {sets}, updated_at=? WHERE id=?", (*data.values(), db.now(), scene_id))
         _touch_project(scene["project_id"])
     return db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))
+
+
+@app.post("/api/scenes/{scene_id}/split", status_code=201)
+def split_scene(scene_id: int, payload: SceneSplitIn):
+    """Divide una escena en dos en la posición de texto elegida en el editor."""
+    scene = db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,))
+    if not scene:
+        raise HTTPException(404, "Escena inexistente")
+    narration = (payload.narration or "").strip()
+    cut = max(0, min(len(narration), int(payload.split_at)))
+    if cut <= 20 or cut >= len(narration) - 20:
+        raise HTTPException(400, "Elegí un punto dentro del texto, dejando al menos 20 caracteres a cada lado.")
+    if cut < len(narration) and not narration[cut].isspace():
+        before = max(narration.rfind(" ", max(0, cut - 40), cut), narration.rfind("\n", max(0, cut - 40), cut))
+        after_space = narration.find(" ", cut, min(len(narration), cut + 40))
+        candidates = [position for position in (before, after_space) if position > 0]
+        if candidates:
+            cut = min(candidates, key=lambda position: abs(position - cut))
+    first_text = narration[:cut].strip()
+    second_text = narration[cut:].strip()
+    if len(first_text) < 20 or len(second_text) < 20:
+        raise HTTPException(400, "La división debe dejar dos escenas con texto suficiente.")
+
+    stamp = db.now()
+    db.execute(
+        "UPDATE scenes SET narration=?, audio_path='', audio_sec=0, status='borrador', updated_at=? WHERE id=?",
+        (first_text, stamp, scene_id),
+    )
+    db.execute(
+        "UPDATE scenes SET idx=idx+1, updated_at=? WHERE project_id=? AND idx>?",
+        (stamp, scene["project_id"], scene["idx"]),
+    )
+    second_id = db.execute(
+        "INSERT INTO scenes(project_id,idx,title,narration,visual_query,visual_path,visual_kind,visual_license,visual_author,visual_url,transition,status,created_at,updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (
+            scene["project_id"], int(scene["idx"]) + 1,
+            (str(scene.get("title") or "Escena")[:100] + " (continuación)"),
+            second_text, scene.get("visual_query") or "", scene.get("visual_path") or "",
+            scene.get("visual_kind") or "", scene.get("visual_license") or "",
+            scene.get("visual_author") or "", scene.get("visual_url") or "",
+            scene.get("transition") or "corte", "borrador", stamp, stamp,
+        ),
+    )
+    _touch_project(scene["project_id"])
+    return {
+        "ok": True,
+        "first": db.query_one("SELECT * FROM scenes WHERE id=?", (scene_id,)),
+        "second": db.query_one("SELECT * FROM scenes WHERE id=?", (second_id,)),
+    }
 
 
 @app.post("/api/scenes/{scene_id}/regenerate")
