@@ -14,6 +14,7 @@ import urllib.parse
 import urllib.request
 import shutil
 import time
+import textwrap
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -21,7 +22,7 @@ from fastapi import Body, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from PIL import Image, ImageStat
+from PIL import Image, ImageDraw, ImageFont, ImageStat
 
 from . import autopilot, db, media, options, persistence, publish, render, script_gen, skeleton, tts, worker, topic_engine
 
@@ -167,6 +168,16 @@ class SceneIn(BaseModel):
 class SceneSplitIn(BaseModel):
     narration: str
     split_at: int
+
+
+class TimelineOverlayTextIn(BaseModel):
+    text: str
+    start_sec: float = 0
+    duration_sec: float = 4
+    x: float = 0.5
+    y: float = 0.75
+    width: float = 0.82
+    opacity: float = 1
 
 
 class TimelineOverlayPatch(BaseModel):
@@ -1627,6 +1638,61 @@ def delete_scene(scene_id: int):
     return {"ok": True}
 
 
+def _write_timeline_text_image(text: str, target: Path) -> None:
+    text = " ".join((text or "").split())[:240]
+    if not text:
+        raise HTTPException(400, "Escribí el texto que querés superponer.")
+    font_file = media.font_path()
+    font = ImageFont.truetype(font_file, 58) if font_file else ImageFont.load_default()
+    lines = textwrap.wrap(text, width=28, break_long_words=True)[:4]
+    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
+    boxes = [probe.textbbox((0, 0), line, font=font, stroke_width=2) for line in lines]
+    line_heights = [max(1, box[3] - box[1]) for box in boxes]
+    text_width = max((box[2] - box[0] for box in boxes), default=1)
+    padding = 36
+    line_gap = 14
+    height = sum(line_heights) + max(0, len(lines) - 1) * line_gap + padding * 2
+    width = max(600, min(1600, text_width + padding * 2))
+    image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((4, 4, width - 4, height - 4), radius=22, fill=(0, 0, 0, 190))
+    y = padding
+    for line, line_height in zip(lines, line_heights):
+        draw.text((padding, y), line, font=font, fill=(255, 255, 255, 255),
+                  stroke_width=2, stroke_fill=(0, 0, 0, 210))
+        y += line_height + line_gap
+    target.parent.mkdir(parents=True, exist_ok=True)
+    image.save(target, format="PNG", optimize=True)
+
+
+@app.post("/api/projects/{project_id}/timeline-overlays/text", status_code=201)
+def create_timeline_text_overlay(project_id: int, payload: TimelineOverlayTextIn):
+    if not db.query_one("SELECT id FROM projects WHERE id=?", (project_id,)):
+        raise HTTPException(404, "Proyecto inexistente")
+    text = " ".join((payload.text or "").split())[:240]
+    if not text:
+        raise HTTPException(400, "Escribí el texto que querés superponer.")
+    if payload.start_sec < 0 or not 0.1 <= payload.duration_sec <= 3600:
+        raise HTTPException(400, "La posición o duración del texto no son válidas.")
+    if not 0 <= payload.x <= 1 or not 0 <= payload.y <= 1 or not 0.05 <= payload.width <= 1 or not 0 <= payload.opacity <= 1:
+        raise HTTPException(400, "La posición, tamaño u opacidad del texto no son válidos.")
+    folder = db.MEDIA_DIR / "overlays" / str(project_id)
+    target = folder / f"text-{time.time_ns()}.png"
+    _write_timeline_text_image(text, target)
+    overlay_id = db.execute(
+        "INSERT INTO timeline_overlays(project_id,kind,path,title,start_sec,duration_sec,x,y,width,opacity,volume,created_at,updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (project_id, "text", str(target), text, payload.start_sec, payload.duration_sec,
+         payload.x, payload.y, payload.width, payload.opacity, 1.0, db.now(), db.now()),
+    )
+    db.execute(
+        "INSERT INTO assets(project_id,kind,path,label,bytes,created_at) VALUES(?,?,?,?,?,?)",
+        (project_id, "capa_text", str(target), text[:120], target.stat().st_size, db.now()),
+    )
+    _touch_project(project_id)
+    return db.query_one("SELECT * FROM timeline_overlays WHERE id=?", (overlay_id,))
+
+
 @app.get("/api/projects/{project_id}/timeline-overlays")
 def list_timeline_overlays(project_id: int):
     if not db.query_one("SELECT id FROM projects WHERE id=?", (project_id,)):
@@ -1734,6 +1800,8 @@ def patch_timeline_overlay(overlay_id: int, payload: TimelineOverlayPatch):
     if not 0 <= float(candidate.get("volume", 1)) <= 2:
         raise HTTPException(400, "El volumen de la capa de audio debe estar entre 0 y 200%.")
     if data:
+        if overlay.get("kind") == "text" and "title" in data:
+            _write_timeline_text_image(data["title"], Path(overlay["path"]))
         sets = ", ".join(f"{key}=?" for key in data)
         db.execute(f"UPDATE timeline_overlays SET {sets},updated_at=? WHERE id=?", (*data.values(), db.now(), overlay_id))
         _touch_project(overlay["project_id"])
