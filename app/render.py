@@ -561,6 +561,22 @@ def _mix_scene_audio(
     return voice_wav
 
 
+def _visual_input_args(visual: Path, fps: int, trim_start: float = 0.0, trim_end: float = 0.0) -> list[str]:
+    """Construye argumentos de entrada FFmpeg respetando el fragmento elegido."""
+    is_video = visual.suffix.lower() in {".mp4", ".mov", ".webm", ".mkv"}
+    if not is_video:
+        return ["-loop", "1", "-framerate", str(fps), "-i", str(visual)]
+    start = max(0.0, float(trim_start or 0))
+    end = max(0.0, float(trim_end or 0))
+    args = ["-stream_loop", "-1"]
+    if start:
+        args.extend(["-ss", f"{start:.3f}"])
+    if end > start:
+        args.extend(["-t", f"{end - start:.3f}"])
+    args.extend(["-i", str(visual)])
+    return args
+
+
 def render_scene(
     project: dict,
     scene: dict,
@@ -653,18 +669,11 @@ def render_scene(
         filters.extend(_motion_filters(transition, width, height, duration, fps))
         if cues:
             filters.append(_drawtext_chain(cues, font, width, height, style))
-        is_video_background = visual_path.suffix.lower() in {".mp4", ".mov", ".webm", ".mkv"}
-        trim_start = max(0.0, float(scene.get("visual_trim_start_sec") or 0))
-        trim_end = max(0.0, float(scene.get("visual_trim_end_sec") or 0))
-        input_args = (
-            [
-                "-stream_loop", "-1",
-                *(["-ss", f"{trim_start:.3f}"] if trim_start else []),
-                *(["-t", f"{trim_end - trim_start:.3f}"] if trim_end > trim_start else []),
-                "-i", str(visual),
-            ]
-            if is_video_background
-            else ["-loop", "1", "-framerate", str(fps), "-i", str(visual)]
+        input_args = _visual_input_args(
+            visual_path,
+            fps,
+            scene.get("visual_trim_start_sec") or 0,
+            scene.get("visual_trim_end_sec") or 0,
         )
         _ff(
             [
