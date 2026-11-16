@@ -294,7 +294,6 @@ export default function Landing({ go }: { go: Go }) {
           {HERO_CARDS.map((c) => (
             <div className="lp-phone" key={c.caption} style={{ background: c.grad }}>
               <span className="lp-phone-tag">{c.tag}</span>
-              <span className="lp-play" aria-label="Vista de ejemplo">Ejemplo</span>
               <div className="lp-wave">
                 {Array.from({ length: 14 }).map((_, i) => (
                   <i key={i} style={{ height: 5 + ((i * 7) % 17) }} />
@@ -398,7 +397,7 @@ export default function Landing({ go }: { go: Go }) {
           <div className="lp-mock" aria-hidden>
             <div className="lp-mock-head">
               <strong>Cola de render</strong>
-              <span className="lp-live">● en vivo</span>
+              <span className="lp-live">EJEMPLO</span>
             </div>
             <div className="lp-mock-row">
               <span className="lp-dotp" style={{ background: '#22d3ee' }} />
@@ -428,9 +427,9 @@ export default function Landing({ go }: { go: Go }) {
               <span className="lp-st">listo</span>
             </div>
             <div className="lp-mock-foot">
-              <span>3 canales</span>
-              <span>18 vídeos este mes</span>
-              <span>0 créditos</span>
+              <span>3 canales de muestra</span>
+              <span>18 vídeos de muestra</span>
+              <span>0 créditos externos</span>
             </div>
           </div>
         </div>
