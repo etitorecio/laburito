@@ -751,9 +751,7 @@ def _apply_timeline_overlays(
     filters = []
     current = "[0:v]"
 
-    for clip, path, start, duration, kind in visual_clips:
-        input_index = len(args)  # replaced below with the actual FFmpeg input index
-        input_index = 1 + sum(1 for item in visual_clips[:visual_clips.index((clip, path, start, duration, kind))])
+    for input_index, (clip, path, start, duration, kind) in enumerate(visual_clips, start=1):
         args.extend(
             ["-stream_loop", "-1", "-t", f"{duration:.3f}", "-i", str(path)]
             if kind == "video" else ["-loop", "1", "-t", f"{duration:.3f}", "-i", str(path)]
@@ -777,8 +775,8 @@ def _apply_timeline_overlays(
         current = next_label
 
     audio_labels = ["[0:a]"]
-    for clip, path, start, duration, _kind in audio_clips:
-        input_index = 1 + len(visual_clips) + audio_clips.index((clip, path, start, duration, _kind))
+    for audio_index, (clip, path, start, duration, _kind) in enumerate(audio_clips):
+        input_index = 1 + len(visual_clips) + audio_index
         args.extend(["-stream_loop", "-1", "-t", f"{duration:.3f}", "-i", str(path)])
         volume = max(0.0, min(2.0, float(clip.get("volume") if clip.get("volume") is not None else 1)))
         delay_ms = max(0, int(start * 1000))
