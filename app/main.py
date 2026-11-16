@@ -973,7 +973,23 @@ def regenerate(scene_id: int, variant: int = 0):
     if not scene:
         raise HTTPException(404, "Escena inexistente")
     project = db.query_one("SELECT * FROM projects WHERE id=?", (scene["project_id"],))
-    result = script_gen.regenerate_scene(scene, project or {}, variant)
+    project = project or {}
+    result = None
+    ollama_url = db.get_setting("ollama_url", "") or os.environ.get("OLLAMA_URL", "").strip()
+    if ollama_url and script_gen.ollama_model_available(ollama_url, "qwen2.5:1.5b-instruct"):
+        try:
+            result = script_gen.regenerate_scene_with_ollama(
+                ollama_url, "qwen2.5:1.5b-instruct", project, scene, variant
+            )
+            db.log("info", "script", "Escena regenerada con Ollama local", {
+                "project_id": scene["project_id"], "scene_id": scene_id,
+            })
+        except Exception as exc:
+            db.log("warn", "script", f"Falló la regeneración local; se usa la variante de respaldo: {exc}", {
+                "project_id": scene["project_id"], "scene_id": scene_id,
+            })
+    if result is None:
+        result = script_gen.regenerate_scene(scene, project, variant)
     db.execute(
         "UPDATE scenes SET narration=?, status=?, updated_at=? WHERE id=?",
         (result["narration"], result["status"], db.now(), scene_id),
