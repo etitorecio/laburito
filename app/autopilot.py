@@ -79,6 +79,8 @@ FIELDS = [
 
 def ensure_schema() -> None:
     db.execute(SCHEMA)
+    # Las reglas históricas tampoco pueden publicar sin una aprobación explícita.
+    db.execute("UPDATE autopilot_rules SET auto_publish=0 WHERE auto_publish<>0")
     columns = {row["name"] for row in db.query("PRAGMA table_info(autopilot_rules)")}
     migrations = {
         "last_error": "TEXT",
