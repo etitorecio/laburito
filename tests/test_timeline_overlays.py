@@ -173,6 +173,20 @@ class TimelineOverlayUploadTests(unittest.TestCase):
         self.assertIn("timeline_overlays", execute.call_args_list[0].args[0])
         touch.assert_called_once_with(3)
 
+    def test_rejects_source_trim_end_before_start(self):
+        overlay = {
+            "id": 82, "project_id": 3, "kind": "video", "path": "/tmp/clip.mp4",
+            "title": "Clip", "start_sec": 0, "duration_sec": 5,
+            "source_start_sec": 0, "source_end_sec": 0, "source_duration_sec": 10,
+            "x": 0.5, "y": 0.5, "width": 0.5, "opacity": 1, "volume": 1,
+        }
+        with patch("app.main.db.query_one", return_value=overlay), \
+             patch("app.main.db.execute") as execute:
+            with self.assertRaises(HTTPException) as error:
+                patch_timeline_overlay(82, TimelineOverlayPatch(source_start_sec=4, source_end_sec=3))
+        self.assertEqual(error.exception.status_code, 400)
+        execute.assert_not_called()
+
     def test_editing_text_overlay_regenerates_its_image_asset(self):
         with tempfile.TemporaryDirectory() as temp:
             image_path = Path(temp) / "text.png"
