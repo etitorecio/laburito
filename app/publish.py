@@ -756,6 +756,11 @@ def set_auto_publish(project_id: int, enabled: bool, destination: str = "entrega
     if not project:
         raise PublishError(f"El proyecto {project_id} no existe.")
     if enabled and destination == "youtube":
+        raise PublishError(
+            "La publicación en YouTube requiere aprobación manual para cada video. "
+            "Revisá el render y usá Publicar; la autopublicación queda deshabilitada."
+        )
+    if enabled and destination == "youtube":
         channel_id = _g(project, "channel_id")
         if not channel_id:
             raise PublishError("Asigná el proyecto a un canal antes de activar la autopublicación en YouTube.")
