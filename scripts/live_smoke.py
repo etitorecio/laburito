@@ -292,11 +292,12 @@ def main() -> int:
     )
     check(status == 201 and (voice_overlay or {}).get("kind") == "audio", "voz en off local independiente generada", f"({status})")
 
+    status, current_project, _ = call("GET", f"/api/projects/{project_id}")
+    original_overlays = (current_project or {}).get("timeline_overlays") or []
     status, version, _ = call(
         "POST", f"/api/projects/{project_id}/duplicate",
         {"title": "Versión de prueba multicapa"},
     )
-    original_overlays = (project or {}).get("timeline_overlays") or []
     version_overlays = (version or {}).get("timeline_overlays") or []
     check(
         status == 201 and (version or {}).get("title") == "Versión de prueba multicapa"
