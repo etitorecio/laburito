@@ -202,7 +202,7 @@ def ensure_visual(project: dict, scene: dict) -> tuple[Path, str, dict]:
             "url": f"local://background-clips/{video_type}/{chosen.name}",
             "title": chosen.name,
             "provider": "biblioteca_local",
-            "mode": "repetir debajo de toda la narración" if video_type == "background_video" else "rotación de clips por escena",
+            "mode": "reutilizar el mismo clip en cada escena" if video_type == "background_video" else "rotación de clips por escena",
         }
     existing = (scene.get("visual_path") or "").strip()
     if existing and Path(existing).exists() and Path(existing).suffix.lower() not in {".mp4", ".mov", ".webm", ".mkv"}:
