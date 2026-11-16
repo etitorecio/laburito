@@ -8,6 +8,12 @@ from app import publish
 
 
 class PublishReliabilityTests(unittest.TestCase):
+    def test_unattended_publish_setting_is_rejected(self):
+        with patch.object(publish, "ensure_schema"):
+            with patch.object(publish.db, "query_one", return_value={"id": 12, "channel_id": 3}):
+                with self.assertRaisesRegex(publish.PublishError, "aprobación manual"):
+                    publish.set_auto_publish(12, True, "youtube")
+
     def test_youtube_processing_failure_is_not_recorded_as_published(self):
         with tempfile.TemporaryDirectory() as folder:
             video = Path(folder) / "final_short.mp4"
