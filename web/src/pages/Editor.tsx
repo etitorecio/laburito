@@ -155,6 +155,7 @@ export default function Editor({ projectId, go }: Props) {
   const historyRef = useRef<EditorHistoryEntry[]>([]);
   const historyCursorRef = useRef(0);
   const historyReplayRef = useRef(false);
+  const historyQueueRef = useRef<Promise<void>>(Promise.resolve());
   const timer = useRef<number | null>(null);
 
   useEffect(() => { setSplitCursor(0); }, [selectedSceneId]);
@@ -343,7 +344,7 @@ export default function Editor({ projectId, go }: Props) {
 
   async function recordHistory(entry: EditorHistoryEntry) {
     if (historyReplayRef.current || !Object.keys(entry.after).length) return;
-    try {
+    const persist = historyQueueRef.current.then(async () => {
       await api.post(`/api/projects/${projectId}/history`, {
         target: entry.target,
         target_id: entry.id,
@@ -351,9 +352,11 @@ export default function Editor({ projectId, go }: Props) {
         after: entry.after,
         label: entry.label,
       });
-    } catch (e) {
+    }).catch((e) => {
       setError("El cambio se guardó, pero no se pudo persistir su historial: " + (e as Error).message);
-    }
+    });
+    historyQueueRef.current = persist;
+    await persist;
     const next = historyRef.current.slice(0, historyCursorRef.current);
     next.push(entry);
     historyRef.current = next.slice(-100);
