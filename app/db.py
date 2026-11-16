@@ -24,7 +24,7 @@ TMP_DIR = DATA_DIR / "tmp"
 
 _WRITE_LOCK = threading.RLock()
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 _MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -209,6 +209,24 @@ _MIGRATIONS: dict[int, list[str]] = {
     ],
     6: [
         "ALTER TABLE scenes ADD COLUMN visual_source_duration_sec REAL NOT NULL DEFAULT 0",
+    ],
+    7: [
+        """CREATE TABLE IF NOT EXISTS timeline_overlays(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+            kind TEXT NOT NULL DEFAULT 'image',
+            path TEXT NOT NULL DEFAULT '',
+            title TEXT NOT NULL DEFAULT '',
+            start_sec REAL NOT NULL DEFAULT 0,
+            duration_sec REAL NOT NULL DEFAULT 5,
+            x REAL NOT NULL DEFAULT 0.62,
+            y REAL NOT NULL DEFAULT 0.62,
+            width REAL NOT NULL DEFAULT 0.32,
+            opacity REAL NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )""",
+        "CREATE INDEX IF NOT EXISTS idx_timeline_overlays_project ON timeline_overlays(project_id, start_sec, id)",
     ],
 }
 
