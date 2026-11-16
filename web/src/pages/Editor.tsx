@@ -466,6 +466,23 @@ export default function Editor({ projectId, go }: Props) {
     }
   }
 
+  async function saveVersion() {
+    setBusy("save-version");
+    setError("");
+    setOk("");
+    try {
+      const stamp = new Date().toLocaleString("es-AR");
+      const saved = await api.post<Project>(`/api/projects/${projectId}/duplicate`, {
+        title: `${project?.title || "Proyecto"} — versión ${stamp}`,
+      });
+      setOk(`Versión guardada como «${saved.title}». La copia conserva escenas, capas, audio y ajustes.`);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy("");
+    }
+  }
+
   async function duplicateScene(scene: Scene) {
     setBusy(`duplicate-${scene.id}`);
     setError('');
@@ -862,6 +879,7 @@ export default function Editor({ projectId, go }: Props) {
         <div className="editor-project-title"><h2>{project.title}</h2><span>{project.kind === 'short' ? 'Short vertical' : 'Video largo'} · {project.aspect} · {scenes.length} escenas</span></div>
         <div className="row gap-8">
           <button className="btn small ghost" onClick={() => go('proyectos')}>Volver</button>
+          <button className="btn small ghost" onClick={() => void saveVersion()} disabled={!!busy}>{busy === "save-version" ? "Guardando…" : "Guardar versión"}</button>
           <button className="btn small" onClick={addScene} disabled={!!busy}>{busy === 'scene-add' ? 'Creando…' : 'Nueva escena'}</button>
           <button className="btn small" onClick={() => generateScript(false)} disabled={busy === 'script'}>Generar más escenas</button>
           <button className="btn small primary" onClick={render} disabled={busy === 'render' || !canRender} title={!canRender ? 'Completá la narración de todas las escenas antes de renderizar' : 'Renderizar el video'}>Renderizar</button>
