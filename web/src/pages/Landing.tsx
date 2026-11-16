@@ -11,7 +11,7 @@ const NAV_LINKS: { label: string; target: string }[] = [
   { label: 'Preguntas', target: 'faq' },
 ];
 
-const PLATFORMS = ['YouTube', 'TikTok', 'Instagram', 'Reels', 'Shorts', 'Facebook'];
+const PLATFORMS = ['YouTube Shorts', 'YouTube largo', 'TikTok', 'Instagram Reels', 'Facebook'];
 
 const HERO_CARDS = [
   {
@@ -304,6 +304,7 @@ export default function Landing({ go }: { go: Go }) {
             </div>
           ))}
         </div>
+        <p className="lp-fineprint">Vistas ilustrativas del tipo de contenido; no son videos de muestra reproducibles.</p>
       </section>
 
       <section className="lp-section lp-center" id="plantillas">
