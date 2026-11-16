@@ -79,11 +79,14 @@ class WorkerReliabilityTests(unittest.TestCase):
         }):
             with patch.object(worker, "_validate_render_result", return_value={"path": "/tmp/final_short.mp4"}):
                 with patch.object(worker, "_scheduled_publish_settings", return_value={"enabled": True, "destination": "youtube", "privacy": "unlisted"}):
-                    with patch.object(worker, "enqueue", return_value=321) as enqueue:
-                        with patch.object(worker.db, "execute"):
-                            with patch.object(worker.db, "now", return_value="now"):
-                                with patch.object(worker.db, "log"):
-                                    worker.run_job(job)
+                    with patch.object(worker.persistence, "configured", return_value=True):
+                        with patch.object(worker.persistence, "sync_pending_video") as sync_video:
+                            with patch.object(worker, "enqueue", return_value=321) as enqueue:
+                                with patch.object(worker.db, "execute"):
+                                    with patch.object(worker.db, "now", return_value="now"):
+                                        with patch.object(worker.db, "log"):
+                                            worker.run_job(job)
+        sync_video.assert_called_once_with(13, "/tmp/final_short.mp4")
         enqueue.assert_called_once_with(13, "publish_project", {
             "destination": "youtube", "calendar_id": None, "privacy": "unlisted"
         })
