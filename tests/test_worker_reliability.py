@@ -68,6 +68,27 @@ class WorkerReliabilityTests(unittest.TestCase):
             for sql, _ in statements
         ))
 
+    def test_manual_review_render_is_backed_up_for_later_publishing(self):
+        job = {
+            "id": 98, "project_id": 15, "kind": "render_project",
+            "payload_json": "{}", "attempts": 1,
+        }
+        with patch.object(worker.render, "render_project", return_value={
+            "video": "/tmp/final_short.mp4",
+            "quality": {"tts_engines": ["espeak-ng"]},
+        }):
+            with patch.object(worker, "_validate_render_result", return_value={"path": "/tmp/final_short.mp4"}):
+                with patch.object(worker, "_scheduled_publish_settings", return_value={"enabled": False, "destination": "youtube", "privacy": "unlisted"}):
+                    with patch.object(worker.persistence, "configured", return_value=True):
+                        with patch.object(worker.persistence, "sync_pending_video") as sync_video:
+                            with patch.object(worker, "enqueue") as enqueue:
+                                with patch.object(worker.db, "execute"):
+                                    with patch.object(worker.db, "now", return_value="now"):
+                                        with patch.object(worker.db, "log"):
+                                            worker.run_job(job)
+        sync_video.assert_called_once_with(15, "/tmp/final_short.mp4")
+        enqueue.assert_not_called()
+
     def test_render_queues_autopublish_after_validated_render(self):
         job = {
             "id": 96, "project_id": 13, "kind": "render_project",
