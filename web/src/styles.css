@@ -2569,3 +2569,33 @@ th {
     text-align: left;
   }
 }
+
+
+.editor-projectbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 2px 14px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+.editor-project-title { min-width: 0; }
+.editor-project-title h2 {
+  margin: 0;
+  font-size: clamp(1.05rem, 2vw, 1.45rem);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.editor-project-title span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: .78rem;
+}
+.editor-projectbar .row { flex-wrap: nowrap; }
+@media (max-width: 640px) {
+  .editor-projectbar { align-items: flex-start; flex-direction: column; }
+  .editor-projectbar .row { width: 100%; }
+  .editor-projectbar .row .btn { flex: 1; }
+}
