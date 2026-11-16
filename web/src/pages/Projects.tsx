@@ -9,6 +9,8 @@ import CaptionStylePicker from '../components/CaptionStylePicker';
 import TransitionPicker from '../components/TransitionPicker';
 import type { Route } from '../routes';
 
+type TopicIdea = { title: string; topic: string; summary: string; url: string; source: string };
+
 export default function Projects({ go }: { go: (route: Route, id?: number) => void }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -18,6 +20,8 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
   const [ok, setOk] = useState('');
   const [busy, setBusy] = useState(false);
   const [easyMode, setEasyMode] = useState(true);
+  const [ideas, setIdeas] = useState<TopicIdea[]>([]);
+  const [ideasBusy, setIdeasBusy] = useState(false);
 
   const [form, setForm] = useState({
     title: '',
@@ -49,6 +53,25 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
   const selectedChannel = channels.find((channel) => channel.id === Number(form.channel_id)) ?? null;
   const activeTemplate = templates.find((t) => t.id === form.template) ?? null;
   const voiceOptions = (meta?.voices ?? []).filter((v) => v.language === 'es');
+
+  async function findIdeas() {
+    const niche = form.topic.trim() || selectedChannel?.topic || '';
+    if (!niche) {
+      setError('Escribí un nicho o tema para buscar ideas.');
+      return;
+    }
+    setIdeasBusy(true);
+    setError('');
+    try {
+      const result = await api.post<{ ideas: TopicIdea[] }>('/api/ideas', { niche, limit: 10 });
+      setIdeas(result.ideas || []);
+      if (!result.ideas?.length) setError('No encontré ideas documentables para ese nicho.');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setIdeasBusy(false);
+    }
+  }
 
   function applyTemplate(id: string) {
     const tpl = templates.find((t) => t.id === id);
@@ -237,6 +260,19 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
           <Field label={form.input_mode === 'idea' ? '¿De qué querés que trate el video?' : 'Título (opcional)'}>
             <input value={form.input_mode === 'idea' ? form.topic : form.title} onChange={(e) => setForm(form.input_mode === 'idea' ? { ...form, topic: e.target.value, title: e.target.value.slice(0, 120) } : { ...form, title: e.target.value })} placeholder={form.input_mode === 'idea' ? 'Ej.: El misterio de las civilizaciones perdidas' : 'Poné un título para tu video'} />
           </Field>
+          {form.input_mode === 'idea' && <div className="idea-finder">
+            <button type="button" className="btn small ghost" onClick={() => void findIdeas()} disabled={ideasBusy}>
+              {ideasBusy ? 'Buscando temas…' : '✦ Encontrar ideas'}
+            </button>
+            <small className="muted">Ideas basadas en resultados documentales públicos. Sin créditos ni servicios pagos.</small>
+            {ideas.length > 0 && <div className="idea-suggestions">
+              {ideas.map((idea) => <button type="button" className="idea-suggestion" key={idea.url} onClick={() => { setForm({ ...form, topic: idea.topic, title: idea.title }); setIdeas([]); }}>
+                <strong>{idea.title}</strong>
+                <span>{idea.summary || 'Tema relacionado con el nicho.'}</span>
+                <small>{idea.source} · Seleccionar</small>
+              </button>)}
+            </div>}
+          </div>}
           {easyMode && <p className="muted">Podés crear el video directamente. Si después querés organizarlo, lo asignás a un canal desde el editor.</p>}
           {!easyMode && <div className="row">
             <Field label="Plantilla de contenido" hint={activeTemplate?.description}>
