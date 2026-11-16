@@ -24,7 +24,7 @@ TMP_DIR = DATA_DIR / "tmp"
 
 _WRITE_LOCK = threading.RLock()
 
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 11
 
 _MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -262,7 +262,14 @@ DEFAULT_SETTINGS = {
     "default_resolution": "1080p",
     "default_transition": "fundido",
     "ollama_url": "",
-    "auto_backup": "1",
+    "auto_backup": "1",,
+    11: [
+        "ALTER TABLE channels ADD COLUMN watermark_path TEXT NOT NULL DEFAULT \"\"",
+        "ALTER TABLE channels ADD COLUMN watermark_enabled INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE channels ADD COLUMN watermark_position TEXT NOT NULL DEFAULT \"bottom_right\"",
+        "ALTER TABLE channels ADD COLUMN watermark_scale REAL NOT NULL DEFAULT 0.12",
+        "ALTER TABLE channels ADD COLUMN watermark_opacity REAL NOT NULL DEFAULT 0.85",
+    ]
 }
 
 
