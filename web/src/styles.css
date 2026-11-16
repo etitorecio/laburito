@@ -1117,21 +1117,6 @@ th {
   letter-spacing: 0.02em;
 }
 
-.lp-play {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  color: #14121f;
-  font-size: 0.78rem;
-  padding-left: 3px;
-}
-
 .lp-wave {
   display: flex;
   align-items: flex-end;
