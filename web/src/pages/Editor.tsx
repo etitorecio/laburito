@@ -852,7 +852,7 @@ export default function Editor({ projectId, go }: Props) {
           <Card title="Vista previa" sub={activeScene ? "Escena " + (activeSceneIndex + 1) + " de " + scenes.length + " · " + activeScene.title : "Vista previa de escena"}>
             <div className={"editor-preview-stage " + (project.aspect === "9:16" ? "portrait" : project.aspect === "1:1" ? "square" : "")}>
               {previewScene?.visual_path ? (/\.(mp4|mov|webm|mkv)$/i.test(previewScene.visual_path)
-                ? <video src={mediaUrl(previewScene.visual_path)} controls muted playsInline preload="metadata" />
+                ? <video src={mediaUrl(previewScene.visual_path)} controls muted playsInline preload="metadata" onLoadedMetadata={(event) => { const start = previewScene.visual_trim_start_sec ?? 0; if (start > 0 && event.currentTarget.currentTime < start) event.currentTarget.currentTime = start; }} />
                 : <img src={mediaUrl(previewScene.visual_path)} alt={previewScene.title} />)
                 : <div className="editor-preview-empty"><span>✦</span><strong>Tu escena está lista para ilustrar</strong><small>Buscá un recurso con licencia o subí tu propio material.</small></div>}
               {captionsEnabled && previewCaptionWords.length > 0 && <div className="editor-preview-caption">{previewCaptionWords.map((word, index) => <span key={previewCaptionStart + index} className={previewCaptionStart + index === previewWordIndex ? "current-word" : ""}>{word} </span>)}</div>}
@@ -960,6 +960,14 @@ export default function Editor({ projectId, go }: Props) {
               </div>
               {activeScene.narration.trim() && <div className="scene-audio-preview"><span>Previsualizar voz</span><audio controls preload="none" src={"/api/scenes/" + activeScene.id + "/voice-preview?v=" + encodeURIComponent([activeScene.updated_at, project.voice, project.speed, project.pitch].join("-"))} /></div>}
               <Field label="Descripción del visual"><input defaultValue={activeScene.visual_query} key={"visual-" + activeScene.id + "-" + activeScene.updated_at} onBlur={(e) => e.target.value !== activeScene.visual_query && patchScene(activeScene, { visual_query: e.target.value })} /></Field>
+              {activeScene.visual_path && /\\.(mp4|mov|webm|mkv)$/i.test(activeScene.visual_path) && <div className="scene-trim-controls">
+                <strong>Recortar clip de video</strong>
+                <small className="muted">Elegí qué fragmento del archivo original se usa en esta escena. Dejá el final en 0 para usar el resto del clip.</small>
+                <div className="scene-trim-fields">
+                  <Field label="Entrada (segundos)"><input type="number" min="0" step="0.1" defaultValue={activeScene.visual_trim_start_sec ?? 0} key={"trim-in-" + activeScene.id + "-" + activeScene.updated_at} onBlur={(e) => { const value = Math.max(0, Number(e.target.value) || 0); if (value !== (activeScene.visual_trim_start_sec ?? 0)) void patchScene(activeScene, { visual_trim_start_sec: value }); }} /></Field>
+                  <Field label="Salida (0 = final)"><input type="number" min="0" step="0.1" defaultValue={activeScene.visual_trim_end_sec ?? 0} key={"trim-out-" + activeScene.id + "-" + activeScene.updated_at} onBlur={(e) => { const value = Math.max(0, Number(e.target.value) || 0); if (value !== (activeScene.visual_trim_end_sec ?? 0)) void patchScene(activeScene, { visual_trim_end_sec: value }); }} /></Field>
+                </div>
+              </div>}
               <Field label="Transición"><TransitionPicker options={meta?.transitions ?? [{ id: activeScene.transition, label: activeScene.transition }]} value={activeScene.transition || project.transition_default} onChange={(value) => void patchScene(activeScene, { transition: value })} compact /></Field>
               <div className="scene-sfx-controls">
                 <div className="row gap-8" style={{ justifyContent: "space-between" }}>
