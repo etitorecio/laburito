@@ -25,9 +25,9 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
     input_mode: 'idea' as 'idea' | 'script',
     script_text: '',
     characters: '',
-    template: 'reddit_story',
+    template: 'shorts',
     channel_id: '' as string,
-    duration_target_sec: 180,
+    duration_target_sec: 60,
     voice: 'es',
     speed: 150,
     pitch: 45,
@@ -125,8 +125,13 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
         notes: (!captions_enabled || form.visual_style_prompt.trim() || !form.create_thumbnail || characters.trim() || (input_mode === 'script' && script_text.trim())) ? '[LABURITO_META]' + JSON.stringify({ captions_enabled, visual_style_prompt: form.visual_style_prompt.trim(), create_thumbnail: form.create_thumbnail, characters: characters.trim(), script_text: input_mode === 'script' ? script_text.trim() : '' }) : '',
       });
       setOk('1/3 · Proyecto creado. Escribiendo el guion y preparando las escenas…');
-      await api.post('/api/projects/' + created.id + '/script?replace=true');
-      setOk('2/3 · Guion listo. Montando voz, imágenes, subtítulos y música…');
+      const scriptResult = await api.post<{ warnings?: string[] }>('/api/projects/' + created.id + '/script?replace=true');
+      const researchFailure = (scriptResult.warnings || []).find((warning) => warning.startsWith('No se pudo completar la investigación automática:'));
+      if (researchFailure) throw new Error(researchFailure + ' El borrador quedó guardado para que puedas retomarlo.');
+      const researchNote = (scriptResult.warnings || []).some((warning) => warning.includes('Investigación integrada'))
+        ? ' Investigación del tema incorporada automáticamente.'
+        : '';
+      setOk('2/3 · Guion listo.' + researchNote + ' Montando voz, imágenes, subtítulos y música…');
       await api.post('/api/projects/' + created.id + '/render');
       setForm({ ...form, title: '', topic: '', script_text: '' });
       setOk('3/3 · Producción enviada al render. Podés seguir el progreso y descargar el MP4 en el editor.');
@@ -217,10 +222,10 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
             <button type="button" className={!easyMode ? 'active' : ''} onClick={() => setEasyMode(false)}>⚙ Ajustes avanzados</button>
           </div>
           {easyMode && <div className="quick-format-grid">
-            <button type="button" className={form.aspect === '9:16' ? 'quick-format active' : 'quick-format'} onClick={() => setForm({ ...form, aspect: '9:16', duration_target_sec: 60 })}>
+            <button type="button" className={form.aspect === '9:16' ? 'quick-format active' : 'quick-format'} onClick={() => applyTemplate('shorts')}>
               <span className="quick-format-icon">▯</span><strong>Short</strong><small>Vertical · rápido · ideal para Shorts</small>
             </button>
-            <button type="button" className={form.aspect === '16:9' ? 'quick-format active' : 'quick-format'} onClick={() => setForm({ ...form, aspect: '16:9', duration_target_sec: 600 })}>
+            <button type="button" className={form.aspect === '16:9' ? 'quick-format active' : 'quick-format'} onClick={() => applyTemplate('longform')}>
               <span className="quick-format-icon">▭</span><strong>Documental</strong><small>Horizontal · historias y explicaciones</small>
             </button>
           </div>}
