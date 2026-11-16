@@ -49,11 +49,17 @@ class PersistenceStreamingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             video = Path(folder) / "large.mp4"
             video.write_bytes(payload)
+            connection = _Connection("storage.example")
             with patch.object(persistence, "_settings", return_value=("https://storage.example/base", "secret", "private")):
-                with patch.object(persistence.http.client, "HTTPSConnection", _Connection):
+                with patch.object(persistence.http.client, "HTTPSConnection", return_value=connection):
                     persistence._stream_request_file("POST", "/storage/object/video.mp4", video, "video/mp4")
 
-        self.assertEqual(sum(map(len, _Connection.last_chunks)) if hasattr(_Connection, "last_chunks") else len(payload), len(payload))
+        self.assertEqual(sum(len(chunk) for chunk in connection.chunks), len(payload))
+        self.assertEqual([len(chunk) for chunk in connection.chunks], [1024 * 1024, 1024 * 1024, 123])
+        self.assertEqual(connection.headers["Content-Length"], str(len(payload)))
+        self.assertEqual(connection.headers["Content-Type"], "video/mp4")
+        self.assertEqual(connection.request_path, "/base/storage/object/video.mp4")
+        self.assertTrue(connection.closed)
 
 
 if __name__ == "__main__":
