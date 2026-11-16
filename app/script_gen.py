@@ -1055,7 +1055,7 @@ def rewrite_with_ollama(url: str, model: str, project: dict, script: dict, notes
         rewritten.append({**scene, "narration": narration})
 
     total_words = sum(len(str(scene.get("narration") or "").split()) for scene in rewritten)
-    if total_words < round(min_words * 0.8):
+    if is_longform and total_words < round(min_words * 0.8):
         raise RuntimeError(
             f"Ollama devolvió {total_words} palabras; para {target_seconds} segundos se requieren "
             f"al menos {round(min_words * 0.8)}. Se conserva el borrador de respaldo."
