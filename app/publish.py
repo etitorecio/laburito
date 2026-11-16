@@ -760,16 +760,6 @@ def set_auto_publish(project_id: int, enabled: bool, destination: str = "entrega
             "La publicación en YouTube requiere aprobación manual para cada video. "
             "Revisá el render y usá Publicar; la autopublicación queda deshabilitada."
         )
-    if enabled and destination == "youtube":
-        channel_id = _g(project, "channel_id")
-        if not channel_id:
-            raise PublishError("Asigná el proyecto a un canal antes de activar la autopublicación en YouTube.")
-        if not persistence.durable_storage_available():
-            raise PublishError("YouTube automático requiere almacenamiento persistente para no perder el video durante el proceso.")
-        try:
-            youtube_account_status(int(channel_id))
-        except PublishError as exc:
-            raise PublishError("Conectá y verificá la cuenta de YouTube de este canal antes de activar la autopublicación. " + str(exc)) from exc
     db.execute(
         "UPDATE projects SET auto_publish=?, publish_destination=?, updated_at=? WHERE id=?",
         (1 if enabled else 0, destination, db.now(), project_id),
