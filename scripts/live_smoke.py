@@ -292,6 +292,23 @@ def main() -> int:
     )
     check(status == 201 and (voice_overlay or {}).get("kind") == "audio", "voz en off local independiente generada", f"({status})")
 
+    status, version, _ = call(
+        "POST", f"/api/projects/{project_id}/duplicate",
+        {"title": "Versión de prueba multicapa"},
+    )
+    original_overlays = (project or {}).get("timeline_overlays") or []
+    version_overlays = (version or {}).get("timeline_overlays") or []
+    check(
+        status == 201 and (version or {}).get("title") == "Versión de prueba multicapa"
+        and len(version_overlays) >= 5,
+        "guardar versión conserva las capas independientes",
+        f"({status}, {len(version_overlays)} capas)",
+    )
+    original_text = next((clip for clip in original_overlays if clip.get("kind") == "text"), None)
+    copied_text = next((clip for clip in version_overlays if clip.get("kind") == "text"), None)
+    if original_text and copied_text:
+        check(original_text.get("path") != copied_text.get("path"), "la versión aísla sus capas de texto editables")
+
     status, job, _ = call("POST", f"/api/projects/{project_id}/render")
     check(status in (200, 202), "render encolado", f"({status})")
     job_id = (job or {}).get("id") or ((job or {}).get("job") or {}).get("id")
