@@ -2615,3 +2615,23 @@ th {
 
 .project-thumb { overflow: hidden; }
 .project-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+
+.project-list-item { align-items: center; }
+.project-list-thumb {
+  display: block;
+  width: 88px;
+  height: 64px;
+  flex: 0 0 88px;
+  object-fit: cover;
+  border-radius: 9px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+.project-list-thumb-empty {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+@media (max-width: 560px) {
+  .project-list-thumb { width: 68px; height: 54px; flex-basis: 68px; }
+}
