@@ -96,14 +96,12 @@ class PersistenceTests(unittest.TestCase):
             video.write_bytes(b"v" * 2048)
             with patch.object(persistence, "configured", return_value=True):
                 with patch.object(persistence, "_ensure_bucket"):
-                    with patch.object(persistence, "_request", return_value=FakeResponse()) as request:
+                    with patch.object(persistence, "_stream_request_file") as upload:
                         with patch.object(persistence.db, "log"):
                             self.assertTrue(persistence.sync_pending_video(7, video))
-            args, kwargs = request.call_args
-            self.assertEqual(args[0], "POST")
-            self.assertEqual(args[3], "video/mp4")
-            self.assertEqual(args[2], video.read_bytes())
-            self.assertEqual(kwargs["extra_headers"], {"x-upsert": "true"})
+            upload.assert_called_once_with(
+                "POST", "/storage/v1/object/private/pending/7.mp4", video, "video/mp4"
+            )
 
     def test_pending_video_is_restored_when_local_file_is_missing(self):
         content = b"v" * 2048
