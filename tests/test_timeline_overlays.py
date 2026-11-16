@@ -64,7 +64,7 @@ class TimelineOverlayUploadTests(unittest.TestCase):
              patch("app.main.db.query_one", side_effect=[{"id": 3}, overlay]), \
              patch("app.main.db.execute", side_effect=[72, 0]) as execute, \
              patch("app.main._touch_project") as touch, \
-             patch("app.main.media.probe_duration", return_value=4.0):
+             patch("app.main.media.probe_audio", return_value={"codec": "mp3", "duration": 4.0}):
             result = asyncio.run(upload_timeline_overlay(3, upload, start_sec=1.5))
             saved = list((Path(temp) / "media" / "overlays" / "3").glob("overlay-*.mp3"))
             saved_size = saved[0].stat().st_size if saved else 0
