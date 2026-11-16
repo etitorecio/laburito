@@ -6,7 +6,8 @@ Reconstrucción libre y local de la experiencia de IATuber, para **Shorts y docu
 
 ## Qué hace
 
-- **Investigación**: nichos con demanda, competencia, riesgo de copyright y potencial de serie; notas con nivel de evidencia, fuente y fecha de consulta; búsqueda de imágenes con licencia.
+- **Investigación integrada por video**: al crear un Short o documental desde una idea, el sistema investiga automáticamente el tema, recupera una fuente introductoria y resúmenes académicos abiertos cuando existen, incorpora evidencia al guion y guarda cada referencia en los créditos del proyecto. No aparece como una herramienta separada ni reutiliza notas de otros videos. Si la investigación no puede completarse, informa el problema y no presenta el borrador como verificado. Para guiones propios se respeta el texto del usuario.
+- **Investigación de canales**: nichos con demanda, competencia, riesgo de copyright y potencial de serie; notas con nivel de evidencia, fuente y fecha de consulta; búsqueda de imágenes con licencia.
 - **Canales**: identidad, tono, idioma, formatos y cadencia.
 - **Guion IA local**: Ollama descarga una vez el modelo Qwen 2.5 1.5B (Apache 2.0, aprox. 1 GB) y lo ejecuta en tu PC para expandir los guiones; no usa API keys, tokens de generación ni créditos. Si el modelo no está disponible, conserva el guion estructurado de respaldo.
 - **Guion propio a video**: también podés pegar un guion completo; Laburito lo divide en escenas, conserva la narración y continúa con voz, visuales, subtítulos, música y render. No requiere IA externa.
@@ -19,7 +20,7 @@ Reconstrucción libre y local de la experiencia de IATuber, para **Shorts y docu
 - **Cola persistente**: un trabajo a la vez, reanudable tras reinicio y con caché por escena (no repite trabajo).
 - **Entrega**: ZIP con MP4, SRT, VTT, guion en Markdown, fuentes/atribuciones en CSV, miniaturas, metadatos de publicación e informe de calidad.
 - **Analítica**: importación del CSV real de YouTube Studio (no inventa métricas) y resumen con hipótesis.
-- **Autopiloto de videos**: asistente de ocho pantallas al estilo IATuber: nicho, idioma/voz (español fijo), música, apariencia, subtítulos, destino, calendario y tipo/frecuencia de publicación. Hasta cinco pistas propias, rotación secuencial, volumen ajustable, miniaturas opcionales y referencia visual por análisis local de paleta. Configurá una vez y dejá la PC encendida para producir según el horario. Antes de publicar, valida el MP4 y conserva los errores en la cola. La subida a YouTube requiere aprobación manual, OAuth oficial y está sujeta a la cuota gratuita de Google; no se puede quitar esa cuota ni garantizar publicaciones ilimitadas.
+- **Autopiloto de videos**: configuración rápida de una sola pantalla para elegir tema, canal, formato y frecuencia; conserva un asistente avanzado de ocho pasos para ajustar voz, música, apariencia, subtítulos, calendario y tipo de producción. Hasta cinco pistas propias, rotación secuencial, volumen ajustable, miniaturas opcionales y referencia visual por análisis local de paleta. Configurá una vez y dejá la PC encendida para producir según el horario. Antes de publicar, valida el MP4 y conserva los errores en la cola. La subida a YouTube requiere aprobación manual, OAuth oficial y está sujeta a la cuota gratuita de Google; no se puede quitar esa cuota ni garantizar publicaciones ilimitadas.
 - **Calendario**: programación editorial por canal.
 - **Biblioteca**: todo lo producido o descargado, con licencia y autor.
 - **Diagnóstico**: estado real de FFmpeg, fuentes, voz, base de datos, espacio y worker.
