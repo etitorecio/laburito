@@ -19,10 +19,12 @@ const ICONS: Record<string, string> = {
   stock_footage: '🎞️',
   minecraft: '⛏️',
   subway: '🏃',
+  background_video: '🎥',
 };
 
-const REQUIRED: Record<string, number> = { stock_footage: 5, minecraft: 1, subway: 1 };
+const REQUIRED: Record<string, number> = { stock_footage: 5, minecraft: 1, subway: 1, background_video: 1 };
 const MAX_CLIPS = 5;
+const maxClips = (category: string) => category === 'background_video' ? 1 : MAX_CLIPS;
 const CLIP_SOURCES: Record<string, { label: string; url: string; detail: string }[]> = {
   subway: [
     { label: 'Subway Surfers oficial · vertical 9:16 (SYBO)', url: 'https://www.youtube.com/watch?v=QPW3XwBoQlw', detail: 'La publicación oficial dice FREE TO USE, pero las condiciones generales de SYBO restringen la exhibición pública y el uso comercial salvo autorización. Para monetizar, pedí permiso escrito específico y guardalo.' },
@@ -136,7 +138,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
                       <small>Subí solo material con permiso comercial explícito del titular. Grabar tu propia partida no elimina los derechos sobre el juego. No uses páginas para extraer videos de YouTube.</small>
                     </div>
                     <div className="background-clip-slots">
-                  {Array.from({ length: MAX_CLIPS }, (_, index) => {
+                  {Array.from({ length: maxClips(option.id) }, (_, index) => {
                     const clip = categoryClips[index];
                     const src = clip ? `${clip.url}` : '';
                     return (
@@ -150,7 +152,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
                         ) : (
                           <label className="clip-upload-slot">
                             <span>＋</span>
-                            <small>Agregar clip {index + 1} (hasta {MAX_CLIPS})</small>
+                            <small>Agregar clip {index + 1} (hasta {maxClips(option.id)})</small>
                             <input
                               type="file"
                               accept="video/mp4,video/quicktime,video/webm,video/x-matroska"
@@ -206,7 +208,7 @@ export default function VideoTypePicker({ options, value, onChange, compact = fa
         })}
       </div>
       {error && <p className="error-text">{error}</p>}
-      {!compact && <p className="muted caption-style-help">Minecraft y Subway Surfers necesitan al menos un clip propio o autorizado; podés cargar hasta cinco para alternarlos. Los archivos se guardan en el almacenamiento de esta instalación y no se envían a servicios de terceros.</p>}
+      {!compact && <p className="muted caption-style-help">Minecraft y Subway Surfers necesitan clips propios o autorizados; los videos de archivo requieren cinco. Video de fondo usa un solo clip en todas las escenas, en bucle y sin audio original. Los archivos se guardan en el almacenamiento de esta instalación y no se envían a servicios de terceros.</p>}
     </div>
   );
 }
