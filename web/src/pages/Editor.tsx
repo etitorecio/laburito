@@ -39,7 +39,7 @@ interface Publication {
 }
 
 interface EditorHistoryEntry {
-  target: "scene" | "overlay";
+  target: "scene" | "overlay" | "project";
   id: number;
   before: Record<string, unknown>;
   after: Record<string, unknown>;
@@ -337,7 +337,18 @@ export default function Editor({ projectId, go }: Props) {
 
   async function patchProject(patch: Record<string, unknown>) {
     try {
-      setProject(await api.patch<Project>(`/api/projects/${projectId}`, patch));
+      const before: Record<string, unknown> = {};
+      const after: Record<string, unknown> = {};
+      for (const key of Object.keys(patch)) {
+        const nextValue = patch[key];
+        const previousValue = (project as unknown as Record<string, unknown> | null)?.[key];
+        if (nextValue === undefined || JSON.stringify(previousValue) === JSON.stringify(nextValue)) continue;
+        before[key] = previousValue;
+        after[key] = nextValue;
+      }
+      const updated = await api.patch<Project>(`/api/projects/${projectId}`, patch);
+      setProject(updated);
+      await recordHistory({ target: "project", id: projectId, before, after, label: project?.title || "proyecto" });
     } catch (e) {
       setError((e as Error).message);
     }
