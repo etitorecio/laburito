@@ -120,6 +120,7 @@ export default function Editor({ projectId, go }: Props) {
   const [busy, setBusy] = useState('');
   const [searchFor, setSearchFor] = useState<number | null>(null);
   const [selectedSceneId, setSelectedSceneId] = useState<number | null>(null);
+  const [draggedSceneId, setDraggedSceneId] = useState<number | null>(null);
   const [results, setResults] = useState<MediaResult[]>([]);
   const [destinations, setDestinations] = useState<PublishDestination[]>([]);
   const [publications, setPublications] = useState<Publication[]>([]);
@@ -292,6 +293,24 @@ export default function Editor({ projectId, go }: Props) {
       await load();
     } catch (e) {
       setError((e as Error).message);
+    }
+  }
+
+  async function reorderScene(draggedId: number, targetId: number) {
+    if (!project?.scenes || draggedId === targetId) return;
+    const ids = project.scenes.map((scene) => scene.id);
+    const from = ids.indexOf(draggedId);
+    const to = ids.indexOf(targetId);
+    if (from < 0 || to < 0) return;
+    ids.splice(to, 0, ids.splice(from, 1)[0]);
+    try {
+      await api.post(`/api/projects/${projectId}/scenes/order`, { ids });
+      setSelectedSceneId(draggedId);
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setDraggedSceneId(null);
     }
   }
 
@@ -691,14 +710,20 @@ export default function Editor({ projectId, go }: Props) {
                   <button
                     type="button"
                     key={scene.id}
-                    className={`editor-timeline-item ${selectedSceneId === scene.id ? 'active' : ''}`}
+                    className={`editor-timeline-item ${selectedSceneId === scene.id || (!selectedSceneId && index === 0) ? 'active' : ''} ${draggedSceneId === scene.id ? 'dragging' : ''}`}
                     style={{ flexBasis: width + '%' }}
+                    draggable
+                    onDragStart={() => setDraggedSceneId(scene.id)}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => { event.preventDefault(); if (draggedSceneId !== null) void reorderScene(draggedSceneId, scene.id); }}
+                    onDragEnd={() => setDraggedSceneId(null)}
                     onClick={() => {
                       setSelectedSceneId(scene.id);
                       document.getElementById('scene-' + scene.id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }}
                     title={scene.title + ' · ~' + Math.round(estimatedSeconds) + ' s'}
                   >
+                    {scene.visual_path && <img className="editor-timeline-thumb" src={mediaUrl(scene.visual_path)} alt="" loading="lazy" />}
                     <strong>{index + 1}. {scene.title}</strong>
                     <small>~{Math.round(estimatedSeconds)} s</small>
                   </button>
