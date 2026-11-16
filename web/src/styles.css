@@ -2792,3 +2792,39 @@ th {
   .editor-ruler-row, .editor-track { grid-template-columns: 70px max-content; }
   .editor-track-clip { font-size: .66rem; padding: 4px; }
 }
+
+
+
+/* Transporte de revisión del montaje. */
+.editor-transport {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.editor-transport input[type="range"] { flex: 1; min-width: 90px; accent-color: var(--accent); }
+.editor-transport small { min-width: 82px; text-align: right; font-variant-numeric: tabular-nums; }
+.editor-preview-controls { align-items: center; }
+.editor-preview-stage { position: relative; }
+.editor-preview-stage .editor-preview-caption {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 8%;
+  z-index: 2;
+  padding: 8px 12px;
+  border-radius: 7px;
+  background: rgba(0,0,0,.76);
+  color: #fff;
+  text-align: center;
+  font-size: clamp(.8rem, 1.5vw, 1.15rem);
+  font-weight: 800;
+  line-height: 1.25;
+  text-shadow: 0 1px 2px #000;
+  pointer-events: none;
+}
+@media (max-width: 600px) {
+  .editor-transport { flex-wrap: wrap; }
+  .editor-transport input[type="range"] { order: 3; flex-basis: 100%; }
+  .editor-transport small { min-width: 0; }
+}
