@@ -746,6 +746,18 @@ def _validate_vertical_short_render(project: dict, info: dict, results: list[dic
     if any(result.get("audio_info", {}).get("engine") == "silencio" for result in results):
         raise RuntimeError("No se pudo generar la voz en una o más escenas. Instalá o recuperá el motor TTS antes de publicar.")
 
+def _duration_target_warning(target_seconds: int | float, actual_seconds: int | float) -> str:
+    """Explica cuando el audio real queda muy lejos de la duración solicitada."""
+    target = max(0.0, float(target_seconds or 0))
+    actual = max(0.0, float(actual_seconds or 0))
+    if target <= 0 or actual >= target * 0.8:
+        return ""
+    return (
+        f"La narración quedó en {actual / 60:.1f} min frente al objetivo de {target / 60:.1f} min. "
+        "El video se renderizó con la duración real del guion; ampliá las escenas antes de publicar."
+    )
+
+
 def render_project(project_id: int, should_cancel=None, on_progress=None) -> dict:
     """Render completo. Devuelve artefactos, advertencias e informe de calidad."""
     project = db.query_one("SELECT * FROM projects WHERE id=?", (project_id,))
@@ -806,6 +818,11 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
                 db.now(),
             ),
         )
+
+    actual_duration = sum(float(result.get("duration") or 0) for result in results)
+    duration_warning = _duration_target_warning(project.get("duration_target_sec") or 0, actual_duration)
+    if duration_warning:
+        warnings.append(duration_warning)
 
     _check_cancel(should_cancel)
     progress(78, "Uniendo escenas")
