@@ -21,6 +21,10 @@ class SceneVideoTrimTests(unittest.TestCase):
         args = _visual_input_args(Path("clip.webm"), 25, 3.0, 0)
         self.assertEqual(args, ["-stream_loop", "-1", "-ss", "3.000", "-i", "clip.webm"])
 
+    def test_start_only_trim_loops_the_remaining_source_window(self):
+        args = _visual_input_args(Path("clip.webm"), 25, 3.0, 0, 12.0)
+        self.assertEqual(args, ["-stream_loop", "-1", "-ss", "3.000", "-t", "9.000", "-i", "clip.webm"])
+
     def test_still_images_do_not_receive_video_trim_arguments(self):
         args = _visual_input_args(Path("still.png"), 25, 3.0, 8.0)
         self.assertEqual(args, ["-loop", "1", "-framerate", "25", "-i", "still.png"])
