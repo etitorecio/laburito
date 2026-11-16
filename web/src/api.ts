@@ -157,6 +157,11 @@ export interface Channel {
   cadence: string;
   projects?: number;
   next_entry?: CalendarEntry | null;
+  watermark_path?: string;
+  watermark_enabled?: number;
+  watermark_position?: string;
+  watermark_scale?: number;
+  watermark_opacity?: number;
 }
 
 export interface CalendarEntry {
