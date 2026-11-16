@@ -1245,6 +1245,7 @@ def export_project(project_id: int) -> Path:
     except json.JSONDecodeError:
         quality = {}
     assets = db.query("SELECT * FROM assets WHERE project_id=? ORDER BY id", (project_id,))
+    overlays = db.query("SELECT * FROM timeline_overlays WHERE project_id=? ORDER BY start_sec, id", (project_id,))
 
     workdir = _workdir(project_id)
     suffix = "short" if project.get("kind") == "short" else "documental"
@@ -1284,6 +1285,7 @@ def export_project(project_id: int) -> Path:
                 {
                     "proyecto": project,
                     "escenas": scenes,
+                    "capas_de_tiempo": overlays,
                     "fuentes": sources,
                     "calidad": quality,
                 },
@@ -1296,22 +1298,42 @@ def export_project(project_id: int) -> Path:
         zf.writestr(
             "README.md",
             "# Exportación de AITuber Libre\n\n"
-            f"Contenido: vídeo final, subtítulos, guion, fuentes con licencia, {'miniatura' if thumb.exists() else 'sin miniatura'}, metadatos e informe de calidad.\\n\\n"
+            f"Contenido: vídeo final, subtítulos, guion, fuentes con licencia, capas editables de timeline, recursos originales del proyecto, {'miniatura' if thumb.exists() else 'sin miniatura'}, metadatos e informe de calidad.\\n\\n"
             "Antes de publicar: verificá cada licencia en `fuentes/fuentes.csv`, revisá el guion y confirmá que las "
             "imágenes no se presenten como fotografías históricas si fueron generadas localmente.\n",
         )
-        # Recursos propios (tarjetas generadas) redistribuibles sin restricción.
+        # Incluye los archivos originales del proyecto para que el paquete sea
+        # realmente portable y editable, no solamente un MP4 con metadatos.
+        # Nunca se guardan rutas absolutas del equipo dentro del ZIP.
+        exported_paths: set[str] = set()
         for asset in assets:
-            path = Path(asset.get("path") or "")
-            if asset.get("kind") not in ("video_escena",):
+            raw_path = asset.get("path") or ""
+            if not raw_path:
                 continue
-            if not path.exists() or path.stat().st_size >= 40 * 1024 * 1024:
+            path = Path(raw_path)
+            try:
+                resolved = path.resolve(strict=True)
+            except (OSError, RuntimeError):
                 continue
-            arc = f"escenas/{path.parent.name}.mp4"
+            if not resolved.is_file() or str(resolved) in exported_paths:
+                continue
+            size = resolved.stat().st_size
+            if size <= 0 or size > 250 * 1024 * 1024:
+                continue
+            exported_paths.add(str(resolved))
+            kind = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in (asset.get("kind") or "recurso"))
+            label = Path(asset.get("label") or resolved.name).name
+            safe_name = "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in label)[:100] or resolved.name
+            arc = f"recursos/{kind}/{int(asset.get('id') or len(exported_paths))}_{safe_name}"
             if arc in written:
                 continue
             written.add(arc)
-            zf.write(path, arc)
+            zf.write(resolved, arc)
+
+        zf.writestr(
+            "timeline/capas.json",
+            json.dumps(overlays, ensure_ascii=False, indent=2, default=str),
+        )
 
     db.execute(
         "INSERT INTO assets(project_id, kind, path, label, bytes, created_at) VALUES(?,?,?,?,?,?)",
