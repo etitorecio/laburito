@@ -397,7 +397,12 @@ def main() -> int:
             time.sleep(5)
             _, jobs, _ = call("GET", "/api/jobs")
             rows = jobs if isinstance(jobs, list) else (jobs or {}).get("jobs", [])
-            row = next((item for item in rows if item.get("id") == natural_job_id or item.get("project_id") == natural_project_id), None)
+            row = next((item for item in rows if item.get("id") == natural_job_id), None)
+            if row is None:
+                row = next((
+                    item for item in rows
+                    if item.get("project_id") == natural_project_id and item.get("kind") == "render_project"
+                ), None)
             if row:
                 natural_state = str(row.get("status") or "")
                 natural_message = str(row.get("message") or "")
