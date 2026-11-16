@@ -383,6 +383,8 @@ export default function Editor({ projectId, go }: Props) {
       )}
 
 
+      <details className="editor-settings">
+        <summary><strong>Configuración del video</strong><span>Duración · voz · estilo visual · subtítulos · música</span></summary>
       <Card
         title={project.title}
         sub={`${project.kind === 'short' ? 'Short vertical' : 'Documental'} · ${project.aspect} · ${scenes.length} escenas · ${words} palabras · ~${fmtDuration(totalChars / 14)} de voz`}
@@ -597,7 +599,10 @@ export default function Editor({ projectId, go }: Props) {
           </div>
         )}
       </Card>
+      </details>
 
+      <details className="editor-settings">
+        <summary><strong>Publicación</strong><span>YouTube y entrega local</span></summary>
       <Card
         title="Publicación y auto-subida"
         sub="El render terminado se entrega en la carpeta de publicados o se sube a YouTube sin intervención."
@@ -670,6 +675,7 @@ export default function Editor({ projectId, go }: Props) {
           <Empty>Todavía no hay publicaciones de este proyecto.</Empty>
         )}
       </Card>
+      </details>
 
       <div className="grid two">
         <Card title="Línea de tiempo" sub="Cada bloque representa una escena. La duración es estimada a partir de la narración; elegí un bloque para editarlo.">
@@ -724,6 +730,7 @@ export default function Editor({ projectId, go }: Props) {
                       <button className="btn small danger" onClick={() => removeScene(scene)}>×</button>
                     </div>
                   </div>
+                  {scene.visual_path && <img className="scene-visual-preview" src={mediaUrl(scene.visual_path)} alt={`Visual de ${scene.title}`} loading="lazy" />}
                   <textarea
                     defaultValue={scene.narration}
                     onBlur={(e) => e.target.value !== scene.narration && patchScene(scene, { narration: e.target.value })}
