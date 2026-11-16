@@ -891,9 +891,9 @@ export default function Editor({ projectId, go }: Props) {
             )}
           </Card>
 
-          <Card title="Créditos de recursos" sub="Atribuciones y licencias de los materiales usados en el video.">
+          <Card title="Fuentes y créditos" sub="Referencias documentales y atribuciones de los materiales usados en este video.">
             {(project.sources ?? []).length === 0 ? (
-              <Empty>Los créditos de los recursos se mostrarán acá cuando se utilicen materiales externos.</Empty>
+              <Empty>Las fuentes y atribuciones aparecerán acá a medida que se incorporen al proyecto.</Empty>
             ) : (
               <div className="list">
                 {(project.sources ?? []).map((s) => (
