@@ -227,6 +227,17 @@ export default function Editor({ projectId, go }: Props) {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName))) return;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        if (event.shiftKey) void redoHistory();
+        else void undoHistory();
+        return;
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+        event.preventDefault();
+        void redoHistory();
+        return;
+      }
       if (event.code === 'Space') {
         event.preventDefault();
         setPreviewPlaying((playing) => !playing);
