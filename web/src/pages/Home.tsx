@@ -54,7 +54,7 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
           if (!prompt.trim() || creating) return;
           setCreating(true); setError('');
           try {
-            const result = await api.post<{ project_id: number; job_id: number; status: string }>('/api/create-from-prompt', {
+            await api.post<{ project_id: number; job_id: number; status: string }>('/api/create-from-prompt', {
               prompt: prompt.trim(),
               channel_id: channelId ? Number(channelId) : null,
             });
