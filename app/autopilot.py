@@ -651,6 +651,7 @@ def _create_project(rule: dict) -> dict:
         "visual_style": rule.get("visual_style") or "automatico",
         "video_type": rule.get("video_type") or "moving_images",
         "continuity_recap": continuity_recap,
+        "series_context": continuity_context,
     })
     if template_id not in {"frutinovela", "reddit_story"}:
         db.execute(
