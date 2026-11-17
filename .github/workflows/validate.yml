@@ -52,6 +52,14 @@ jobs:
         run: python scripts/e2e_local.py
       - name: Install and synthesize with the CC0 Spanish Piper voice
         run: python scripts/test_piper.py
+      - name: Run scheduled autopilot through real local delivery
+        env:
+          AITUBER_DISABLE_EXTERNAL_MEDIA: "1"
+        run: python scripts/e2e_autopilot.py
+      - name: Run real local publication handoff
+        env:
+          AITUBER_DISABLE_EXTERNAL_MEDIA: "1"
+        run: python scripts/e2e_publish.py
 
       - name: Start the real HTTP application
         env:
