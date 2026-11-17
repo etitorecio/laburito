@@ -12,7 +12,8 @@ class DefaultVoiceTests(unittest.TestCase):
              patch.object(main.db, "execute", return_value=77) as execute, \
              patch.object(main, "_project_full", return_value={"id": 77}):
             main.create_project(payload)
-        values = execute.call_args.args[1]
+        project_call = next(call for call in execute.call_args_list if "INSERT INTO projects" in call.args[0])
+        values = project_call.args[1]
         self.assertEqual(values[7], "en-us")
 
     def test_explicit_spanish_voice_overrides_english_default(self):
@@ -22,7 +23,8 @@ class DefaultVoiceTests(unittest.TestCase):
              patch.object(main.db, "execute", return_value=78) as execute, \
              patch.object(main, "_project_full", return_value={"id": 78}):
             main.create_project(payload)
-        values = execute.call_args.args[1]
+        project_call = next(call for call in execute.call_args_list if "INSERT INTO projects" in call.args[0])
+        values = project_call.args[1]
         self.assertEqual(values[7], "es")
 
 
