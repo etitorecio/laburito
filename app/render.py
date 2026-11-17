@@ -884,6 +884,17 @@ def _apply_timeline_overlays(
     return output_path
 
 
+def _music_ducking_filter(volume: float) -> str:
+    """Baja la música automáticamente mientras habla la narración."""
+    level = max(0.0, min(1.0, float(volume)))
+    return (
+        f"[1:a]volume={level:.3f}[bg];"
+        "[bg][0:a]sidechaincompress=threshold=0.03:ratio=8:attack=20:release=300[ducked];"
+        "[0:a][ducked]amix=inputs=2:duration=first:dropout_transition=0,"
+        "loudnorm=I=-16:TP=-1.5:LRA=11[a]"
+    )
+
+
 def _music_track(project: dict | None = None) -> Path | None:
     """Música de fondo elegida en el proyecto (biblioteca, cama generada o ninguna)."""
     choice = ((project or {}).get("music") or "auto").strip()
@@ -1035,8 +1046,7 @@ def render_project(project_id: int, should_cancel=None, on_progress=None) -> dic
             [
                 "-i", str(voice), "-stream_loop", "-1", "-i", str(music),
                 "-filter_complex",
-                f"[1:a]volume={volume}[bg];[0:a][bg]amix=inputs=2:duration=first:dropout_transition=0,"
-                "loudnorm=I=-16:TP=-1.5:LRA=11[a]",
+                _music_ducking_filter(volume),
                 "-map", "[a]", "-c:a", "aac", "-b:a", "192k", str(mixed),
             ]
         )
