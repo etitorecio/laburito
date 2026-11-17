@@ -330,6 +330,8 @@ export interface AutopilotRule {
 }
 
 export interface Meta {
+  whisper_alignment_available?: boolean;
+  language?: string;
   voices: { id: string; label: string; available: boolean; gender?: string; language?: string }[];
   video_types: (OptionItem & { description: string; available: boolean })[];
   visual_styles: (OptionItem & { description: string })[];
