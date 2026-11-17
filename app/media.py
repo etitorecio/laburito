@@ -167,6 +167,17 @@ def _whisper_tokens_to_words(data: dict) -> list[dict]:
     return [word for word in words if word["text"].strip()]
 
 
+
+def whisper_alignment_signature() -> str:
+    binary = os.environ.get("WHISPER_CPP_BIN") or shutil.which("whisper-cli") or ""
+    model = Path(os.environ.get("WHISPER_MODEL_PATH", "").strip())
+    if not binary or not model.is_file():
+        return "approx"
+    try:
+        return f"{binary}:{model.stat().st_size}:{model.stat().st_mtime_ns}"
+    except OSError:
+        return "approx"
+
 def whisper_word_timings(
     audio_path: str | Path,
     language: str = "es",
