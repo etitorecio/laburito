@@ -230,7 +230,7 @@ export default function Autopilot() {
       avoid_topics: rule.avoid_topics || '',
       destination: rule.destination,
       privacy: rule.privacy,
-      auto_publish: rule.auto_publish,
+      auto_publish: rule.destination === 'youtube' ? false : rule.auto_publish,
       enabled: rule.enabled,
     });
     setEditingId(rule.id);
