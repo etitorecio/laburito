@@ -16,6 +16,23 @@ class DocumentaryScriptTests(unittest.TestCase):
         self.assertTrue(all(beat["title"] and beat["purpose"] for beat in beats))
 
 
+    def test_reddit_story_fallback_fits_a_short_without_ollama(self):
+        result = script_gen.generate_script(
+            {
+                "kind": "short",
+                "template": "reddit_story",
+                "duration_target_sec": 120,
+                "title": "Historia de prueba",
+                "topic": "un secreto inesperado",
+            },
+            notes=[],
+            sources=[],
+        )
+        self.assertEqual(len(result["scenes"]), 6)
+        total_words = sum(len(scene["narration"].split()) for scene in result["scenes"])
+        self.assertLessEqual(total_words, 240)
+        self.assertTrue(all(scene["narration"].strip() for scene in result["scenes"]))
+
     def test_sparse_research_never_creates_empty_documentary_scenes(self):
         claim = "El registro describe un cambio documentado en el proceso. " * 12
         result = script_gen.generate_script(
