@@ -1003,6 +1003,8 @@ def list_projects():
 @app.post("/api/projects", status_code=201)
 def create_project(payload: ProjectIn):
     data = payload.model_dump()
+    if "voice" not in payload.model_fields_set:
+        data["voice"] = db.get_setting("default_voice", "es")
     if data.get("template") in {"reddit_story", "frutinovela"} and not data.get("channel_id"):
         expected_name = "Frutinovelas" if data["template"] == "frutinovela" else "Historias"
         default_channel = db.query_one("SELECT id,name FROM channels WHERE lower(name)=?", (expected_name.lower(),))
@@ -1013,9 +1015,8 @@ def create_project(payload: ProjectIn):
         selected_channel = db.query_one("SELECT name FROM channels WHERE id=?", (data["channel_id"],))
         if not selected_channel:
             raise HTTPException(404, "El canal interno seleccionado no existe.")
-    spanish_voices = {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"}
-    if data.get("voice") not in spanish_voices:
-        raise HTTPException(400, "Laburito genera contenido únicamente en español. Elegí una voz española.")
+    if data.get("voice") not in tts.VOICES:
+        raise HTTPException(400, "Elegí una voz disponible en español o inglés.")
     if data.get("aspect") and data["aspect"] not in render.ASPECTS:
         raise HTTPException(400, "Formato no soportado (16:9, 9:16, 1:1 o 4:5)")
     if data.get("visual_style") not in options.VISUAL_STYLE_IDS:
@@ -1253,9 +1254,8 @@ def patch_project(project_id: int, payload: ProjectPatch):
         data["aspect"] = "9:16"
         if "duration_target_sec" in data:
             data["duration_target_sec"] = options.clamp_vertical_short_duration(effective_template, data["duration_target_sec"])
-    spanish_voices = {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"}
-    if "voice" in data and data["voice"] not in spanish_voices:
-        raise HTTPException(400, "Laburito genera contenido únicamente en español. Elegí una voz española.")
+    if "voice" in data and data["voice"] not in tts.VOICES:
+        raise HTTPException(400, "Elegí una voz disponible en español o inglés.")
     if "aspect" in data and data["aspect"] not in render.ASPECTS:
         raise HTTPException(400, "Formato no soportado")
     if "template" in data and data["template"] not in options.TEMPLATE_IDS:
@@ -3017,15 +3017,14 @@ def get_settings():
 
 @app.put("/api/settings")
 def put_settings(payload: SettingsIn):
-    spanish_voices = {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"}
     for key, value in payload.values.items():
-        if key not in db.DEFAULT_SETTINGS or key == "default_language":
+        if key not in db.DEFAULT_SETTINGS:
             continue
-        if key == "default_voice" and value not in spanish_voices:
-            raise HTTPException(400, "La voz predeterminada debe ser una voz española.")
+        if key == "default_language" and value not in {"es", "en"}:
+            raise HTTPException(400, "Elegí español o inglés como idioma predeterminado.")
+        if key == "default_voice" and value not in tts.VOICES:
+            raise HTTPException(400, "Elegí una voz disponible en español o inglés.")
         db.set_setting(key, value)
-    # Idioma fijo: todo el contenido y toda la narración salen en español.
-    db.set_setting("default_language", "es")
     return {k: db.get_setting(k) for k in db.DEFAULT_SETTINGS}
 
 
