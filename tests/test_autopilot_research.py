@@ -214,6 +214,26 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertIn("next_run_at", execute.call_args.args[0])
         self.assertIn("now", execute.call_args.args[1])
 
+    def test_fiction_episode_factory_avoids_repeating_recent_frutinovela_plots(self):
+        previous = []
+        for number in range(1, 101):
+            title, topic, actual_number = autopilot._fiction_episode(
+                "frutinovela", "Los Frutos", number, previous
+            )
+            self.assertNotIn(topic, previous)
+            self.assertIn(f"Episodio {actual_number}", title)
+            previous.append(topic)
+
+    def test_fiction_episode_factory_avoids_repeating_recent_reddit_plots(self):
+        previous = []
+        for number in range(1, 101):
+            title, topic, actual_number = autopilot._fiction_episode(
+                "reddit_story", "Historias del trabajo", number, previous
+            )
+            self.assertNotIn(topic, previous)
+            self.assertIn(f"Relato {actual_number}", title)
+            previous.append(topic)
+
     def test_autopilot_accepts_english_voice(self):
         self.assertEqual(autopilot._clean({"voice": "en-us"})["voice"], "en-us")
 
