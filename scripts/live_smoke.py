@@ -98,6 +98,14 @@ def main() -> int:
     check(bool(checks.get("ffprobe")), "ffprobe presente en la imagen")
     check(bool(checks.get("fuente_subtitulos")), "fuente para subtítulos", str((diag or {}).get("font")))
     print(f"  info ffmpeg: {(diag or {}).get('ffmpeg_version')}")
+    status, meta, _ = call("GET", "/api/meta")
+    voice_rows = (meta or {}).get("voices", []) if isinstance(meta, dict) else []
+    english_voice = next((voice for voice in voice_rows if voice.get("id") == "en-us"), None)
+    check(status == 200 and bool(english_voice), "idioma inglés disponible en el catálogo", f"({status})")
+    if english_voice:
+        status, sample, _ = call("GET", "/api/voice-preview/en-us", raw=True)
+        check(status == 200 and len(sample) > 1000, "muestra de voz inglesa generada localmente", f"({status}, {len(sample)} bytes)")
+
 
     # Verifica las dos fábricas reales de la aplicación, no canales de YouTube ficticios.
     status, accounts, _ = call("GET", "/api/youtube/accounts")
