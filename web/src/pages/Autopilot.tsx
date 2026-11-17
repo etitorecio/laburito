@@ -58,7 +58,7 @@ const INITIAL = {
 
 const STEPS = [
   { title: 'Nicho', subtitle: 'Elegí el tema y definí qué contenido debe producir' },
-  { title: 'Idioma y voz', subtitle: 'Todo el contenido se crea en español; elegí la voz y el ritmo' },
+  { title: 'Idioma y voz', subtitle: 'Español o inglés; el inglés requiere traducción local con Ollama/Qwen' },
   { title: 'Música', subtitle: 'Automática, pistas propias o sin música' },
   { title: 'Estilo visual', subtitle: 'Elegí el aspecto que tendrán las escenas' },
   { title: 'Subtítulos', subtitle: 'Elegí un estilo y su movimiento con vista previa' },
@@ -75,6 +75,7 @@ export default function Autopilot() {
   const [persistenceConfigured, setPersistenceConfigured] = useState<boolean | null>(null);
   const [persistenceNote, setPersistenceNote] = useState('');
   const [form, setForm] = useState(INITIAL);
+  const [defaultsLoaded, setDefaultsLoaded] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [step, setStep] = useState(0);
   const [simpleMode, setSimpleMode] = useState(true);
@@ -102,9 +103,10 @@ export default function Autopilot() {
           // La configuración rápida no obliga a volver a escribir el tema:
           // toma el nicho del canal y usa su nombre como último respaldo.
           niche: current.niche.trim() || selectedChannel?.topic || selectedChannel?.name || '',
-          voice: current.voice === 'es' ? (m.settings.default_voice || 'es') : current.voice,
+          voice: defaultsLoaded ? current.voice : (m.settings.default_voice || current.voice),
         };
       });
+      setDefaultsLoaded(true);
       setMeta(m);
       setOllamaAvailable(diagnostics.ollama.available);
       setYoutubeAccounts(accountData.accounts);
