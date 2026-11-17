@@ -371,11 +371,11 @@ def init_db() -> None:
         for key, value in DEFAULT_SETTINGS.items():
             if key not in existing:
                 conn.execute("INSERT INTO settings(key, value) VALUES(?,?)", (key, value))
-        # Migración de preferencias heredadas: esta instalación trabaja solo en español.
-        conn.execute("UPDATE settings SET value='es' WHERE key='default_language'")
-        conn.execute("UPDATE settings SET value='es' WHERE key='default_voice' AND value NOT IN ('es','es-ar','es-es-piper','es-mx','es-masculino','es-agudo')")
-        conn.execute("UPDATE channels SET language='es' WHERE language!='es'")
-        conn.execute("UPDATE projects SET voice='es' WHERE voice NOT IN ('es','es-ar','es-es-piper','es-mx','es-masculino','es-agudo')")
+        # Migración conservadora: admitir español e inglés y corregir solo valores desconocidos.
+        conn.execute("UPDATE settings SET value='es' WHERE key='default_language' AND value NOT IN ('es','en')")
+        conn.execute("UPDATE settings SET value='es' WHERE key='default_voice' AND value NOT IN ('es','es-ar','es-es-piper','es-mx','es-masculino','es-agudo','en','en-us','en-gb')")
+        conn.execute("UPDATE channels SET language='es' WHERE language NOT IN ('es','en')")
+        conn.execute("UPDATE projects SET voice='es' WHERE voice NOT IN ('es','es-ar','es-es-piper','es-mx','es-masculino','es-agudo','en','en-us','en-gb')")
         conn.commit()
 
 
