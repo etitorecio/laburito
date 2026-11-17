@@ -168,6 +168,12 @@ def _whisper_tokens_to_words(data: dict) -> list[dict]:
 
 
 
+def whisper_alignment_available() -> bool:
+    binary = os.environ.get("WHISPER_CPP_BIN") or shutil.which("whisper-cli")
+    model = os.environ.get("WHISPER_MODEL_PATH", "").strip()
+    return bool(binary and model and Path(model).is_file())
+
+
 def whisper_alignment_signature() -> str:
     binary = os.environ.get("WHISPER_CPP_BIN") or shutil.which("whisper-cli") or ""
     model = Path(os.environ.get("WHISPER_MODEL_PATH", "").strip())
