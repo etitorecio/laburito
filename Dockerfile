@@ -19,6 +19,7 @@ RUN git clone --depth 1 --branch v1.9.5 https://github.com/ggml-org/whisper.cpp.
       -DWHISPER_BUILD_TESTS=OFF \
       -DWHISPER_BUILD_EXAMPLES=ON \
       -DWHISPER_BUILD_SERVER=OFF \
+      -DGGML_NATIVE=OFF \
  && cmake --build /tmp/whisper.cpp/build --config Release --target whisper-cli -j2
 
 FROM python:3.13-slim-bookworm
