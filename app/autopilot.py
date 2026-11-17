@@ -436,6 +436,7 @@ def delete_rule(rule_id: int) -> None:
 
 def _fiction_episode(template_id: str, niche: str, episode_number: int, previous_topics: list[str]) -> tuple[str, str, int]:
     """Crea episodios deterministas sin reciclar premisas recientes."""
+    from . import topic_engine
     frutinovela_conflicts = [
         "una herencia inesperada divide a la familia", "un romance secreto sale a la luz",
         "un mensaje anónimo revela una traición", "una identidad oculta cambia todas las alianzas",
