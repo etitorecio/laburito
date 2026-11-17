@@ -19,7 +19,7 @@ Estados:
 | Pegar un guion propio y convertirlo a video | Implementada | Endpoint de guion y pipeline de escenas existente. |
 | Shorts verticales | Implementada | Plantillas verticales, subtítulos, voz, visuales y render FFmpeg. |
 | Documentales largos | Parcial | Pipeline horizontal disponible, con duración limitada a 20 minutos; falta comparar calidad/variedad visual con el motor comercial. |
-| Frutinovelas episódicas | Implementada | Plantilla propia, personajes recurrentes, continuidad y cliffhangers. |
+| Frutinovelas episódicas | Implementada | Plantilla propia, personajes recurrentes, recapitulación de las últimas escenas y 1.728 combinaciones de premisas para evitar repetir episodios recientes; conserva cliffhangers. |
 | Historias estilo Reddit | Implementada | Fábrica interna y plantilla de ficción. |
 | Canales independientes | Implementada | Canales en SQLite, configuración e historial por canal; sin límite comercial de canales impuesto por Laburito. |
 | Autopiloto que descubre temas | Parcial | Reglas activas eligen temas nuevos por nicho, evitan repetición y consultan Wikipedia, OpenAlex y señales de Google Trends. La configuración rápida hereda el nicho del canal elegido para reducir pasos. La selección depende de un nicho configurado una vez; no publica automáticamente. |
