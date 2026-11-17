@@ -246,7 +246,7 @@ class AutopilotResearchTests(unittest.TestCase):
             "visual_style": "Fotografía de archivo histórica",
         }
         script = script_gen.generate_script(project, [], [])
-        self.assertTrue(script["scenes"][0]["narration"].startswith("¿Qué hay detrás de La exploración espacial?"))
+        self.assertTrue(script["scenes"][0]["narration"].startswith("What's behind Space exploration?"))
         self.assertIn("Vamos a los datos:", script["scenes"][0]["narration"])
         self.assertIn("Seguime para ver más historias", script["scenes"][-1]["narration"])
         self.assertNotIn("Guardá este vídeo", script["scenes"][-1]["narration"])
@@ -287,7 +287,7 @@ class AutopilotResearchTests(unittest.TestCase):
 
     def test_autopilot_metadata_controls_change_title_and_tags(self):
         project = {
-            "id": 778, "title": "La exploración espacial", "topic": "La exploración espacial",
+            "id": 778, "title": "Space exploration", "topic": "Space exploration",
             "kind": "short", "voice": "en-gb", "notes": "[LABURITO_META]" + json.dumps({
                 "title_style": "pregunta", "custom_tags": "astronomía, universo",
             }),
