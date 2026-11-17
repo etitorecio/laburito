@@ -719,6 +719,8 @@ def render_scene(
         "en" if str(project.get("voice") or "es").startswith("en") else "es",
         seg_dir / "word-alignment.json",
     ) if captions_enabled and db.get_setting("word_alignment", "0") == "1" else None
+    if captions_enabled and db.get_setting("word_alignment", "0") == "1" and word_timings is None:
+        db.log("warn", "render", "Whisper.cpp no pudo alinear esta escena; se usan tiempos aproximados.", {"scene_id": scene.get("id")})
     cues = media.caption_chunks(
         narration,
         duration,
