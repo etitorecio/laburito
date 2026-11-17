@@ -31,7 +31,7 @@ Estados:
 | Stock video y clips de fondo | Parcial | Búsqueda de recursos abiertos y uso de clips propios/autorizados; no hay catálogo comercial equivalente. |
 | Avatares/talking head/UGC | Ausente | No hay motor de avatar humano realista. |
 | Skeleton/talking objects | Parcial | Hay soporte de plantillas y render procedural para skeleton; no equivale a todos los motores visuales comerciales ni talking objects generativos. |
-| Música de fondo | Parcial | Camas musicales locales, pistas propias y mezcla FFmpeg; catálogo menor que el comercial. |
+| Música de fondo y ducking | Implementada | Camas musicales locales, pistas propias y mezcla FFmpeg; un compresor sidechain reduce automáticamente la música cuando entra la narración. Catálogo menor que el comercial. |
 | Subtítulos sincronizados | Parcial | Subtítulos agrupados con tiempos proporcionales a la cantidad de palabras y exportación SRT/VTT; no hay alineación fonética real ni resaltado palabra por palabra sincronizado al milisegundo. |
 | Edición de escenas y regeneración parcial | Implementada | Editor, línea de tiempo, edición y regeneración individual de escenas/visuales. |
 | Transiciones y overlays | Implementada | Transiciones, overlays de texto, voz, música y efectos. |
