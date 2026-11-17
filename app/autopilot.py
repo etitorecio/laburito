@@ -511,7 +511,7 @@ def _fiction_episode(template_id: str, niche: str, episode_number: int, previous
     raise RuntimeError("No pude crear una premisa de ficción nueva sin repetir episodios recientes.")
 
 
-def _frutinovela_continuity_context(channel_id: int | None) -> str:
+def _frutinovela_continuity_context(channel_id: int | None) -> tuple[str, str]:
     """Resume los últimos hechos para que el episodio siguiente no reinicie la serie."""
     previous = db.query_one(
         "SELECT p.id, p.title, p.topic FROM projects p "
@@ -521,7 +521,7 @@ def _frutinovela_continuity_context(channel_id: int | None) -> str:
         (channel_id,),
     )
     if not previous:
-        return ""
+        return "", ""
     scenes = db.query(
         "SELECT narration FROM scenes WHERE project_id=? ORDER BY idx DESC LIMIT 3",
         (previous.get("id"),),
@@ -532,13 +532,15 @@ def _frutinovela_continuity_context(channel_id: int | None) -> str:
         if (row.get("narration") or "").strip()
     ]
     if not recap:
-        return ""
-    return (
+        return "", ""
+    instruction = (
         "Continuidad obligatoria de la serie: continuar después de "
         f"'{previous.get('title') or previous.get('topic') or 'el episodio anterior'}'. "
         "Respetar las consecuencias y relaciones ya establecidas; no reiniciar la historia "
         "ni contradecir estos hechos: " + " ".join(recap) + ". "
     )
+    recap_line = recap[-1][:150].rsplit(" ", 1)[0]
+    return instruction, recap_line
 
 
 def _create_project(rule: dict) -> dict:
@@ -562,7 +564,7 @@ def _create_project(rule: dict) -> dict:
     )
     previous_topics = [row.get("topic", "") for row in previous]
     characters = (rule.get("content_pillars") or "").strip()
-    continuity_context = _frutinovela_continuity_context(rule.get("channel_id")) if template_id == "frutinovela" else ""
+    continuity_context, continuity_recap = _frutinovela_continuity_context(rule.get("channel_id")) if template_id == "frutinovela" else ("", "")
     if template_id in {"frutinovela", "reddit_story"}:
         count_row = db.query_one(
             "SELECT COUNT(*) AS total FROM projects WHERE channel_id IS ? AND template=?",
@@ -640,6 +642,7 @@ def _create_project(rule: dict) -> dict:
         "avoid_topics": rule.get("avoid_topics") or "",
         "visual_style": rule.get("visual_style") or "automatico",
         "video_type": rule.get("video_type") or "moving_images",
+        "continuity_recap": continuity_recap,
     })
     if template_id not in {"frutinovela", "reddit_story"}:
         db.execute(
