@@ -1390,13 +1390,12 @@ def generate_script(project_id: int, replace: bool = True):
                     ollama_url, "qwen2.5:1.5b-instruct", project, script
                 )
                 translated_title = script.get("translated_title") or project.get("title")
-                translated_topic = script.get("translated_topic") or project.get("topic")
-                if translated_title and translated_topic:
+                if translated_title:
                     db.execute(
-                        "UPDATE projects SET title=?, topic=?, updated_at=? WHERE id=?",
-                        (translated_title, translated_topic, db.now(), project_id),
+                        "UPDATE projects SET title=?, updated_at=? WHERE id=?",
+                        (translated_title, db.now(), project_id),
                     )
-                    project["title"], project["topic"] = translated_title, translated_topic
+                    project["title"] = translated_title
             elif project.get("template") in {"frutinovela", "reddit_story"}:
                 script = script_gen.rewrite_fiction_with_ollama(
                     ollama_url, "qwen2.5:1.5b-instruct", project, script
