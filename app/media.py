@@ -154,6 +154,11 @@ def _whisper_tokens_to_words(data: dict) -> list[dict]:
             piece = token_text.strip()
             if not piece:
                 continue
+            punctuation_only = not any(character.isalnum() for character in piece)
+            if punctuation_only and current:
+                current["text"] += piece
+                current["end"] = max(float(current["end"]), end)
+                continue
             if begins_word and current:
                 words.append(current)
                 current = None
