@@ -20,7 +20,7 @@ Estados:
 | Shorts verticales | Implementada | Plantillas verticales, subtítulos, voz, visuales y render FFmpeg. |
 | Documentales largos | Parcial | Pipeline horizontal disponible, con duración limitada a 20 minutos; falta comparar calidad/variedad visual con el motor comercial. |
 | Frutinovelas episódicas | Implementada | Plantilla propia, personajes recurrentes, recapitulación de las últimas escenas y 1.728 combinaciones de premisas para evitar repetir episodios recientes; conserva cliffhangers. |
-| Historias estilo Reddit | Implementada | Fábrica interna y plantilla de ficción. |
+| Historias estilo Reddit | Implementada | Fábrica interna con 1.728 combinaciones de situación, detonante y desenlace; evita repetir premisas recientes. |
 | Canales independientes | Implementada | Canales en SQLite, configuración e historial por canal; sin límite comercial de canales impuesto por Laburito. |
 | Autopiloto que descubre temas | Parcial | Reglas activas eligen temas nuevos por nicho, evitan repetición y consultan Wikipedia, OpenAlex y señales de Google Trends. La configuración rápida hereda el nicho del canal elegido para reducir pasos. La selección depende de un nicho configurado una vez; no publica automáticamente. |
 | Scheduler/worker persistente | Parcial | Worker SQLite de un hilo, tick del autopiloto cada minuto, reintentos y recuperación de tareas interrumpidas. Local: requiere PC/proceso activo. Cloud: el workflow de wake-up requiere `LABURITO_URL` real y persistencia; esa URL todavía no está configurada. |
