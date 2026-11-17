@@ -642,6 +642,9 @@ def generate_script(
     for idx, beat in enumerate(beats):
         characters = (project.get("content_pillars") or topic or "los personajes").strip()
         narration = beat["narration"].format(topic=topic, characters=characters)
+        continuity_recap = (project.get("continuity_recap") or "").strip()
+        if script_kind == "frutinovela" and idx == 0 and continuity_recap:
+            narration = f"Lo que pasó antes sigue teniendo consecuencias: {continuity_recap}. " + narration
         if evidence_sentences:
             first = idx * len(evidence_sentences) // len(beats)
             last = (idx + 1) * len(evidence_sentences) // len(beats)
