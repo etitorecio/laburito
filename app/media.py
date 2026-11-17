@@ -244,10 +244,10 @@ def whisper_word_timings(
 
 
 def caption_chunks(text: str, duration: float, max_words: int, max_chars: int, max_lines: int = 3, word_timings: list[dict] | None = None) -> list[dict]:
-    """Divide la narración en subtítulos con tiempos proporcionales a las palabras.
+    """Divide la narración en subtítulos usando tiempos reales si están disponibles.
 
-    Es una aproximación honesta: no hay alineación forzada (Whisper) en este
-    entorno, por lo que el tiempo se reparte por cantidad de palabras.
+    Con Whisper.cpp, cada bloque toma el inicio de su primera palabra y el final
+    de la última. Sin alineación local, se conserva el reparto proporcional.
     """
     words = (text or "").split()
     if not words:
