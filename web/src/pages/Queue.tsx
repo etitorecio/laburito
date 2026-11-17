@@ -3,6 +3,17 @@ import { api, type Job, type LogRow } from '../api';
 import { Badge, Card, Empty, JobBadge, Msg, Progress } from '../ui';
 import type { Route } from '../routes';
 
+function jobLabel(kind: string): string {
+  const labels: Record<string, string> = {
+    create_from_prompt: 'Crear video',
+    render_project: 'Renderizar video',
+    publish_project: 'Publicar video',
+    install_piper_voice: 'Instalar voz',
+    export_project: 'Exportar proyecto',
+  };
+  return labels[kind] ?? kind.replace(/_/g, ' ');
+}
+
 export default function Queue({ go }: { go: (route: Route, id?: number) => void }) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [logs, setLogs] = useState<LogRow[]>([]);
@@ -47,7 +58,7 @@ export default function Queue({ go }: { go: (route: Route, id?: number) => void 
               <div className="list-item" key={j.id}>
                 <div className="grow">
                   <h4>
-                    #{j.id} · {j.kind.replace('_', ' ')} {j.project_title ? `— ${j.project_title}` : ''}
+                    #{j.id} · {jobLabel(j.kind)} {j.project_title ? `— ${j.project_title}` : ''}
                   </h4>
                   <div className="meta">
                     <JobBadge status={j.status} />

@@ -68,3 +68,17 @@ Referencias públicas consultadas:
 7. Mantener bloqueada la publicación externa automática; cada video debe aprobarse individualmente.
 
 No declarar paridad total hasta cerrar las brechas o documentar explícitamente por qué una capacidad comercial no tiene sustituto gratuito/local equivalente.
+
+
+## Verificación técnica — 17/11/2026
+
+| Capacidad / requisito | Estado | Evidencia en `appjet` |
+|---|---|---|
+| Orden natural sin esperar la investigación en la petición HTTP | **Implementada** | `POST /api/create-from-prompt` crea el proyecto y una tarea persistente `create_from_prompt`; el worker investiga, genera guion y renderiza bajo el mismo ID de tarea. |
+| Progreso desde el inicio y reanudación sin regenerar el guion | **Implementada** | El worker registra etapa de investigación, guarda `script_ready` y las advertencias en `jobs.payload_json`, y reanuda el render usando ese estado. |
+| Canal automático por formato | **Parcial** | El selector prioriza canales del usuario compatibles con el formato y excluye las fábricas internas; si no hay canal compatible, el proyecto queda sin asignación. No hay clasificación semántica avanzada. |
+| Aprobación por video para YouTube | **Implementada en backend; pendiente CI del commit actual** | La API emite un token opaco, el worker lo vincula a una única tarea y `publish.publish` rechaza cualquier subida sin token válido. Los reintentos solo se permiten dentro de la misma tarea. |
+| Bloqueo de tareas antiguas de autopublicación | **Implementada en backend; pendiente CI del commit actual** | Las reglas antiguas se normalizan; los trabajos `publish_project` de YouTube sin token fallan sin reintentos. Las entregas locales siguen pudiendo automatizarse. |
+| Paridad audiovisual con AITuber | **Parcial** | La alternativa local usa FFmpeg, TTS local y material con licencia; no ofrece 1.300 voces, generación de imágenes/video IA comercial, clonación de voz ni 4K equivalente. |
+
+La referencia pública de AITuber confirma creación desde una idea o guion, generación de voz/visuales/subtítulos, formatos verticales y horizontales, regeneración de escenas, biblioteca de música y Autopilot programado. La paridad del motor sigue siendo parcial por las restricciones de costo y hardware; no se afirma equivalencia de calidad o velocidad.

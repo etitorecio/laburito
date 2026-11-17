@@ -578,7 +578,7 @@ export default function Autopilot() {
             <Field label="Destino de cada video">
               <select value={form.destination} onChange={(e) => update('destination', e.target.value)}>
                 <option value="entrega">Guardar en Laburito para revisar</option>
-                <option value="youtube">Publicar en YouTube</option>
+                <option value="youtube">Preparar para YouTube (aprobación manual por video)</option>
               </select>
             </Field>
             <Field label="Privacidad en YouTube">

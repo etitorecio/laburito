@@ -60,7 +60,7 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
       </section>
 
       <section className="studio-section" aria-label="Crear video con una instrucción">
-        <div className="studio-section-head"><div><span className="studio-eyebrow">DECILO Y SE HACE</span><h3>¿Qué video querés que haga?</h3><p>Escribí una orden simple. Podés indicar “en inglés” o “en español”; si no, usa el idioma predeterminado de Ajustes. Laburito prepara el guion y deja el render trabajando en segundo plano.</p></div></div>
+        <div className="studio-section-head"><div><span className="studio-eyebrow">DECILO Y SE HACE</span><h3>¿Qué video querés que haga?</h3><p>Escribí una orden simple. Podés indicar “en inglés” o “en español”; si no, usa el idioma predeterminado de Ajustes. Laburito investiga, escribe y renderiza en segundo plano. Podés salir de esta pantalla: el trabajo sigue en la cola.</p></div></div>
         <div className="studio-prompt-presets" aria-label="Elegir un tipo de video">
           <button type="button" onClick={() => { setPrompt('Haceme un short sobre '); promptRef.current?.focus(); }}>▯ <span>Short</span></button>
           <button type="button" onClick={() => { setPrompt('Haceme una historia de terror'); promptRef.current?.focus(); }}>◉ <span>Historia</span></button>

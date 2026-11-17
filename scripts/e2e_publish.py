@@ -122,8 +122,9 @@ def main() -> int:
 
     print("\n== YouTube sin credenciales falla con mensaje claro")
     before = len(publish.list_publications(project_id))
+    approval_id = publish.issue_manual_approval(project_id)
     try:
-        publish.publish(project_id, "youtube")
+        publish.publish(project_id, "youtube", manual_approval_id=approval_id, job_id=999999)
         check(False, "youtube sin credenciales debe fallar")
     except publish.PublishError as exc:
         message = str(exc)

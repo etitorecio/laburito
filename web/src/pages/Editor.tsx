@@ -1105,7 +1105,7 @@ export default function Editor({ projectId, go }: Props) {
               <div className="list-item" key={j.id}>
                 <div className="grow">
                   <div className="meta">
-                    <Badge tone={j.status === 'completado' ? 'ok' : j.status === 'error' ? 'bad' : 'warn'}>{j.kind}</Badge>
+                    <Badge tone={j.status === 'completado' ? 'ok' : j.status === 'error' ? 'bad' : 'warn'}>{j.kind === 'create_from_prompt' ? 'Creando video' : j.kind === 'render_project' ? 'Render' : j.kind}</Badge>
                     <span>{j.message}</span>
                   </div>
                   {['en_cola', 'ejecutando'].includes(j.status) && <div style={{ marginTop: 6 }}><Progress value={j.progress} /></div>}
