@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, mediaUrl, type Channel, type Diagnostics, type Meta, type Project } from '../api';
 import { Badge, Card, Empty, Field, Msg, Progress, statusTone } from '../ui';
 import VoicePicker from '../components/VoicePicker';
@@ -23,7 +23,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
   const [ideas, setIdeas] = useState<TopicIdea[]>([]);
   const [ideasBusy, setIdeasBusy] = useState(false);
 
-  const [defaultsLoaded, setDefaultsLoaded] = useState(false);
+  const defaultsLoaded = useRef(false);
   const [form, setForm] = useState({
     title: '',
     topic: '',
@@ -107,9 +107,9 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
       setForm((current) => ({
         ...current,
         channel_id: current.channel_id || String(c[0]?.id ?? ''),
-        voice: defaultsLoaded ? current.voice : (m.settings.default_voice || current.voice),
+        voice: defaultsLoaded.current ? current.voice : (m.settings.default_voice || current.voice),
       }));
-      setDefaultsLoaded(true);
+      defaultsLoaded.current = true;
       setMeta(m);
       setOllamaAvailable(diagnostics.ollama.available);
     } catch (e) {
