@@ -669,6 +669,14 @@ def _create_project(rule: dict) -> dict:
                 script = script_gen.translate_script_with_ollama(
                     ollama_url, "qwen2.5:1.5b-instruct", project, script
                 )
+                translated_title = script.get("translated_title") or project.get("title")
+                translated_topic = script.get("translated_topic") or project.get("topic")
+                if translated_title and translated_topic:
+                    db.execute(
+                        "UPDATE projects SET title=?, topic=?, updated_at=? WHERE id=?",
+                        (translated_title, translated_topic, db.now(), pid),
+                    )
+                    project["title"], project["topic"] = translated_title, translated_topic
             db.log("info", "autopilot", "Guion procesado con Ollama local", {"project_id": pid})
         except Exception as exc:
             if str(project.get("voice") or "es").startswith("en"):
