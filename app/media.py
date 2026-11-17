@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
 import struct
@@ -134,7 +135,90 @@ def wrap(text: str, width: int, max_lines: int = 3) -> list[str]:
     return lines
 
 
-def caption_chunks(text: str, duration: float, max_words: int, max_chars: int, max_lines: int = 3) -> list[dict]:
+
+def _whisper_tokens_to_words(data: dict) -> list[dict]:
+    """Convierte los tokens temporizados de whisper.cpp en palabras con tiempos."""
+    words: list[dict] = []
+    current: dict | None = None
+    for segment in data.get("transcription", []) or []:
+        for token in segment.get("tokens", []) or []:
+            token_text = str(token.get("text") or "")
+            if not token_text or token_text.startswith("[_") or token_text.isspace():
+                continue
+            offsets = token.get("offsets") or {}
+            start = float(offsets.get("from") or 0) / 1000.0
+            end = float(offsets.get("to") or 0) / 1000.0
+            if end <= start:
+                continue
+            begins_word = token_text[:1].isspace()
+            piece = token_text.strip()
+            if not piece:
+                continue
+            if begins_word and current:
+                words.append(current)
+                current = None
+            if current is None:
+                current = {"text": piece, "start": start, "end": end}
+            else:
+                current["text"] += piece
+                current["end"] = max(float(current["end"]), end)
+    if current:
+        words.append(current)
+    return [word for word in words if word["text"].strip()]
+
+
+def whisper_word_timings(
+    audio_path: str | Path,
+    language: str = "es",
+    cache_path: str | Path | None = None,
+) -> list[dict] | None:
+    """Alineación opcional palabra por palabra con whisper.cpp local.
+
+    Requiere WHISPER_CPP_BIN (o whisper-cli en PATH) y WHISPER_MODEL_PATH.
+    Si falta cualquiera, devuelve None y el render conserva tiempos aproximados.
+    """
+    binary = os.environ.get("WHISPER_CPP_BIN") or shutil.which("whisper-cli")
+    model = os.environ.get("WHISPER_MODEL_PATH", "").strip()
+    if not binary or not model or not Path(model).is_file():
+        return None
+    audio = Path(audio_path)
+    if not audio.is_file():
+        return None
+    cached = Path(cache_path) if cache_path else None
+    if cached and cached.is_file():
+        try:
+            saved = json.loads(cached.read_text(encoding="utf-8"))
+            if isinstance(saved, list) and saved:
+                return saved
+        except (OSError, json.JSONDecodeError):
+            pass
+    output_dir = cached.parent if cached else audio.parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_prefix = output_dir / f"whisper-{hashlib.sha1(str(audio).encode()).hexdigest()[:10]}"
+    cmd = [
+        binary, "-m", model, "-f", str(audio),
+        "-l", "en" if language == "en" else "es",
+        "-ojf", "-of", str(output_prefix), "-np", "-ng", "-t", "2", "-sns", "-nf",
+    ]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, timeout=1800)
+        if proc.returncode != 0:
+            return None
+        output_json = Path(str(output_prefix) + ".json")
+        if not output_json.is_file():
+            return None
+        data = json.loads(output_json.read_text(encoding="utf-8"))
+        words = _whisper_tokens_to_words(data)
+        if not words:
+            return None
+        if cached:
+            cached.write_text(json.dumps(words, ensure_ascii=False), encoding="utf-8")
+        return words
+    except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError, ValueError):
+        return None
+
+
+def caption_chunks(text: str, duration: float, max_words: int, max_chars: int, max_lines: int = 3, word_timings: list[dict] | None = None) -> list[dict]:
     """Divide la narración en subtítulos con tiempos proporcionales a las palabras.
 
     Es una aproximación honesta: no hay alineación forzada (Whisper) en este
@@ -157,13 +241,22 @@ def caption_chunks(text: str, duration: float, max_words: int, max_chars: int, m
         chunks.append(current)
 
     total_words = sum(len(c) for c in chunks) or 1
+    use_word_timings = isinstance(word_timings, list) and len(word_timings) == len(words)
     chunks_out: list[dict] = []
     cursor = 0.0
+    word_cursor = 0
     for i, chunk in enumerate(chunks):
-        share = len(chunk) / total_words
-        start = cursor
-        end = duration if i == len(chunks) - 1 else cursor + share * duration
+        if use_word_timings:
+            first = word_timings[word_cursor]
+            last = word_timings[word_cursor + len(chunk) - 1]
+            start = max(0.0, float(first.get("start") or 0))
+            end = min(duration, max(start + 0.05, float(last.get("end") or start)))
+        else:
+            share = len(chunk) / total_words
+            start = cursor
+            end = duration if i == len(chunks) - 1 else cursor + share * duration
         cursor = end
+        word_cursor += len(chunk)
         chunks_out.append(
             {
                 "start": round(start, 2),
