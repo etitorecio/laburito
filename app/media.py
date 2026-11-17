@@ -168,14 +168,21 @@ def _whisper_tokens_to_words(data: dict) -> list[dict]:
 
 
 
+def _whisper_binary() -> str | None:
+    configured = os.environ.get("WHISPER_CPP_BIN", "").strip()
+    if configured and Path(configured).is_file():
+        return configured
+    return shutil.which(configured or "whisper-cli")
+
+
 def whisper_alignment_available() -> bool:
-    binary = os.environ.get("WHISPER_CPP_BIN") or shutil.which("whisper-cli")
+    binary = _whisper_binary()
     model = os.environ.get("WHISPER_MODEL_PATH", "").strip()
     return bool(binary and model and Path(model).is_file())
 
 
 def whisper_alignment_signature() -> str:
-    binary = os.environ.get("WHISPER_CPP_BIN") or shutil.which("whisper-cli") or ""
+    binary = _whisper_binary()
     model = Path(os.environ.get("WHISPER_MODEL_PATH", "").strip())
     if not binary or not model.is_file():
         return "approx"
@@ -183,6 +190,7 @@ def whisper_alignment_signature() -> str:
         return f"{binary}:{model.stat().st_size}:{model.stat().st_mtime_ns}"
     except OSError:
         return "approx"
+
 
 def whisper_word_timings(
     audio_path: str | Path,
@@ -194,7 +202,7 @@ def whisper_word_timings(
     Requiere WHISPER_CPP_BIN (o whisper-cli en PATH) y WHISPER_MODEL_PATH.
     Si falta cualquiera, devuelve None y el render conserva tiempos aproximados.
     """
-    binary = os.environ.get("WHISPER_CPP_BIN") or shutil.which("whisper-cli")
+    binary = _whisper_binary()
     model = os.environ.get("WHISPER_MODEL_PATH", "").strip()
     if not binary or not model or not Path(model).is_file():
         return None
