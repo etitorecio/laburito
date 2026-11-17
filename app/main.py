@@ -1069,16 +1069,22 @@ def create_from_prompt(payload: NaturalCreateIn):
             channel = db.query_one("SELECT id FROM channels ORDER BY id LIMIT 1")
         channel_id = int(channel["id"]) if channel else None
 
-    project = create_project(ProjectIn(
-        title=intent["title"],
-        topic=intent["topic"],
-        channel_id=channel_id,
-        template=intent["template"],
-        aspect=intent["aspect"],
+    prompt_language = payload.prompt.casefold()
+    requested_voice = None
+    if re.search(r"\\b(en inglés|en ingles|in english|english voice)\\b", prompt_language):
+        requested_voice = "en-us"
+    elif re.search(r"\\b(en español|en espanol|in spanish|spanish voice)\\b", prompt_language):
+        requested_voice = "es"
+    project_data = {
+        "title": intent["title"],
+        "topic": intent["topic"],
+        "channel_id": channel_id,
+        "template": intent["template"],
+        "aspect": intent["aspect"],
         # Las voces reales pueden superar levemente la duración estimada; dejar
         # margen evita que una historia de 3 min falle por unos segundos al validar Shorts.
-        duration_target_sec=100 if intent["template"] == "reddit_story" else None,
-        notes=(
+        "duration_target_sec": 100 if intent["template"] == "reddit_story" else None,
+        "notes": (
             "Orden original del usuario: " + intent["prompt"]
             + (
                 "[LABURITO_META]" + json.dumps(
@@ -1088,7 +1094,10 @@ def create_from_prompt(payload: NaturalCreateIn):
                 if intent["template"] == "frutinovela" else ""
             )
         ),
-    ))
+    }
+    if requested_voice:
+        project_data["voice"] = requested_voice
+    project = create_project(ProjectIn(**project_data))
     project_id = int(project["id"])
     try:
         script_result = generate_script(project_id, replace=True)
