@@ -603,7 +603,6 @@ def _create_project(rule: dict) -> dict:
             ),
         )
     if rule.get("voice") == "es-es-piper":
-        from . import tts
         if tts.status().get("piper_available"):
             db.execute(
                 "INSERT INTO sources(project_id, title, url, author, license, accessed_at, attribution, kind, notes, created_at) "
