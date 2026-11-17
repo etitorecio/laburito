@@ -205,12 +205,19 @@ def build_metadata(project, scenes) -> dict:
         except (ValueError, TypeError, json.JSONDecodeError):
             metadata_config = {}
     title_style = metadata_config.get("title_style", "automatico")
-    title_templates = {
+    voice_id = (_g(project, "voice") or "es").strip()
+    is_english = voice_id.startswith("en")
+    title_templates = ({
+        "pregunta": f"What's behind {topic}?",
+        "curiosidad": f"What you need to know about {topic}",
+        "directo": f"What is {topic} and why does it matter?",
+        "misterio": f"The mystery behind {topic}",
+    } if is_english else {
         "pregunta": f"¿Qué hay detrás de {topic}?",
         "curiosidad": f"Lo que tenés que saber sobre {topic}",
         "directo": f"Qué es {topic} y por qué importa",
         "misterio": f"El misterio detrás de {topic}",
-    }
+    })
     if title_style in title_templates and title == topic:
         title = title_templates[title_style]
     if len(title) > 95:
@@ -221,18 +228,7 @@ def build_metadata(project, scenes) -> dict:
         if text:
             hook = text
             break
-    language = _g(project, "language")
-    if (_g(project, "notes") or "").startswith("Autopiloto:"):
-        voice_id = (_g(project, "voice") or "es").strip()
-        language = "es" if voice_id == "es-es-piper" else voice_id.split("-", 1)[0]
-    elif not language and _g(project, "channel_id"):
-        channel = db.query_one("SELECT language FROM channels WHERE id=?", (_g(project, "channel_id"),))
-        language = _g(channel or {}, "language")
-    if not language:
-        voice_id = (_g(project, "voice") or "es").strip()
-        language = "es" if voice_id == "es-es-piper" else voice_id.split("-", 1)[0]
-    # Laburito produce exclusivamente en español, incluso al migrar proyectos antiguos.
-    language = "es"
+    language = "en" if is_english else "es"
     manual_keywords = [k.strip() for k in re.split(r"[,;]", _g(project, "keywords") or "") if k.strip()]
     custom_tags = [k.strip().lstrip("#") for k in re.split(r"[,;]", str(metadata_config.get("custom_tags") or "")) if k.strip()]
     topic_keywords = re.findall(r"[0-9A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{3,}", _g(project, "topic"))
