@@ -15,7 +15,7 @@ Estados:
 
 | Capacidad de AITuber | Estado Laburito | Evidencia / diferencia |
 |---|---|---|
-| Inicio mobile-first y creación desde una idea breve | Parcial | El bloque «Decilo y se hace» ahora es el primer bloque de Inicio, antes del hero; ofrece accesos directos Shorts, Historias, Frutinovela y Documentales, orden natural breve, canal opcional y botón Crear. La creación abre el progreso real del proyecto; los controles de edición quedan después. Interpreta comandos comunes con parser determinista; no es un agente conversacional multimodal. La compilación web está probada, pero falta prueba física en Android. |
+| Inicio mobile-first y creación desde una idea breve | Parcial | El bloque «Decilo y se hace» ahora es el primer bloque de Inicio, antes del hero; ofrece accesos directos Shorts, Historias, Frutinovela y Documentales, orden natural breve, canal opcional y botón Crear. Después de crear, abre Cola de trabajo con el progreso real; el editor solo se abre cuando el usuario toca «Abrir». Interpreta comandos comunes con parser determinista; no es un agente conversacional multimodal. La compilación web está probada, pero falta prueba física en Android. |
 | Pegar un guion propio y convertirlo a video | Implementada | Endpoint de guion y pipeline de escenas existente. |
 | Shorts verticales | Implementada | Plantillas verticales, subtítulos, voz, visuales y render FFmpeg. |
 | Documentales largos | Parcial | Pipeline horizontal disponible, con duración limitada a 20 minutos; falta comparar calidad/variedad visual con el motor comercial. |
