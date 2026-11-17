@@ -238,7 +238,7 @@ class AutopilotResearchTests(unittest.TestCase):
 
     def test_script_uses_autopilot_hook_cta_and_visual_style(self):
         project = {
-            "id": 777, "title": "Space exploration", "topic": "Space exploration",
+            "id": 777, "title": "La exploración espacial", "topic": "La exploración espacial",
             "kind": "short", "template": "shorts", "duration_target_sec": 30,
             "hook_style": "Pregunta intrigante",
             "tone": "Documental y riguroso",
@@ -246,7 +246,7 @@ class AutopilotResearchTests(unittest.TestCase):
             "visual_style": "Fotografía de archivo histórica",
         }
         script = script_gen.generate_script(project, [], [])
-        self.assertTrue(script["scenes"][0]["narration"].startswith("What's behind Space exploration?"))
+        self.assertTrue(script["scenes"][0]["narration"].startswith("¿Qué hay detrás de La exploración espacial?"))
         self.assertIn("Vamos a los datos:", script["scenes"][0]["narration"])
         self.assertIn("Seguime para ver más historias", script["scenes"][-1]["narration"])
         self.assertNotIn("Guardá este vídeo", script["scenes"][-1]["narration"])
