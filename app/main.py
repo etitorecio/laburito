@@ -770,7 +770,7 @@ def uploaded_music_preview(filename: str):
 @app.get("/api/voice-preview/{voice_id}")
 def voice_sample_preview(voice_id: str, speed: int = 150, pitch: int = 45):
     if voice_id not in tts.VOICES:
-        raise HTTPException(404, "Voz española inexistente")
+        raise HTTPException(404, "Voz inexistente")
     speed = max(80, min(300, int(speed)))
     pitch = max(0, min(99, int(pitch)))
     preview_dir = db.DATA_DIR / "voice_previews"
@@ -778,11 +778,12 @@ def voice_sample_preview(voice_id: str, speed: int = 150, pitch: int = 45):
     preview = preview_dir / f"{voice_id}-{speed}-{pitch}.wav"
     try:
         if not preview.exists() or preview.stat().st_size < 1000:
-            tts.synthesize(
-                "Hola. Esta es una muestra de voz en español para tus videos. "
-                "Elegí la que mejor combine con el estilo de tu canal.",
-                preview, voice=voice_id, speed=speed, pitch=pitch,
+            sample_text = (
+                "Hello. This is an English voice sample for your videos. Choose the voice that best fits your channel."
+                if tts.VOICES[voice_id].get("language") == "en"
+                else "Hola. Esta es una muestra de voz en español para tus videos. Elegí la que mejor combine con tu canal."
             )
+            tts.synthesize(sample_text, preview, voice=voice_id, speed=speed, pitch=pitch)
         return FileResponse(preview, media_type="audio/wav")
     except Exception as exc:
         raise HTTPException(503, f"No se pudo generar la muestra de voz: {exc}") from exc
