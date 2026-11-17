@@ -59,7 +59,7 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
               channel_id: channelId ? Number(channelId) : null,
             });
             setPrompt('');
-            go('editor', result.project_id);
+            go('cola');
           } catch (e) {
             setError((e as Error).message);
           } finally {
