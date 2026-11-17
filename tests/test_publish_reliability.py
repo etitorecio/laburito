@@ -99,6 +99,32 @@ class PublishReliabilityTests(unittest.TestCase):
                 with self.assertRaisesRegex(publish.ManualApprovalRequired, "cambió después de tu aprobación"):
                     publish.authorize_manual_approval(14, "opaque-token", 88, "new-sha256")
 
+    def test_youtube_upload_rechecks_the_approved_file_before_sending(self):
+        with tempfile.TemporaryDirectory() as folder:
+            video = Path(folder) / "final_short.mp4"
+            video.write_bytes(b"x" * 2048)
+            with patch.object(publish, "ensure_schema"):
+                with patch.object(publish.db, "query_one", side_effect=[
+                    {"id": 16, "kind": "short"}, None,
+                ]):
+                    with patch.object(publish, "video_path", return_value=video):
+                        with patch.object(publish, "_video_fingerprint", side_effect=[
+                            "approved-sha256", "changed-sha256",
+                        ]):
+                            with patch.object(publish, "authorize_manual_approval") as authorize:
+                                with patch.object(publish, "_youtube_upload") as upload:
+                                    with patch.object(publish.db, "query", return_value=[]):
+                                        with patch.object(publish, "build_metadata", return_value={"title": "Test"}):
+                                            with self.assertRaisesRegex(
+                                                publish.ManualApprovalRequired,
+                                                "cambió después de tu aprobación",
+                                            ):
+                                                publish.publish(
+                                                    16, "youtube", manual_approval_id="opaque-token", job_id=92,
+                                                )
+            authorize.assert_called_once_with(16, "opaque-token", 92, "approved-sha256")
+            upload.assert_not_called()
+
     def test_enqueue_manual_youtube_creates_an_opaque_job_approval(self):
         with tempfile.TemporaryDirectory() as folder:
             video = Path(folder) / "final_short.mp4"
