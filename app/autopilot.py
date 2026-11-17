@@ -492,7 +492,7 @@ def _fiction_episode(template_id: str, niche: str, episode_number: int, previous
     for _ in range(1000):
         index = number - 1
         if template_id == "frutinovela":
-            conflict = frutinovela_conflicts[index % len(f rutiniknovela_conflicts)]
+            conflict = frutinovela_conflicts[index % len(frutinovela_conflicts)]
             place = frutinovela_places[(index // len(frutinovela_conflicts)) % len(frutinovela_places)]
             reveal = frutinovela_reveals[(index // (len(frutinovela_conflicts) * len(frutinovela_places))) % len(frutinovela_reveals)]
             topic = f"{niche}: {conflict} en {place}; {reveal}"
