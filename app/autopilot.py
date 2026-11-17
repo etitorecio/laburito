@@ -13,7 +13,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from . import db, options
+from . import db, options, tts
 
 CADENCE_OPTIONS = [6, 12, 24, 48, 72, 168]
 SHORT_TEMPLATE_IDS = {"shorts", "frutinovela", "reddit_story", "listicle", "pov", "quote", "cuadrado", "vertical_45"}
@@ -187,9 +187,8 @@ def _clean(data: dict) -> dict:
             clean["duration_target_sec"] = max(180, min(1200, int(data["duration_target_sec"])))
     if "voice" in data and data["voice"] is not None:
         voice = str(data["voice"]).strip()
-        spanish_voices = {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"}
-        if voice not in spanish_voices:
-            raise ValueError("Laburito genera contenido únicamente en español. Elegí una voz española.") 
+        if voice not in tts.VOICES:
+            raise ValueError("Elegí una voz disponible en español o inglés.")
         clean["voice"] = voice
     if "speed" in data and data["speed"] is not None:
         clean["speed"] = max(80, min(300, int(data["speed"])))
