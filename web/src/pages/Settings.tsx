@@ -130,6 +130,7 @@ export default function Settings() {
             <input type="number" step="0.01" min="0" max="1" value={values.music_volume || '0.12'} onChange={(e) => setValues({ ...values, music_volume: e.target.value })} />
           </Field>
         </div>
+        <p className="muted">Los guiones automáticos en inglés se traducen con Qwen/Ollama local. Si Ollama no está disponible, Laburito no genera un video mezclando narración inglesa con texto español; también podés pegar un guion propio en inglés.</p>
         <div className="row">
           <Field label="Estilo de subtítulos por defecto">
             <CaptionStylePicker
