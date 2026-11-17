@@ -254,15 +254,22 @@ def build_metadata(project, scenes) -> dict:
     parts: list[str] = []
     if hook:
         parts.append(hook)
-    parts.append(
-        f"{len(scenes)} escenas · formato {_g(project, 'kind') or 'short'} · narración en {language}."
-    )
-    if keywords:
-        parts.append("Temas: " + ", ".join(keywords[:12]))
-    if credits:
-        parts.append("Créditos visuales:\n" + "\n".join(credits[:25]))
-    if source_lines:
-        parts.append("Fuentes:\n" + "\n".join(source_lines[:15]))
+    if is_english:
+        parts.append(f"{len(scenes)} scenes · {_g(project, 'kind') or 'short'} format · narration in English.")
+        if keywords:
+            parts.append("Topics: " + ", ".join(keywords[:12]))
+        if credits:
+            parts.append("Visual credits:\n" + "\n".join(credits[:25]))
+        if source_lines:
+            parts.append("Sources:\n" + "\n".join(source_lines[:15]))
+    else:
+        parts.append(f"{len(scenes)} escenas · formato {_g(project, 'kind') or 'short'} · narración en {language}.")
+        if keywords:
+            parts.append("Temas: " + ", ".join(keywords[:12]))
+        if credits:
+            parts.append("Créditos visuales:\n" + "\n".join(credits[:25]))
+        if source_lines:
+            parts.append("Fuentes:\n" + "\n".join(source_lines[:15]))
     hashtags = " ".join("#" + re.sub(r"[^0-9A-Za-zÁÉÍÓÚÜÑáéíóúüñ]", "", k) for k in keywords[:6] if k)
     if hashtags:
         parts.append(hashtags)
