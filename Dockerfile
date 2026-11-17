@@ -9,6 +9,18 @@ RUN npm ci --no-audit --no-fund
 COPY web/ /web/
 RUN npm run build
 
+FROM debian:bookworm-slim AS whisper-build
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends build-essential cmake git \
+ && rm -rf /var/lib/apt/lists/*
+RUN git clone --depth 1 --branch v1.9.5 https://github.com/ggml-org/whisper.cpp.git /tmp/whisper.cpp \
+ && cmake -S /tmp/whisper.cpp -B /tmp/whisper.cpp/build \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DWHISPER_BUILD_TESTS=OFF \
+      -DWHISPER_BUILD_EXAMPLES=ON \
+      -DWHISPER_BUILD_SERVER=OFF \
+ && cmake --build /tmp/whisper.cpp/build --config Release --target whisper-cli -j2
+
 FROM python:3.13-slim-bookworm
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
@@ -21,7 +33,9 @@ RUN apt-get update \
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     AITUBER_DATA_DIR=/app/data \
-    PORT=8080
+    PORT=8080 \
+    WHISPER_CPP_BIN=/usr/local/bin/whisper-cli \
+    WHISPER_MODEL_PATH=/opt/whisper/ggml-tiny.bin
 
 WORKDIR /app
 COPY requirements.txt /app/requirements.txt
@@ -30,6 +44,19 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 COPY app/ /app/app/
 COPY --from=web /web/dist /app/web/dist
+COPY --from=whisper-build /tmp/whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli
+RUN mkdir -p /opt/whisper \
+ && python - <<'PY'
+import hashlib
+import urllib.request
+path = "/opt/whisper/ggml-tiny.bin"
+url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin"
+urllib.request.urlretrieve(url, path)
+digest = hashlib.sha256(open(path, "rb").read()).hexdigest()
+expected = "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21"
+if digest != expected:
+    raise SystemExit(f"Whisper tiny model checksum mismatch: {digest}")
+PY
 
 RUN groupadd --system aituber \
  && useradd --system --gid aituber --home-dir /app aituber \
