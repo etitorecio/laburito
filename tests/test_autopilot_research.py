@@ -238,7 +238,7 @@ class AutopilotResearchTests(unittest.TestCase):
 
     def test_script_uses_autopilot_hook_cta_and_visual_style(self):
         project = {
-            "id": 777, "title": "La exploración espacial", "topic": "La exploración espacial",
+            "id": 777, "title": "Space exploration", "topic": "Space exploration",
             "kind": "short", "template": "shorts", "duration_target_sec": 30,
             "hook_style": "Pregunta intrigante",
             "tone": "Documental y riguroso",
@@ -294,7 +294,7 @@ class AutopilotResearchTests(unittest.TestCase):
         }
         with patch.object(publish.db, "query", return_value=[]):
             metadata = publish.build_metadata(project, [])
-        self.assertEqual(metadata["title"], "¿Qué hay detrás de La exploración espacial?")
+        self.assertEqual(metadata["title"], "What's behind Space exploration?")
         self.assertIn("astronomía", metadata["tags"])
         self.assertIn("universo", metadata["tags"])
         self.assertEqual(metadata["language"], "en")
