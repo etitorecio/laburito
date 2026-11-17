@@ -670,13 +670,12 @@ def _create_project(rule: dict) -> dict:
                     ollama_url, "qwen2.5:1.5b-instruct", project, script
                 )
                 translated_title = script.get("translated_title") or project.get("title")
-                translated_topic = script.get("translated_topic") or project.get("topic")
-                if translated_title and translated_topic:
+                if translated_title:
                     db.execute(
-                        "UPDATE projects SET title=?, topic=?, updated_at=? WHERE id=?",
-                        (translated_title, translated_topic, db.now(), pid),
+                        "UPDATE projects SET title=?, updated_at=? WHERE id=?",
+                        (translated_title, db.now(), pid),
                     )
-                    project["title"], project["topic"] = translated_title, translated_topic
+                    project["title"] = translated_title
             db.log("info", "autopilot", "Guion procesado con Ollama local", {"project_id": pid})
         except Exception as exc:
             if str(project.get("voice") or "es").startswith("en"):
