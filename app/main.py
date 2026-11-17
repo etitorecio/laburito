@@ -675,10 +675,10 @@ def delete_background_clip(category: str, filename: str):
 def meta():
     tts_status = tts.status()
     return {
-        # El producto está deliberadamente limitado al español: no se ofrecen
-        # idiomas que el guionista y la estrategia editorial no van a producir.
+        # Español e inglés están disponibles con síntesis local; Piper es solo español.
         "language": "es",
-        "voices": [{**v, "available": tts_status["available"] and (v["id"] != "es-es-piper" or tts_status["piper_available"])} for v in tts_status["voices"] if v.get("language") == "es"],
+        "languages": [{"id": "es", "label": "Español"}, {"id": "en", "label": "English"}],
+        "voices": [{**v, "available": tts_status["available"] and (v["id"] != "es-es-piper" or tts_status["piper_available"])} for v in tts_status["voices"]],
         "aspects": list(render.ASPECTS.keys()),
         "resolutions": options.RESOLUTION_INFO,
         "fps_options": options.FPS_OPTIONS,
