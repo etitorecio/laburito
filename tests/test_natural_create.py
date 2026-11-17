@@ -28,7 +28,7 @@ class NaturalCreateEndpointTests(unittest.TestCase):
                     with patch.object(main.worker, "enqueue", return_value=93):
                         main.create_from_prompt(main.NaturalCreateIn(prompt="haceme una historia de terror"))
         self.assertEqual(create.call_args.args[0].template, "reddit_story")
-        self.assertEqual(create.call_args.args[0].duration_target_sec, 150)
+        self.assertEqual(create.call_args.args[0].duration_target_sec, 120)
 
     def test_natural_order_selects_the_frutinovela_factory(self):
         with patch.object(main.db, "query_one", return_value={"id": 8}):
