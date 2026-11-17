@@ -26,6 +26,9 @@ VOICES = {
     "es-mx": {"engine_voice": "es-419", "label": "Español latinoamericano", "gender": "neutro", "language": "es"},
     "es-masculino": {"engine_voice": "es", "label": "Español grave (masculino)", "gender": "masculino", "language": "es"},
     "es-agudo": {"engine_voice": "es", "label": "Español agudo (femenino)", "gender": "femenino", "language": "es"},
+    "en": {"engine_voice": "en", "label": "English (neutral)", "gender": "neutral", "language": "en"},
+    "en-us": {"engine_voice": "en-us", "label": "English (United States)", "gender": "neutral", "language": "en"},
+    "en-gb": {"engine_voice": "en-gb", "label": "English (United Kingdom)", "gender": "neutral", "language": "en"},
 }
 
 SPEED_RANGE = (80, 300)
@@ -110,8 +113,8 @@ def synthesize(text: str, out_path: Path, voice: str = "es", speed: int = 150, p
             "sudo apt install espeak-ng · Alpine: apk add espeak-ng)."
         )
 
-    # Laburito produce exclusivamente en español. Las reglas/proyectos antiguos
-    # que guardaban una voz de otro idioma vuelven a la voz española por defecto.
+    # Se admiten español e inglés mediante voces locales de espeak-ng.
+    # Piper instalado en esta versión solo aporta la voz neural española.
     voice = voice if voice in VOICES else "es"
     engine_voice = VOICES[voice]["engine_voice"]
     cmd = [
