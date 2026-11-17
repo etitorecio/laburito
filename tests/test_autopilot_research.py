@@ -496,18 +496,54 @@ class AutopilotResearchTests(unittest.TestCase):
     def test_topic_normalization_helps_avoid_repeats(self):
         self.assertEqual(topic_engine._normal("Historia: del Rock!"), "historia del rock")
 
-    def test_youtube_autopilot_requires_connection_before_saving_rule(self):
+    def test_youtube_autopilot_is_blocked_even_with_storage_and_valid_connection(self):
         with patch("app.persistence.durable_storage_available", return_value=True):
-            with patch.object(publish, "youtube_account_status", side_effect=publish.PublishError("refresh token inválido")):
-                with self.assertRaisesRegex(ValueError, "refresh token inválido"):
-                    autopilot._validate_auto_publish({"auto_publish": 1, "destination": "youtube", "channel_id": 1})
-
-    def test_youtube_autopilot_requires_durable_storage_before_saving_rule(self):
-        with patch("app.persistence.durable_storage_available", return_value=False):
             with patch.object(publish, "youtube_account_status") as verify:
-                with self.assertRaisesRegex(ValueError, "volumen local persistente"):
-                    autopilot._validate_auto_publish({"auto_publish": 1, "destination": "youtube", "channel_id": 1})
+                with self.assertRaisesRegex(ValueError, "aprobación manual"):
+                    autopilot._validate_auto_publish({
+                        "auto_publish": 1, "destination": "youtube", "channel_id": 1,
+                    })
         verify.assert_not_called()
+
+    def test_create_rule_rejects_youtube_autopublish(self):
+        with patch.object(autopilot, "ensure_schema"):
+            with patch.object(autopilot, "_validate_factory_channel"):
+                with patch.object(autopilot.db, "execute") as execute:
+                    with self.assertRaisesRegex(ValueError, "aprobación manual"):
+                        autopilot.create_rule({
+                            "niche": "ciencia", "destination": "youtube", "auto_publish": True,
+                        })
+        execute.assert_not_called()
+
+    def test_update_rule_rejects_youtube_autopublish(self):
+        current = {
+            "id": 12, "name": "Ciencia", "niche": "ciencia",
+            "destination": "entrega", "auto_publish": 0, "template": "shorts",
+        }
+        with patch.object(autopilot, "ensure_schema"):
+            with patch.object(autopilot, "get_rule", return_value=current):
+                with patch.object(autopilot, "_validate_factory_channel"):
+                    with patch.object(autopilot.db, "execute") as execute:
+                        with self.assertRaisesRegex(ValueError, "aprobación manual"):
+                            autopilot.update_rule(12, {
+                                "destination": "youtube", "auto_publish": True,
+                            })
+        execute.assert_not_called()
+
+    def test_editing_legacy_youtube_rule_turns_off_autopublish(self):
+        current = {
+            "id": 13, "name": "Ciencia", "niche": "ciencia",
+            "destination": "youtube", "auto_publish": 1, "template": "shorts",
+        }
+        updated = {**current, "auto_publish": 0}
+        with patch.object(autopilot, "ensure_schema"):
+            with patch.object(autopilot, "get_rule", side_effect=[current, updated]):
+                with patch.object(autopilot, "_validate_factory_channel"):
+                    with patch.object(autopilot.db, "execute") as execute:
+                        with patch.object(autopilot.db, "now", return_value="now"):
+                            result = autopilot.update_rule(13, {"name": "Ciencia nueva"})
+        self.assertEqual(result["auto_publish"], 0)
+        self.assertIn(0, execute.call_args.args[1])
 
     def test_publish_does_not_upload_same_video_twice_on_retry(self):
         with tempfile.TemporaryDirectory() as folder:
