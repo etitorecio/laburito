@@ -83,8 +83,13 @@ def main() -> int:
     check(ids["entrega"]["available"] is True, "entrega siempre disponible (sin claves)")
     check(ids["youtube"]["available"] is False, "youtube marcado no disponible sin credenciales")
     check(
-        set(ids["youtube"]["missing_env"]) == {"YOUTUBE_CLIENT_ID", "YOUTUBE_CLIENT_SECRET", "YOUTUBE_REFRESH_TOKEN"},
-        "youtube informa las variables faltantes",
+        set(ids["youtube"]["missing_env"]) == {"YOUTUBE_CLIENT_ID", "YOUTUBE_CLIENT_SECRET"},
+        "youtube informa las credenciales OAuth de aplicación faltantes",
+        f"({ids['youtube']['missing_env']})",
+    )
+    check(
+        "YOUTUBE_REFRESH_TOKEN" not in ids["youtube"]["missing_env"],
+        "el refresh token se guarda por canal, no como variable global",
         f"({ids['youtube']['missing_env']})",
     )
 
@@ -129,7 +134,11 @@ def main() -> int:
     except publish.PublishError as exc:
         message = str(exc)
         check("YOUTUBE_CLIENT_ID" in message, "el error nombra la variable faltante", f"({message[:120]})")
-        check("Settings" in message, "el error indica dónde configurarla")
+        check(
+            "Conectá su cuenta desde Cuentas" in message,
+            "el error indica dónde configurar la cuenta",
+            f"({message})",
+        )
     check(len(publish.list_publications(project_id)) == before, "no se registra una publicación falsa")
 
     print("\n== Destino inválido y proyecto inexistente")
