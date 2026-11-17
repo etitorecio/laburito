@@ -1,6 +1,6 @@
 import unittest
 
-from app import media
+from app import media, options
 
 
 class WhisperWordTimingTests(unittest.TestCase):
@@ -34,6 +34,10 @@ class WhisperWordTimingTests(unittest.TestCase):
         self.assertAlmostEqual(cues[0]["end"], 0.91)
         self.assertAlmostEqual(cues[1]["start"], 1.1)
         self.assertAlmostEqual(cues[1]["end"], 1.8)
+
+    def test_karaoke_style_uses_one_word_per_caption(self):
+        self.assertEqual(options.CAPTION_STYLES["karaoke"]["max_words"], 1)
+        self.assertEqual(options.CAPTION_STYLES["karaoke"]["max_lines"], 1)
 
     def test_missing_whisper_configuration_falls_back_cleanly(self):
         from unittest.mock import patch
