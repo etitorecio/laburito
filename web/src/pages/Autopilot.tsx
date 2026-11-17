@@ -423,8 +423,8 @@ export default function Autopilot() {
 
           {step === 1 && <>
 <h3>Idioma y voz</h3>
-            <p className="muted">Idioma fijo: Español. Los guiones, la narración y los subtítulos se generan en español; elegí la voz que más te guste.</p>
-            <Field label="Elegí una voz en español">
+            <p className="muted">Podés producir en español o inglés. Para guiones automáticos en inglés se necesita Ollama/Qwen local; si no está disponible, Laburito frena la producción en vez de mezclar idiomas.</p>
+            <Field label="Elegí una voz">
               <VoicePicker
                 options={voiceOptions}
                 value={form.voice}
