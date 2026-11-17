@@ -102,6 +102,7 @@ export default function Autopilot() {
           // La configuración rápida no obliga a volver a escribir el tema:
           // toma el nicho del canal y usa su nombre como último respaldo.
           niche: current.niche.trim() || selectedChannel?.topic || selectedChannel?.name || '',
+          voice: current.voice === 'es' ? (m.settings.default_voice || 'es') : current.voice,
         };
       });
       setMeta(m);
@@ -197,7 +198,7 @@ export default function Autopilot() {
       channel_id: rule.channel_id ? String(rule.channel_id) : '',
       template: rule.template,
       duration_target_sec: rule.duration_target_sec ?? 30,
-      voice: rule.voice?.startsWith('es') ? rule.voice : 'es',
+      voice: rule.voice || 'es',
       speed: rule.speed ?? 150,
       pitch: rule.pitch ?? 45,
       visual_style: rule.visual_style || 'automatico',
@@ -292,7 +293,7 @@ export default function Autopilot() {
     }));
   }
 
-  const voiceOptions = (meta?.voices ?? []).filter((v) => v.language === 'es');
+  const voiceOptions = meta?.voices ?? [];
   const destinationInfo = data?.destinations.find((d) => d.id === 'youtube');
 
   return (
