@@ -49,14 +49,59 @@ class PublishReliabilityTests(unittest.TestCase):
                         with patch.object(publish, "_validate_autopilot_short"):
                             with patch.object(publish, "_video_fingerprint", return_value="sha256-test"):
                                 with patch.object(publish.db, "query", return_value=[]), patch.object(publish, "build_metadata", return_value={"title": "test"}):
-                                    with patch.object(publish, "_youtube_upload", return_value=upload_result):
-                                        with patch.object(publish.db, "execute", side_effect=lambda sql, params=(): statements.append((sql, params))):
-                                            with patch.object(publish.db, "now", return_value="now"):
-                                                with patch.object(publish.db, "log"):
-                                                    result = publish.publish(12, "youtube", privacy="public")
+                                    with patch.object(publish, "authorize_manual_approval") as authorize:
+                                        with patch.object(publish, "_youtube_upload", return_value=upload_result):
+                                            with patch.object(publish.db, "execute", side_effect=lambda sql, params=(): statements.append((sql, params))):
+                                                with patch.object(publish.db, "now", return_value="now"):
+                                                    with patch.object(publish.db, "log"):
+                                                        result = publish.publish(
+                                                            12, "youtube", privacy="public",
+                                                            manual_approval_id="approval-12", job_id=77,
+                                                        )
+            authorize.assert_called_once_with(12, "approval-12", 77)
             self.assertEqual(result["status"], "procesamiento_fallido")
             insert = next(params for sql, params in statements if "INSERT INTO publicaciones" in sql)
             self.assertEqual(insert[3], "procesamiento_fallido")
+
+    def test_youtube_upload_cannot_start_without_manual_approval(self):
+        with tempfile.TemporaryDirectory() as folder:
+            video = Path(folder) / "final_short.mp4"
+            video.write_bytes(b"x" * 2048)
+            project = {"id": 13, "kind": "short", "notes": ""}
+            with patch.object(publish, "ensure_schema"):
+                with patch.object(publish.db, "query_one", side_effect=[project, None]):
+                    with patch.object(publish, "video_path", return_value=video):
+                        with patch.object(publish, "_youtube_upload") as upload:
+                            with self.assertRaisesRegex(publish.ManualApprovalRequired, "aprobación manual"):
+                                publish.publish(13, "youtube", privacy="public")
+            upload.assert_not_called()
+
+    def test_manual_approval_is_bound_to_one_job_and_allows_its_retries(self):
+        rows = [
+            {"project_id": 14, "job_id": None},
+            {"project_id": 14, "job_id": 88},
+            {"project_id": 14, "job_id": 88},
+            {"project_id": 14, "job_id": 88},
+        ]
+        with patch.object(publish, "ensure_schema"):
+            with patch.object(publish.db, "query_one", side_effect=rows):
+                with patch.object(publish.db, "execute") as execute:
+                    publish.authorize_manual_approval(14, "opaque-token", 88)
+                    publish.authorize_manual_approval(14, "opaque-token", 88)
+                    with self.assertRaises(publish.ManualApprovalRequired):
+                        publish.authorize_manual_approval(14, "opaque-token", 89)
+        self.assertGreaterEqual(execute.call_count, 2)
+
+    def test_enqueue_manual_youtube_creates_an_opaque_job_approval(self):
+        with patch.object(publish, "issue_manual_approval", return_value="opaque-token") as issue:
+            with patch("app.worker.enqueue", return_value=91) as enqueue:
+                job_id = publish.enqueue_manual_publication(15, "youtube", None, "private")
+        self.assertEqual(job_id, 91)
+        issue.assert_called_once_with(15)
+        enqueue.assert_called_once_with(15, "publish_project", {
+            "destination": "youtube", "calendar_id": None, "privacy": "private",
+            "manual_approval_id": "opaque-token",
+        })
 
     def test_failed_processing_fingerprint_is_not_uploaded_twice(self):
         project = {"id": 12, "kind": "short", "notes": "Autopiloto: test"}

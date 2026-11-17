@@ -9,9 +9,9 @@ Dos destinos, ambos reales (nunca se simula una subida correcta):
   OAuth. Si faltan las credenciales, la publicación falla con un mensaje que
   dice exactamente qué variable de entorno falta.
 
-El estado de cada intento queda en la tabla ``publicaciones`` y la columna
-``projects.auto_publish`` permite que el worker publique solo al terminar el
-render (auto-subida sin intervención).
+El estado de cada intento queda en la tabla ``publicaciones``. Las entregas
+locales pueden automatizarse; toda subida a YouTube necesita una aprobación
+manual, de un solo uso y vinculada a la tarea concreta del worker.
 """
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ import hashlib
 import json
 import os
 import re
+import secrets
 import shutil
 import unicodedata
 import urllib.error
@@ -51,6 +52,10 @@ class AutoPublishIn(BaseModel):
 
 class PublishError(RuntimeError):
     """Error de publicación con un mensaje apto para mostrar al usuario."""
+
+
+class ManualApprovalRequired(PublishError):
+    """Una subida externa no puede continuar sin aprobación por video."""
 
 
 # --------------------------------------------------------------------------- #
@@ -110,11 +115,79 @@ def ensure_schema() -> None:
             updated_at TEXT NOT NULL
         )
     """)
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS youtube_manual_approvals(
+            approval_id TEXT PRIMARY KEY,
+            project_id INTEGER NOT NULL,
+            job_id INTEGER,
+            created_at TEXT NOT NULL,
+            used_at TEXT
+        )
+    """)
+    db.execute("CREATE INDEX IF NOT EXISTS idx_youtube_manual_approvals_project ON youtube_manual_approvals(project_id, created_at)")
     columns = {_g(row, "name") for row in db.query("PRAGMA table_info(projects)")}
     if "auto_publish" not in columns:
         db.execute("ALTER TABLE projects ADD COLUMN auto_publish INTEGER NOT NULL DEFAULT 0")
     if "publish_destination" not in columns:
         db.execute("ALTER TABLE projects ADD COLUMN publish_destination TEXT NOT NULL DEFAULT 'entrega'")
+
+
+def issue_manual_approval(project_id: int) -> str:
+    """Emite una autorización opaca para una única tarea de publicación manual."""
+    ensure_schema()
+    approval_id = secrets.token_urlsafe(32)
+    db.execute(
+        "INSERT INTO youtube_manual_approvals(approval_id,project_id,job_id,created_at,used_at) VALUES(?,?,NULL,?,NULL)",
+        (approval_id, int(project_id), db.now()),
+    )
+    return approval_id
+
+
+def revoke_manual_approval(project_id: int, approval_id: str) -> None:
+    """Retira una autorización que no llegó a quedar vinculada a una tarea."""
+    ensure_schema()
+    db.execute(
+        "DELETE FROM youtube_manual_approvals WHERE approval_id=? AND project_id=? AND job_id IS NULL",
+        (approval_id, int(project_id)),
+    )
+
+
+def authorize_manual_approval(project_id: int, approval_id: str | None, job_id: int | None) -> None:
+    """Vincula la aprobación a una tarea y permite reintentos solo de esa misma tarea."""
+    if not approval_id or job_id is None:
+        raise ManualApprovalRequired(
+            "YouTube requiere que revises este video y pulses Publicar. No se aceptan subidas programadas."
+        )
+    ensure_schema()
+    row = db.query_one(
+        "SELECT project_id,job_id FROM youtube_manual_approvals WHERE approval_id=?",
+        (approval_id,),
+    )
+    if not row or int(row.get("project_id") or 0) != int(project_id):
+        raise ManualApprovalRequired("La aprobación de este video no existe o ya no es válida. Volvé a revisarlo y pulsá Publicar.")
+    bound_job = row.get("job_id")
+    if bound_job is not None and int(bound_job) != int(job_id):
+        raise ManualApprovalRequired("Esta aprobación ya pertenece a otra tarea. Revisá el video y aprobá una nueva subida.")
+    now = db.now()
+    if bound_job is None:
+        db.execute(
+            "UPDATE youtube_manual_approvals SET job_id=?, used_at=COALESCE(used_at,?) "
+            "WHERE approval_id=? AND project_id=? AND job_id IS NULL",
+            (int(job_id), now, approval_id, int(project_id)),
+        )
+        row = db.query_one(
+            "SELECT project_id,job_id FROM youtube_manual_approvals WHERE approval_id=?",
+            (approval_id,),
+        )
+        if not row or int(row.get("project_id") or 0) != int(project_id) or int(row.get("job_id") or 0) != int(job_id):
+            raise ManualApprovalRequired("La aprobación ya fue utilizada por otra tarea. Volvé a revisar el video y aprobalo otra vez.")
+    else:
+        # Reintentar la misma tarea no exige que el usuario vuelva a aprobarla.
+        db.execute(
+            "UPDATE youtube_manual_approvals SET used_at=COALESCE(used_at,?) "
+            "WHERE approval_id=? AND project_id=? AND job_id=?",
+            (now, approval_id, int(project_id), int(job_id)),
+        )
 
 
 def video_path(project) -> Path:
@@ -187,7 +260,7 @@ def destinations() -> list[dict]:
             "label": "YouTube (publicación OAuth por canal)",
             "available": not missing,
             "missing_env": missing,
-            "note": "Conectá en Cuentas la cuenta real de Google/YouTube que publicará para cada fábrica.",
+            "note": "Cada subida requiere revisar el video y aprobarla manualmente desde su proyecto.",
         },
     ]
 
@@ -633,8 +706,9 @@ def _video_fingerprint(path: Path) -> str:
 
 
 def publish(project_id: int, destination: str = "entrega", calendar_id: int | None = None,
-            privacy: str = "unlisted", on_progress=None) -> dict:
-    """Publica el render del proyecto en el destino pedido y registra el intento."""
+            privacy: str = "unlisted", on_progress=None,
+            manual_approval_id: str | None = None, job_id: int | None = None) -> dict:
+    """Entrega local o sube a YouTube con aprobación manual vinculada a una tarea."""
     report = on_progress or (lambda _pct, _msg: None)
     ensure_schema()
     project = db.query_one("SELECT * FROM projects WHERE id=?", (project_id,))
@@ -672,6 +746,9 @@ def publish(project_id: int, destination: str = "entrega", calendar_id: int | No
                 "verification": previous_meta.get("youtube_verification"),
                 "meta": previous_meta,
             }
+
+    if destination == "youtube":
+        authorize_manual_approval(project_id, manual_approval_id, job_id)
 
     scenes = db.query("SELECT * FROM scenes WHERE project_id=? ORDER BY idx", (project_id,))
     meta = build_metadata(project, scenes)
@@ -773,19 +850,33 @@ def set_auto_publish(project_id: int, enabled: bool, destination: str = "entrega
 # --------------------------------------------------------------------------- #
 # Rutas HTTP
 # --------------------------------------------------------------------------- #
-def _enqueue(project_id: int, destination: str, calendar_id: int | None, privacy: str) -> int:
+def enqueue_manual_publication(project_id: int, destination: str, calendar_id: int | None = None,
+                                privacy: str = "unlisted") -> int:
+    """Encola una entrega local o una subida externa aprobada en este momento."""
     from . import worker  # import tardío: worker importa este módulo
 
-    return worker.enqueue(
-        project_id,
-        "publish_project",
-        {"destination": destination, "calendar_id": calendar_id, "privacy": privacy},
-    )
+    if destination not in ("entrega", "youtube"):
+        raise PublishError("Destino inválido: usá 'entrega' o 'youtube'.")
+    payload = {"destination": destination, "calendar_id": calendar_id, "privacy": privacy}
+    approval_id = None
+    if destination == "youtube":
+        approval_id = issue_manual_approval(project_id)
+        payload["manual_approval_id"] = approval_id
+    try:
+        return worker.enqueue(project_id, "publish_project", payload)
+    except Exception:
+        if approval_id:
+            revoke_manual_approval(project_id, approval_id)
+        raise
+
+
+def _enqueue(project_id: int, destination: str, calendar_id: int | None, privacy: str) -> int:
+    return enqueue_manual_publication(project_id, destination, calendar_id, privacy)
 
 
 @router.get("/api/publish/destinations")
 def api_destinations():
-    return {"destinations": destinations(), "auto_publish_available": True}
+    return {"destinations": destinations(), "auto_publish_available": False}
 
 
 @router.post("/api/projects/{project_id}/publish", status_code=202)

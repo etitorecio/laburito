@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app import publish, worker
+from app import main, publish, worker
 
 
 class WorkerReliabilityTests(unittest.TestCase):
@@ -150,6 +150,94 @@ class WorkerReliabilityTests(unittest.TestCase):
             for sql, params in statements
             if "UPDATE jobs SET message" in sql
         ))
+
+    def test_natural_creation_generates_script_then_renders_in_the_same_persistent_job(self):
+        job = {
+            "id": 110, "project_id": 42, "kind": "create_from_prompt",
+            "payload_json": "{}", "attempts": 1,
+        }
+        statements = []
+
+        def render_job(project_id, should_cancel, on_progress):
+            self.assertEqual(project_id, 42)
+            on_progress(50, "Renderizando escenas")
+            return {"video": "/tmp/final_short.mp4", "quality": {"tts_engines": ["espeak-ng"]}}
+
+        with patch.object(main, "generate_script", return_value={"warnings": ["investigación parcial"]}) as script:
+            with patch.object(worker.render, "render_project", side_effect=render_job):
+                with patch.object(worker, "_validate_render_result", return_value={"path": "/tmp/final_short.mp4"}):
+                    with patch.object(worker, "_scheduled_publish_settings", return_value={
+                        "enabled": False, "destination": "youtube", "privacy": "unlisted"
+                    }):
+                        with patch.object(worker, "_is_cancelled", return_value=False):
+                            with patch.object(worker.persistence, "configured", return_value=False):
+                                with patch.object(worker.db, "execute", side_effect=lambda sql, params=(): statements.append((sql, params))):
+                                    with patch.object(worker.db, "now", return_value="now"):
+                                        with patch.object(worker.db, "log"):
+                                            worker.run_job(job)
+
+        script.assert_called_once_with(42, replace=True)
+        payload_update = next(params for sql, params in statements if "UPDATE jobs SET payload_json=?" in sql)
+        self.assertIn('"script_ready": true', payload_update[0])
+        self.assertTrue(any("status='completado'" in sql for sql, _ in statements))
+        self.assertTrue(any(params[0] >= 60 for sql, params in statements if "UPDATE jobs SET progress=?" in sql))
+
+    def test_natural_creation_retry_does_not_regenerate_a_saved_script(self):
+        job = {
+            "id": 111, "project_id": 43, "kind": "create_from_prompt",
+            "payload_json": '{"script_ready":true,"script_warnings":[]}', "attempts": 2,
+        }
+        with patch.object(main, "generate_script") as script:
+            with patch.object(worker.render, "render_project", return_value={
+                "video": "/tmp/final_short.mp4", "quality": {"tts_engines": ["espeak-ng"]}
+            }):
+                with patch.object(worker, "_validate_render_result", return_value={"path": "/tmp/final_short.mp4"}):
+                    with patch.object(worker, "_scheduled_publish_settings", return_value={
+                        "enabled": False, "destination": "youtube", "privacy": "unlisted"
+                    }):
+                        with patch.object(worker, "_is_cancelled", return_value=False):
+                            with patch.object(worker.persistence, "configured", return_value=False):
+                                with patch.object(worker.db, "execute"):
+                                    with patch.object(worker.db, "now", return_value="now"):
+                                        with patch.object(worker.db, "log"):
+                                            worker.run_job(job)
+        script.assert_not_called()
+
+    def test_legacy_youtube_job_without_manual_approval_fails_without_retry(self):
+        job = {
+            "id": 112, "project_id": 44, "kind": "publish_project",
+            "payload_json": '{"destination":"youtube","privacy":"public"}', "attempts": 1,
+        }
+        statements = []
+        with patch.object(publish, "publish", side_effect=publish.ManualApprovalRequired("Aprobación manual requerida")) as upload:
+            with patch.object(worker.persistence, "restore_pending_video"):
+                with patch.object(worker.db, "execute", side_effect=lambda sql, params=(): statements.append((sql, params))):
+                    with patch.object(worker.db, "now", return_value="now"):
+                        with patch.object(worker.db, "log"):
+                            worker.run_job(job)
+        upload.assert_called_once()
+        self.assertIsNone(upload.call_args.kwargs["manual_approval_id"])
+        self.assertEqual(upload.call_args.kwargs["job_id"], 112)
+        self.assertTrue(any("UPDATE jobs SET status='error'" in sql for sql, _ in statements))
+        self.assertFalse(any("status='en_cola'" in sql for sql, _ in statements))
+
+    def test_worker_passes_the_manual_approval_to_the_exact_youtube_job(self):
+        job = {
+            "id": 113, "project_id": 45, "kind": "publish_project",
+            "payload_json": '{"destination":"youtube","privacy":"private","manual_approval_id":"opaque-token"}',
+            "attempts": 1,
+        }
+        with patch.object(publish, "publish", return_value={
+            "destination": "youtube", "status": "publicado", "url": "https://youtu.be/test",
+            "external_id": "test", "message": "Publicado", "verification": {"status": "uploaded"},
+        }) as upload:
+            with patch.object(worker.persistence, "restore_pending_video"):
+                with patch.object(worker.db, "execute"):
+                    with patch.object(worker.db, "now", return_value="now"):
+                        with patch.object(worker.db, "log"):
+                            worker.run_job(job)
+        self.assertEqual(upload.call_args.kwargs["manual_approval_id"], "opaque-token")
+        self.assertEqual(upload.call_args.kwargs["job_id"], 113)
 
     def test_failed_youtube_publish_is_never_marked_completed(self):
         job = {

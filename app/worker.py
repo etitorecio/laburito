@@ -129,13 +129,40 @@ def run_job(job: dict) -> None:
     job_id = job["id"]
     project_id = job.get("project_id")
     try:
-        if job["kind"] == "render_project":
+        if job["kind"] in ("render_project", "create_from_prompt"):
             render_payload = json.loads(job.get("payload_json") or "{}")
+            script_result = None
+            progress_offset = 0
+            if job["kind"] == "create_from_prompt":
+                progress_offset = 25
+                if not render_payload.get("script_ready"):
+                    if _is_cancelled(job_id):
+                        raise render.Cancelled()
+                    _set_progress(job_id, 5, "Investigando el tema y escribiendo el guion")
+                    from . import main
+                    script_result = main.generate_script(int(project_id), replace=True)
+                    render_payload["script_ready"] = True
+                    render_payload["script_warnings"] = script_result.get("warnings", [])
+                    db.execute(
+                        "UPDATE jobs SET payload_json=?, updated_at=? WHERE id=?",
+                        (json.dumps(render_payload, ensure_ascii=False), db.now(), job_id),
+                    )
+                _set_progress(job_id, 25, "Guion listo. Preparando voz, visuales y montaje")
+                if _is_cancelled(job_id):
+                    raise render.Cancelled()
             result = render.render_project(
                 int(project_id),
                 should_cancel=lambda: _is_cancelled(job_id),
-                on_progress=lambda pct, msg: _set_progress(job_id, pct, msg),
+                on_progress=lambda pct, msg: _set_progress(
+                    job_id,
+                    progress_offset + int((100 - progress_offset) * max(0, min(100, int(pct))) / 100),
+                    msg,
+                ),
             )
+            if job["kind"] == "create_from_prompt":
+                result["script_warnings"] = (
+                    script_result.get("warnings", []) if script_result else render_payload.get("script_warnings", [])
+                )
             result["validation"] = _validate_render_result(result)
             settings = _scheduled_publish_settings(int(project_id))
             blocker = _auto_publish_blocker(result) if settings["enabled"] else ""
@@ -187,6 +214,8 @@ def run_job(job: dict) -> None:
                 calendar_id=payload.get("calendar_id"),
                 privacy=payload.get("privacy", "unlisted"),
                 on_progress=lambda pct, msg: _set_progress(job_id, pct, msg),
+                manual_approval_id=payload.get("manual_approval_id"),
+                job_id=job_id,
             )
             final_job_status = "error" if published.get("status") == "procesamiento_fallido" else "completado"
             db.execute(
@@ -253,14 +282,14 @@ def run_job(job: dict) -> None:
         )
     except Exception as exc:
         attempt = int(job.get("attempts") or 1)
-        retry = attempt < 3
+        retry = attempt < 3 and not isinstance(exc, publish.ManualApprovalRequired)
         db.log(
             "warn" if retry else "error",
             "worker",
             f"Tarea {job_id} falló: {exc}" + (f" — reintento {attempt}/3" if retry else " — máximo de intentos alcanzado"),
             {"trace": traceback.format_exc()[-2000:], "attempt": attempt},
         )
-        if project_id is not None and job.get("kind") in ("render_project", "publish_project"):
+        if project_id is not None and job.get("kind") in ("render_project", "create_from_prompt", "publish_project"):
             db.execute(
                 "UPDATE autopilot_rules SET last_error=?, updated_at=? WHERE last_project_id=?",
                 (str(exc)[:500], db.now(), int(project_id)),

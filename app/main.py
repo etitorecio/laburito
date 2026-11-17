@@ -1046,6 +1046,43 @@ def create_project(payload: ProjectIn):
     return _project_full(pid)
 
 
+def _automatic_channel_for_prompt(intent: dict) -> int | None:
+    """Elige un canal del usuario compatible con el formato; nunca asigna una fábrica al azar."""
+    format_aliases = (
+        {"documental", "documentales", "documentary", "longform"}
+        if intent.get("template") == "longform"
+        else {"short", "shorts", "vertical"}
+    )
+    ignored = {
+        "sobre", "para", "desde", "hasta", "historia", "historias", "video", "vídeo",
+        "short", "shorts", "documental", "documentales", "haceme", "hacer", "quiero",
+        "con", "una", "uno", "del", "las", "los", "que", "como", "este", "esta",
+    }
+    topic_words = {
+        word for word in re.findall(r"[a-z0-9áéíóúñ]+", str(intent.get("topic") or "").casefold())
+        if len(word) > 3 and word not in ignored
+    }
+    candidates = []
+    for channel in db.query("SELECT id,name,topic,formats FROM channels ORDER BY id"):
+        name = str(channel.get("name") or "")
+        if name.strip().casefold() in {"historias", "frutinovelas"}:
+            continue
+        formats = {
+            item.strip().casefold()
+            for item in re.split(r"[,;/|]", str(channel.get("formats") or ""))
+            if item.strip()
+        }
+        if not (formats & format_aliases):
+            continue
+        searchable = f"{name} {channel.get('topic') or ''}".casefold()
+        score = sum(1 for word in topic_words if word in searchable)
+        candidates.append((score, int(channel["id"])))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda item: (-item[0], item[1]))
+    return candidates[0][1]
+
+
 @app.post("/api/create-from-prompt", status_code=202)
 def create_from_prompt(payload: NaturalCreateIn):
     """Convierte una orden breve en un proyecto guionado y deja el render en la cola."""
@@ -1064,11 +1101,9 @@ def create_from_prompt(payload: NaturalCreateIn):
                 "SELECT id FROM channels WHERE lower(trim(name))=lower(?) LIMIT 1",
                 (intent["channel_name"],),
             )
+            channel_id = int(channel["id"]) if channel else None
         else:
-            channel = None
-        if not channel:
-            channel = db.query_one("SELECT id FROM channels ORDER BY id LIMIT 1")
-        channel_id = int(channel["id"]) if channel else None
+            channel_id = _automatic_channel_for_prompt(intent)
 
     prompt_language = payload.prompt.casefold()
     requested_voice = None
@@ -1100,18 +1135,9 @@ def create_from_prompt(payload: NaturalCreateIn):
         project_data["voice"] = requested_voice
     project = create_project(ProjectIn(**project_data))
     project_id = int(project["id"])
-    try:
-        script_result = generate_script(project_id, replace=True)
-    except Exception as exc:
-        db.log("error", "commands", f"No se pudo completar el guion de la orden: {exc}", {"project_id": project_id})
-        raise HTTPException(
-            503,
-            f"El proyecto quedó guardado como borrador, pero no se pudo completar el guion: {exc}",
-        ) from exc
-
-    job_id = worker.enqueue(project_id, "render_project", {})
+    job_id = worker.enqueue(project_id, "create_from_prompt", {})
     db.log(
-        "info", "commands", "Orden natural convertida en producción completa",
+        "info", "commands", "Orden natural encolada para investigación, guion y producción",
         {"project_id": project_id, "job_id": job_id, "template": intent["template"]},
     )
     return {
@@ -1121,7 +1147,8 @@ def create_from_prompt(payload: NaturalCreateIn):
         "project_id": project_id,
         "job_id": job_id,
         "status": "en_cola",
-        "warnings": script_result.get("warnings", []),
+        "message": "Orden recibida. La investigación, el guion y el video se procesan en segundo plano.",
+        "warnings": [],
     }
 
 
@@ -2758,7 +2785,7 @@ async def analytics_import(file: UploadFile = File(...), channel_id: int | None 
 @app.get("/api/publish/destinations")
 def publish_destinations():
     publish.ensure_schema()
-    return {"destinations": publish.destinations(), "auto_publish_available": True}
+    return {"destinations": publish.destinations(), "auto_publish_available": False}
 
 
 @app.post("/api/tts/piper/install", status_code=202)
@@ -2949,10 +2976,11 @@ def publish_project(project_id: int, payload: publish.PublishIn):
             persistence.sync_pending_video(project_id, publish.video_path(project))
         except Exception as exc:
             raise HTTPException(503, f"No se pudo respaldar el MP4 antes de publicar: {exc}") from exc
-    job_id = worker.enqueue(
+    job_id = publish.enqueue_manual_publication(
         project_id,
-        "publish_project",
-        {"destination": payload.destination, "calendar_id": payload.calendar_id, "privacy": payload.privacy},
+        payload.destination,
+        payload.calendar_id,
+        payload.privacy,
     )
     return {"ok": True, "job_id": job_id, "destination": payload.destination}
 
