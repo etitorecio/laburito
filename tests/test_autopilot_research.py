@@ -228,7 +228,7 @@ class AutopilotResearchTests(unittest.TestCase):
 
     def test_fiction_episode_factory_avoids_repeating_recent_frutinovela_plots(self):
         previous = []
-        for number in range(1, 101):
+        for number in range(1, 1729):
             title, topic, actual_number = autopilot._fiction_episode(
                 "frutinovela", "Los Frutos", number, previous
             )
@@ -238,7 +238,7 @@ class AutopilotResearchTests(unittest.TestCase):
 
     def test_fiction_episode_factory_avoids_repeating_recent_reddit_plots(self):
         previous = []
-        for number in range(1, 101):
+        for number in range(1, 1729):
             title, topic, actual_number = autopilot._fiction_episode(
                 "reddit_story", "Historias del trabajo", number, previous
             )
