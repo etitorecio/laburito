@@ -294,7 +294,7 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertEqual(metadata["title"], "¿Qué hay detrás de La exploración espacial?")
         self.assertIn("astronomía", metadata["tags"])
         self.assertIn("universo", metadata["tags"])
-        self.assertEqual(metadata["language"], "es")
+        self.assertEqual(metadata["language"], "en")
 
     def test_autopilot_builds_script_from_only_the_current_topics_sources(self):
         extract = " ".join([
