@@ -440,8 +440,8 @@ def _create_project(rule: dict) -> dict:
 
     template_id = rule.get("template") if rule.get("template") in AUTOPILOT_TEMPLATE_IDS else "shorts"
     tpl = options.template(template_id)
-    # Compatibilidad con reglas antiguas: nunca producir narración en otro idioma.
-    rule["voice"] = rule.get("voice") if rule.get("voice") in {"es", "es-ar", "es-es-piper", "es-mx", "es-masculino", "es-agudo"} else "es"
+    # Compatibilidad con reglas antiguas: conservar voces válidas en español o inglés.
+    rule["voice"] = rule.get("voice") if rule.get("voice") in tts.VOICES else "es"
     niche = (rule.get("niche") or "").strip()
     if not niche:
         raise ValueError("La regla necesita un nicho.")
@@ -653,7 +653,10 @@ def _create_project(rule: dict) -> dict:
             )
     script = script_gen.generate_script(project, notes, project_sources)
     ollama_url = db.get_setting("ollama_url", "") or os.environ.get("OLLAMA_URL", "").strip()
-    if ollama_url and script_gen.ollama_model_available(ollama_url, "qwen2.5:1.5b-instruct"):
+    ollama_ready = bool(ollama_url and script_gen.ollama_model_available(ollama_url, "qwen2.5:1.5b-instruct"))
+    if str(project.get("voice") or "es").startswith("en") and not ollama_ready:
+        raise RuntimeError("El Autopilot en inglés necesita Ollama/Qwen local para traducir el guion. No se generó un video con voz inglesa y texto español.")
+    if ollama_ready:
         try:
             if template_id in {"frutinovela", "reddit_story"}:
                 script = script_gen.rewrite_fiction_with_ollama(
@@ -663,8 +666,14 @@ def _create_project(rule: dict) -> dict:
                 script = script_gen.rewrite_with_ollama(
                     ollama_url, "qwen2.5:1.5b-instruct", project, script, notes
                 )
-            db.log("info", "autopilot", "Guion reescrito con Ollama local", {"project_id": pid})
+            if str(project.get("voice") or "es").startswith("en"):
+                script = script_gen.translate_script_with_ollama(
+                    ollama_url, "qwen2.5:1.5b-instruct", project, script
+                )
+            db.log("info", "autopilot", "Guion procesado con Ollama local", {"project_id": pid})
         except Exception as exc:
+            if str(project.get("voice") or "es").startswith("en"):
+                raise RuntimeError(f"No se pudo traducir el guion automático al inglés: {exc}") from exc
             db.log("warn", "autopilot", f"Ollama no pudo reescribir el guion; se conserva el borrador de plantilla: {exc}")
     for scene in script["scenes"]:
         db.execute(
