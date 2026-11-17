@@ -443,7 +443,7 @@ REDDIT_STORY_BLUEPRINT = [
         "title": "El comienzo que no cierra",
         "weight": 0.10,
         "purpose": "Abrir en medio del problema y dejar una pregunta que obligue a seguir.",
-        "narration": "Nunca pensé que {topic} iba a terminar convirtiéndose en el peor problema de mi vida. Todo empezó con algo tan cotidiano que ni siquiera le presté atención. Yo confiaba en las personas involucradas, conocía sus costumbres y estaba convencido de que podía anticipar sus reacciones. Pero esa noche recibí una noticia que no tenía sentido. Cuando intenté entenderla, descubrí que alguien me estaba ocultando una parte importante de la historia.",
+        "narration": "Nunca pensé que {topic} iba a terminar así. Todo empezó con algo cotidiano y una persona en quien confiaba. Esa noche recibí un mensaje extraño; cuando hice una pregunta, entendí que me ocultaban algo.",
         "visual": "{topic} historia reddit escena intensa primer plano vertical",
     },
     {
@@ -451,7 +451,7 @@ REDDIT_STORY_BLUEPRINT = [
         "title": "Cómo empezó todo",
         "weight": 0.15,
         "purpose": "Presentar protagonista, vínculos y situación con detalles concretos.",
-        "narration": "Para entender lo que pasó, tengo que explicar cómo era todo antes. Éramos un grupo que se conocía desde hacía tiempo y teníamos una rutina bastante normal. Había confianza, chistes internos y problemas que parecían fáciles de resolver hablando. Por eso, cuando apareció la primera contradicción, no pensé que fuera algo grave. Preferí creer la explicación más sencilla y seguir con mi vida. Ahora, mirando hacia atrás, había señales que no quise ver.",
+        "narration": "Antes éramos un grupo unido. Compartíamos rutinas, bromas y problemas que parecían resolverse hablando. Por eso ignoré la primera contradicción y acepté una explicación sencilla. Después entendí que esa fue la primera señal.",
         "visual": "{topic} vida cotidiana casa teléfono mensajes vertical",
     },
     {
@@ -459,7 +459,7 @@ REDDIT_STORY_BLUEPRINT = [
         "title": "La primera señal",
         "weight": 0.18,
         "purpose": "Introducir una anomalía concreta que cambie la situación.",
-        "narration": "Todo cambió cuando apareció un detalle que no encajaba: una conversación, una fecha y una respuesta que se contradecían entre sí. Pregunté directamente qué estaba pasando, pero recibí una explicación demasiado rápida y nadie quiso mostrarme el resto. Una persona cambió de tema; otra me dijo que estaba exagerando. En ese momento decidí dejarlo pasar para evitar una pelea, sin imaginar que esa decisión iba a darles tiempo para preparar otra versión.",
+        "narration": "Días después encontré dos versiones incompatibles de la misma conversación. Pregunté qué pasaba, pero cambiaron de tema y me dijeron que exageraba. Decidí no insistir para evitar una pelea, y les di tiempo.",
         "visual": "{topic} mensaje sospechoso reacción persona vertical",
     },
     {
@@ -467,7 +467,7 @@ REDDIT_STORY_BLUEPRINT = [
         "title": "Cada vez peor",
         "weight": 0.22,
         "purpose": "Elevar las consecuencias y mostrar decisiones, no repetir el conflicto.",
-        "narration": "Durante los días siguientes, las cosas empeoraron. Empecé a revisar lo que había pasado y encontré pequeñas diferencias entre lo que cada uno contaba. Cuando preguntaba por una, aparecía otra excusa; cuando intentaba hablar en privado, alguien intervenía para cortar la conversación. Lo más difícil no era el problema en sí, sino darme cuenta de que la gente en la que confiaba sabía mucho más de lo que decía y esperaba que yo no hiciera preguntas.",
+        "narration": "Cada respuesta abría otra contradicción. Revisé fechas, mensajes y promesas que ya no coincidían. Lo peor fue descubrir que varias personas conocían la verdad y se habían puesto de acuerdo para sostener la misma historia.",
         "visual": "{topic} discusión tensión llamada teléfono vertical",
     },
     {
@@ -475,7 +475,7 @@ REDDIT_STORY_BLUEPRINT = [
         "title": "Lo que realmente había pasado",
         "weight": 0.20,
         "purpose": "Revelar una información que reinterprete las pistas anteriores.",
-        "narration": "Entonces descubrí el detalle que lo cambió todo: la explicación que me habían dado era cierta solo a medias. Encontré una prueba que conectaba dos hechos que hasta ese momento parecían separados. Había otra persona involucrada y una razón que nadie se había animado a contarme. De golpe, las contradicciones dejaron de parecer casualidad. Entendí por qué habían insistido tanto en que no preguntara y por qué todos repetían exactamente la misma versión.",
+        "narration": "Entonces apareció una prueba que conectaba todo: la explicación era cierta, pero solo a medias. Había alguien más involucrado y un motivo que nadie quería contar. Las señales nunca habían sido casualidad.",
         "visual": "{topic} revelación sorpresa prueba documento vertical",
     },
     {
@@ -483,7 +483,7 @@ REDDIT_STORY_BLUEPRINT = [
         "title": "La decisión y la pregunta",
         "weight": 0.15,
         "purpose": "Mostrar la consecuencia y terminar con una pregunta concreta para comentarios.",
-        "narration": "Al final tuve que enfrentar a las personas involucradas y tomar una decisión que cambió esa relación para siempre. No voy a decir que todo se resolvió de manera perfecta: quedaron cosas sin explicar y todavía hay alguien que sostiene que yo fui quien exageró. Lo que sí sé es que ya no podía seguir fingiendo que nada había pasado. Todavía no sé si hice lo correcto, por eso quiero preguntarles algo: ¿ustedes habrían hecho lo mismo en mi lugar o creen que me equivoqué?",
+        "narration": "Tuve que enfrentar al grupo y alejarme. No se resolvió todo: todavía hay quien dice que exageré. Yo sé que no podía seguir fingiendo. ¿Ustedes habrían hecho lo mismo o me equivoqué?",
         "visual": "{topic} persona reflexionando final historia vertical",
     },
 ]
