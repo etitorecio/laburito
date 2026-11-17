@@ -701,6 +701,7 @@ def render_scene(
         f"|{project.get('visual_style') or 'automatico'}|{_project_metadata(project).get('visual_style_prompt', '')}|{project.get('video_type') or 'moving_images'}"
         f"|{scene.get('visual_query') or ''}|{sfx_signature}|{sfx_volume:.3f}|{sfx_start:.3f}"
         f"|trim:{float(scene.get('visual_trim_start_sec') or 0):.3f}:{float(scene.get('visual_trim_end_sec') or 0):.3f}"
+        f"|word-align:{media.whisper_alignment_signature()}"
     )
     seg_dir = scene_dir / key
     seg_dir.mkdir(parents=True, exist_ok=True)
@@ -713,12 +714,18 @@ def render_scene(
         if sfx_signature else wav
     )
 
+    word_timings = media.whisper_word_timings(
+        wav,
+        "en" if str(project.get("voice") or "es").startswith("en") else "es",
+        seg_dir / "word-alignment.json",
+    ) if captions_enabled else None
     cues = media.caption_chunks(
         narration,
         duration,
         style["max_words"],
         style["max_chars"],
         style["max_lines"],
+        word_timings=word_timings,
     ) if captions_enabled else []
     caption_dir = seg_dir / "captions"
     caption_dir.mkdir(parents=True, exist_ok=True)
