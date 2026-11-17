@@ -11,7 +11,7 @@ RUN npm run build
 
 FROM debian:bookworm-slim AS whisper-build
 RUN apt-get update \
- && apt-get install -y --no-install-recommends build-essential cmake git \
+ && apt-get install -y --no-install-recommends build-essential cmake git ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 RUN git clone --depth 1 --branch v1.9.5 https://github.com/ggml-org/whisper.cpp.git /tmp/whisper.cpp \
  && cmake -S /tmp/whisper.cpp -B /tmp/whisper.cpp/build \
