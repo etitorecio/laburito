@@ -794,7 +794,9 @@ def translate_script_with_ollama(url: str, model: str, project: dict, script: di
     result = []
     for scene in scenes:
         item = by_idx.get(int(scene.get("idx", -1)))
-        narration = str((item or {}).get("narration") or "").strip()
+        if not item:
+            raise RuntimeError(f"La traducción omitió la escena {scene.get('idx')}.")
+        narration = str(item.get("narration") or "").strip()
         if len(narration) < max(20, round(len(str(scene.get("narration") or "")) * 0.35)):
             raise RuntimeError(f"La traducción de la escena {scene.get('idx')} está incompleta.")
         result.append({
