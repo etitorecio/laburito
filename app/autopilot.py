@@ -510,6 +510,36 @@ def _fiction_episode(template_id: str, niche: str, episode_number: int, previous
     raise RuntimeError("No pude crear una premisa de ficción nueva sin repetir episodios recientes.")
 
 
+def _frutinovela_continuity_context(channel_id: int | None) -> str:
+    """Resume los últimos hechos para que el episodio siguiente no reinicie la serie."""
+    previous = db.query_one(
+        "SELECT p.id, p.title, p.topic FROM projects p "
+        "WHERE p.channel_id IS ? AND p.template='frutinovela' "
+        "AND EXISTS(SELECT 1 FROM scenes s WHERE s.project_id=p.id) "
+        "ORDER BY p.id DESC LIMIT 1",
+        (channel_id,),
+    )
+    if not previous:
+        return ""
+    scenes = db.query(
+        "SELECT narration FROM scenes WHERE project_id=? ORDER BY idx DESC LIMIT 3",
+        (previous.get("id"),),
+    )
+    recap = [
+        " ".join((row.get("narration") or "").split())[:280]
+        for row in reversed(scenes)
+        if (row.get("narration") or "").strip()
+    ]
+    if not recap:
+        return ""
+    return (
+        "Continuidad obligatoria de la serie: continuar después de "
+        f"'{previous.get('title') or previous.get('topic') or 'el episodio anterior'}'. "
+        "Respetar las consecuencias y relaciones ya establecidas; no reiniciar la historia "
+        "ni contradecir estos hechos: " + " ".join(recap) + ". "
+    )
+
+
 def _create_project(rule: dict) -> dict:
     """Descubre un tema no usado, registra una fuente y crea el proyecto."""
     from . import script_gen, topic_engine
@@ -530,6 +560,7 @@ def _create_project(rule: dict) -> dict:
     )
     previous_topics = [row.get("topic", "") for row in previous]
     characters = (rule.get("content_pillars") or "").strip()
+    continuity_context = _frutinovela_continuity_context(rule.get("channel_id")) if template_id == "frutinovela" else ""
     if template_id in {"frutinovela", "reddit_story"}:
         count_row = db.query_one(
             "SELECT COUNT(*) AS total FROM projects WHERE channel_id IS ? AND template=?",
