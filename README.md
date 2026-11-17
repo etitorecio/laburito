@@ -82,7 +82,7 @@ La imagen final usa Debian slim (glibc, necesaria para Piper/ONNX Runtime), inst
 | `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` | Credenciales OAuth de tipo aplicación web. La autorización de YouTube se guarda en la base local tras conectar la cuenta. |
 | `YOUTUBE_REDIRECT_URI` | URI de callback OAuth opcional; por defecto se calcula con el dominio actual. |
 
-En **Ajustes** se configuran voz, música, estilos visuales, subtítulos, movimientos y almacenamiento local. La conexión OAuth de YouTube se administra desde **Cuentas**.
+En **Ajustes** se configuran voz, música, estilos visuales, subtítulos, movimientos y almacenamiento local. La sincronía palabra por palabra es opcional: Whisper.cpp tiny local (75 MiB, español/inglés) puede alinear los subtítulos con el audio; se activa manualmente porque consume más CPU. Si se deja apagada, se usan subtítulos agrupados rápidos. La conexión OAuth de YouTube se administra desde **Cuentas**.
 
 ### Guionista IA local sin coste
 
