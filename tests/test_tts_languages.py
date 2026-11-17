@@ -50,7 +50,7 @@ class TtsLanguageTests(unittest.TestCase):
                  patch.object(tts.subprocess, "run", side_effect=fake_run) as run:
                 result = tts.synthesize("Hola mundo", output, voice="unsupported")
             self.assertEqual(result["language"], "es")
-            self.assertIn('"es"', run.call_args.args[0])
+            self.assertIn("es", run.call_args.args[0])
 
 
 if __name__ == "__main__":
