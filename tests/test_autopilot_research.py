@@ -643,7 +643,7 @@ class AutopilotResearchTests(unittest.TestCase):
     def test_frutinovela_autopilot_skips_research_and_keeps_character_names(self):
         project = {"id": 84, "title": "Frutinovela · Episodio 1", "topic": "La familia Frutal", "template": "frutinovela", "kind": "short", "duration_target_sec": 90, "notes": ""}
         with patch.object(autopilot.db, "query", side_effect=[[], []]):
-            with patch.object(autopilot.db, "query_one", side_effect=[{"total": 0}, project]):
+            with patch.object(autopilot.db, "query_one", side_effect=[None, {"total": 0}, project]):
                 with patch.object(autopilot.db, "execute", return_value=84) as execute:
                     with patch.object(autopilot.db, "now", return_value="2026-11-15T00:00:00Z"):
                         with patch.object(autopilot.db, "get_setting", return_value=""):
