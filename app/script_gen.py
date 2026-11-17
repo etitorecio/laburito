@@ -790,6 +790,10 @@ def translate_script_with_ollama(url: str, model: str, project: dict, script: di
     translated = data.get("scenes") if isinstance(data, dict) else None
     if not isinstance(translated, list) or len(translated) != len(scenes):
         raise RuntimeError("La traducción cambió la cantidad de escenas.")
+    translated_title = str(data.get("title") or "").strip()
+    translated_topic = str(data.get("topic") or "").strip()
+    if not translated_title or not translated_topic:
+        raise RuntimeError("La traducción no devolvió el título y el tema en inglés.")
     by_idx = {int(item.get("idx", -1)): item for item in translated if isinstance(item, dict)}
     result = []
     for scene in scenes:
@@ -812,8 +816,8 @@ def translate_script_with_ollama(url: str, model: str, project: dict, script: di
         "warnings": [*script.get("warnings", []), "Guion traducido al inglés con Qwen local; revisá nombres propios y matices antes de publicar."],
         "writer": f"{script.get('writer', 'template')}+ollama-english-translation",
         "language": "en",
-        "translated_title": str(data.get("title") or project.get("title") or ""),
-        "translated_topic": str(data.get("topic") or project.get("topic") or project.get("title") or ""),
+        "translated_title": translated_title,
+        "translated_topic": translated_topic,
     }
 
 
