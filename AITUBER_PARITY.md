@@ -24,7 +24,7 @@ Estados:
 | Canales independientes | Implementada | Canales en SQLite, configuración e historial por canal; sin límite comercial de canales impuesto por Laburito. |
 | Autopiloto que descubre temas | Parcial | Reglas activas eligen temas nuevos por nicho, evitan repetición y consultan Wikipedia, OpenAlex y señales de Google Trends. La configuración rápida hereda el nicho del canal elegido para reducir pasos. La selección depende de un nicho configurado una vez; no publica automáticamente. |
 | Scheduler/worker persistente | Parcial | Worker SQLite de un hilo, tick del autopiloto cada minuto, reintentos y recuperación de tareas interrumpidas. Local: requiere PC/proceso activo. Cloud: el workflow de wake-up requiere `LABURITO_URL` real y persistencia; esa URL todavía no está configurada. |
-| Voces multilingües y 1.300+ voces | Parcial | espeak-ng y Piper neural local, catálogo español. No iguala el catálogo comercial de 1.300+ voces ni ofrece clonación de voz. |
+| Voces en español e inglés | Parcial | espeak-ng local ofrece voces en ambos idiomas; Piper aporta una voz neural española opcional. La locución puede usar voces inglesas, pero la redacción automática de guiones sigue en español; no se afirma paridad con catálogos comerciales ni clonación. |
 | Clonación de voz | Ausente | No se integra un servicio pago de clonación. |
 | Imágenes generadas por IA por escena | Ausente | Hay búsqueda de medios con licencias y recursos locales/procedurales; no hay un modelo generativo de imágenes integrado que cumpla paridad. |
 | Video generado por IA / image-to-video | Ausente | No se integra el motor comercial de video IA. |
@@ -63,8 +63,8 @@ Referencias públicas consultadas:
 2. Desbloquear el scheduler cloud con URL real y almacenamiento persistente, sin sustituir la ejecución local gratuita.
 3. Mejorar el selector de temas y la continuidad de canales/series, con prevención de duplicados probada.
 4. Probar sincronía palabra por palabra y documentar exactamente el alcance.
-5. Evaluar alternativas open source para imágenes/avatares sin exigir GPU dedicada ni servicios pagos.
-6. Seguir simplificando el flujo móvil: revisión y regeneración de segmentos con acciones directas, menos pantallas y valores por defecto inteligentes.
+5. Incorporar redacción automática en inglés de punta a punta cuando el canal/voz esté configurado en inglés; hoy la voz inglesa está disponible para narraciones suministradas, pero el guionista automático sigue en español.\n6. Evaluar alternativas open source para imágenes/avatares sin exigir GPU dedicada ni servicios pagos.
+7. Seguir simplificando el flujo móvil: revisión y regeneración de segmentos con acciones directas, menos pantallas y valores por defecto inteligentes.
 7. Mantener bloqueada la publicación externa automática; cada video debe aprobarse individualmente.
 
 No declarar paridad total hasta cerrar las brechas o documentar explícitamente por qué una capacidad comercial no tiene sustituto gratuito/local equivalente.
