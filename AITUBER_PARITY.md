@@ -32,7 +32,7 @@ Estados:
 | Avatares/talking head/UGC | Ausente | No hay motor de avatar humano realista. |
 | Skeleton/talking objects | Parcial | Hay soporte de plantillas y render procedural para skeleton; no equivale a todos los motores visuales comerciales ni talking objects generativos. |
 | Música de fondo y ducking | Implementada | Camas musicales locales, pistas propias y mezcla FFmpeg; un compresor sidechain reduce automáticamente la música cuando entra la narración. Catálogo menor que el comercial. |
-| Subtítulos sincronizados | Parcial | Por defecto usa bloques rápidos con tiempos proporcionales. La opción avanzada puede usar Whisper.cpp tiny local para obtener marcas temporales por token en español/inglés y ajustar cada bloque; no se promete precisión perfecta al milisegundo ni un resaltado karaoke completo. |
+| Subtítulos sincronizados | Parcial | Por defecto usa bloques rápidos con tiempos proporcionales. La opción avanzada puede usar Whisper.cpp tiny local para obtener marcas temporales por palabra en español/inglés; el estilo Karaoke muestra una palabra por cue. No se promete precisión perfecta al milisegundo ni resaltado progresivo de toda la frase. |
 | Edición de escenas y regeneración parcial | Implementada | Editor, línea de tiempo, edición y regeneración individual de escenas/visuales. |
 | Transiciones y overlays | Implementada | Transiciones, overlays de texto, voz, música y efectos. |
 | Miniaturas y metadatos | Parcial | Miniaturas y metadatos locales; faltan capacidades de optimización/variantes y evaluación comparables. |
