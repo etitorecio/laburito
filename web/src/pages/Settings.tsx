@@ -132,6 +132,16 @@ export default function Settings() {
         </div>
         <p className="muted">Los guiones automáticos en inglés se traducen con Qwen/Ollama local. Si Ollama no está disponible, Laburito no genera un video mezclando narración inglesa con texto español; también podés pegar un guion propio en inglés.</p>
         <div className="row">
+          <Field label="Sincronía palabra por palabra">
+            <select
+              value={values.word_alignment || '0'}
+              disabled={!meta?.whisper_alignment_available}
+              onChange={(e) => setValues({ ...values, word_alignment: e.target.value })}
+            >
+              <option value="0">Subtítulos agrupados (rápido)</option>
+              <option value="1">Palabra por palabra (Whisper local)</option>
+            </select>
+          </Field>
           <Field label="Estilo de subtítulos por defecto">
             <CaptionStylePicker
               options={meta?.caption_styles ?? [{ id: 'documental', label: 'Documental' }]}
@@ -164,6 +174,7 @@ export default function Settings() {
           </Field>
         </div>
         <p className="muted">La IA de escritura usa Qwen 2.5 1.5B en tu PC mediante Ollama. Docker lo descarga automáticamente la primera vez (aprox. 1 GB); no necesitás claves, tokens de IA ni créditos.</p>
+        <p className="muted">{meta?.whisper_alignment_available ? "Whisper.cpp está instalado localmente. La alineación palabra por palabra mejora la sincronía, pero tarda más en CPU." : "La alineación palabra por palabra requiere whisper-cli y el modelo tiny local; mientras no estén instalados, se usan subtítulos agrupados."}</p>
         <div className="row">
           <Field label="Copia de seguridad automática">
             <select value={values.auto_backup || '1'} onChange={(e) => setValues({ ...values, auto_backup: e.target.value })}>
