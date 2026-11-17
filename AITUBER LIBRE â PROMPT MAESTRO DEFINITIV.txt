@@ -509,3 +509,16 @@ ESTA ES LA PRIORIDAD DE PRODUCTO MÁS IMPORTANTE DESPUÉS DE QUE TODO FUNCIONE: 
 - Diseñar las pantallas y flujos comparando continuamente la experiencia pública de AITuber: cantidad de pasos, claridad de etiquetas, jerarquía visual, valores por defecto, previsualizaciones, estados y acciones principales. No copiar marca ni recursos protegidos.
 - Antes de agregar una opción nueva, preguntar internamente si hace más fácil o más difícil crear un video. Si complica el camino principal, ubicarla en ajustes avanzados.
 - La paridad se evalúa tanto por capacidades reales como por facilidad de uso. Una función existente pero difícil de encontrar o utilizar no cuenta como experiencia equivalente.
+
+
+## ALCANCE PRÁCTICO: PARIDAD ÚTIL, NO CIFRAS COMERCIALES
+
+No perseguir cifras publicitarias de AITuber cuando no aportan valor real al usuario o fuerzan servicios pagos. Elegir una implementación gratuita, mantenible y suficiente para el público objetivo:
+- Idiomas: español e inglés son suficientes. Priorizar español rioplatense y voces inglesas naturales; no implementar decenas o cientos de idiomas.
+- Voces: catálogo pequeño pero útil, con muestras y selección simple. No perseguir cientos o miles de voces.
+- Resolución: priorizar 1080p fiable y 720p eficiente en hardware modesto. 4K solo si se demuestra estable y no compromete la experiencia.
+- Visuales: preferir consistencia, relevancia por escena y regeneración parcial a una cantidad inflada de estilos o modelos.
+- Automatización: un pipeline completo y recuperable vale más que integrar muchas plataformas de baja calidad.
+- No copiar métricas de marketing (número de voces, estilos, idiomas, resolución o integraciones) como requisitos por sí mismas. Traducir cada capacidad en una necesidad concreta y resolverla con herramientas gratuitas.
+- Declarar por separado lo que está implementado, lo que es parcial y lo que depende de una configuración externa. No llamar equivalente a una alternativa local si su calidad o alcance es inferior.
+- Si una capacidad comercial exige créditos, suscripción o API paga, buscar primero una alternativa local/open source razonable; si no existe para el hardware objetivo, explicarlo y ofrecer un fallback honesto sin bloquear el resto del flujo.
