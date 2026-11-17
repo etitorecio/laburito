@@ -58,7 +58,7 @@ class PublishReliabilityTests(unittest.TestCase):
                                                             12, "youtube", privacy="public",
                                                             manual_approval_id="approval-12", job_id=77,
                                                         )
-            authorize.assert_called_once_with(12, "approval-12", 77)
+            authorize.assert_called_once_with(12, "approval-12", 77, "sha256-test")
             self.assertEqual(result["status"], "procesamiento_fallido")
             insert = next(params for sql, params in statements if "INSERT INTO publicaciones" in sql)
             self.assertEqual(insert[3], "procesamiento_fallido")
@@ -78,26 +78,39 @@ class PublishReliabilityTests(unittest.TestCase):
 
     def test_manual_approval_is_bound_to_one_job_and_allows_its_retries(self):
         rows = [
-            {"project_id": 14, "job_id": None},
-            {"project_id": 14, "job_id": 88},
-            {"project_id": 14, "job_id": 88},
-            {"project_id": 14, "job_id": 88},
+            {"project_id": 14, "job_id": None, "video_sha256": "sha256-test"},
+            {"project_id": 14, "job_id": 88, "video_sha256": "sha256-test"},
+            {"project_id": 14, "job_id": 88, "video_sha256": "sha256-test"},
+            {"project_id": 14, "job_id": 88, "video_sha256": "sha256-test"},
         ]
         with patch.object(publish, "ensure_schema"):
             with patch.object(publish.db, "query_one", side_effect=rows):
                 with patch.object(publish.db, "execute") as execute:
-                    publish.authorize_manual_approval(14, "opaque-token", 88)
-                    publish.authorize_manual_approval(14, "opaque-token", 88)
+                    publish.authorize_manual_approval(14, "opaque-token", 88, "sha256-test")
+                    publish.authorize_manual_approval(14, "opaque-token", 88, "sha256-test")
                     with self.assertRaises(publish.ManualApprovalRequired):
-                        publish.authorize_manual_approval(14, "opaque-token", 89)
+                        publish.authorize_manual_approval(14, "opaque-token", 89, "sha256-test")
         self.assertGreaterEqual(execute.call_count, 2)
 
+    def test_manual_approval_rejects_a_video_changed_after_review(self):
+        row = {"project_id": 14, "job_id": None, "video_sha256": "original-sha256"}
+        with patch.object(publish, "ensure_schema"):
+            with patch.object(publish.db, "query_one", return_value=row):
+                with self.assertRaisesRegex(publish.ManualApprovalRequired, "cambió después de tu aprobación"):
+                    publish.authorize_manual_approval(14, "opaque-token", 88, "new-sha256")
+
     def test_enqueue_manual_youtube_creates_an_opaque_job_approval(self):
-        with patch.object(publish, "issue_manual_approval", return_value="opaque-token") as issue:
-            with patch("app.worker.enqueue", return_value=91) as enqueue:
-                job_id = publish.enqueue_manual_publication(15, "youtube", None, "private")
+        with tempfile.TemporaryDirectory() as folder:
+            video = Path(folder) / "final_short.mp4"
+            video.write_bytes(b"x" * 2048)
+            with patch.object(publish.db, "query_one", return_value={"id": 15, "kind": "short"}):
+                with patch.object(publish, "video_path", return_value=video):
+                    with patch.object(publish, "_video_fingerprint", return_value="sha256-test"):
+                        with patch.object(publish, "issue_manual_approval", return_value="opaque-token") as issue:
+                            with patch("app.worker.enqueue", return_value=91) as enqueue:
+                                job_id = publish.enqueue_manual_publication(15, "youtube", None, "private")
         self.assertEqual(job_id, 91)
-        issue.assert_called_once_with(15)
+        issue.assert_called_once_with(15, "sha256-test")
         enqueue.assert_called_once_with(15, "publish_project", {
             "destination": "youtube", "calendar_id": None, "privacy": "private",
             "manual_approval_id": "opaque-token",
