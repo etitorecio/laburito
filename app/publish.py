@@ -156,7 +156,7 @@ def authorize_manual_approval(project_id: int, approval_id: str | None, job_id: 
     """Vincula la aprobación a una tarea y permite reintentos solo de esa misma tarea."""
     if not approval_id or job_id is None:
         raise ManualApprovalRequired(
-            "YouTube requiere que revises este video y pulses Publicar. No se aceptan subidas programadas."
+            "Se requiere aprobación manual: revisá este video y pulsá Publicar. YouTube no acepta subidas programadas."
         )
     ensure_schema()
     row = db.query_one(
