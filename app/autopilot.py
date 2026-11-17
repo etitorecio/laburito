@@ -555,8 +555,9 @@ def _create_project(rule: dict) -> dict:
 
     # El historial evita repetir temas documentales. La ficción no consulta fuentes
     # reales: conserva los personajes y genera una trama episódica propia.
+    history_limit = 1000 if template_id in {"frutinovela", "reddit_story"} else 250
     previous = db.query(
-        "SELECT topic FROM projects WHERE channel_id IS ? ORDER BY id DESC LIMIT 250",
+        f"SELECT topic FROM projects WHERE channel_id IS ? ORDER BY id DESC LIMIT {history_limit}",
         (rule.get("channel_id"),),
     )
     previous_topics = [row.get("topic", "") for row in previous]
