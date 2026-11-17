@@ -678,6 +678,7 @@ def meta():
         # Español e inglés están disponibles con síntesis local; Piper es solo español.
         "language": db.get_setting("default_language", "es"),
         "languages": [{"id": "es", "label": "Español"}, {"id": "en", "label": "English"}],
+        "whisper_alignment_available": media.whisper_alignment_available(),
         "voices": [{**v, "available": tts_status["available"] and (v["id"] != "es-es-piper" or tts_status["piper_available"])} for v in tts_status["voices"]],
         "aspects": list(render.ASPECTS.keys()),
         "resolutions": options.RESOLUTION_INFO,
@@ -3036,6 +3037,8 @@ def put_settings(payload: SettingsIn):
             raise HTTPException(400, "Elegí español o inglés como idioma predeterminado.")
         if key == "default_voice" and value not in tts.VOICES:
             raise HTTPException(400, "Elegí una voz disponible en español o inglés.")
+        if key == "word_alignment" and value not in {"0", "1"}:
+            raise HTTPException(400, "La sincronía palabra por palabra debe estar activada o desactivada.")
         db.set_setting(key, value)
     return {k: db.get_setting(k) for k in db.DEFAULT_SETTINGS}
 
