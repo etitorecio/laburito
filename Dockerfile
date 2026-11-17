@@ -45,6 +45,8 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 COPY app/ /app/app/
 COPY --from=web /web/dist /app/web/dist
+RUN /usr/local/bin/whisper-cli --help >/dev/null \
+ && python -c "from app.media import whisper_alignment_available; assert whisper_alignment_available()"
 COPY --from=whisper-build /tmp/whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli
 RUN mkdir -p /opt/whisper \
  && python - <<'PY'
