@@ -122,7 +122,7 @@ def main() -> int:
 
     print("\n== YouTube sin credenciales falla con mensaje claro")
     before = len(publish.list_publications(project_id))
-    approval_id = publish.issue_manual_approval(project_id)
+    approval_id = publish.issue_manual_approval(project_id, publish._video_fingerprint(video))
     try:
         publish.publish(project_id, "youtube", manual_approval_id=approval_id, job_id=999999)
         check(False, "youtube sin credenciales debe fallar")
@@ -159,6 +159,11 @@ def main() -> int:
     persisted = db.query_one("SELECT auto_publish, publish_destination FROM projects WHERE id=?", (project_id,))
     check(int(persisted["auto_publish"]) == 1 and persisted["publish_destination"] == "entrega",
           "auto-subida persistida en la base")
+    try:
+        publish.set_auto_publish(project_id, True, "youtube")
+        check(False, "autopublicación en YouTube debe estar bloqueada")
+    except publish.PublishError as exc:
+        check("aprobación manual" in str(exc).lower(), "autopublicación en YouTube bloqueada", str(exc))
     off = publish.set_auto_publish(project_id, False, "youtube")
     check(off["enabled"] is False and off["destination"] == "youtube", "auto-subida desactivada con destino youtube")
 
