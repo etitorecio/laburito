@@ -102,7 +102,7 @@ def synthesize(text: str, out_path: Path, voice: str = "es", speed: int = 150, p
                 timeout=300,
                 capture_output=True,
             )
-            return {"engine": "piper", "voice": voice, "speed": speed, "pitch": pitch, "chars": len(spoken)}
+            return {"engine": "piper", "voice": voice, "language": VOICES.get(voice, VOICES["es"])["language"], "speed": speed, "pitch": pitch, "chars": len(spoken)}
         except Exception:
             pass  # si Piper falla, se intenta espeak-ng
 
@@ -131,6 +131,7 @@ def synthesize(text: str, out_path: Path, voice: str = "es", speed: int = 150, p
     return {
         "engine": Path(engine).name,
         "voice": engine_voice,
+        "language": VOICES[voice]["language"],
         "speed": speed,
         "pitch": pitch,
         "chars": len(spoken),
