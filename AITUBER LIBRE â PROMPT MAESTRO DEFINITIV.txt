@@ -531,3 +531,5 @@ No perseguir cifras publicitarias de AITuber cuando no aportan valor real al usu
 - Nunca renderizar automáticamente una voz inglesa leyendo un guion español. Si falta Ollama/Qwen local o falla la traducción, detener la creación automática con un error claro; los guiones propios en inglés se respetan sin traducir.
 
 - Sincronía de subtítulos: Docker incluye whisper.cpp tiny multilingüe para español/inglés. La alineación palabra por palabra es opcional y se activa desde Ajustes porque consume CPU; el modo agrupado sigue siendo el predeterminado rápido. El estilo Karaoke debe mostrar una palabra por cue. No afirmar precisión perfecta al milisegundo ni resaltado progresivo de frase completa sin prueba visual real.
+
+- Autopilot de ficción: Frutinovela debe conservar los personajes y pasar un resumen de los últimos hechos al siguiente guion. Las premisas se combinan de forma determinista y se comparan con el historial reciente del canal para evitar repetir episodios; Reddit Story usa combinaciones nuevas pero sigue siendo una serie de relatos independientes.
