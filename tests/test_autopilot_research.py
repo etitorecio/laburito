@@ -214,6 +214,9 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertIn("next_run_at", execute.call_args.args[0])
         self.assertIn("now", execute.call_args.args[1])
 
+    def test_autopilot_accepts_english_voice(self):
+        self.assertEqual(autopilot._clean({"voice": "en-us"})["voice"], "en-us")
+
     def test_autopilot_voice_speed_and_pitch_are_bounded(self):
         clean = autopilot._clean({"speed": 999, "pitch": -5})
         self.assertEqual(clean["speed"], 300)
