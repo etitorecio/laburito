@@ -777,7 +777,7 @@ def translate_script_with_ollama(url: str, model: str, project: dict, script: di
         "Translate narration, title, purpose and visual_query; preserve all other scene fields unchanged. "
         "Use conversational English suitable for voice-over, not literal machine translation. "
         "Return only valid JSON with exactly this shape: "
-        '{"title":"...","topic":"...","scenes":[{"idx":0,"title":"...","narration":"...","purpose":"...","visual_query":"..."}]}\n'
+        '{"title":"...","scenes":[{"idx":0,"title":"...","narration":"...","purpose":"...","visual_query":"..."}]}\n'
         + json.dumps({"title": project.get("title") or "", "topic": project.get("topic") or project.get("title") or "", "scenes": payload}, ensure_ascii=False)
     )
     raw = expand_with_ollama(url, model, prompt, timeout=300, num_predict=4096).strip()
@@ -791,9 +791,8 @@ def translate_script_with_ollama(url: str, model: str, project: dict, script: di
     if not isinstance(translated, list) or len(translated) != len(scenes):
         raise RuntimeError("La traducción cambió la cantidad de escenas.")
     translated_title = str(data.get("title") or "").strip()
-    translated_topic = str(data.get("topic") or "").strip()
-    if not translated_title or not translated_topic:
-        raise RuntimeError("La traducción no devolvió el título y el tema en inglés.")
+    if not translated_title:
+        raise RuntimeError("La traducción no devolvió el título en inglés.")
     by_idx = {int(item.get("idx", -1)): item for item in translated if isinstance(item, dict)}
     result = []
     for scene in scenes:
@@ -817,7 +816,6 @@ def translate_script_with_ollama(url: str, model: str, project: dict, script: di
         "writer": f"{script.get('writer', 'template')}+ollama-english-translation",
         "language": "en",
         "translated_title": translated_title,
-        "translated_topic": translated_topic,
     }
 
 
