@@ -21,6 +21,26 @@ class NaturalCreateEndpointTests(unittest.TestCase):
         script.assert_called_once_with(42, replace=True)
         enqueue.assert_called_once_with(42, "render_project", {})
 
+    def test_natural_prompt_can_request_english_voice(self):
+        with patch.object(main.db, "query_one", return_value={"id": 3}):
+            with patch.object(main, "create_project", return_value={"id": 45}) as create:
+                with patch.object(main, "generate_script", return_value={"warnings": []}):
+                    with patch.object(main.worker, "enqueue", return_value=94):
+                        main.create_from_prompt(
+                            main.NaturalCreateIn(prompt="haceme un short en inglés sobre la historia de Nirvana")
+                        )
+        self.assertEqual(create.call_args.args[0].voice, "en-us")
+
+    def test_natural_prompt_can_override_english_default_with_spanish(self):
+        with patch.object(main.db, "query_one", return_value={"id": 3}):
+            with patch.object(main, "create_project", return_value={"id": 46}) as create:
+                with patch.object(main, "generate_script", return_value={"warnings": []}):
+                    with patch.object(main.worker, "enqueue", return_value=95):
+                        main.create_from_prompt(
+                            main.NaturalCreateIn(prompt="haceme un short en español sobre la historia de Nirvana")
+                        )
+        self.assertEqual(create.call_args.args[0].voice, "es")
+
     def test_natural_horror_uses_safe_duration_headroom(self):
         with patch.object(main.db, "query_one", return_value={"id": 3}):
             with patch.object(main, "create_project", return_value={"id": 44}) as create:
