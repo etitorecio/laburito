@@ -945,7 +945,7 @@ export default function Editor({ projectId, go }: Props) {
               <option value="4:5">4:5 feed vertical</option>
             </select>
           </Field>
-          <Field label="Voz en español">
+          <Field label="Voz de narración">
             <VoicePicker
               options={meta?.voices ?? []}
               value={project.voice}
