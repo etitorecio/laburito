@@ -41,24 +41,6 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
           <strong>Almacenamiento no persistente.</strong> Esta instancia puede perder proyectos y archivos si el servidor se reinicia o reemplaza. Para conservar todo sin pagar hosting, ejecutá la versión local con Docker y su carpeta de datos persistente.
         </div>
       )}
-      <section className="studio-hero">
-        <div className="studio-hero-copy">
-          <span className="studio-eyebrow"><i /> TU ESTUDIO DE CREACIÓN</span>
-          <h2>De una idea a tu próximo <span>video.</span></h2>
-          <p>Creá Shorts y videos largos, organizá todos tus canales y producí contenido desde un solo lugar.</p>
-          <div className="studio-hero-actions">
-            <button className="studio-primary" onClick={() => promptRef.current?.focus()}>＋ Crear video</button>
-            <button className="studio-secondary" onClick={() => go('autopilot')}>Configurar autopiloto ↗</button>
-          </div>
-          <div className="studio-trust"><span>✓ Sin créditos pagos</span><span>✓ Herramientas libres</span><span>✓ Tus canales, tu control</span></div>
-        </div>
-        <div className="studio-showcase" aria-label="Vistas ilustrativas de formatos de video">
-          <div className="showcase-card showcase-short"><small>SHORT · 9:16</small><span className="showcase-symbol">✦</span><strong>Historias que atrapan</strong><em>00:58</em></div>
-          <div className="showcase-card showcase-doc"><small>DOCUMENTAL · 16:9</small><span className="showcase-symbol">◈</span><strong>Secretos de la historia</strong><em>12:40</em></div>
-          <div className="showcase-card showcase-series"><small>SERIE · EPISODIOS</small><span className="showcase-symbol">♡</span><strong>Frutinovela</strong><em>EP. 04</em></div>
-        </div>
-      </section>
-
       <section className="studio-section" aria-label="Crear video con una instrucción">
         <div className="studio-section-head"><div><span className="studio-eyebrow">DECILO Y SE HACE</span><h3>¿Qué video querés que haga?</h3><p>Escribí una orden simple. Podés indicar “en inglés” o “en español”; si no, usa el idioma predeterminado de Ajustes. Laburito investiga, escribe y renderiza en segundo plano. Podés salir de esta pantalla: el trabajo sigue en la cola.</p></div></div>
         <div className="studio-prompt-presets" aria-label="Elegir un tipo de video">
@@ -106,6 +88,24 @@ export default function Home({ go }: { go: (route: Route, id?: number) => void }
           </div>
           <small className="muted">No tenés que elegir voz, imágenes ni edición: Laburito usa la configuración del canal y prepara la producción automáticamente.</small>
         </form>
+      </section>
+
+      <section className="studio-hero">
+        <div className="studio-hero-copy">
+          <span className="studio-eyebrow"><i /> TU ESTUDIO DE CREACIÓN</span>
+          <h2>De una idea a tu próximo <span>video.</span></h2>
+          <p>Creá Shorts y videos largos, organizá todos tus canales y producí contenido desde un solo lugar.</p>
+          <div className="studio-hero-actions">
+            <button className="studio-primary" onClick={() => promptRef.current?.focus()}>＋ Crear video</button>
+            <button className="studio-secondary" onClick={() => go('autopilot')}>Configurar autopiloto ↗</button>
+          </div>
+          <div className="studio-trust"><span>✓ Sin créditos pagos</span><span>✓ Herramientas libres</span><span>✓ Tus canales, tu control</span></div>
+        </div>
+        <div className="studio-showcase" aria-label="Vistas ilustrativas de formatos de video">
+          <div className="showcase-card showcase-short"><small>SHORT · 9:16</small><span className="showcase-symbol">✦</span><strong>Historias que atrapan</strong><em>00:58</em></div>
+          <div className="showcase-card showcase-doc"><small>DOCUMENTAL · 16:9</small><span className="showcase-symbol">◈</span><strong>Secretos de la historia</strong><em>12:40</em></div>
+          <div className="showcase-card showcase-series"><small>SERIE · EPISODIOS</small><span className="showcase-symbol">♡</span><strong>Frutinovela</strong><em>EP. 04</em></div>
+        </div>
       </section>
 
       <section className="studio-stats">
