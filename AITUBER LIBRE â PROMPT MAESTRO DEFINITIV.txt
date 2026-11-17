@@ -522,3 +522,7 @@ No perseguir cifras publicitarias de AITuber cuando no aportan valor real al usu
 - No copiar métricas de marketing (número de voces, estilos, idiomas, resolución o integraciones) como requisitos por sí mismas. Traducir cada capacidad en una necesidad concreta y resolverla con herramientas gratuitas.
 - Declarar por separado lo que está implementado, lo que es parcial y lo que depende de una configuración externa. No llamar equivalente a una alternativa local si su calidad o alcance es inferior.
 - Si una capacidad comercial exige créditos, suscripción o API paga, buscar primero una alternativa local/open source razonable; si no existe para el hardware objetivo, explicarlo y ofrecer un fallback honesto sin bloquear el resto del flujo.
+
+- Audio: aplicar ducking sidechain local para que la música baje automáticamente bajo la voz. Mantener la mezcla dentro del render FFmpeg, sin APIs pagas.
+- Subtítulos: el estado actual usa bloques temporizados proporcionalmente por cantidad de palabras; no afirmar alineación fonética ni sincronización palabra por palabra exacta. Solo incorporar un alineador si es gratuito, local, razonable para CPU/RAM objetivo y validado con audio real. Mientras tanto, documentar el alcance real y no simular precisión.
+- Historias cortas: el guion de respaldo debe tener una extensión que garantice margen de duración incluso cuando Ollama no está disponible. La duración objetivo debe reflejarse en el texto generado, no solo en los metadatos del proyecto.
