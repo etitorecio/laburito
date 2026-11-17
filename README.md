@@ -166,4 +166,4 @@ La opción recomendada es **Docker local en tu PC**, con la carpeta `./data` per
 
 ## Fábricas de YouTube Shorts
 
-Las dos fábricas principales son **Historias estilo Reddit** y **Frutinovelas**. Ambas producen exclusivamente video vertical 9:16, con una duración máxima de 180 segundos. La interfaz de creación y el Autopiloto ofrecen esas dos plantillas; el backend vuelve a validar formato, duración y correspondencia entre cada fábrica y su canal para evitar cruces accidentales.
+Las dos fábricas principales son **Historias estilo Reddit** y **Frutinovelas**. Ambas producen exclusivamente video vertical 9:16, con una duración máxima de 180 segundos. Las dos usan bancos deterministas de 1.728 combinaciones de premisas y comparan el historial reciente del canal para evitar repetir temas; Frutinovela además lleva un resumen de continuidad al episodio siguiente. La interfaz de creación y el Autopiloto ofrecen esas dos plantillas; el backend vuelve a validar formato, duración y correspondencia entre cada fábrica y su canal para evitar cruces accidentales.
