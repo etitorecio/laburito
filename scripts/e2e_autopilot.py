@@ -25,7 +25,7 @@ for key in ("YOUTUBE_CLIENT_ID", "YOUTUBE_CLIENT_SECRET", "YOUTUBE_REFRESH_TOKEN
     os.environ.pop(key, None)
 sys.path.insert(0, str(REPO))
 
-from app import autopilot, db, publish, worker  # noqa: E402
+from app import autopilot, db, main as app_main, publish, worker  # noqa: E402
 
 FAILURES: list[str] = []
 
@@ -41,6 +41,7 @@ def check(condition: bool, label: str, detail: str = "") -> None:
 def main() -> int:
     print(f"Datos de prueba en {WORK}")
     db.init_db()
+    app_main._ensure_factory_channels()
     publish.ensure_schema()
     autopilot.ensure_schema()
 
