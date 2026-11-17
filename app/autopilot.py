@@ -335,24 +335,12 @@ def _next_run_at(rule: dict, after: datetime | None = None) -> str:
 
 
 def _validate_auto_publish(clean: dict, current: dict | None = None) -> None:
-    """No deja activar YouTube si la conexión todavía no está configurada."""
+    """Bloquea la autopublicación externa; YouTube siempre exige aprobación por video."""
     merged = {**(current or {}), **clean}
-    if not bool(merged.get("auto_publish")) or merged.get("destination", "entrega") != "youtube":
-        return
-    from . import persistence, publish
-    if not persistence.durable_storage_available():
+    if bool(merged.get("auto_publish")) and (merged.get("destination") or "entrega") == "youtube":
         raise ValueError(
-            "Antes de activar la autopublicación, ejecutá Laburito con un volumen local persistente (carpeta ./data)."
+            "YouTube requiere aprobación manual por video. La autopublicación está bloqueada."
         )
-    try:
-        channel_id = merged.get("channel_id")
-        if not channel_id:
-            raise ValueError("Asigná esta regla a un canal interno para conectar su cuenta de YouTube.")
-        publish.youtube_account_status(int(channel_id))
-    except publish.PublishError as exc:
-        raise ValueError(
-            "Antes de activar la publicación automática, conectá la cuenta asignada desde Cuentas. " + str(exc)
-        ) from exc
 
 
 def _validate_factory_channel(data: dict) -> None:
@@ -382,9 +370,6 @@ def create_rule(data: dict) -> dict:
     clean.setdefault("aspect", selected_template.get("aspect", "9:16"))
     _validate_factory_channel(clean)
     clean.setdefault("destination", "youtube")
-    # YouTube siempre requiere aprobación manual, incluso si el cliente omite destination.
-    if clean["destination"] == "youtube":
-        clean["auto_publish"] = 0
     clean.setdefault("privacy", "public")
     clean.setdefault("resolution", "720p")
     clean.setdefault("music_volume", 0.3)
@@ -412,6 +397,16 @@ def update_rule(rule_id: int, data: dict) -> dict | None:
         return None
     clean = _clean({**current, **data})
     _validate_factory_channel(clean)
+    if (clean.get("destination") == "youtube"):
+        if "auto_publish" in data and bool(data.get("auto_publish")):
+            raise ValueError(
+                "YouTube requiere aprobación manual por video. La autopublicación está bloqueada."
+            )
+        clean["auto_publish"] = 0
+    elif (current.get("destination") == "youtube" and "auto_publish" not in data):
+        # Una regla heredada no debe activar entregas automáticas por accidente
+        # cuando el usuario la edita o cambia su destino.
+        clean["auto_publish"] = 0
     _validate_auto_publish(clean, current)
     if clean:
         if clean.get("enabled") == 1 and not current.get("enabled"):
