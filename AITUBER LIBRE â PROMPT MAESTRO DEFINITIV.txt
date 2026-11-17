@@ -526,3 +526,6 @@ No perseguir cifras publicitarias de AITuber cuando no aportan valor real al usu
 - Audio: aplicar ducking sidechain local para que la música baje automáticamente bajo la voz. Mantener la mezcla dentro del render FFmpeg, sin APIs pagas.
 - Subtítulos: el estado actual usa bloques temporizados proporcionalmente por cantidad de palabras; no afirmar alineación fonética ni sincronización palabra por palabra exacta. Solo incorporar un alineador si es gratuito, local, razonable para CPU/RAM objetivo y validado con audio real. Mientras tanto, documentar el alcance real y no simular precisión.
 - Historias cortas: el guion de respaldo debe tener una extensión que garantice margen de duración incluso cuando Ollama no está disponible. La duración objetivo debe reflejarse en el texto generado, no solo en los metadatos del proyecto.
+
+- Español e inglés deben funcionar en creación normal, ajustes, editor, metadatos y Autopilot. El idioma predeterminado determina la voz local por defecto. Las reglas y proyectos en inglés deben sobrevivir reinicios/migraciones de SQLite.
+- Nunca renderizar automáticamente una voz inglesa leyendo un guion español. Si falta Ollama/Qwen local o falla la traducción, detener la creación automática con un error claro; los guiones propios en inglés se respetan sin traducir.
