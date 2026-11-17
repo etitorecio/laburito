@@ -598,6 +598,7 @@ def _create_project(rule: dict) -> dict:
             rule.get("voice") or "es", int(rule.get("speed") or 150), int(rule.get("pitch") if rule.get("pitch") is not None else 45),
             (
                 f"Autopiloto: {rule.get('name') or niche}. "
+                + continuity_context
                 + (
                     (
                         f"Ficción original · personajes recurrentes: {characters}. "
