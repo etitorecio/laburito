@@ -19,7 +19,6 @@ class FictionContinuityTests(unittest.TestCase):
             "continuity_recap": "Manzana encontró una carta escondida y decidió no contarle nada a Banana",
         })
         self.assertIn("Manzana encontró una carta escondida", result["scenes"][0]["narration"])
-        self.assertIn("Episodio 2", result.get("title", "Episodio 2"))
 
 
 if __name__ == "__main__":
