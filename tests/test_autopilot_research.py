@@ -220,10 +220,11 @@ class AutopilotResearchTests(unittest.TestCase):
                  {"narration": "La familia descubre una carta."},
                  {"narration": "Manzana decide guardar el secreto."},
              ]):
-            context = autopilot._frutinovela_continuity_context(4)
-        self.assertIn("Los Frutos · Episodio 1", context)
-        self.assertLess(context.index("Manzana decide"), context.index("La familia descubre"))
-        self.assertIn("no reiniciar la historia", context)
+            instruction, recap = autopilot._frutinovela_continuity_context(4)
+        self.assertIn("Los Frutos · Episodio 1", instruction)
+        self.assertLess(instruction.index("Manzana decide"), instruction.index("La familia descubre"))
+        self.assertIn("no reiniciar la historia", instruction)
+        self.assertIn("La familia descubre", recap)
 
     def test_fiction_episode_factory_avoids_repeating_recent_frutinovela_plots(self):
         previous = []
