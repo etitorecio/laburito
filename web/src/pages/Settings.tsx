@@ -106,8 +106,17 @@ export default function Settings() {
 
       <Card title="Producción" sub="Parámetros usados por el guionista y el render.">
         <div className="row">
-          <Field label="Idiomas de voz disponibles">
-            <p className="muted" style={{ margin: 0 }}>Español e inglés. Con Qwen/Ollama local, los guiones automáticos se traducen al inglés al elegir una voz inglesa; sin Ollama, se te avisa y podés pegar un guion en inglés.</p>
+          <Field label="Idioma predeterminado">
+            <select
+              value={values.default_language || 'es'}
+              onChange={(e) => {
+                const language = e.target.value;
+                setValues({ ...values, default_language: language, default_voice: language === 'en' ? 'en-us' : 'es' });
+              }}
+            >
+              <option value="es">Español</option>
+              <option value="en">English</option>
+            </select>
           </Field>
           <Field label="Voz por defecto">
             <VoicePicker
