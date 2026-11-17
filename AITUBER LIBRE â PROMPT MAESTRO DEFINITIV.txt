@@ -529,3 +529,5 @@ No perseguir cifras publicitarias de AITuber cuando no aportan valor real al usu
 
 - Español e inglés deben funcionar en creación normal, ajustes, editor, metadatos y Autopilot. El idioma predeterminado determina la voz local por defecto. Las reglas y proyectos en inglés deben sobrevivir reinicios/migraciones de SQLite.
 - Nunca renderizar automáticamente una voz inglesa leyendo un guion español. Si falta Ollama/Qwen local o falla la traducción, detener la creación automática con un error claro; los guiones propios en inglés se respetan sin traducir.
+
+- Sincronía de subtítulos: Docker incluye whisper.cpp tiny multilingüe para español/inglés. La alineación palabra por palabra es opcional y se activa desde Ajustes porque consume CPU; el modo agrupado sigue siendo el predeterminado rápido. No afirmar precisión perfecta al milisegundo ni karaoke completo sin prueba visual real.
