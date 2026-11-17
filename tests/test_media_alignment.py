@@ -11,7 +11,7 @@ class WhisperWordTimingTests(unittest.TestCase):
                     {"text": " Hola", "offsets": {"from": 100, "to": 250}},
                     {"text": " mun", "offsets": {"from": 260, "to": 400}},
                     {"text": "do", "offsets": {"from": 400, "to": 520}},
-                    {"text": "!", "offsets": {"from": 520, "to": 600}},
+                    {"text": " !", "offsets": {"from": 520, "to": 600}},
                     {"text": "[_TT_]", "offsets": {"from": 600, "to": 600}},
                 ]
             }]
