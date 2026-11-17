@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, type AutopilotRule, type Channel, type Meta, type TemplateOption, type Diagnostics } from '../api';
 import { Badge, Card, Empty, Field, Msg } from '../ui';
 import CaptionStylePicker from '../components/CaptionStylePicker';
@@ -75,7 +75,7 @@ export default function Autopilot() {
   const [persistenceConfigured, setPersistenceConfigured] = useState<boolean | null>(null);
   const [persistenceNote, setPersistenceNote] = useState('');
   const [form, setForm] = useState(INITIAL);
-  const [defaultsLoaded, setDefaultsLoaded] = useState(false);
+  const defaultsLoaded = useRef(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [step, setStep] = useState(0);
   const [simpleMode, setSimpleMode] = useState(true);
@@ -103,10 +103,10 @@ export default function Autopilot() {
           // La configuración rápida no obliga a volver a escribir el tema:
           // toma el nicho del canal y usa su nombre como último respaldo.
           niche: current.niche.trim() || selectedChannel?.topic || selectedChannel?.name || '',
-          voice: defaultsLoaded ? current.voice : (m.settings.default_voice || current.voice),
+          voice: defaultsLoaded.current ? current.voice : (m.settings.default_voice || current.voice),
         };
       });
-      setDefaultsLoaded(true);
+      defaultsLoaded.current = true;
       setMeta(m);
       setOllamaAvailable(diagnostics.ollama.available);
       setYoutubeAccounts(accountData.accounts);
