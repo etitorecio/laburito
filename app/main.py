@@ -1377,7 +1377,11 @@ def generate_script(project_id: int, replace: bool = True):
     ollama_url = db.get_setting("ollama_url", "") or os.environ.get("OLLAMA_URL", "").strip()
     if not custom_script and ollama_url and script_gen.ollama_model_available(ollama_url, "qwen2.5:1.5b-instruct"):
         try:
-            if project.get("template") in {"frutinovela", "reddit_story"}:
+            if str(project.get("voice") or "es").startswith("en"):
+                script = script_gen.translate_script_with_ollama(
+                    ollama_url, "qwen2.5:1.5b-instruct", project, script
+                )
+            elif project.get("template") in {"frutinovela", "reddit_story"}:
                 script = script_gen.rewrite_fiction_with_ollama(
                     ollama_url, "qwen2.5:1.5b-instruct", project, script
                 )
@@ -1387,9 +1391,13 @@ def generate_script(project_id: int, replace: bool = True):
                 )
             db.log("info", "script", "Guion procesado con Ollama local", {"project_id": project_id})
         except Exception as exc:
-            warning = f"Ollama no pudo completar la reescritura del guion; se conserva el borrador local para que puedas editarlo: {exc}"
+            warning = f"Ollama no pudo traducir o reescribir el guion; se conserva el borrador local para que puedas editarlo: {exc}"
             db.log("warn", "script", warning, {"project_id": project_id})
             script.setdefault("warnings", []).append(warning)
+    elif not custom_script and str(project.get("voice") or "es").startswith("en"):
+        script.setdefault("warnings", []).append(
+            "La voz inglesa está seleccionada, pero Ollama local no está disponible para traducir el guion automático. Instalá/iniciá Ollama o pegá un guion en inglés."
+        )
     if replace:
         db.execute("DELETE FROM scenes WHERE project_id=?", (project_id,))
     base = 0 if replace else db.scalar("SELECT COALESCE(MAX(idx), -1) FROM scenes WHERE project_id=?", (project_id,), -1) + 1
