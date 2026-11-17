@@ -363,6 +363,10 @@ def _validate_factory_channel(data: dict) -> None:
 
 def create_rule(data: dict) -> dict:
     ensure_schema()
+    if (data.get("destination") or "youtube") == "youtube" and bool(data.get("auto_publish")):
+        raise ValueError(
+            "YouTube requiere aprobación manual por video. La autopublicación está bloqueada."
+        )
     clean = _clean(data)
     clean.setdefault("name", clean.get("niche") or "Piloto automático")
     clean.setdefault("template", "shorts")
