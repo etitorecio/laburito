@@ -107,7 +107,7 @@ export default function Settings() {
       <Card title="Producción" sub="Parámetros usados por el guionista y el render.">
         <div className="row">
           <Field label="Idiomas de voz disponibles">
-            <p className="muted" style={{ margin: 0 }}>Español e inglés. La voz elegida se usa al narrar; la redacción automática sigue en español por ahora.</p>
+            <p className="muted" style={{ margin: 0 }}>Español e inglés. Con Qwen/Ollama local, los guiones automáticos se traducen al inglés al elegir una voz inglesa; sin Ollama, se te avisa y podés pegar un guion en inglés.</p>
           </Field>
           <Field label="Voz por defecto">
             <VoicePicker
