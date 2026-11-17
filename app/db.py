@@ -270,6 +270,7 @@ DEFAULT_SETTINGS = {
     "default_transition": "fundido",
     "ollama_url": "",
     "auto_backup": "1",
+    "word_alignment": "0",
 }
 
 
