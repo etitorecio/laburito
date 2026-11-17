@@ -20,6 +20,8 @@ class EnglishScriptTranslationTests(unittest.TestCase):
             }],
         }
         translated = {
+            "title": "An unexpected secret",
+            "topic": "An unexpected secret",
             "scenes": [{
                 "idx": 0,
                 "title": "Opening",
@@ -34,6 +36,8 @@ class EnglishScriptTranslationTests(unittest.TestCase):
                 {"topic": "A topic"}, source,
             )
         self.assertEqual(result["language"], "en")
+        self.assertEqual(result["translated_title"], "An unexpected secret")
+        self.assertEqual(result["translated_topic"], "An unexpected secret")
         self.assertIn("ollama-english-translation", result["writer"])
         self.assertEqual(result["scenes"][0]["narration"], translated["scenes"][0]["narration"])
         self.assertEqual(result["scenes"][0]["duration_target_sec"], 12)
