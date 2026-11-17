@@ -776,6 +776,12 @@ def publish(project_id: int, destination: str = "entrega", calendar_id: int | No
     if destination == "entrega":
         result = _deliver_local(project, meta, report)
     elif destination == "youtube":
+        # Volver a comprobar justo antes de subir: la versión aprobada no puede
+        # cambiar mientras el trabajo espera en la cola o prepara metadatos.
+        if _video_fingerprint(source) != fingerprint:
+            raise ManualApprovalRequired(
+                "El MP4 cambió después de tu aprobación. Revisá la nueva versión y volvé a pulsar Publicar."
+            )
         result = _youtube_upload(project, meta, privacy, report)
     else:
         raise PublishError(f"Destino desconocido: {destination}. Usá 'entrega' o 'youtube'.")
