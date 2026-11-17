@@ -63,8 +63,7 @@ Referencias públicas consultadas:
 2. Desbloquear el scheduler cloud con URL real y almacenamiento persistente, sin sustituir la ejecución local gratuita.
 3. Mejorar el selector de temas y la continuidad de canales/series, con prevención de duplicados probada.
 4. Probar sincronía palabra por palabra y documentar exactamente el alcance.
-5. Incorporar redacción automática en inglés de punta a punta cuando el canal/voz esté configurado en inglés; hoy la voz inglesa está disponible para narraciones suministradas, pero el guionista automático sigue en español.\n6. Evaluar alternativas open source para imágenes/avatares sin exigir GPU dedicada ni servicios pagos.
-7. Seguir simplificando el flujo móvil: revisión y regeneración de segmentos con acciones directas, menos pantallas y valores por defecto inteligentes.
+6. Seguir simplificando el flujo móvil
 7. Mantener bloqueada la publicación externa automática; cada video debe aprobarse individualmente.
 
 No declarar paridad total hasta cerrar las brechas o documentar explícitamente por qué una capacidad comercial no tiene sustituto gratuito/local equivalente.
