@@ -23,6 +23,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
   const [ideas, setIdeas] = useState<TopicIdea[]>([]);
   const [ideasBusy, setIdeasBusy] = useState(false);
 
+  const [defaultsLoaded, setDefaultsLoaded] = useState(false);
   const [form, setForm] = useState({
     title: '',
     topic: '',
@@ -106,8 +107,9 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
       setForm((current) => ({
         ...current,
         channel_id: current.channel_id || String(c[0]?.id ?? ''),
-        voice: current.voice === 'es' ? (m.settings.default_voice || 'es') : current.voice,
+        voice: defaultsLoaded ? current.voice : (m.settings.default_voice || current.voice),
       }));
+      setDefaultsLoaded(true);
       setMeta(m);
       setOllamaAvailable(diagnostics.ollama.available);
     } catch (e) {
