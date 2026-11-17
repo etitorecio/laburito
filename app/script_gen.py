@@ -755,6 +755,65 @@ def generate_script(
     }
 
 
+def translate_script_with_ollama(url: str, model: str, project: dict, script: dict) -> dict:
+    """Traduce el guion generado al inglés con Ollama local, sin alterar su estructura."""
+    scenes = script.get("scenes") or []
+    if not scenes:
+        raise RuntimeError("No hay escenas para traducir.")
+    payload = [
+        {
+            "idx": scene.get("idx"),
+            "title": scene.get("title") or "",
+            "narration": scene.get("narration") or "",
+            "purpose": scene.get("purpose") or "",
+            "visual_query": scene.get("visual_query") or "",
+        }
+        for scene in scenes
+    ]
+    prompt = (
+        "Translate this audiovisual script into natural, fluent English. "
+        "Keep every factual statement, name, date, number, uncertainty and attribution faithful to the source. "
+        "Do not add, remove, summarize or invent information. Keep the same scene count, order and idx values. "
+        "Translate narration, title, purpose and visual_query; preserve all other scene fields unchanged. "
+        "Use conversational English suitable for voice-over, not literal machine translation. "
+        "Return only valid JSON with exactly this shape: "
+        "{\\"scenes\\":[{\\"idx\\":0,\\"title\\":\\"...\\",\\"narration\\":\\"...\\",\\"purpose\\":\\"...\\",\\"visual_query\\":\\"...\\"}]}\\n"
+        + json.dumps({"topic": project.get("topic") or project.get("title") or "", "scenes": payload}, ensure_ascii=False)
+    )
+    raw = expand_with_ollama(url, model, prompt, timeout=300, num_predict=4096).strip()
+    if raw.startswith(chr(96) * 3):
+        raw = re.sub(r"^\\x60{3}(?:json)?\\s*|\\s*\\x60{3}$", "", raw, flags=re.IGNORECASE)
+    first, last = raw.find("{"), raw.rfind("}")
+    if first < 0 or last <= first:
+        raise RuntimeError("Ollama no devolvió JSON válido para la traducción al inglés.")
+    data = json.loads(raw[first:last + 1])
+    translated = data.get("scenes") if isinstance(data, dict) else None
+    if not isinstance(translated, list) or len(translated) != len(scenes):
+        raise RuntimeError("La traducción cambió la cantidad de escenas.")
+    by_idx = {int(item.get("idx", -1)): item for item in translated if isinstance(item, dict)}
+    result = []
+    for scene in scenes:
+        item = by_idx.get(int(scene.get("idx", -1)))
+        narration = str((item or {}).get("narration") or "").strip()
+        if len(narration) < max(20, round(len(str(scene.get("narration") or "")) * 0.35)):
+            raise RuntimeError(f"La traducción de la escena {scene.get('idx')} está incompleta.")
+        result.append({
+            **scene,
+            "title": str(item.get("title") or scene.get("title") or ""),
+            "narration": narration,
+            "purpose": str(item.get("purpose") or scene.get("purpose") or ""),
+            "visual_query": str(item.get("visual_query") or scene.get("visual_query") or ""),
+        })
+    return {
+        **script,
+        "scenes": result,
+        "warnings": [*script.get("warnings", []), "Guion traducido al inglés con Qwen local; revisá nombres propios y matices antes de publicar."],
+        "writer": f"{script.get('writer', 'template')}+ollama-english-translation",
+        "language": "en",
+    }
+
+
+
 _VARIANTS = [
     ("Entremos por el detalle", "En lugar de empezar por el contexto, arranquemos por el objeto."),
     ("Entremos por el conflicto", "El relato gana tensión cuando mostramos quién se oponía al cambio."),
