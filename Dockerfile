@@ -46,6 +46,8 @@ RUN pip install --no-cache-dir --upgrade pip \
 COPY app/ /app/app/
 COPY --from=web /web/dist /app/web/dist
 COPY --from=whisper-build /tmp/whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli
+COPY --from=whisper-build /tmp/whisper.cpp/build/bin/lib*.so* /usr/local/lib/
+RUN ldconfig
 RUN mkdir -p /opt/whisper \
  && python - <<'PY'
 import hashlib
