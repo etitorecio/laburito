@@ -676,7 +676,7 @@ def meta():
     tts_status = tts.status()
     return {
         # Español e inglés están disponibles con síntesis local; Piper es solo español.
-        "language": "es",
+        "language": db.get_setting("default_language", "es"),
         "languages": [{"id": "es", "label": "Español"}, {"id": "en", "label": "English"}],
         "voices": [{**v, "available": tts_status["available"] and (v["id"] != "es-es-piper" or tts_status["piper_available"])} for v in tts_status["voices"]],
         "aspects": list(render.ASPECTS.keys()),
