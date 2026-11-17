@@ -46,7 +46,13 @@ RUN pip install --no-cache-dir --upgrade pip \
 COPY app/ /app/app/
 COPY --from=web /web/dist /app/web/dist
 RUN /usr/local/bin/whisper-cli --help >/dev/null \
- && python -c "from app.media import whisper_alignment_available; assert whisper_alignment_available()"
+ && python -c "from app.media import whisper_alignment_available; assert whisper_alignment_available()" \
+ && espeak-ng -v en-us -w /tmp/whisper-en.wav "Hello there." \
+ && espeak-ng -v es -w /tmp/whisper-es.wav "Hola, cómo estás." \
+ && /usr/local/bin/whisper-cli -m /opt/whisper/ggml-tiny.bin -f /tmp/whisper-en.wav -l en -ojf -of /tmp/whisper-en -ml 1 -np -ng -t 2 -sns -nf \
+ && /usr/local/bin/whisper-cli -m /opt/whisper/ggml-tiny.bin -f /tmp/whisper-es.wav -l es -ojf -of /tmp/whisper-es -ml 1 -np -ng -t 2 -sns -nf \
+ && python -c "import json; files=['/tmp/whisper-en.json','/tmp/whisper-es.json']; assert all(any(t.get('offsets',{}).get('to',0)>t.get('offsets',{}).get('from',0) for s in json.load(open(p))['transcription'] for t in s['tokens']) for p in files)" \
+ && rm -f /tmp/whisper-en.wav /tmp/whisper-es.wav /tmp/whisper-en.json /tmp/whisper-es.json
 COPY --from=whisper-build /tmp/whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli
 RUN mkdir -p /opt/whisper \
  && python - <<'PY'
