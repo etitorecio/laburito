@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import secrets
 import urllib.error
 import urllib.parse
@@ -1071,9 +1072,9 @@ def create_from_prompt(payload: NaturalCreateIn):
 
     prompt_language = payload.prompt.casefold()
     requested_voice = None
-    if re.search(r"\\b(en inglés|en ingles|in english|english voice)\\b", prompt_language):
+    if re.search(r"\b(en inglés|en ingles|in english|english voice)\b", prompt_language):
         requested_voice = "en-us"
-    elif re.search(r"\\b(en español|en espanol|in spanish|spanish voice)\\b", prompt_language):
+    elif re.search(r"\b(en español|en espanol|in spanish|spanish voice)\b", prompt_language):
         requested_voice = "es"
     project_data = {
         "title": intent["title"],
