@@ -96,7 +96,7 @@ export default function Settings() {
         <p className="muted">La aplicación OAuth de Google ya configurada se reutiliza para autorizar ambas cuentas; no hace falta crear credenciales distintas.</p>
       </Card>
 
-      <Card title="Voz neural española" sub="Mejorá la narración sin pagar APIs ni servicios de voz.">
+      <Card title="Voces locales" sub="Español e inglés con síntesis local, sin APIs pagas.">
         <div className="pill-row">
           <Badge tone={diag?.tts.piper_available ? 'ok' : 'warn'}>{diag?.tts.piper_available ? 'Voz neural instalada' : diag?.tts.piper_installed ? 'Motor listo · falta descargar la voz' : 'Motor Piper pendiente de despliegue'}</Badge>
         </div>
@@ -106,8 +106,8 @@ export default function Settings() {
 
       <Card title="Producción" sub="Parámetros usados por el guionista y el render.">
         <div className="row">
-          <Field label="Idioma de producción">
-            <p className="muted" style={{ margin: 0 }}>Español (fijo para todos los Shorts y proyectos).</p>
+          <Field label="Idiomas de voz disponibles">
+            <p className="muted" style={{ margin: 0 }}>Español e inglés. La voz elegida se usa al narrar; la redacción automática sigue en español por ahora.</p>
           </Field>
           <Field label="Voz por defecto">
             <VoicePicker
