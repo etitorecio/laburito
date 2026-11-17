@@ -120,10 +120,14 @@ def ensure_schema() -> None:
             approval_id TEXT PRIMARY KEY,
             project_id INTEGER NOT NULL,
             job_id INTEGER,
+            video_sha256 TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL,
             used_at TEXT
         )
     """)
+    approval_columns = {_g(row, "name") for row in db.query("PRAGMA table_info(youtube_manual_approvals)")}
+    if "video_sha256" not in approval_columns:
+        db.execute("ALTER TABLE youtube_manual_approvals ADD COLUMN video_sha256 TEXT NOT NULL DEFAULT ''")
     db.execute("CREATE INDEX IF NOT EXISTS idx_youtube_manual_approvals_project ON youtube_manual_approvals(project_id, created_at)")
     columns = {_g(row, "name") for row in db.query("PRAGMA table_info(projects)")}
     if "auto_publish" not in columns:
@@ -132,13 +136,16 @@ def ensure_schema() -> None:
         db.execute("ALTER TABLE projects ADD COLUMN publish_destination TEXT NOT NULL DEFAULT 'entrega'")
 
 
-def issue_manual_approval(project_id: int) -> str:
-    """Emite una autorización opaca para una única tarea de publicación manual."""
+def issue_manual_approval(project_id: int, video_sha256: str) -> str:
+    """Emite una autorización opaca para un archivo MP4 y una única tarea."""
+    if not video_sha256:
+        raise ManualApprovalRequired("No se pudo identificar el MP4 que querés publicar. Volvé a generar el video.")
     ensure_schema()
     approval_id = secrets.token_urlsafe(32)
     db.execute(
-        "INSERT INTO youtube_manual_approvals(approval_id,project_id,job_id,created_at,used_at) VALUES(?,?,NULL,?,NULL)",
-        (approval_id, int(project_id), db.now()),
+        "INSERT INTO youtube_manual_approvals(approval_id,project_id,job_id,video_sha256,created_at,used_at) "
+        "VALUES(?,?,NULL,?,?,NULL)",
+        (approval_id, int(project_id), str(video_sha256), db.now()),
     )
     return approval_id
 
@@ -152,19 +159,25 @@ def revoke_manual_approval(project_id: int, approval_id: str) -> None:
     )
 
 
-def authorize_manual_approval(project_id: int, approval_id: str | None, job_id: int | None) -> None:
-    """Vincula la aprobación a una tarea y permite reintentos solo de esa misma tarea."""
-    if not approval_id or job_id is None:
+def authorize_manual_approval(
+    project_id: int, approval_id: str | None, job_id: int | None, video_sha256: str | None,
+) -> None:
+    """Vincula la aprobación al archivo exacto y a una única tarea; permite reintentos del mismo archivo."""
+    if not approval_id or job_id is None or not video_sha256:
         raise ManualApprovalRequired(
             "Se requiere aprobación manual: revisá este video y pulsá Publicar. YouTube no acepta subidas programadas."
         )
     ensure_schema()
     row = db.query_one(
-        "SELECT project_id,job_id FROM youtube_manual_approvals WHERE approval_id=?",
+        "SELECT project_id,job_id,video_sha256 FROM youtube_manual_approvals WHERE approval_id=?",
         (approval_id,),
     )
     if not row or int(row.get("project_id") or 0) != int(project_id):
         raise ManualApprovalRequired("La aprobación de este video no existe o ya no es válida. Volvé a revisarlo y pulsá Publicar.")
+    if str(row.get("video_sha256") or "") != str(video_sha256):
+        raise ManualApprovalRequired(
+            "El MP4 cambió después de tu aprobación. Revisá la nueva versión y volvé a pulsar Publicar."
+        )
     bound_job = row.get("job_id")
     if bound_job is not None and int(bound_job) != int(job_id):
         raise ManualApprovalRequired("Esta aprobación ya pertenece a otra tarea. Revisá el video y aprobá una nueva subida.")
@@ -172,23 +185,28 @@ def authorize_manual_approval(project_id: int, approval_id: str | None, job_id: 
     if bound_job is None:
         db.execute(
             "UPDATE youtube_manual_approvals SET job_id=?, used_at=COALESCE(used_at,?) "
-            "WHERE approval_id=? AND project_id=? AND job_id IS NULL",
-            (int(job_id), now, approval_id, int(project_id)),
+            "WHERE approval_id=? AND project_id=? AND video_sha256=? AND job_id IS NULL",
+            (int(job_id), now, approval_id, int(project_id), str(video_sha256)),
         )
         row = db.query_one(
-            "SELECT project_id,job_id FROM youtube_manual_approvals WHERE approval_id=?",
+            "SELECT project_id,job_id,video_sha256 FROM youtube_manual_approvals WHERE approval_id=?",
             (approval_id,),
         )
-        if not row or int(row.get("project_id") or 0) != int(project_id) or int(row.get("job_id") or 0) != int(job_id):
+        if (
+            not row
+            or int(row.get("project_id") or 0) != int(project_id)
+            or int(row.get("job_id") or 0) != int(job_id)
+            or str(row.get("video_sha256") or "") != str(video_sha256)
+        ):
             raise ManualApprovalRequired("La aprobación ya fue utilizada por otra tarea. Volvé a revisar el video y aprobalo otra vez.")
     else:
-        # Reintentar la misma tarea no exige que el usuario vuelva a aprobarla.
+        # Reintentar la misma tarea no exige que el usuario vuelva a aprobarla,
+        # pero sí exige que el archivo siga siendo exactamente el mismo.
         db.execute(
             "UPDATE youtube_manual_approvals SET used_at=COALESCE(used_at,?) "
-            "WHERE approval_id=? AND project_id=? AND job_id=?",
-            (now, approval_id, int(project_id), int(job_id)),
+            "WHERE approval_id=? AND project_id=? AND job_id=? AND video_sha256=?",
+            (now, approval_id, int(project_id), int(job_id), str(video_sha256)),
         )
-
 
 def video_path(project) -> Path:
     """Ruta del MP4 final del proyecto (misma convención que el render)."""
@@ -748,7 +766,7 @@ def publish(project_id: int, destination: str = "entrega", calendar_id: int | No
             }
 
     if destination == "youtube":
-        authorize_manual_approval(project_id, manual_approval_id, job_id)
+        authorize_manual_approval(project_id, manual_approval_id, job_id, fingerprint)
 
     scenes = db.query("SELECT * FROM scenes WHERE project_id=? ORDER BY idx", (project_id,))
     meta = build_metadata(project, scenes)
@@ -860,7 +878,14 @@ def enqueue_manual_publication(project_id: int, destination: str, calendar_id: i
     payload = {"destination": destination, "calendar_id": calendar_id, "privacy": privacy}
     approval_id = None
     if destination == "youtube":
-        approval_id = issue_manual_approval(project_id)
+        project = db.query_one("SELECT * FROM projects WHERE id=?", (int(project_id),))
+        if not project:
+            raise PublishError(f"El proyecto {project_id} no existe.")
+        source = video_path(project)
+        if not source.is_file() or source.stat().st_size < 1024:
+            raise PublishError("El MP4 ya no está disponible o está incompleto. Volvé a renderizarlo antes de publicar.")
+        fingerprint = _video_fingerprint(source)
+        approval_id = issue_manual_approval(project_id, fingerprint)
         payload["manual_approval_id"] = approval_id
     try:
         return worker.enqueue(project_id, "publish_project", payload)
