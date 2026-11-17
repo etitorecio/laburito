@@ -489,6 +489,7 @@ def _fiction_episode(template_id: str, niche: str, episode_number: int, previous
         "la relación cambió para siempre", "todos esperan que yo pida disculpas",
     ]
 
+    previous_norm = {topic_engine._normal(value) for value in previous_topics if value}
     number = max(1, int(episode_number or 1))
     for _ in range(1000):
         index = number - 1
@@ -504,7 +505,7 @@ def _fiction_episode(template_id: str, niche: str, episode_number: int, previous
             outcome = reddit_outcomes[(index // (len(reddit_situations) * len(reddit_triggers))) % len(reddit_outcomes)]
             topic = f"{niche}: {situation}; {trigger}; {outcome}"
             title = f"Historia Reddit · {niche} · Relato {number}"
-        if not topic_engine._is_duplicate(topic, previous_topics):
+        if topic_engine._normal(topic) not in previous_norm:
             return title, topic, number
         number += 1
     raise RuntimeError("No pude crear una premisa de ficción nueva sin repetir episodios recientes.")
