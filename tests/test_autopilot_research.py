@@ -298,6 +298,7 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertIn("astronomía", metadata["tags"])
         self.assertIn("universo", metadata["tags"])
         self.assertEqual(metadata["language"], "en")
+        self.assertIn("scenes · short format · narration in English", metadata["description"])
 
     def test_autopilot_builds_script_from_only_the_current_topics_sources(self):
         extract = " ".join([
