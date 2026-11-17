@@ -448,13 +448,17 @@ def _fiction_episode(template_id: str, niche: str, episode_number: int, previous
     frutinovela_places = [
         "el mercado central", "el huerto familiar", "el festival del pueblo",
         "el hospital del barrio", "la cocina del restaurante", "la estación de tren",
-        "una fiesta de cumpleaños", "la feria gastronómica",
+        "una fiesta de cumpleaños", "la feria gastronómica", "el club del barrio",
+        "la inauguración de una pastelería", "el archivo municipal",
+        "la plaza durante una tormenta",
     ]
     frutinovela_reveals = [
         "una carta cambia toda la versión de los hechos", "una grabación revela quién estuvo allí",
         "un testigo inesperado contradice la historia", "un documento firmado demuestra otra cosa",
         "una foto antigua conecta a dos enemigos", "un objeto perdido aparece en el peor momento",
         "una llamada en vivo expone un secreto", "una confusión de identidad altera el plan",
+        "un recibo antiguo prueba una mentira", "una llave abre una habitación cerrada",
+        "un audio sin remitente cambia la sospecha", "un contrato revela quién controla el negocio",
     ]
     reddit_situations = [
         "mi compañero de trabajo se atribuyó algo que hice yo",
@@ -481,12 +485,16 @@ def _fiction_episode(template_id: str, niche: str, episode_number: int, previous
         "una regla que nadie conocía cambió el acuerdo",
         "un favor terminó convertido en una exigencia",
         "una decisión tomada en secreto salió a la luz",
+        "un cambio de turno dejó a alguien expuesto",
+        "un regalo sin remitente desató sospechas",
     ]
     reddit_outcomes = [
         "ahora la familia está dividida", "la amistad quedó en pausa",
         "el trabajo de alguien está en riesgo", "nadie quiere hacerse responsable",
         "la verdad todavía no se conoce completa", "tengo que decidir si cuento todo",
         "la relación cambió para siempre", "todos esperan que yo pida disculpas",
+        "la confianza quedó dañada", "tengo que poner un límite",
+        "el grupo se dividió en dos bandos", "alguien tendrá que explicar lo ocurrido",
     ]
 
     previous_norm = {topic_engine._normal(value) for value in previous_topics if value}
