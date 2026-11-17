@@ -434,6 +434,81 @@ def delete_rule(rule_id: int) -> None:
     db.execute("DELETE FROM autopilot_rules WHERE id=?", (rule_id,))
 
 
+def _fiction_episode(template_id: str, niche: str, episode_number: int, previous_topics: list[str]) -> tuple[str, str, int]:
+    """Crea episodios deterministas sin reciclar premisas recientes."""
+    frutinovela_conflicts = [
+        "una herencia inesperada divide a la familia", "un romance secreto sale a la luz",
+        "un mensaje anónimo revela una traición", "una identidad oculta cambia todas las alianzas",
+        "una desaparición deja a todos bajo sospecha", "el negocio familiar queda al borde de la quiebra",
+        "una boda se interrumpe por una revelación", "dos ramas de la familia compiten por el mismo puesto",
+        "la receta original de la abuela desaparece", "un familiar regresa después de muchos años",
+        "una acusación injusta enfrenta a los protagonistas", "aparece una deuda que nadie sabía que existía",
+    ]
+    frutinovela_places = [
+        "el mercado central", "el huerto familiar", "el festival del pueblo",
+        "el hospital del barrio", "la cocina del restaurante", "la estación de tren",
+        "una fiesta de cumpleaños", "la feria gastronómica",
+    ]
+    frutinovela_reveals = [
+        "una carta cambia toda la versión de los hechos", "una grabación revela quién estuvo allí",
+        "un testigo inesperado contradice la historia", "un documento firmado demuestra otra cosa",
+        "una foto antigua conecta a dos enemigos", "un objeto perdido aparece en el peor momento",
+        "una llamada en vivo expone un secreto", "una confusión de identidad altera el plan",
+    ]
+    reddit_situations = [
+        "mi compañero de trabajo se atribuyó algo que hice yo",
+        "mi compañero de piso tomó una decisión sin consultarme",
+        "mi hermano involucró a toda la familia en un problema suyo",
+        "mi vecino cruzó un límite que ya habíamos hablado",
+        "mi mejor amigo ocultó algo importante durante meses",
+        "mi jefe cambió las reglas después de que acepté el trabajo",
+        "mi familia política organizó algo a mis espaldas",
+        "un compañero de clase presentó mi idea como propia",
+        "una boda familiar terminó con todos discutiendo",
+        "un chat grupal dejó expuesto un secreto",
+        "un viaje con amigos terminó de una forma inesperada",
+        "una compra compartida se convirtió en un conflicto",
+    ]
+    reddit_triggers = [
+        "un mensaje enviado por error reveló la conversación",
+        "una captura de pantalla llegó a la persona equivocada",
+        "una deuda pequeña destapó un problema mayor",
+        "una invitación aparentemente inocente escondía otra intención",
+        "una promesa antigua volvió a ser un problema",
+        "un objeto desaparecido provocó una acusación",
+        "una broma se salió de control delante de todos",
+        "una regla que nadie conocía cambió el acuerdo",
+        "un favor terminó convertido en una exigencia",
+        "una decisión tomada en secreto salió a la luz",
+    ]
+    reddit_outcomes = [
+        "ahora la familia está dividida", "la amistad quedó en pausa",
+        "el trabajo de alguien está en riesgo", "nadie quiere hacerse responsable",
+        "la verdad todavía no se conoce completa", "tengo que decidir si cuento todo",
+        "la relación cambió para siempre", "todos esperan que yo pida disculpas",
+    ]
+
+    number = max(1, int(episode_number or 1))
+    for _ in range(1000):
+        index = number - 1
+        if template_id == "frutinovela":
+            conflict = frutinovela_conflicts[index % len(f rutiniknovela_conflicts)]
+            place = frutinovela_places[(index // len(frutinovela_conflicts)) % len(frutinovela_places)]
+            reveal = frutinovela_reveals[(index // (len(frutinovela_conflicts) * len(frutinovela_places))) % len(frutinovela_reveals)]
+            topic = f"{niche}: {conflict} en {place}; {reveal}"
+            title = f"{niche} · Episodio {number}"
+        else:
+            situation = reddit_situations[index % len(reddit_situations)]
+            trigger = reddit_triggers[(index // len(reddit_situations)) % len(reddit_triggers)]
+            outcome = reddit_outcomes[(index // (len(reddit_situations) * len(reddit_triggers))) % len(reddit_outcomes)]
+            topic = f"{niche}: {situation}; {trigger}; {outcome}"
+            title = f"Historia Reddit · {niche} · Relato {number}"
+        if not topic_engine._is_duplicate(topic, previous_topics):
+            return title, topic, number
+        number += 1
+    raise RuntimeError("No pude crear una premisa de ficción nueva sin repetir episodios recientes.")
+
+
 def _create_project(rule: dict) -> dict:
     """Descubre un tema no usado, registra una fuente y crea el proyecto."""
     from . import script_gen, topic_engine
@@ -460,28 +535,11 @@ def _create_project(rule: dict) -> dict:
             (rule.get("channel_id"), template_id),
         ) or {}
         episode_number = int(count_row.get("total") or 0) + 1
+        title, topic, episode_number = _fiction_episode(
+            template_id, niche, episode_number, previous_topics
+        )
         if template_id == "frutinovela":
             characters = characters or "Manzana, Banana, Pera y Naranja"
-            episode_plots = [
-                "una herencia inesperada divide a la familia",
-                "un romance secreto sale a la luz",
-                "un mensaje anónimo revela una traición",
-                "una identidad oculta cambia todas las alianzas",
-                "una desaparición deja a todos bajo sospecha",
-            ]
-            topic = f"{niche}: {episode_plots[(episode_number - 1) % len(episode_plots)]}"
-            title = f"{niche} · Episodio {episode_number}"
-        else:
-            story_plots = [
-                "descubrí que mi mejor amigo me mentía desde hacía meses",
-                "un mensaje enviado por error reveló un secreto familiar",
-                "mi compañero de trabajo se atribuyó algo que hice yo",
-                "una invitación aparentemente inocente terminó en una discusión",
-                "tomé una decisión y ahora mi familia está dividida",
-                "una promesa antigua volvió para complicarlo todo",
-            ]
-            topic = f"{niche}: {story_plots[(episode_number - 1) % len(story_plots)]}"
-            title = f"Historia Reddit · {niche} · Relato {episode_number}"
         research = {
             "topic": topic, "url": "", "source_title": "Ficción original",
             "trend_signals": [], "references": [], "academic_sources": [], "note_ids": [],
