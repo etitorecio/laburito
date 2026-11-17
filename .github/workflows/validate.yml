@@ -25,7 +25,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: validate-${{ github.ref }}
+  group: validate-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
 
 jobs:
