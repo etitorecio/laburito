@@ -777,12 +777,12 @@ def translate_script_with_ollama(url: str, model: str, project: dict, script: di
         "Translate narration, title, purpose and visual_query; preserve all other scene fields unchanged. "
         "Use conversational English suitable for voice-over, not literal machine translation. "
         "Return only valid JSON with exactly this shape: "
-        "{\\"scenes\\":[{\\"idx\\":0,\\"title\\":\\"...\\",\\"narration\\":\\"...\\",\\"purpose\\":\\"...\\",\\"visual_query\\":\\"...\\"}]}\\n"
+        '{"scenes":[{"idx":0,"title":"...","narration":"...","purpose":"...","visual_query":"..."}]}\n'
         + json.dumps({"topic": project.get("topic") or project.get("title") or "", "scenes": payload}, ensure_ascii=False)
     )
     raw = expand_with_ollama(url, model, prompt, timeout=300, num_predict=4096).strip()
     if raw.startswith(chr(96) * 3):
-        raw = re.sub(r"^\\x60{3}(?:json)?\\s*|\\s*\\x60{3}$", "", raw, flags=re.IGNORECASE)
+        raw = re.sub(r"^\x60{3}(?:json)?\s*|\s*\x60{3}$", "", raw, flags=re.IGNORECASE)
     first, last = raw.find("{"), raw.rfind("}")
     if first < 0 or last <= first:
         raise RuntimeError("Ollama no devolvió JSON válido para la traducción al inglés.")
