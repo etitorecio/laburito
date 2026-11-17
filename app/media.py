@@ -223,7 +223,7 @@ def whisper_word_timings(
     cmd = [
         binary, "-m", model, "-f", str(audio),
         "-l", "en" if language == "en" else "es",
-        "-ojf", "-of", str(output_prefix), "-np", "-ng", "-t", "2", "-sns", "-nf",
+        "-ojf", "-of", str(output_prefix), "-ml", "1", "-np", "-ng", "-t", "2", "-sns", "-nf",
     ]
     try:
         proc = subprocess.run(cmd, capture_output=True, timeout=1800)
