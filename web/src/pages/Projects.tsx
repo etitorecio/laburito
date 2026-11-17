@@ -52,7 +52,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
   const templates = meta?.templates ?? [];
   const selectedChannel = channels.find((channel) => channel.id === Number(form.channel_id)) ?? null;
   const activeTemplate = templates.find((t) => t.id === form.template) ?? null;
-  const voiceOptions = (meta?.voices ?? []).filter((v) => v.language === 'es');
+  const voiceOptions = meta?.voices ?? [];
 
   async function findIdeas() {
     const niche = form.topic.trim() || selectedChannel?.topic || '';
@@ -103,10 +103,11 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
       ]);
       setProjects(p);
       setChannels(c);
-      setForm((current) => current.channel_id ? current : {
+      setForm((current) => ({
         ...current,
-        channel_id: String(c[0]?.id ?? ''),
-      });
+        channel_id: current.channel_id || String(c[0]?.id ?? ''),
+        voice: current.voice === 'es' ? (m.settings.default_voice || 'es') : current.voice,
+      }));
       setMeta(m);
       setOllamaAvailable(diagnostics.ollama.available);
     } catch (e) {
@@ -323,7 +324,7 @@ export default function Projects({ go }: { go: (route: Route, id?: number) => vo
           {!easyMode && <>
           <details className="advanced-settings">
             <summary>Voz y narración</summary>
-            <Field label="Elegí una voz en español">
+            <Field label="Elegí una voz">
               <VoicePicker
                 options={voiceOptions}
                 value={form.voice}
