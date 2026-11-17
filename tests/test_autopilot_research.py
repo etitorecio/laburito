@@ -214,6 +214,17 @@ class AutopilotResearchTests(unittest.TestCase):
         self.assertIn("next_run_at", execute.call_args.args[0])
         self.assertIn("now", execute.call_args.args[1])
 
+    def test_frutinovela_next_episode_receives_previous_scene_recap(self):
+        with patch.object(autopilot.db, "query_one", return_value={"id": 88, "title": "Los Frutos · Episodio 1", "topic": "Una herencia"}), \
+             patch.object(autopilot.db, "query", return_value=[
+                 {"narration": "La familia descubre una carta."},
+                 {"narration": "Manzana decide guardar el secreto."},
+             ]):
+            context = autopilot._frutinovela_continuity_context(4)
+        self.assertIn("Los Frutos · Episodio 1", context)
+        self.assertLess(context.index("Manzana decide"), context.index("La familia descubre"))
+        self.assertIn("no reiniciar la historia", context)
+
     def test_fiction_episode_factory_avoids_repeating_recent_frutinovela_plots(self):
         previous = []
         for number in range(1, 101):
