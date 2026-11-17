@@ -40,7 +40,9 @@ Estados:
 | Biblioteca y cola de tareas | Implementada | Biblioteca local, cola SQLite, progreso, logs, reintentos y recuperación. El MP4 queda renderizado y disponible localmente sin exigir exportación manual. |
 | Publicación multired a seis plataformas | Ausente | Integración existente enfocada en YouTube. YouTube requiere aprobación manual por cada video por decisión del usuario. |
 | Analítica | Parcial | Importación de CSV de YouTube Studio y resumen; no hay conexiones nativas completas a seis plataformas. |
-| Calendario y planificación | Parcial | Reglas con horario, frecuencia, próxima ejecución y cola; falta una vista calendario editorial más completa. |\n| Variantes y reutilización | Parcial | Se puede duplicar/editar proyectos y regenerar escenas; falta el sistema comercial completo de variantes, recortes y reutilización multiplataforma. |\n| API pública | Parcial | API REST propia para las funciones actuales, incluida creación por orden natural. No equivale a cobertura completa de la API comercial. |
+| Calendario y planificación | Parcial | Reglas con horario, frecuencia, próxima ejecución y cola; falta una vista calendario editorial más completa. |
+| Variantes y reutilización | Parcial | Se puede duplicar/editar proyectos y regenerar escenas; falta el sistema comercial completo de variantes, recortes y reutilización multiplataforma. |
+| API pública | Parcial | API REST propia para las funciones actuales, incluida creación por orden natural. No equivale a cobertura completa de la API comercial. |
 | MCP | Ausente | No se identificó servidor MCP propio. |
 | Colaboración/equipos | Ausente | No hay gestión multiusuario de equipos. |
 
@@ -54,7 +56,7 @@ Referencias públicas consultadas:
 - https://aituber.app/
 - https://aituber.app/features/
 - https://aituber.app/pricing/
-- https://help.aituber.app/en/article/how-to-set-up-autopilot-a1d716/\n- https://help.aituber.app/en/article/how-long-can-my-videos-be-1axgwnu/
+- https://help.aituber.app/en/article/how-to-set-up-autopilot-a1d716/
 - https://help.aituber.app/en/article/how-long-can-my-videos-be-1axgwnu/
 
 ## Próximas brechas prioritarias
