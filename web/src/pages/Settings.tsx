@@ -122,7 +122,7 @@ export default function Settings() {
             <VoicePicker
               options={meta?.voices ?? []}
               value={values.default_voice || 'es'}
-              onChange={(value) => setValues({ ...values, default_voice: value })}
+              onChange={(value) => setValues({ ...values, default_voice: value, default_language: value.startsWith("en") ? "en" : "es" })}
               compact
             />
           </Field>
